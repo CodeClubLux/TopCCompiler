@@ -1,0 +1,1 @@
+function other_Init(){}function other_Hello(a,b){this.x=a;this.y=b;}other_Hello.prototype.toString=(function(){return other_Hello_toString(this)});function other_Hello_toString(c){return "Hello{ {{self.x}}, {{self.y}} + }";}

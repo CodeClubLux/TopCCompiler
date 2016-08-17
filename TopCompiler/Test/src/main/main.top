@@ -1,0 +1,10 @@
+type S[T: Stringable] =
+    x: T
+
+def S[T].toString(self, x: T) string =
+    "{self.x}, {x}"
+
+var s: S[int] = S { 10 }
+s = S { 89 }
+println s.toString(100)
+
