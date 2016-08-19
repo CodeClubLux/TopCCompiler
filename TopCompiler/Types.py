@@ -129,7 +129,7 @@ class Type:
         if self != other:
             mynode.error("expecting type "+str(self)+" and got type "+str(other))
 
-    def hasMethod(self): pass
+    def hasMethod(self, parser, field): pass
 
 def newType(n):
     class BasicType(Type):
@@ -188,7 +188,7 @@ class Struct(Type):
         return not self == other
 
     def duckType(self, parser, other, node, mynode, iter=0):
-        if self.name != other.name:
+        if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
             node.error("expecting type "+str(self)+", not "+str(other))
 
         for i in self.types:

@@ -57,11 +57,12 @@ def generics(parser):
     parser.nextToken()
     return generic
 
-def funcHead(parser, decl= False, dontAdd= False):
+def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = False):
     Scope.incrScope(parser)
     if not type(parser.currentNode) is Tree.Root and not decl:
         Error.parseError(parser, "unexpected def")
     if parser.tokens[parser.iter+2].token == ".":
+        if attachTyp: Error.parseError(parser, "unexpected .")
         parser.nextToken()
         attachTyp = Types.parseType(parser)
         parser.nextToken()
@@ -79,11 +80,16 @@ def funcHead(parser, decl= False, dontAdd= False):
         if parser.thisToken().token == "[":
             g = generics(parser)
             if parser.thisToken().token == ".":
-                if not Scope.varExists(parser, parser.package, name): Error.parseError(parser, "cannot attach method to unknown type main."+name)
+                if attachTyp: Error.parseError(parser, "unexpected .")
+                if not Scope.varExists(parser, parser.package, name): Error.parseError(parser,
+                     "cannot attach method to unknown type main."+name)
 
                 attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package, parserMethodGen(parser, g, parser.structs[parser.package][name]))
 
-                return MethodParser.methodHead(parser, attachTyp, decl)
+                f = funcHead(parser, decl, dontAdd, True, attachTyp)
+                Scope.decrScope(parser)
+
+                return f
 
         if parser.thisToken().token != "(":
             Error.parseError(parser, "expecting (")
@@ -99,6 +105,22 @@ def funcHead(parser, decl= False, dontAdd= False):
     parser.currentNode.addNode(brace)
 
     parser.currentNode = brace
+
+    if method:
+        typ = attachTyp
+        self = parser.nextToken()
+        if self.type != "identifier": Error.parseError(parser, "binding name must be identifier not "+self.type)
+        self = self.token
+
+        selfNode = Tree.Create(self, typ, parser)
+        selfNode.package = parser.package
+        selfNode.imutable = True
+
+        parser.currentNode.addNode(selfNode)
+
+        if not parser.lookInfront().token in [")", ","]:
+            Error.parseError(parser, "expecting comma not "+parser.thisToken().token)
+
 
     if name[0].lower() != name[0]:
         Error.parseError(parser, "function name must be lower case")
@@ -133,6 +155,26 @@ def funcHead(parser, decl= False, dontAdd= False):
 
     names = [i.name for i in brace.nodes]
     types = [i.varType for i in brace.nodes]
+
+    if method:
+        func = Types.FuncPointer(
+            types,
+            returnType,
+            g
+        )
+
+        header.method = True
+        header.types = types[1:]
+        header.attachTyp = attachTyp
+        header.normalName = name
+        header.name = attachTyp.normalName+"_"+header.normalName
+
+        MethodParser.checkIfOperator(parser, attachTyp, name, func)
+
+        if decl:
+            MethodParser.addMethod(brace, parser, attachTyp, name, func)
+
+        return attachTyp.normalName+"_"+name, names, types, header, returnType
 
     parser.func[parser.package][name] = Types.FuncPointer(
         types,

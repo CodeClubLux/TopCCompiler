@@ -194,6 +194,13 @@ Vector.prototype.operator_equal = function (other) {
     return true;
 }
 
+Vector.prototype.map = function (func) {
+    var newArr = EmptyVector;
+    for (var i = 0; i < func.length; i++) {
+        newArr.append(func(this.get(i)));
+    }
+}
+
 function newVector() {
     return fromArray(Array.prototype.slice.call(arguments))
 }

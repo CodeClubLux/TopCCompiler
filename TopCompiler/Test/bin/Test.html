@@ -13,18 +13,18 @@
 function main_Init() {
     main_s = new main_S(10);
     main_s = new main_S(89);
-    println((main_S_toString).bind(null, main_s)(100));
+    println(main_s);
 }
 
 function main_S(a) {
     this.x = a;
 }
-main_S.prototype.toString = (function(b) {
-    return main_S_toString(this, b)
+main_S.prototype.toString = (function() {
+    return main_S_toString(this)
 });
 
-function main_S_toString(c, d) {
-    return (((((((("").toString() + ((c.x)).toString())).toString() + (", ").toString())).toString() + ((d)).toString())).toString() + ("").toString());
+function main_S_toString(b) {
+    return (((("S\{").toString() + ((b.x)).toString())).toString() + ("\}").toString());
 }
 var main_s;
 

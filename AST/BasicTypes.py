@@ -58,7 +58,11 @@ class String(Node):
         return self.string
 
     def compileToJS(self, codegen):
-        string = self.string.replace("\n", "<br>")
+        string = self.string.\
+            replace("<", "&lt").\
+            replace(">", "&gt").\
+            replace(" ", "&nbsp")
+
         codegen.append(string)
 
     def validate(self, parser): pass

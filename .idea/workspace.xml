@@ -2,86 +2,19 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6050159e-97da-4cba-85cc-af3ec550bf3f" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Arrays.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/BasicTypes.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Cast.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Controlflow.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Func.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/InitPackage.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Inline.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Operator.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Print.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Struct.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Tuple.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/Vars.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/AST/node.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/MANIFEST.in" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/README.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Array.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/CodegenJS.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/ElseExpr.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Error.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/ExprParser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/FuncParser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/IfExpr.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/ImportParser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Interface.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Lexer.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/MethodParser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/PackageParser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Parser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/README.md" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/RandomGen.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/ResolveSymbols.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Scope.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/String.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Struct.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/bin/Test.html" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/bin/Test.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/lib/main.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/lib/other.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/lib/other.sub.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/lib/sub.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/src/main/main.top" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/src/main/port.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/src/other/other.top" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/src/other/port.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Test/src/port.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/TypeInference.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/Types.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/VarParser.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/WhileExpr.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/jquery.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/dom.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/list.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/number.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/test.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/tmp.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/utility.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtime/vector.js" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/runtimebuild.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/TopCompiler/topc.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/bin/topc" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/bin/topc.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/bin/topdev" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/bin/topdev.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/BranchRemoving.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/Constansts.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/Escape.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/Inline.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/OptimizeInlining.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/RemoveUnusedFunc.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/RemoveUnusedVar.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/SingleRead.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/Ternary.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/optimization/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/requirements.txt" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/setup.py" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/TopCompiler/README.md" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AST/BasicTypes.py" afterPath="$PROJECT_DIR$/AST/BasicTypes.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/FuncParser.py" afterPath="$PROJECT_DIR$/TopCompiler/FuncParser.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/Lexer.py" afterPath="$PROJECT_DIR$/TopCompiler/Lexer.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/MethodParser.py" afterPath="$PROJECT_DIR$/TopCompiler/MethodParser.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/Test/bin/Test.html" afterPath="$PROJECT_DIR$/TopCompiler/Test/bin/Test.html" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/Test/bin/Test.js" afterPath="$PROJECT_DIR$/TopCompiler/Test/bin/Test.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/Test/lib/main.js" afterPath="$PROJECT_DIR$/TopCompiler/Test/lib/main.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/Test/src/main/main.top" afterPath="$PROJECT_DIR$/TopCompiler/Test/src/main/main.top" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/TypeInference.py" afterPath="$PROJECT_DIR$/TopCompiler/TypeInference.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/Types.py" afterPath="$PROJECT_DIR$/TopCompiler/Types.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TopCompiler/runtime/vector.js" afterPath="$PROJECT_DIR$/TopCompiler/runtime/vector.js" />
     </list>
     <ignored path="TopCompiler.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -104,30 +37,8 @@
       <file leaf-file-name="FuncParser.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TopCompiler/FuncParser.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="131">
-              <caret line="25" column="4" selection-start-line="25" selection-start-column="4" selection-end-line="25" selection-end-column="4" />
-              <folding>
-                <element signature="e#32#62#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Scope.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/TopCompiler/Scope.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="161">
-              <caret line="46" column="0" selection-start-line="46" selection-start-column="0" selection-end-line="46" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MethodParser.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/TopCompiler/MethodParser.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="111" column="5" selection-start-line="111" selection-start-column="5" selection-end-line="111" selection-end-column="5" />
+            <state relative-caret-position="1665">
+              <caret line="120" column="29" selection-start-line="120" selection-start-column="29" selection-end-line="120" selection-end-column="29" />
               <folding>
                 <element signature="e#32#62#0" expanded="true" />
               </folding>
@@ -138,51 +49,93 @@
       <file leaf-file-name="Types.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TopCompiler/Types.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="317">
-              <caret line="249" column="21" selection-start-line="249" selection-start-column="21" selection-end-line="249" selection-end-column="21" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="node.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AST/node.py">
-          <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="316">
-              <caret line="109" column="21" selection-start-line="109" selection-start-column="21" selection-end-line="109" selection-end-column="21" />
+              <caret line="131" column="37" selection-start-line="131" selection-start-column="37" selection-end-line="131" selection-end-column="37" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="main.top" pinned="false" current-in-tab="true">
+      <file leaf-file-name="topc.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/TopCompiler/topc.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="162">
+              <caret line="216" column="16" selection-start-line="216" selection-start-column="16" selection-end-line="216" selection-end-column="16" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="main.top" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TopCompiler/Test/src/main/main.top">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="8" column="23" selection-start-line="8" selection-start-column="23" selection-end-line="8" selection-end-column="23" />
+            <state relative-caret-position="0">
+              <caret line="0" column="24" selection-start-line="0" selection-start-column="24" selection-end-line="0" selection-end-column="24" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Struct.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/TopCompiler/Struct.py">
+      <file leaf-file-name="vector.js" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/TopCompiler/runtime/vector.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="165">
-              <caret line="21" column="20" selection-start-line="21" selection-start-column="20" selection-end-line="21" selection-end-column="20" />
+            <state relative-caret-position="319">
+              <caret line="199" column="41" selection-start-line="199" selection-start-column="41" selection-end-line="199" selection-end-column="41" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="runtimebuild.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/TopCompiler/runtimebuild.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-79">
+              <caret line="6" column="19" selection-start-line="6" selection-start-column="19" selection-end-line="6" selection-end-column="19" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="connection.py" pinned="false" current-in-tab="false">
+        <entry file="file:///Library/Frameworks/Python.framework/Versions/3.5/lib/python3.5/site-packages/requests/packages/urllib3/connection.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="161">
+              <caret line="141" column="0" selection-start-line="141" selection-start-column="0" selection-end-line="141" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="TypeInference.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/TopCompiler/TypeInference.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-840">
+              <caret line="72" column="0" selection-start-line="72" selection-start-column="0" selection-end-line="72" selection-end-column="0" />
               <folding>
-                <element signature="e#32#62#0" expanded="true" />
+                <element signature="e#0#30#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Error.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/TopCompiler/Error.py">
+      <file leaf-file-name="__init__.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/TopCompiler/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="161">
-              <caret line="17" column="0" selection-start-line="17" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
+            <state relative-caret-position="0">
+              <caret line="1" column="19" selection-start-line="1" selection-start-column="19" selection-end-line="1" selection-end-column="19" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Lexer.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/TopCompiler/Lexer.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2250">
+              <caret line="152" column="46" selection-start-line="152" selection-start-column="46" selection-end-line="152" selection-end-column="46" />
+              <folding>
+                <element signature="e#32#50#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -202,7 +155,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/README.txt" />
         <option value="$PROJECT_DIR$/src/__init__.py" />
         <option value="$PROJECT_DIR$/src/ImportParser.py" />
         <option value="$PROJECT_DIR$/src/topdev.py" />
@@ -213,9 +165,7 @@
         <option value="$PROJECT_DIR$/AST/Func.py" />
         <option value="$PROJECT_DIR$/TopCompiler/Scope.py" />
         <option value="$PROJECT_DIR$/AST/Vars.py" />
-        <option value="$PROJECT_DIR$/AST/BasicTypes.py" />
         <option value="$PROJECT_DIR$/AST/Print.py" />
-        <option value="$PROJECT_DIR$/TopCompiler/Lexer.py" />
         <option value="$PROJECT_DIR$/TopCompiler/ExprParser.py" />
         <option value="$PROJECT_DIR$/TopCompiler/VarParser.py" />
         <option value="$PROJECT_DIR$/TopCompiler/PackageParser.py" />
@@ -234,7 +184,6 @@
         <option value="$PROJECT_DIR$/TopCompiler/IfExpr.py" />
         <option value="$PROJECT_DIR$/TopCompiler/ElseExpr.py" />
         <option value="$PROJECT_DIR$/TopCompiler/String.py" />
-        <option value="$PROJECT_DIR$/TopCompiler/TypeInference.py" />
         <option value="$PROJECT_DIR$/bin/topc.py" />
         <option value="$PROJECT_DIR$/TopCompiler/topc.py" />
         <option value="$PROJECT_DIR$/TopCompiler/Parser.py" />
@@ -249,15 +198,19 @@
         <option value="$PROJECT_DIR$/TopCompiler/Error.py" />
         <option value="$PROJECT_DIR$/AST/node.py" />
         <option value="$PROJECT_DIR$/TopCompiler/Struct.py" />
-        <option value="$PROJECT_DIR$/TopCompiler/Types.py" />
+        <option value="$PROJECT_DIR$/AST/BasicTypes.py" />
         <option value="$PROJECT_DIR$/TopCompiler/MethodParser.py" />
-        <option value="$PROJECT_DIR$/TopCompiler/Test/src/main/main.top" />
         <option value="$PROJECT_DIR$/TopCompiler/FuncParser.py" />
+        <option value="$PROJECT_DIR$/TopCompiler/Lexer.py" />
+        <option value="$PROJECT_DIR$/TopCompiler/TypeInference.py" />
+        <option value="$PROJECT_DIR$/TopCompiler/Types.py" />
+        <option value="$PROJECT_DIR$/TopCompiler/Test/src/main/main.top" />
+        <option value="$PROJECT_DIR$/TopCompiler/runtime/vector.js" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="21" />
+    <option name="x" value="40" />
     <option name="y" value="23" />
     <option name="width" value="1400" />
     <option name="height" value="770" />
@@ -287,6 +240,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -330,6 +284,24 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="TopCompiler" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="TopCompiler" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="TopCompiler" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="TopCompiler" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="runtime" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -399,9 +371,22 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="TopCompiler" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="TopCompiler" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="AST" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
       <pane id="Scratches" />
     </panes>
   </component>
@@ -411,15 +396,15 @@
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/bin" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/TopCompiler" />
     </key>
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/bin" />
-      <recent name="$PROJECT_DIR$" />
-    </key>
   </component>
-  <component name="RunManager" selected="Python.topc">
+  <component name="RunManager" selected="Python.runtimebuild (1)">
     <configuration default="false" name="pip-install" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -484,6 +469,23 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="TopCompiler" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/TopCompiler/__init__.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="runtimebuild (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/TopCompiler" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="TopCompiler" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/TopCompiler/runtimebuild.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
@@ -622,18 +624,20 @@
       <option name="USE_KEYWORD" value="false" />
       <method />
     </configuration>
-    <list size="4">
+    <list size="5">
       <item index="0" class="java.lang.String" itemvalue="Python.pip-install" />
       <item index="1" class="java.lang.String" itemvalue="Python.runtimebuild" />
       <item index="2" class="java.lang.String" itemvalue="Python.topc" />
       <item index="3" class="java.lang.String" itemvalue="Python.__init__" />
+      <item index="4" class="java.lang.String" itemvalue="Python.runtimebuild (1)" />
     </list>
     <recent_temporary>
-      <list size="4">
-        <item index="0" class="java.lang.String" itemvalue="Python.topc" />
-        <item index="1" class="java.lang.String" itemvalue="Python.__init__" />
-        <item index="2" class="java.lang.String" itemvalue="Python.runtimebuild" />
-        <item index="3" class="java.lang.String" itemvalue="Python.pip-install" />
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.runtimebuild (1)" />
+        <item index="1" class="java.lang.String" itemvalue="Python.topc" />
+        <item index="2" class="java.lang.String" itemvalue="Python.__init__" />
+        <item index="3" class="java.lang.String" itemvalue="Python.runtimebuild" />
+        <item index="4" class="java.lang.String" itemvalue="Python.pip-install" />
       </list>
     </recent_temporary>
   </component>
@@ -658,23 +662,30 @@
       <option name="project" value="LOCAL" />
       <updated>1471418522021</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Added setup.py">
+      <created>1471459591011</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1471459591011</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="21" y="23" width="1400" height="770" extended-state="0" />
+    <frame x="40" y="23" width="1400" height="770" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.40085593" sideWeight="0.2942857" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.48644793" sideWeight="0.31642857" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.40085593" sideWeight="0.7057143" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.48644793" sideWeight="0.68357146" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39800286" sideWeight="0.4807143" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39742085" sideWeight="0.46666667" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -700,7 +711,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added .gitignore" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added .gitignore" />
+    <MESSAGE value="Added setup.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added setup.py" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -715,35 +727,20 @@
           <option name="timeStamp" value="3" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
-          <url>file://$PROJECT_DIR$/TopCompiler/Scope.py</url>
-          <line>46</line>
-          <option name="timeStamp" value="8" />
+          <url>file://$PROJECT_DIR$/TopCompiler/TypeInference.py</url>
+          <line>72</line>
+          <option name="timeStamp" value="13" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="9" />
+      <option name="time" value="14" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/bin/jquery.js" />
-    <entry file="file://$PROJECT_DIR$/AST/Func.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="29" selection-start-line="3" selection-start-column="29" selection-end-line="3" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/AST/Vars.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
           <caret line="5" column="29" selection-start-line="5" selection-start-column="29" selection-end-line="5" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AST/BasicTypes.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="17" selection-start-line="3" selection-start-column="17" selection-end-line="3" selection-end-column="17" />
         </state>
       </provider>
     </entry>
@@ -754,19 +751,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/Lexer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="24" selection-start-line="4" selection-start-column="24" selection-end-line="4" selection-end-column="24" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/TopCompiler/ExprParser.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
           <caret line="5" column="17" selection-start-line="5" selection-start-column="17" selection-end-line="5" selection-end-column="17" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -774,7 +762,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
           <caret line="3" column="0" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -782,7 +769,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
           <caret line="8" column="17" selection-start-line="8" selection-start-column="17" selection-end-line="8" selection-end-column="17" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -797,7 +783,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
           <caret line="13" column="17" selection-start-line="13" selection-start-column="17" selection-end-line="13" selection-end-column="17" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -805,7 +790,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="90">
           <caret line="6" column="0" selection-start-line="6" selection-start-column="0" selection-end-line="6" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -869,7 +853,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
           <caret line="3" column="7" selection-start-line="3" selection-start-column="7" selection-end-line="3" selection-end-column="7" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -877,7 +860,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
           <caret line="3" column="0" selection-start-line="3" selection-start-column="0" selection-end-line="3" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -885,23 +867,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="90">
           <caret line="6" column="17" selection-start-line="6" selection-start-column="17" selection-end-line="6" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/String.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="17" selection-start-line="4" selection-start-column="17" selection-end-line="4" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/TypeInference.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="17" selection-start-line="8" selection-start-column="17" selection-end-line="8" selection-end-column="17" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -909,36 +874,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="22">
           <caret line="78" column="6" selection-start-line="78" selection-start-column="6" selection-end-line="78" selection-end-column="6" />
-          <folding>
-            <element signature="e#32#53#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/topc.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="216" column="16" selection-start-line="216" selection-start-column="16" selection-end-line="216" selection-end-column="16" />
-          <folding>
-            <element signature="e#32#42#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/Parser.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="320" column="8" selection-start-line="320" selection-start-column="8" selection-end-line="320" selection-end-column="8" />
-          <folding>
-            <element signature="e#1807#1827#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/runtimebuild.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="6" column="19" selection-start-line="6" selection-start-column="19" selection-end-line="6" selection-end-column="19" />
         </state>
       </provider>
     </entry>
@@ -961,9 +896,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
           <caret line="18" column="22" selection-start-line="0" selection-start-column="0" selection-end-line="21" selection-end-column="54" />
-          <folding>
-            <element signature="e#0#25#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -971,7 +903,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="21" selection-start-line="0" selection-start-column="21" selection-end-line="0" selection-end-column="21" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -979,7 +910,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
           <caret line="17" column="6" selection-start-line="17" selection-start-column="6" selection-end-line="17" selection-end-column="6" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -987,9 +917,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="165">
           <caret line="18" column="14" selection-start-line="0" selection-start-column="0" selection-end-line="79" selection-end-column="23" />
-          <folding>
-            <element signature="e#32#60#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -997,7 +924,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1215">
           <caret line="81" column="23" selection-start-line="81" selection-start-column="23" selection-end-line="81" selection-end-column="23" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1009,21 +935,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="1" column="19" selection-start-line="1" selection-start-column="19" selection-end-line="1" selection-end-column="19" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1031,7 +946,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1039,9 +953,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="514">
           <caret line="105" column="66" selection-start-line="105" selection-start-column="18" selection-end-line="105" selection-end-column="66" />
-          <folding>
-            <element signature="e#32#49#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -1049,23 +960,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="15">
           <caret line="1" column="19" selection-start-line="1" selection-start-column="19" selection-end-line="1" selection-end-column="19" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/Error.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="161">
-          <caret line="17" column="0" selection-start-line="17" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/AST/node.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="316">
-          <caret line="109" column="21" selection-start-line="109" selection-start-column="21" selection-end-line="109" selection-end-column="21" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1079,46 +973,144 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/Types.py">
+    <entry file="file://$PROJECT_DIR$/TopCompiler/String.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="317">
-          <caret line="249" column="21" selection-start-line="249" selection-start-column="21" selection-end-line="249" selection-end-column="21" />
+        <state relative-caret-position="60">
+          <caret line="4" column="17" selection-start-line="4" selection-start-column="17" selection-end-line="4" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AST/BasicTypes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="122">
+          <caret line="54" column="45" selection-start-line="54" selection-start-column="45" selection-end-line="54" selection-end-column="45" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/Scope.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="660">
+          <caret line="46" column="0" selection-start-line="46" selection-start-column="0" selection-end-line="46" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/AST/node.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1620">
+          <caret line="109" column="0" selection-start-line="109" selection-start-column="0" selection-end-line="109" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/TopCompiler/MethodParser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="111" column="5" selection-start-line="111" selection-start-column="5" selection-end-line="111" selection-end-column="5" />
+        <state relative-caret-position="795">
+          <caret line="59" column="20" selection-start-line="59" selection-start-column="20" selection-end-line="59" selection-end-column="20" />
           <folding>
             <element signature="e#32#62#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/TopCompiler/Scope.py">
+    <entry file="file://$PROJECT_DIR$/TopCompiler/Parser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="161">
-          <caret line="46" column="0" selection-start-line="46" selection-start-column="0" selection-end-line="46" selection-end-column="0" />
+        <state relative-caret-position="1560">
+          <caret line="124" column="0" selection-start-line="124" selection-start-column="0" selection-end-line="124" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/Error.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="405">
+          <caret line="27" column="0" selection-start-line="27" selection-start-column="0" selection-end-line="27" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/TopCompiler/FuncParser.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="131">
-          <caret line="25" column="4" selection-start-line="25" selection-start-column="4" selection-end-line="25" selection-end-column="4" />
+        <state relative-caret-position="1665">
+          <caret line="120" column="29" selection-start-line="120" selection-start-column="29" selection-end-line="120" selection-end-column="29" />
           <folding>
             <element signature="e#32#62#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="1" column="19" selection-start-line="1" selection-start-column="19" selection-end-line="1" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/Lexer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2250">
+          <caret line="152" column="46" selection-start-line="152" selection-start-column="46" selection-end-line="152" selection-end-column="46" />
+          <folding>
+            <element signature="e#32#50#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/TypeInference.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-840">
+          <caret line="72" column="0" selection-start-line="72" selection-start-column="0" selection-end-line="72" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/Types.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="316">
+          <caret line="131" column="37" selection-start-line="131" selection-start-column="37" selection-end-line="131" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/topc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="216" column="16" selection-start-line="216" selection-start-column="16" selection-end-line="216" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/TopCompiler/Test/src/main/main.top">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="23" selection-start-line="8" selection-start-column="23" selection-end-line="8" selection-end-column="23" />
+        <state relative-caret-position="0">
+          <caret line="0" column="24" selection-start-line="0" selection-start-column="24" selection-end-line="0" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/runtime/vector.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="319">
+          <caret line="199" column="41" selection-start-line="199" selection-start-column="41" selection-end-line="199" selection-end-column="41" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///Library/Frameworks/Python.framework/Versions/3.5/lib/python3.5/site-packages/requests/packages/urllib3/connection.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="161">
+          <caret line="141" column="0" selection-start-line="141" selection-start-column="0" selection-end-line="141" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/TopCompiler/runtimebuild.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-79">
+          <caret line="6" column="19" selection-start-line="6" selection-start-column="19" selection-end-line="6" selection-end-column="19" />
           <folding />
         </state>
       </provider>

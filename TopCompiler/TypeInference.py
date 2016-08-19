@@ -67,7 +67,10 @@ def infer(parser, tree):
                     try:
                         i.type = struct.types[self.field]
                     except KeyError:
-                        method = struct.hasMethod(parser, self.field)
+                        try:
+                            method = struct.hasMethod(parser, self.field)
+                        except:
+                            print("")
 
                         if not method:
                             self.error(typ.name + " has no field " + self.field)
@@ -79,7 +82,7 @@ def infer(parser, tree):
                         r.package = typ.package if not typ.package == "_global" else ""
                         r.owner = self.owner
 
-                        if type(i.owner) is Tree.FuncCall is Types.FuncPointer:
+                        if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
                             self.owner.nodes[0] = r
                             self.owner.nodes.insert(1, self.nodes[0])
                         elif type(i.type) is Types.FuncPointer:
