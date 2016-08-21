@@ -72,7 +72,7 @@ def typeParser(parser, decl= False):
     gen = coll.OrderedDict()
 
     if parser.nextToken().token == "[":
-        gen = FuncParser.generics(parser)
+        gen = FuncParser.generics(parser, name)
 
     if parser.thisToken().token != "=":
         if parser.thisToken().token == "with":

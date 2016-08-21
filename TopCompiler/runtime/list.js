@@ -134,14 +134,14 @@ List.prototype.reverse = function () {
     return v;
 }
 
-List.prototype.operator_equal = function (other) {
+List.prototype.operator_eq = function (other) {
     if (this.length !== other.length) return false;
     if (self === other) return true;
 
     var self = this;
 
     for (var i = 0; i < this.length; i++) {
-        if (!self.head.operator_equal(other.head)) {
+        if (!self.head.operator_eq(other.head)) {
             return false;
         }
 

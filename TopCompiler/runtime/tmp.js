@@ -2,7 +2,15 @@ function operator_add(x,y) {return x.operator_add(y)}
 function operator_sub(x,y) {return x.operator_sub(y)}
 function operator_mul(x,y) {return x.operator_mul(y)}
 function operator_div(x,y) {return x.operator_div(y)}
-function operator_pow(x,y) {return math.pow(x,y)}
+function operator_mod(x,y) {return x.operator_mod(y)}
+function operator_eq(x,y) {return x.operator_eq(y)}
+function operator_pow(x,y) {return Math.pow(x,y)}
+function operator_lt(x,y) {return x.operator_lt(y)}
+function operator_gt(x,y) {return x.operator_gt(y)}
+function operator_or(x,y) {return x || y}
+function operator_not(x) {return !x}
+function operator_and(x,y) { return x && y }
+
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
@@ -11,7 +19,10 @@ Number.prototype.operator_add = function (other) { return this + other }
 Number.prototype.operator_div = function (other) { return this / other }
 Number.prototype.operator_sub = function (other) { return this - other }
 Number.prototype.operator_mul = function (other) { return this * other }
-Number.prototype.operator_equal = function (other) { return this == other }
+Number.prototype.operator_eq = function (other) { return this == other }
+Number.prototype.operator_mod = function (other) { return this % other }
+Number.prototype.operator_lt = function (other) { return this < other }
+Number.prototype.operator_gt = function (other) { return this > other }
 function newString(s) {
     return s.toString()
 }
@@ -22,6 +33,22 @@ function float_toString(s) { return s.toString() }
 function array_toString(s) { return s.toString() }
 
 function log(s) { console.log(s.toString()); }
+
+function isOdd(number) {
+    return number % 2 != 0
+}
+
+function isEven(number) {
+    return number % 2 == 0
+}
+
+function min(a,b) {
+    return a < b ? a : b
+}
+
+function max(a,b) {
+    return a > b ? a : b
+}
 //linked list
 function List(value, list) {
     this.head = value;
@@ -158,14 +185,14 @@ List.prototype.reverse = function () {
     return v;
 }
 
-List.prototype.operator_equal = function (other) {
+List.prototype.operator_eq = function (other) {
     if (this.length !== other.length) return false;
     if (self === other) return true;
 
     var self = this;
 
     for (var i = 0; i < this.length; i++) {
-        if (!self.head.operator_equal(other.head)) {
+        if (!self.head.operator_eq(other.head)) {
             return false;
         }
 
@@ -433,16 +460,52 @@ Vector.prototype.toString = function () {
     return "Vector("+this.toArray().join(",")+")"
 }
 
-Vector.prototype.operator_equal = function (other) {
+Vector.prototype.operator_eq = function (other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!this.get(i).operator_equal(other.get(i))) {
+        if (!this.get(i).operator_eq(other.get(i))) {
             return false;
         }
     }
     return true;
+}
+
+Vector.prototype.map = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        newArr = newArr.append(func(this.get(i)));
+    }
+    return newArr;
+}
+
+Vector.prototype.filter = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        var el = this.get(i)
+        if (func(el)) {
+            newArr = newArr.append(el);
+        }
+    }
+    return newArr;
+}
+
+Vector.prototype.reduce = function (func) {
+    if (this.length == 1) {
+        return this.get(0)
+    } else if (this.length === 0) {
+        throw Error("Cannot reduce empty vector")
+    }
+
+    var len = this.length;
+    var curr = this.get(0)
+    for (var i = 1; i < len; i++) {
+        curr = func(curr, this.get(i));
+    }
+    return curr;
 }
 
 function newVector() {
@@ -512,7 +575,7 @@ function assert(condition) {
 }
 
 function assertEq(value, shouldBe) {
-    if (!value.operator_equal(shouldBe)){
+    if (!value.operator_eq(shouldBe)){
         throw new Error("Expecting result to be: "+shouldBe+",\n not "+value);
     }
 }

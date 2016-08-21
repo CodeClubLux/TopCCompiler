@@ -27,13 +27,13 @@ def parserMethodGen(parser, gen, struct):
 
     return newGen
 
-def generics(parser):
+def generics(parser, name):
     generic = coll.OrderedDict()
 
     while parser.thisToken().token != "]":
         name = parser.nextToken().token
 
-        typ = Types.T(name, Types.All)
+        typ = Types.T(name, Types.All, parser.package+"."+name)
         if parser.thisToken().type != "identifier":
             Error.parseError(parser, "type name must be an identifier")
 
@@ -42,7 +42,7 @@ def generics(parser):
 
         if parser.thisToken().token == ":":
             parser.nextToken()
-            typ = Types.T(name, Types.parseType(parser))
+            typ = Types.T(name, Types.parseType(parser), parser.package+"."+name)
 
             if parser.lookInfront().token != "]":
                 parser.nextToken()
@@ -66,7 +66,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         parser.nextToken()
         attachTyp = Types.parseType(parser)
         parser.nextToken()
-        return MethodParser.methodHead(parser, attachTyp, decl)
+        return funcHead(parser, decl, dontAdd, True, attachTyp)
     name = parser.nextToken()
 
     if name.type != "identifier":
@@ -78,7 +78,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     g = {}
     if parser.thisToken().token != "(":
         if parser.thisToken().token == "[":
-            g = generics(parser)
+            g = generics(parser, (str(attachTyp) if method else "")+name)
             if parser.thisToken().token == ".":
                 if attachTyp: Error.parseError(parser, "unexpected .")
                 if not Scope.varExists(parser, parser.package, name): Error.parseError(parser,

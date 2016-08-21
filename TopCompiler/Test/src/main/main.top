@@ -1,2 +1,9 @@
-println ([0..10].map 1+)
+type T[C] =
+    x: C
+
+def toString(self: int) string =
+    newString self
+
+T.toString = toString
+
 

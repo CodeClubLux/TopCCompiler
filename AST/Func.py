@@ -99,8 +99,11 @@ class FuncBody(Node):
 
         returnType = self.returnType
         name = self.name
-        if returnType != actReturnType:
-            self.error("function " + name + " is declared to return " + str(returnType) + " but returns " + str(actReturnType))
+
+        import AST as Tree
+
+        returnType.duckType(parser,actReturnType,self, self.nodes[-1] if len(self.nodes) > 0 else Tree.Under(self),0)
+
         Scope.decrScope(parser)
 
 class FuncCall(Node):
@@ -140,13 +143,14 @@ class FuncCall(Node):
             codegen.append("(function("+",".join(partial)+"){return(function("+",".join(missing)+"){")
             codegen.append("return ")
             self.nodes[0].compileToJS(codegen)
-            codegen.append("("+",".join(names)+");})})")
+            codegen.append("("+",".join(names)+");})})\n")
         else:
             self.nodes[0].compileToJS(codegen)
             if self.curry:
                 codegen.append(".bind(undefined,")
             else:
                 codegen.append("(")
+
         for iter in range(len(self.nodes[1:-1])):
             iter += 1
             i = self.nodes[iter]

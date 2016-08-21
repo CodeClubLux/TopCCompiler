@@ -1,4 +1,5 @@
-from TopCompiler import *
+from TopCompiler import topc
+from TopCompiler import Error
 import sys
 
 if __name__ == "__main__":

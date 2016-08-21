@@ -21,13 +21,15 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
         return Bool()
     elif token == "[":
         if parser.lookInfront().token != "]":
-            import FuncParser
-            gen = FuncParser.generics(parser)
+            from TopCompiler import FuncParser
+            gen = FuncParser.generics(parser, "anonymous")
+            if parser.nextToken().token != "|":
+                Error.parseError(parser, "expecting |")
             return parseType(parser, package, mutable, attachTyp, gen)
         else:
             parser.nextToken()
             parser.nextToken()
-            return Array(mutable, parseType(parser, package))
+            return Array(False, parseType(parser, package))
     elif token == "|":
         parser.nextToken()
 
@@ -158,6 +160,17 @@ class FuncPointer(Type):
         self.returnType = returnType
         self.generic = generic
 
+    def duckType(self, parser, other, node, mynode, iter= 0):
+        if not type(other) is FuncPointer:
+            mynode.error("expecting type "+str(self)+" and got type "+str(other))
+
+        if len(other.args) != len(self.args):
+            mynode.error("expecting type "+str(self)+" and got type "+str(other))
+
+        for (a, i) in zip(self.args, other.args):
+            a.duckType(parser, i, node, mynode, iter)
+        self.returnType.duckType(parser, other.returnType, node, mynode, iter)
+
 
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen):
@@ -204,8 +217,30 @@ class Array(Pointer):
         self.normalName = "array"
 
         self.mutable = mutable
-        self.types = {"toString": FuncPointer([], String(0)), "append": FuncPointer([elemT], self), "insert": FuncPointer([I32(), elemT], self)}
+        self.__types = None
 
+    @property
+    def types(self):
+        if not self.__types:
+            self.__types = {
+                "toString": FuncPointer([], String(0)),
+                "append": FuncPointer([self.elemT], self),
+                "insert": FuncPointer([I32(), self.elemT], self),
+                "map": FuncPointer(
+                    [FuncPointer([self.elemT], T("T", All, str(self)))],
+                    Array(False, T("T", All,  str(self))),
+                    coll.OrderedDict([("T", All)])
+                ),
+                "filter": FuncPointer(
+                    [FuncPointer([self.elemT], Bool())],
+                    self,
+                ),
+                "reduce": FuncPointer(
+                    [FuncPointer([self.elemT, self.elemT], self.elemT)],
+                    self.elemT
+                )
+            }
+        return self.__types
     def duckType(self, parser, other, node, mynode, iter):
         if not type(other) is Array:
             mynode.error("expecting array type "+str(self)+" not "+str(other))
@@ -253,10 +288,10 @@ class Interface(Type):
             i += 1
 
 class T(Type):
-    def __init__(self, name, typ):
+    def __init__(self, name, typ, owner):
         self.type = typ
         self.normalName = name
-        self.name = name+": "+str(self.type)
+        self.name = owner+"."+name
         self.types = self.type.types
 
     def duckType(self, parser, other, node, mynode, iter):
@@ -275,14 +310,16 @@ def isGeneric(t):
 
 def replaceT(typ, gen):
     if type(typ) is T:
-        if typ.name in gen:
-            r = gen[typ.name]
+        if typ.normalName in gen:
+            r = gen[typ.normalName]
             if type(r) is Underscore:
                 return typ
             return r
         else:
             return typ
     elif isGeneric(typ):
+        if type(typ) is Array:
+            return Array(False, replaceT(typ.elemT, gen))
         generics = typ.generic
         if type(typ) is FuncPointer:
             arr = []

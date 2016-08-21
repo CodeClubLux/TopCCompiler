@@ -45,7 +45,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
     special = ["arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
 
     token_specification = [
-        ("comment", r"/\*.*\*/"),
+        ("comment", r"/\*(.|\n)*\*/"),
         ("indent", r'\n[ ]*'),
         ('commentLine', r'//.*'),
         ('newline', r'\n'),
@@ -68,7 +68,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('assignSub', r'\-='),
         ('assignMul', r'\*='),
         ('assignDiv', r'\/='),
-        ('operator',  r'[+*\/\-&><]|(\|>)'),
+        ('operator',  r'[+*\/\-%><^]|(\|>)'),
         ('line', r'\|'),
         ('identifier', r'[A-Za-z0-9_]+'),
         ('underscore', '_'),
