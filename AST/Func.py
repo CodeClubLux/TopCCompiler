@@ -28,6 +28,12 @@ class FuncStart(Node):
         return "def "+self.name+"("
 
     def compileToJS(self, codegen):
+        import AST as Tree
+        if not type(self.owner) is Tree.Root:
+            name = codegen.createName(self.package+"_"+self.name)
+        else:
+            name = self.package+"_"+self.name
+
         codegen.incrScope()
         codegen.inFunction()
         if self.method:
@@ -36,9 +42,9 @@ class FuncStart(Node):
             codegen.append(attachTyp.package+"_"+attachTyp.normalName+".prototype."+self.normalName+"=(function(")
             names = [codegen.getName() for i in self.types]
             codegen.append(",".join(names)+"){return ")
-            codegen.append(self.package + "_" + self.name+"("+",".join(["this"]+names)+")});")
+            codegen.append(name+"("+",".join(["this"]+names)+")});")
 
-        codegen.append("function "+self.package + "_" + self.name+"(")
+        codegen.append("function "+name+"(")
 
     def validate(self, parser):
         Scope.incrScope(parser)
@@ -140,14 +146,14 @@ class FuncCall(Node):
                 else:
                     partial += names[i]
 
-            codegen.append("(function("+",".join(partial)+"){return(function("+",".join(missing)+"){")
+            codegen.append("(function("+",".join(partial)+"){return function("+",".join(missing)+"){")
             codegen.append("return ")
             self.nodes[0].compileToJS(codegen)
-            codegen.append("("+",".join(names)+");})})\n")
+            codegen.append("("+",".join(names)+");}})(")
         else:
             self.nodes[0].compileToJS(codegen)
             if self.curry:
-                codegen.append(".bind(undefined,")
+                codegen.append(".bind(null,")
             else:
                 codegen.append("(")
 

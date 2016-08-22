@@ -42,8 +42,7 @@ def arrayLiteral(parser):
 
             if lastSize != 0:
                 parseError(parser, "unexpected ..")
-            if len(arr.nodes) != 1 or arr.nodes[0].type != Types.I32():
-                parseError(parser, "expecting single integer range")
+
             rang = True
             arr.range = rang
             parser.nextToken()

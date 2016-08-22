@@ -52,23 +52,6 @@ def newLine(parser):
 
     parser.indentLevel = indent
 
-mapping = {
-    "i32": "int",
-    "i1": "bool",
-    "double": "float",
-    "": "none",
-    None: "none",
-    "void": "none"
-}
-
-mappingTo = {
-    "i32": "i32",
-    "int": "i32",
-    "bool": "i1",
-    "float": "double",
-    "none": ""
-}
-
 precidences = {}  # what operator goes first!
 
 exprType = {}  # depends on parser, needs type information to figure out
@@ -99,7 +82,8 @@ from .TypeInference import *
 
 def isEnd(parser):
     token = parser.thisToken()
-    if token.token == "\n" or token.token == ";" or parser.parenBookmark[-1] > parser.paren:
+
+    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren:
         return maybeEnd(parser)
     return False
 
@@ -207,7 +191,7 @@ def callToken(self):
         s1(self)
         returnBookmark(self)
     else:
-        if (b.token == "_" or b.token == "(" or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if (b.token in ["!", "_", "("] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
             addBookmark(self)
             FuncParser.callFunc(self, False)
             returnBookmark(self)

@@ -116,7 +116,7 @@ class Type:
     name = "type"
 
     def __str__(self):
-        return self.name
+        return "'"+self.name+"'"
 
     def __repr__(self):
         return self.name
@@ -132,6 +132,10 @@ class Type:
             mynode.error("expecting type "+str(self)+" and got type "+str(other))
 
     def hasMethod(self, parser, field): pass
+class StructInit(Type):
+    def __init__(self, name):
+        self.name= name+" type"
+        self.types= {}
 
 def newType(n):
     class BasicType(Type):
@@ -154,7 +158,7 @@ class String(Type):
 
 
 class FuncPointer(Type):
-    def __init__(self, argtypes, returnType, generic= coll.OrderedDict):
+    def __init__(self, argtypes, returnType, generic= coll.OrderedDict()):
         self.args = argtypes
         self.name = "|"+", ".join([i.name for i in argtypes])+"| -> "+returnType.name
         self.returnType = returnType
@@ -303,7 +307,10 @@ All = Interface(False, {})
 
 def isGeneric(t):
     if type(t) in [FuncPointer]:
-        return t.generic != {}
+        if t.generic != {}: return True
+        for i in t.args:
+            if isGeneric(i): return True
+        return isGeneric(t.returnType)
     elif type(t) is Array and isGeneric(t.elemT): return True
     elif type(t) is T: return True
     return False
@@ -351,7 +358,6 @@ Bool = newType("bool")
 Float = newType("float")
 Func = newType("Func")
 
-StructInit = newType("struct_init")
 Package = newType("package")
 
 Underscore = newType("_")

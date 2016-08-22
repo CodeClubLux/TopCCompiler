@@ -128,7 +128,10 @@ class ReadVar(Node):
         return "read " + self.name
 
     def compileToJS(self, codegen):
-        codegen.append(codegen.readName(self.package + "_" + self.name) if not self.isGlobal else (self.package+"_"+self.name if self.package != "" else self.name))
+        codegen.append(codegen.readName(
+            self.package + "_" + self.name) if not self.isGlobal else
+            (self.package+"_"+self.name if self.package != "" else self.name
+        ))
 
     def validate(self, parser):
         pass

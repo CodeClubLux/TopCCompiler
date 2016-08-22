@@ -56,7 +56,7 @@ def _resolve(self, tokens, filename, passN= 0 ):
         if passN == 2:
             if b == "import":
                 ImportParser.importParser(self, True)
-            elif b == "def":
+            elif b == "def" and self.indent == 0:
                 Parser.addBookmark(self)
                 funcHead(self)
                 Parser.returnBookmark(self)
@@ -71,7 +71,7 @@ def _resolve(self, tokens, filename, passN= 0 ):
 
         elif passN == 0:
             if b == "type":
-                Scope.addVar(Tree.Node(self), self, self.nextToken().token, Scope.Type(True, Types.StructInit()))
+                Scope.addVar(Tree.Node(self), self, self.nextToken().token, Scope.Type(True, Types.StructInit(self.thisToken().token)))
 
                 self.structs[self.package][self.thisToken().token] = Struct.Struct(self.thisToken().token, [],[], {})
                 self.structs[self.package][self.thisToken().token].methods = {}

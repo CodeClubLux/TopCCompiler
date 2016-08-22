@@ -42,10 +42,10 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         "not", "or", "and",
     ]
 
-    special = ["arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
+    special = ["bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
 
     token_specification = [
-        ("comment", r"/\*(.|\n)*\*/"),
+        ("comment", r"/\*([\s\S]*?)\*/"),
         ("indent", r'\n[ ]*'),
         ('commentLine', r'//.*'),
         ('newline', r'\n'),
@@ -78,6 +78,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('dot', '\.'),
         ('tab', '\t'),
         ('comma', ','),
+        ('bang', '!'),
     ]
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
     get_token = re.compile(tok_regex).match
@@ -113,6 +114,13 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
             else:
                 array.append(Token(len(val)-1, "indent", line, pos))
                 lastIndent = len(val)-1
+        elif typ == "comment":
+            val = mo.group(typ)
+            c = mo.end()
+            r = val.rfind("\n")
+            linePos = c + r
+            line += len(val) - len(val.replace("\n", ""))
+            array.append(Token(val, "comment", line, pos ))
         elif typ in ["str"]:
             val = mo.group(typ)
             if typ == "str":

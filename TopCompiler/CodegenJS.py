@@ -9,9 +9,6 @@ from TopCompiler import Error
 import optimization
 import os
 
-
-import jsbeautifier as beautify
-
 class CodeGen:
     def __init__(self, filename, tree, externFunctions, main= True):
         self.tree = tree
@@ -114,8 +111,7 @@ def link(filenames, output, run, opt, dev):
     preCall = linked
     linked += "main_Init();"
 
-    if opt == 0:
-        linked = beautify.beautify(linked)
+    if opt == 0: pass
 
     f = open("bin/" + output + ".html", mode="w")
 
@@ -142,13 +138,13 @@ def link(filenames, output, run, opt, dev):
 </HTML>"""
 
     f.write(html)
-    fjs.write(beautify.beautify(preCall))
+    fjs.write(preCall)
 
     f.close()
     fjs.close()
 
     if dev:
-        return beautify.beautify(preCall)
+        return preCall
 
     if run: exec(output)
 

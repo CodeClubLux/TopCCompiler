@@ -27,13 +27,13 @@ def parserMethodGen(parser, gen, struct):
 
     return newGen
 
-def generics(parser, name):
+def generics(parser, fname):
     generic = coll.OrderedDict()
 
     while parser.thisToken().token != "]":
         name = parser.nextToken().token
 
-        typ = Types.T(name, Types.All, parser.package+"."+name)
+        typ = Types.T(name, Types.All, parser.package+"."+fname)
         if parser.thisToken().type != "identifier":
             Error.parseError(parser, "type name must be an identifier")
 
@@ -42,7 +42,7 @@ def generics(parser, name):
 
         if parser.thisToken().token == ":":
             parser.nextToken()
-            typ = Types.T(name, Types.parseType(parser), parser.package+"."+name)
+            typ = Types.T(name, Types.parseType(parser), parser.package+"."+fname)
 
             if parser.lookInfront().token != "]":
                 parser.nextToken()
@@ -59,8 +59,7 @@ def generics(parser, name):
 
 def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = False):
     Scope.incrScope(parser)
-    if not type(parser.currentNode) is Tree.Root and not decl:
-        Error.parseError(parser, "unexpected def")
+
     if parser.tokens[parser.iter+2].token == ".":
         if attachTyp: Error.parseError(parser, "unexpected .")
         parser.nextToken()
@@ -107,6 +106,9 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     parser.currentNode = brace
 
     if method:
+        if not parser.currentNode is Tree.Root and not decl:
+            Error.parseError(parser, "method extension must be in out-most scope")
+
         typ = attachTyp
         self = parser.nextToken()
         if self.type != "identifier": Error.parseError(parser, "binding name must be identifier not "+self.type)
@@ -182,10 +184,10 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         g
     )
 
+    header.ftype = Types.FuncPointer(types, returnType, g)
     if decl:
         if not dontAdd:
             Scope.addFunc(header, parser, name, Types.FuncPointer(types, returnType, g))
-
 
     return name, names, types, header, returnType
 
@@ -294,3 +296,4 @@ Parser.exprToken["none"] = lambda parser: Error.parseError(parser, "unexpected t
 Parser.exprToken[","] = lambda  parser: Error.parseError(parser, "unexpected ,")
 Parser.exprToken["_"] = lambda parser: parser.currentNode.addNode(Tree.Under(parser))
 Parser.exprToken["::"] = genericT
+Parser.exprToken["!"] = lambda parser: 0

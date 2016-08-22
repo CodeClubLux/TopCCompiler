@@ -14,7 +14,10 @@ def infer(parser, tree):
         count = 0
         for i in n:
             if type(i) is Tree.FuncStart:
+                if not n is Tree.Root:
+                    Scope.addVar(i, parser, i.name, Scope.Type(True, i.ftype))
                 Scope.incrScope(parser)
+
             elif type(i) in [Tree.If, Tree.While]:
                 Scope.incrScope(parser)
 
@@ -94,6 +97,9 @@ def infer(parser, tree):
             elif type(i) is Tree.Operator:
                 if i.kind == "|>":
                     self = i
+
+                    if len(self.nodes) != 2:
+                        self.error("chain operator cannot be curried")
 
                     a = self.nodes[0].type
                     b = self.nodes[1].type
@@ -201,7 +207,7 @@ def infer(parser, tree):
                 for iter in range(len(i.nodes[1:])):
                     if type(i.nodes[iter+1]) is Tree.Under:
                         partial = True
-                        newArgs.append(args[iter])
+                        newArgs.append(iter)
                     else:
                         normalTyp = args[iter]
                         myNode = i.nodes[iter+1]
@@ -212,15 +218,16 @@ def infer(parser, tree):
 
                         normalTyp.duckType(parser, myNode.type, i, myNode, iter+1)
 
+                newArgs = [Types.replaceT(args[c], generics) for c in newArgs]
+
                 if len(args) > len(i.nodes)-1:
                     i.curry = True
-                    i.type = Types.FuncPointer(args[:len(args)-len(i.nodes)-1], i.nodes[0].type.returnType)
+                    i.type = Types.FuncPointer([Types.replaceT(args[c], generics) for c in args[:len(args)-len(i.nodes)-1]], Types.replaceT(i.nodes[0].type.returnType, generics))
                 elif not partial:
                     i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
                 else:
                     i.partial = True
-                    i.type = Types.FuncPointer(newArgs, i.nodes[0].type.returnType)
-
+                    i.type = Types.FuncPointer(newArgs, Types.replaceT(i.nodes[0].type.returnType, generics))
             elif type(i) is Tree.If:
                 ElseExpr.checkIf(parser, i)
             elif type(i) is Tree.Block:
@@ -294,7 +301,7 @@ def infer(parser, tree):
                 arrRead.type = arrRead.nodes[0].type.elemT
             elif type(i) is Tree.Generic:
                 if not Types.isGeneric(i.nodes[0].type):
-                    i.nodes[0].error("expecting generic")
+                    i.nodes[0].error("expecting generic type")
 
                 gen = i.nodes[0].type.generic
 
@@ -328,11 +335,17 @@ def resolveGen(shouldBeTyp, normalTyp, generics):
             generics[shouldBeTyp.normalName] = normalTyp
             return shouldBeTyp
     elif type(shouldBeTyp) is Types.Array:
+        if type(normalTyp) != Tree.Array:
+            return shouldBeTyp
+
         t = Types.Array(shouldBeTyp.mutable, resolveGen(shouldBeTyp.elemT, normalTyp.elemT, generics))
         return t
     elif type(shouldBeTyp) is Types.FuncPointer:
         args = []
         if not type(normalTyp) is Types.FuncPointer:
+            return shouldBeTyp
+
+        if len(shouldBeTyp.args) != len(normalTyp.args):
             return shouldBeTyp
 
         for (should, nor) in zip(shouldBeTyp.args, normalTyp.args):

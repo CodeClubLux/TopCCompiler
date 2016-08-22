@@ -37,7 +37,7 @@ class Operator(Node):
                 codegen.append("."+self.name+"(")
             elif self.curry or self.unary:
                 name = self.package + "_" + self.name if self.package != "" else self.name
-                codegen.append(name+(".bind(undefined,"if self.curry and len(self.nodes) > 0 else "("))
+                codegen.append(name+(".bind(null,"if self.curry and len(self.nodes) > 0 else "("))
 
                 self.nodes[0].compileToJS(codegen)
             else:

@@ -31,10 +31,11 @@ def operatorPop(parser, op, takesIn, unary= False):
 def newOperator(kind, precidence, takesIn, func=None, unary= False):
     def f(parser):
         op = Tree.Operator(kind, parser)
-        if not unary and isUnary(parser, parser.lookBehind()):
-            Error.parseError(parser, "unexpected "+kind)
-        elif unary and not isUnary(parser, parser.lookBehind()):
-            Error.parseError(parser, "unexpected "+kind)
+        if False and len(parser.currentNode.nodes) == 0:
+            if not unary and isUnary(parser, parser.lookBehind()):
+                Error.parseError(parser, "unexpected "+kind)
+            elif unary and not isUnary(parser, parser.lookBehind()):
+                Error.parseError(parser, "unexpected "+kind)
         Parser.Opcode(parser, kind, lambda: operatorPop(parser, op, takesIn, unary))
 
     if func == None: func = f

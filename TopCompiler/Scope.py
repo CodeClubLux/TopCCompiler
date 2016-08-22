@@ -24,7 +24,7 @@ def addFunc(node, parser, name, typ, imutable= True):
     if varExists(parser, parser.package, name):
         node.error("function "+name+" already exists")
 
-    parser.scope[parser.package][0][name] = Type(type= typ, imutable= imutable)
+    parser.scope[parser.package][-2][name] = Type(type= typ, imutable= imutable)
     return
 
 def decrScope(parser):

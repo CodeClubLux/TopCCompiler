@@ -12,15 +12,6 @@ def addFrame(self):
     variables.append({})
     destructors.append([])
 
-def createVar(self, name, isglobal= False):
-    v = variables
-
-    if isglobal:
-        variables[0][name] = "@var_"+name
-        return
-
-    variables[-1][name] = getName(self, "var")
-
 def readVar(self, name):
     v = variables
     for i in reversed(variables):
@@ -81,15 +72,6 @@ class Root:
 
     def destruct(self, codegen):
         pass
-
-def getName(codegen, name):
-    if name in codegen.names:
-        codegen.names[name] += 1
-    else:
-        codegen.names[name] = 0
-
-    return " %" + name + str(codegen.names[name])
-
 
 def toStr(array):  # turn names list into something for llvm
     return ", ".join(array)
