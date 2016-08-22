@@ -14,7 +14,10 @@ def infer(parser, tree):
         count = 0
         for i in n:
             if type(i) is Tree.FuncStart:
+                if not n is Tree.Root:
+                    Scope.addVar(i, parser, i.name, Scope.Type(True, i.ftype))
                 Scope.incrScope(parser)
+
             elif type(i) in [Tree.If, Tree.While]:
                 Scope.incrScope(parser)
 
@@ -61,19 +64,19 @@ def infer(parser, tree):
                     i.nodes[0].package = i.nodes[0].name
                     i.nodes[0].name = ""
                 else:
+                    if type(typ) is Types.FuncPointer:
+                        i.error("type "+str(typ) + " has no field " + i.field)
+
                     struct = typ
 
                     self = i
                     try:
                         i.type = struct.types[self.field]
                     except KeyError:
-                        try:
-                            method = struct.hasMethod(parser, self.field)
-                        except:
-                            print("")
+                        method = struct.hasMethod(parser, self.field)
 
                         if not method:
-                            self.error(typ.name + " has no field " + self.field)
+                            self.error("type "+str(typ) + " has no field " + self.field)
 
                         self.type = method
 
@@ -95,6 +98,9 @@ def infer(parser, tree):
                 if i.kind == "|>":
                     self = i
 
+                    if len(self.nodes) != 2:
+                        self.error("chain operator cannot be curried")
+
                     a = self.nodes[0].type
                     b = self.nodes[1].type
 
@@ -103,34 +109,85 @@ def infer(parser, tree):
                     if not type(b) is Types.FuncPointer:
                         self.nodes[1].error("function chain operator works on functions only")
 
+                    if len(b.args) == 0:
+                        self.nodes[1].error("function must take atleast one argument")
                     if [a.returnType] != b.args:
-                        self.nodes[1].error("function arguments don't match returnType of piped function, "+
-                            str(a.returnType)+" and ("+", ".join([str(c) for c in b.args]))
+                        self.nodes[1].error("function arguments don't match returnType of piped function: "+
+                            str(a.returnType)+" and "+", ".join([str(i) for i in b.args]))
+
                     self.type = Types.FuncPointer(a.args, b.returnType)
+
                 elif i.kind == "concat":
                     stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0))})
                     for c in i:
                         stringable.duckType(parser,c.type,Tree.PlaceHolder(c),c,0)
                     i.type = Types.String(0)
+                    i.partial = False
+                    i.curry = False
                 else:
                     if len(i.nodes) == 0:
                         import collections as coll
-                        T = Types.T("t", Types.All)
-                        i.type = Types.FuncPointer([T,T], T, coll.OrderedDict([("t", Types.All)]))
-                        i.unary = False
+                        if i.kind in ["not", "or", "and"]:
+                            T = Types.Bool()
+                            gen = []
+                        else:
+                            T = Types.T("T", Types.All, "Operator")
+                            gen = [("T", Types.All)]
+                        i.type = Types.FuncPointer([T,T], T, coll.OrderedDict(gen))
+
+                        if i.kind != "not":
+                            i.unary = False
                     else:
-                        startType = i.nodes[0].type
+                        partial = False
+                        if type(i.nodes[0]) is Tree.Under:
+                            partial = True
+                            startType = False
+                        else:
+                            startType = i.nodes[0].type
+                            if i.kind in ["not", "and", "or"]:
+                                if startType != Types.Bool():
+                                    i.nodes[0].error("logical operator "+i.kind+" only works on boolean")
+
                         for c in i.nodes[1:]:
-                            if c.type != startType:
-                                c.error("Type mismatch "+str(startType)+" and "+str(c.type))
+                            if type(c) is Tree.Under:
+                                partial = True
+                            else:
+                                if not partial and c.type != startType:
+                                    c.error("Type mismatch "+str(startType)+" and "+str(c.type))
+                                startType = c.type
 
-                        i.type = startType
+
+                        i.partial = partial
+                        typ = startType
                         if i.kind in ["==", "!=", "not", "and", "or", "<", ">", "<=", ">="]:
-                            i.type = Types.Bool()
+                            typ = Types.Bool()
 
-                        if i.curry:
-                            normal = 1 if i.unary else 2
-                            i.type = Types.FuncPointer([startType] * (normal - len(i.nodes)), i.type)
+                        if i.curry or i.partial:
+                            normal = (1 if i.unary else 2) - len(i.nodes)
+                            for c in i.nodes:
+                                if type(c) is Tree.Under:
+                                    normal += 1
+
+                            if not startType:
+                                import collections as coll
+                                if i.kind in ["not", "or", "and"]:
+                                    T = Types.Bool()
+                                    gen = []
+                                else:
+                                    T = Types.T("t", Types.All, "Operator")
+                                    gen = [("t", Types.All)]
+                                typ = Types.FuncPointer([T,T], T, coll.OrderedDict(gen))
+
+                                if normal == (1 if i.unary else 2):
+                                    i.partial = False
+                                    i.curry = True
+                                    i.nodes = []
+                            else:
+                                typ = Types.FuncPointer([startType] * normal, typ)
+
+                        i.type = typ
+                        i.opT = startType
+
 
 
             elif type(i) is Tree.FuncCall:
@@ -150,7 +207,7 @@ def infer(parser, tree):
                 for iter in range(len(i.nodes[1:])):
                     if type(i.nodes[iter+1]) is Tree.Under:
                         partial = True
-                        newArgs.append(args[iter])
+                        newArgs.append(iter)
                     else:
                         normalTyp = args[iter]
                         myNode = i.nodes[iter+1]
@@ -161,15 +218,16 @@ def infer(parser, tree):
 
                         normalTyp.duckType(parser, myNode.type, i, myNode, iter+1)
 
+                newArgs = [Types.replaceT(args[c], generics) for c in newArgs]
+
                 if len(args) > len(i.nodes)-1:
                     i.curry = True
-                    i.type = Types.FuncPointer(args[:len(args)-len(i.nodes)-1], i.nodes[0].type.returnType)
+                    i.type = Types.FuncPointer([Types.replaceT(args[c], generics) for c in args[:len(args)-len(i.nodes)-1]], Types.replaceT(i.nodes[0].type.returnType, generics))
                 elif not partial:
                     i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
                 else:
                     i.partial = True
-                    i.type = Types.FuncPointer(newArgs, i.nodes[0].type.returnType)
-
+                    i.type = Types.FuncPointer(newArgs, Types.replaceT(i.nodes[0].type.returnType, generics))
             elif type(i) is Tree.If:
                 ElseExpr.checkIf(parser, i)
             elif type(i) is Tree.Block:
@@ -183,6 +241,8 @@ def infer(parser, tree):
                     normalTyp.duckType(parser, myNode.type, normalNode, myNode, (0 if i.init else 1))
 
             elif type(i) is Tree.Tuple:
+                if len(i.nodes) == 0:
+                    i.error("unexpected )")
                 i.type = i.nodes[0].type
             elif type(i) is Tree.Array:
                 arr = i
@@ -241,7 +301,7 @@ def infer(parser, tree):
                 arrRead.type = arrRead.nodes[0].type.elemT
             elif type(i) is Tree.Generic:
                 if not Types.isGeneric(i.nodes[0].type):
-                    i.nodes[0].error("expecting generic")
+                    i.nodes[0].error("expecting generic type")
 
                 gen = i.nodes[0].type.generic
 
@@ -275,5 +335,23 @@ def resolveGen(shouldBeTyp, normalTyp, generics):
             generics[shouldBeTyp.normalName] = normalTyp
             return shouldBeTyp
     elif type(shouldBeTyp) is Types.Array:
+        if type(normalTyp) != Tree.Array:
+            return shouldBeTyp
+
         t = Types.Array(shouldBeTyp.mutable, resolveGen(shouldBeTyp.elemT, normalTyp.elemT, generics))
         return t
+    elif type(shouldBeTyp) is Types.FuncPointer:
+        args = []
+        if not type(normalTyp) is Types.FuncPointer:
+            return shouldBeTyp
+
+        if len(shouldBeTyp.args) != len(normalTyp.args):
+            return shouldBeTyp
+
+        for (should, nor) in zip(shouldBeTyp.args, normalTyp.args):
+            args.append(resolveGen(should, nor, generics))
+
+        b = Types.FuncPointer(args, resolveGen(shouldBeTyp.returnType, normalTyp.returnType, generics))
+        return b
+    else:
+        return shouldBeTyp

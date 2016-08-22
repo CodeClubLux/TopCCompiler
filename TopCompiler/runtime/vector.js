@@ -182,12 +182,12 @@ Vector.prototype.toString = function () {
     return "Vector("+this.toArray().join(",")+")"
 }
 
-Vector.prototype.operator_equal = function (other) {
+Vector.prototype.operator_eq = function (other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!this.get(i).operator_equal(other.get(i))) {
+        if (!this.get(i).operator_eq(other.get(i))) {
             return false;
         }
     }
@@ -196,9 +196,38 @@ Vector.prototype.operator_equal = function (other) {
 
 Vector.prototype.map = function (func) {
     var newArr = EmptyVector;
-    for (var i = 0; i < func.length; i++) {
-        newArr.append(func(this.get(i)));
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        newArr = newArr.append(func(this.get(i)));
     }
+    return newArr;
+}
+
+Vector.prototype.filter = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        var el = this.get(i)
+        if (func(el)) {
+            newArr = newArr.append(el);
+        }
+    }
+    return newArr;
+}
+
+Vector.prototype.reduce = function (func) {
+    if (this.length == 1) {
+        return this.get(0)
+    } else if (this.length === 0) {
+        throw Error("Cannot reduce empty vector")
+    }
+
+    var len = this.length;
+    var curr = this.get(0)
+    for (var i = 1; i < len; i++) {
+        curr = func(curr, this.get(i));
+    }
+    return curr;
 }
 
 function newVector() {

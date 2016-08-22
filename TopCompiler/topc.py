@@ -14,6 +14,7 @@ import os
 import json
 from TopCompiler import ResolveSymbols
 from optimization import *
+
 # is class
 
 def traverse(parsed, indent=""):
@@ -201,6 +202,7 @@ def start(run= False, dev= False, init= False):
         """
 
         lexed = Lexer.lex(sources, filenames)
+        print("lexed")
 
         declarations = Parser.Parser(lexed, filenames)
         declarations.files = files
@@ -211,6 +213,8 @@ def start(run= False, dev= False, init= False):
         declarations.externFuncs = {"main": []}
 
         ResolveSymbols.resolve(declarations)
+
+        print("declarations")
 
         if ImportParser.shouldCompile(False, "main", declarations):
             parser = Parser.Parser(lexed["main"], filenames["main"])
@@ -233,12 +237,14 @@ def start(run= False, dev= False, init= False):
                 allCode.addNode(parser.compiled[d][1][0])
             optimize(allCode, opt)
 
+            print("parsing")
 
             for i in parser.compiled:
                 if parser.compiled[i][0]:
                     CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1]).compile(opt=opt)
+            l = CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev)
             print("Compilation took : "+str(time() - time1))
-            return (True, CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev))
+            return (True, l)
         elif run:
             CodeGen.exec(outputFile)
         elif init:
@@ -259,7 +265,7 @@ def modified(files, outputfile):
     import time
     o = compiled
 
-    return True #delete after testing
+    #return True #delete after testing
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")

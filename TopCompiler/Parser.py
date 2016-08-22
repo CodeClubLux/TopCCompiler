@@ -8,9 +8,12 @@ def parenOpen(parser):
     parser.paren += 1
     paren = parser.paren
 
+    """
     if not ExprParser.isUnary(parser, parser.lookBehind()):
         FuncParser.callFunc(parser, paren= True)
-    else:
+    """
+
+    if True:
         t0 = Tree.Tuple(parser)
         parser.currentNode.addNode(t0)
         parser.currentNode = t0
@@ -26,6 +29,7 @@ def parenClose(parser):
     if parser.paren < 1:
         Error.parseError(parser, "unexpected )")
     layer = -1 if len(parser.bookmark) < 2 else -2
+
     ExprParser.endExpr(parser, layer= layer)
 
 
@@ -47,23 +51,6 @@ def newLine(parser):
             Error.parseError(parser, "unindent does not match any outer indentation level")
 
     parser.indentLevel = indent
-
-mapping = {
-    "i32": "int",
-    "i1": "bool",
-    "double": "float",
-    "": "none",
-    None: "none",
-    "void": "none"
-}
-
-mappingTo = {
-    "i32": "i32",
-    "int": "i32",
-    "bool": "i1",
-    "float": "double",
-    "none": ""
-}
 
 precidences = {}  # what operator goes first!
 
@@ -95,7 +82,8 @@ from .TypeInference import *
 
 def isEnd(parser):
     token = parser.thisToken()
-    if token.token == "\n" or token.token == ";" or parser.parenBookmark[-1] > parser.paren:
+
+    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren:
         return maybeEnd(parser)
     return False
 
@@ -203,7 +191,7 @@ def callToken(self):
         s1(self)
         returnBookmark(self)
     else:
-        if (b.token == "_" or not b.type in ["symbol", "operator", "indent"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if (b.token in ["!", "_", "("] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
             addBookmark(self)
             FuncParser.callFunc(self, False)
             returnBookmark(self)
@@ -264,7 +252,11 @@ class Parser:  # all mutable state
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
             "newString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
             "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
-            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null()))
+            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
+            "min": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
+            "max": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
+            "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
+            "isOdd": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
         }]}
 
         self.iter = 0

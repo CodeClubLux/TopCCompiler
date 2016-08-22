@@ -1,0 +1,8 @@
+def map[T, X](x: []T, func: |T| -> X) []X =
+    x.map func
+
+def filter[T](x: []T, func: |T| -> bool) []T =
+    x.filter func
+
+def reduce[T](x: []T, func: |T,T| -> T) T =
+    x.reduce func

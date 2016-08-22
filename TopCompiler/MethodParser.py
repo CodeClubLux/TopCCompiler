@@ -20,7 +20,7 @@ def addMethod(node, parser, attachTyp, name, func, otherNode= False):
 
         attachTyp.addMethod(parser, name, func)
     else:
-        node.error("Can't add method to "+attachTyp)
+        node.error("Can't add method to "+str(attachTyp))
 def checkIfOperator(parser, attachTyp, name, func):
     operators = {
         "add": Types.FuncPointer([attachTyp, attachTyp], attachTyp),

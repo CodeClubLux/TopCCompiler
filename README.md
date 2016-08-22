@@ -17,18 +17,11 @@ The Top programming language, also known as Toplang is a functional, staticly-ty
 6. Create a new file called `TopCompiler/main/main.top`
 
 ## Introduction
-Like many functional programming languages, blocks in Top are delimited by whitespace. Indenting blocks are required to be with spaces and not tabs to facilitate platform indepenedence. In addition, newlines end statments if the expression is not further indented and no unclosed parenthesis. 
+Like many functional programming languages, blocks in Top are delimited by whitespace. Indenting blocks are required to be with spaces and not tabs to facilitate platform independence. In addition, newlines end statements if the expression is not further indented and no unclosed parenthesis.
 
-Functions calls look the same as in javascript.
-```scala 
-func(10, 5)
-```
-
-However the function can also be called without parenthesis, the function call will then end as if it were a statement.
+Function must called without parenthesis, the function call will then end following the normal statement ending rule
 ```scala
-func 
-    10
-    , 5
+func 10, 5
 ```
 
 ## Compiling
