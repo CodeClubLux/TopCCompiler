@@ -242,6 +242,7 @@ def start(run= False, dev= False, init= False):
             for i in parser.compiled:
                 if parser.compiled[i][0]:
                     CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1]).compile(opt=opt)
+
             l = CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev)
             print("Compilation took : "+str(time() - time1))
             return (True, l)
@@ -266,7 +267,7 @@ def modified(files, outputfile):
     import time
     o = compiled
 
-    #return True #delete after testing
+    return True #delete after testing
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")

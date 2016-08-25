@@ -1,3 +1,4 @@
+/*
 def map[T, X](x: []T, func: |T| -> X) []X =
     x.map func
 
@@ -9,3 +10,4 @@ def reduce[T](x: []T, func: |T,T| -> T) T =
 
 def comp[T,X](x: T, func: |T| -> X) X =
     func(x)
+*/

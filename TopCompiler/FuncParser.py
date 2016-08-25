@@ -159,6 +159,8 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     types = [i.varType for i in brace.nodes]
 
     if method:
+        Scope.decrScope(parser)
+
         func = Types.FuncPointer(
             types,
             returnType,

@@ -123,14 +123,12 @@ class Type:
     def __eq__(self, other):
         return other.name == self.name
 
-    def __ne__(self, other):
-        return other.name != self.name
-
     def duckType(self, parser, other, node, mynode, iter):
         if self != other:
             mynode.error("expecting type "+str(self)+" and got type "+str(other))
 
     def hasMethod(self, parser, field): pass
+
 class StructInit(Type):
     def __init__(self, name):
         self.name= name+" type"
@@ -198,16 +196,6 @@ class Struct(Type):
         m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
         if m:
             return replaceT(m, self.gen)
-
-    def __eq__(self, other):
-        if self.name != other.name:
-            return False
-
-        for i in self.types:
-            if self.types[i] != other.types[i]:
-                return False
-    def __ne__(self, other):
-        return not self == other
 
     def duckType(self, parser, other, node, mynode, iter=0):
         if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
@@ -383,7 +371,6 @@ Func = newType("Func")
 Package = newType("package")
 
 Underscore = newType("_")
-
 
 
 

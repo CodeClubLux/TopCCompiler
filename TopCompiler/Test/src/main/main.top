@@ -10,4 +10,4 @@ def S.operator_add(self, other: S) S =
 def S.toString(self) string =
     "S({self.x})"
 
-println S{ 10 }
+println S{ 10 } + S{ 20 }
