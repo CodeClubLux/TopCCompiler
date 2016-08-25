@@ -106,7 +106,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     parser.currentNode = brace
 
     if method:
-        if not parser.currentNode is Tree.Root and not decl:
+        if not type(parser.currentNode.owner) is Tree.Root and not decl:
             Error.parseError(parser, "method extension must be in out-most scope")
 
         typ = attachTyp
@@ -291,9 +291,12 @@ def genericT(parser):
         t = parser.thisToken().token
         parser.nextToken()
 
+def under(parser):
+    parser.currentNode.addNode(Tree.Under(parser))
+
 Parser.stmts["def"] = func
 Parser.exprToken["none"] = lambda parser: Error.parseError(parser, "unexpected type none")
 Parser.exprToken[","] = lambda  parser: Error.parseError(parser, "unexpected ,")
-Parser.exprToken["_"] = lambda parser: parser.currentNode.addNode(Tree.Under(parser))
+Parser.exprToken["_"] = under
 Parser.exprToken["::"] = genericT
 Parser.exprToken["!"] = lambda parser: 0

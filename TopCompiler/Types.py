@@ -1,6 +1,5 @@
 __author__ = 'antonellacalvia'
 
-from .Error import *
 import ctypes as c
 import AST as Tree
 from .Scope import *
@@ -23,8 +22,8 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
         if parser.lookInfront().token != "]":
             from TopCompiler import FuncParser
             gen = FuncParser.generics(parser, "anonymous")
-            if parser.nextToken().token != "|":
-                Error.parseError(parser, "expecting |")
+            if parser.thisToken().token != "|":
+                parseError(parser, "expecting |")
             return parseType(parser, package, mutable, attachTyp, gen)
         else:
             parser.nextToken()
@@ -171,8 +170,14 @@ class FuncPointer(Type):
         if len(other.args) != len(self.args):
             mynode.error("expecting type "+str(self)+" and got type "+str(other))
 
+        count = -1
         for (a, i) in zip(self.args, other.args):
-            a.duckType(parser, i, node, mynode, iter)
+            count += 1
+            try:
+                a.duckType(parser, i, node, mynode, iter)
+            except EOFError as e:
+                beforeError(e, "Function argument "+str(count)+": ")
+
         self.returnType.duckType(parser, other.returnType, node, mynode, iter)
 
 
@@ -208,8 +213,14 @@ class Struct(Type):
         if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
             node.error("expecting type "+str(self)+", not "+str(other))
 
-        for i in self.types:
-            self.types[i].duckType(parser, other.types[i], node, mynode, iter)
+        for key in self.gen:
+            i = self.gen[i]
+            othk = other.gen[i]
+
+            try:
+                i.duckType(parser, othk, node, mynode, iter)
+            except EOFError as e:
+                beforeError(e, "Generic argument "+key+": ")
 
 class Array(Pointer):
     def __init__(self, mutable, elemT):
@@ -242,14 +253,21 @@ class Array(Pointer):
                 "reduce": FuncPointer(
                     [FuncPointer([self.elemT, self.elemT], self.elemT)],
                     self.elemT
-                )
+                ),
+                "length": I32(),
+                "join": FuncPointer([String(0)], String(0))
             }
         return self.__types
     def duckType(self, parser, other, node, mynode, iter):
         if not type(other) is Array:
             mynode.error("expecting array type "+str(self)+" not "+str(other))
 
-        self.elemT.duckType(parser, other.elemT, node, mynode, iter)
+        try:
+            self.elemT.duckType(parser, other.elemT, node, mynode, iter)
+        except EOFError as e:
+            beforeError(e, "Element type in array: ")
+
+
 
 def isMutable(typ):
     if type(typ) in [Struct, Array]:
@@ -277,16 +295,20 @@ class Interface(Type):
         i = 0
         for field in self.types:
             if field in isStruct.types:
-                if self.types[field] != isStruct.types[field]:
-                    mynode.error("field "+str(other)+"."+field+" is expected to be type "+str(self.types[field])+", not "+str(isStruct.types[field]))
+                try:
+                    self.types[field].duckType(parser, isStruct.types[field], node, mynode, iter)
+                except EOFError as e:
+                    beforeError(e, "Field '"+ field+ "' in " + str(other) +": ")
             else:
                 meth = isStruct.hasMethod(parser, field)
                 if meth:
                     if type(meth) is FuncPointer:
-                        if self.types[field] != FuncPointer(meth.args[1:], meth.returnType):
-                            mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
+                        try:
+                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType), node, mynode, iter)
+                        except EOFError as e:
+                            beforeError(e, "Field '"+ field+ "' in " + str(other) +": ")
                     else:
-                     mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
+                        mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
                 else:
                     mynode.error("type "+str(other)+" missing field "+field+" to be upcasted to "+str(self))
             i += 1

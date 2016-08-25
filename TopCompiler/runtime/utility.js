@@ -24,3 +24,7 @@ function min(a,b) {
 function max(a,b) {
     return a > b ? a : b
 }
+
+function len(x) {
+    return x.length
+}

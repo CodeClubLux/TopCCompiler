@@ -6,3 +6,6 @@ def filter[T](x: []T, func: |T| -> bool) []T =
 
 def reduce[T](x: []T, func: |T,T| -> T) T =
     x.reduce func
+
+def comp[T,X](x: T, func: |T| -> X) X =
+    func(x)

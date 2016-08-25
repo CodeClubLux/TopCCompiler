@@ -2,6 +2,7 @@ __author__ = 'antonellacalvia'
 
 from TopCompiler import Types
 from TopCompiler import Error
+import AST as Tree
 
 variables = [{}]
 destructors = [[]]
@@ -72,6 +73,25 @@ class Root:
 
     def destruct(self, codegen):
         pass
+
+    def validate(self, parser):
+        for i in self:
+            isUseless(i)
+
+def isUseless(i):
+    if type(i) is Tree.ReadVar:
+        i.error("useless variable read")
+    try:
+        t = type(i).curry
+        if t: i.error("useless curry")
+        t = type(i).partial
+        if t: i.error("useless function application")
+    except AttributeError:
+        pass
+
+def checkUseless(self):
+    for i in self.nodes[1:]:
+        isUseless(i)
 
 def toStr(array):  # turn names list into something for llvm
     return ", ".join(array)

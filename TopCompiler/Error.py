@@ -54,5 +54,27 @@ def error(message):
     print(message, file=sys.stderr)
     sys.exit()
 
+    topc.error = '<div name=\"error\", style='+style+'><p style="text-indent: 50px;">' +message[1:] +'</p><div>'+topc.error
+
+    raise EOFError(message)
+
+def beforeError(prev, mesg):
+    splited = str(prev).split("\n")
+
+    header = splited[0]
+    header += "\n\t"+mesg+ splited[1].replace("\t", "")
+    header += "\n" + "\n".join(splited[2:])
+
+    error(header)
+
+def afterError(prev, mesg):
+    splited = str(prev).split("\n")
+
+    header = splited[0]
+    header += "\n"+splited[1].replace("\t", "")+mesg
+    header += "\n" + "\n".join(splited[2:])
+
+    error(header)
+
 def typeError(parser, type1, type2, mesg):
     parseError(parser, "type {0}, {1} and {2}".format(mesg, str(type1), str(type2)))

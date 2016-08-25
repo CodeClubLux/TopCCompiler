@@ -72,7 +72,7 @@ def arrayLiteral(parser):
         #emtpy array
         parser.nextToken()
         typ = parseType(parser)
-        arr.type = typ
+        arr.type = Array(False, typ)
 
 from .Scope import *
 from .VarParser import *

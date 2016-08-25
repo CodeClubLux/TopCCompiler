@@ -23,3 +23,6 @@ Number.prototype.operator_eq = function (other) { return this == other }
 Number.prototype.operator_mod = function (other) { return this % other }
 Number.prototype.operator_lt = function (other) { return this < other }
 Number.prototype.operator_gt = function (other) { return this > other }
+
+String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_add = function (other) { return this + other }

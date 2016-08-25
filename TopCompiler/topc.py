@@ -202,7 +202,7 @@ def start(run= False, dev= False, init= False):
         """
 
         lexed = Lexer.lex(sources, filenames)
-        print("lexed")
+        #print("lexed")
 
         declarations = Parser.Parser(lexed, filenames)
         declarations.files = files
@@ -214,7 +214,7 @@ def start(run= False, dev= False, init= False):
 
         ResolveSymbols.resolve(declarations)
 
-        print("declarations")
+        #print("declarations")
 
         if ImportParser.shouldCompile(False, "main", declarations):
             parser = Parser.Parser(lexed["main"], filenames["main"])
@@ -237,7 +237,7 @@ def start(run= False, dev= False, init= False):
                 allCode.addNode(parser.compiled[d][1][0])
             optimize(allCode, opt)
 
-            print("parsing")
+            #print("parsing")
 
             for i in parser.compiled:
                 if parser.compiled[i][0]:
@@ -261,6 +261,7 @@ def start(run= False, dev= False, init= False):
 
     #profile.print_stats("time")
 
+import datetime
 def modified(files, outputfile):
     import time
     o = compiled
@@ -269,11 +270,13 @@ def modified(files, outputfile):
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")
+        t = datetime.datetime.fromtimestamp(int(t))
     except:
         return True
 
     for i in files:
         file = os.path.getmtime(os.path.join(i[0], i[1]))
+        file = datetime.datetime.fromtimestamp(int(file))
 
         if file > t:
             return True

@@ -56,7 +56,7 @@ def _resolve(self, tokens, filename, passN= 0 ):
         if passN == 2:
             if b == "import":
                 ImportParser.importParser(self, True)
-            elif b == "def" and self.indent == 0:
+            elif b == "def" and len(self.scope[self.package]) == 1:
                 Parser.addBookmark(self)
                 funcHead(self)
                 Parser.returnBookmark(self)

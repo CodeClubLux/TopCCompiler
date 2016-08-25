@@ -1,6 +1,7 @@
 __author__ = 'antonellacalvia'
 
 from .node import *
+from TopCompiler import IfExpr
 
 class If(Node):
     def __init__(self, parser):
@@ -140,7 +141,6 @@ class WhileCondition(Node):
         codegen.append("){")
 
     def validate(self, parser):
-        import IfExpr
         cond = self
         IfExpr.isBoolCondition(parser, cond)
 
@@ -156,7 +156,9 @@ class WhileBlock(Node):
             i.compileToJS(codegen)
         codegen.append("}")
 
-    def validate(self, parser): pass
+    def validate(self, parser):
+        checkUseless(self)
+
 class Block(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
@@ -182,4 +184,5 @@ class Block(Node):
                 i.compileToJS(codegen)
             if not self.noBrackets: codegen.append("}")
 
-    def validate(self, parser): pass
+    def validate(self, parser):
+        checkUseless(self)

@@ -31,7 +31,7 @@ def operatorPop(parser, op, takesIn, unary= False):
 def newOperator(kind, precidence, takesIn, func=None, unary= False):
     def f(parser):
         op = Tree.Operator(kind, parser)
-        if False and len(parser.currentNode.nodes) == 0:
+        if kind != "|>" and len(parser.currentNode.nodes) == 0:
             if not unary and isUnary(parser, parser.lookBehind()):
                 Error.parseError(parser, "unexpected "+kind)
             elif unary and not isUnary(parser, parser.lookBehind()):
@@ -71,29 +71,14 @@ def minus(parser):
 
     op = Tree.Operator("-", parser)
     if isUnary(parser, lastToken):  # unary-
-        Parser.precidences["*"] = (100, True)  # give higher power
+        Parser.precidences["-"] = (100, True)  # give higher power
 
         Parser.Opcode(parser, "-", lambda:  operatorPop(parser, op, 1, unary= True))
 
-        Parser.precidences["*"] = (40, True)
+        Parser.precidences["-"] = (20, True)
 
     else:
         Parser.Opcode(parser, "-", lambda: operatorPop(parser, op, 2))
-
-def mul(parser):
-    lastToken = parser.lookBehind()
-
-    op = Tree.Operator("*", parser)
-    if isUnary(parser, lastToken):  # unary-
-        Parser.precidences["*"] = (100, True)  # give higher power
-
-        Parser.Opcode(parser, "*", lambda:  operatorPop(parser, op, 1, unary= True))
-
-        Parser.precidences["*"] = (40, True)
-
-    else:
-        Parser.Opcode(parser, "*", lambda: operatorPop(parser, op, 2))
-
 
 newOperator("|>", (2, True), 2)
 newOperator("and", (3, True), 2)
@@ -108,7 +93,7 @@ newOperator(">", (10, True), 2)
 newOperator("concat", (20, True), 2)
 newOperator("+", (20, True), 2, func=plus)  # becuase of unary, possiblity
 newOperator("-", (20, True), 2, func=minus)  # becuase of unary, possiblity
-newOperator("*", (40, True), 2, func= mul)
+newOperator("*", (40, True), 2)
 newOperator("/", (40, True), 2)
 newOperator("%", (40, True), 2)
 newOperator("^", (60, False), 2)

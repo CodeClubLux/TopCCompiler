@@ -8,7 +8,6 @@ from .Func import *
 from .Inline import *
 from .node import *
 from .Operator import *
-from .Print import *
 from .Struct import *
 from .node import *
 from .InitPackage import *

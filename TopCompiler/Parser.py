@@ -246,6 +246,7 @@ class Parser:  # all mutable state
         self.bookmark = [0]
 
         Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )})
+        Lengthable = Types.Interface(False, {"length": Types.I32()})
 
         self.scope = {"_global": [{
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
@@ -257,6 +258,7 @@ class Parser:  # all mutable state
             "max": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
             "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
             "isOdd": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
+            "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32()))
         }]}
 
         self.iter = 0

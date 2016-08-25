@@ -230,6 +230,16 @@ Vector.prototype.reduce = function (func) {
     return curr;
 }
 
+Vector.prototype.join = function (s) {
+    if (s.length == 0) { return "" }
+    var string = this.get(0);
+    var len = this.length;
+    for (var i = 1; i < len; i++) {
+        string += s + this.get(i);
+    }
+    return string
+}
+
 function newVector() {
     return fromArray(Array.prototype.slice.call(arguments))
 }

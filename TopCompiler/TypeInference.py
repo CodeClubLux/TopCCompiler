@@ -14,7 +14,7 @@ def infer(parser, tree):
         count = 0
         for i in n:
             if type(i) is Tree.FuncStart:
-                if not n is Tree.Root:
+                if not type(n) is Tree.Root:
                     Scope.addVar(i, parser, i.name, Scope.Type(True, i.ftype))
                 Scope.incrScope(parser)
 
@@ -294,9 +294,11 @@ def infer(parser, tree):
                 i.type = Types.Struct(i.mutable, name, s.types, i.package, gen)
 
             elif type(i) is Tree.ArrRead:
+                if not type(i.nodes[0].type) is Types.Array:
+                    i.nodes[0].error("Type "+str(i.nodes[0].type)+"is not indexable")
                 arrRead = i
                 if len(arrRead.nodes) != 2 or not arrRead.nodes[1].type == Types.I32():
-                    Error.parseError(parser, "expecting single integer index")
+                    i.nodes[1].error("expecting single integer index")
 
                 arrRead.type = arrRead.nodes[0].type.elemT
             elif type(i) is Tree.Generic:
@@ -326,6 +328,9 @@ def validate(parser, tree):
         if not i.isEnd():
             validate(parser, i)
         i.validate(parser)
+
+    if type(tree) is Tree.Root:
+        tree.validate(parser)
 
 def resolveGen(shouldBeTyp, normalTyp, generics):
     if type(shouldBeTyp) is Types.T:

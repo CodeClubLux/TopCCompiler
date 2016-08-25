@@ -149,12 +149,12 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     elif notBack(iter) and i == "}":
                         bcount -= 1
                         if bcount == shouldBe and inBrace:
-                            tokens.append(Token("concat", "operator", line, pos))
-                            tokens.append(Token("(", "symbol", line, pos))
+                            tokens.append(Token("concat", "operator", line, pos+start))
+                            tokens.append(Token("(", "symbol", line, pos+start))
 
-                            tokens += tokenize(val[start: iter], filename, pos, line, linePos)
-                            tokens.append(Token(")", "symbol", line, pos))
-                            tokens.append(Token("concat", "operator", line, pos))
+                            tokens += tokenize(val[start: iter], filename, pos+start, line, linePos)
+                            tokens.append(Token(")", "symbol", line, pos+iter))
+                            tokens.append(Token("concat", "operator", line, pos+iter))
                             start = iter + 1
                             inBrace = False
 

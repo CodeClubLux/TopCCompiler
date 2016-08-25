@@ -23,6 +23,9 @@ Number.prototype.operator_eq = function (other) { return this == other }
 Number.prototype.operator_mod = function (other) { return this % other }
 Number.prototype.operator_lt = function (other) { return this < other }
 Number.prototype.operator_gt = function (other) { return this > other }
+
+String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_add = function (other) { return this + other }
 function newString(s) {
     return s.toString()
 }
@@ -48,6 +51,10 @@ function min(a,b) {
 
 function max(a,b) {
     return a > b ? a : b
+}
+
+function len(x) {
+    return x.length
 }
 //linked list
 function List(value, list) {
@@ -506,6 +513,16 @@ Vector.prototype.reduce = function (func) {
         curr = func(curr, this.get(i));
     }
     return curr;
+}
+
+Vector.prototype.join = function (s) {
+    if (s.length == 0) { return "" }
+    var string = this.get(0);
+    var len = this.length;
+    for (var i = 1; i < len; i++) {
+        string += s + this.get(i);
+    }
+    return string
 }
 
 function newVector() {

@@ -44,7 +44,7 @@ class CodeGen:
         return self.names[-1][name]
 
     def readName(self, name):
-        for i in self.names:
+        for i in reversed(self.names):
             try:
                 return i[name]
             except:
@@ -157,7 +157,8 @@ def genNames():
 
     def overflow(id):
         return len(letters) <= array[id]
-    letters = string.ascii_letters
+
+    letters = [i for i in string.ascii_letters if not i.lower() in ('a', 'e', 'i', 'o', 'u')]
     array = [0]
     pointer = 0
     skip = False

@@ -77,7 +77,7 @@ def typeParser(parser, decl= False):
     if parser.thisToken().token != "=":
         if parser.thisToken().token == "with":
             tmp = parser.currentNode
-            parser.currentNode = Tree.Println(parser)
+            parser.currentNode = Tree.PlaceHolder(parser)
             Interface.traitParser(parser, name, decl)
             parser.currentNode = tmp
             return

@@ -17,6 +17,7 @@ class InitArg(Node):
 
     def validate(self, parser):
         pass
+
 class FuncStart(Node):
     def __init__(self, name, returnType, parser):
         Node.__init__(self, parser)
@@ -93,6 +94,7 @@ class FuncBody(Node):
             codegen.outFunction()
 
     def validate(self, parser):
+        checkUseless(self)
 
         actReturnType = Types.Null()
         if self.returnType == Types.Null(): pass
@@ -142,9 +144,9 @@ class FuncCall(Node):
             missing = []
             for i in range(len(names)):
                 if type(self.nodes[i+1]) is Under:
-                    missing += names[i]
+                    missing.append(names[i])
                 else:
-                    partial += names[i]
+                    partial.append(names[i])
 
             codegen.append("(function("+",".join(partial)+"){return function("+",".join(missing)+"){")
             codegen.append("return ")

@@ -4,6 +4,7 @@ from TopCompiler import Types
 from TopCompiler import Scope
 from TopCompiler import Struct
 from TopCompiler import FuncParser
+import collections as coll
 
 def traitParser(parser, name, decl):
     meth = {}
@@ -19,7 +20,7 @@ def traitParser(parser, name, decl):
     fields = parser.currentNode.nodes
 
     if decl:
-        parser.structs[parser.package][name] = Struct.Struct(name, args, fields)
+        parser.structs[parser.package][name] = Struct.Struct(name, args, fields, coll.OrderedDict())
 
         i = Types.Interface(False, names)
         parser.interfaces[parser.package][name] = i

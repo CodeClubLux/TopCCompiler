@@ -20,6 +20,7 @@ class Operator(Node):
     def compileToJS(self, codegen):
         if self.kind == "|>":
             names = [codegen.getName() for i in self.nodes[0].type.args]
+
             codegen.append("(function("+",".join(names)+"){return ")
             self.nodes[1].compileToJS(codegen)
             codegen.append("(")
@@ -49,9 +50,9 @@ class Operator(Node):
                 missing = []
                 for i in range(len(names)):
                     if type(self.nodes[i]) is Tree.Under:
-                        missing += names[i]
+                        missing.append(names[i])
                     else:
-                        partial += names[i]
+                        partial.append(names[i])
 
                 codegen.append("(function("+",".join(partial)+"){return function("+",".join(missing)+"){")
                 codegen.append("return "+name)
@@ -93,7 +94,7 @@ class Operator(Node):
                 "and": "&&",
                 "or": "||",
                 "%": "%",
-                "concat": ").toString()+(",
+                "concat": ")+(",
             }
 
             op = translate[self.kind]
