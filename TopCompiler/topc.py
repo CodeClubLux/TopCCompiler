@@ -233,9 +233,10 @@ def start(run= False, dev= False, init= False):
             import AST as Tree
             allCode = Tree.Root()
 
-            for d in parser.compiled:
-                allCode.addNode(parser.compiled[d][1][0])
-            optimize(allCode, opt)
+            if opt > 0:
+                for d in parser.compiled:
+                    allCode.addNode(parser.compiled[d][1][0])
+                optimize(allCode, opt)
 
             #print("parsing")
 
@@ -267,7 +268,7 @@ def modified(files, outputfile):
     import time
     o = compiled
 
-    return True #delete after testing
+    #return True #delete after testing
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")

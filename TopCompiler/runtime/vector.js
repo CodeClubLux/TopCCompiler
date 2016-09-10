@@ -12,7 +12,8 @@ Vector.prototype.mask = Vector.prototype.width - 1;
 var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
 
 Vector.prototype.get = function (key) {
-    if (key >= this.length && key < 0) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -72,7 +73,8 @@ Vector.prototype.append = function (value) {
 }
 
 Vector.prototype.set = function (key, value) {
-    if (key >= this.length && key < 0) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -107,7 +109,8 @@ Vector.prototype.set = function (key, value) {
 }
 
 Vector.prototype.insert = function (key, val) {
-    if (key >= this.length && key < 0) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -179,7 +182,7 @@ Vector.prototype.toArray = function () {
 }
 
 Vector.prototype.toString = function () {
-    return "Vector("+this.toArray().join(",")+")"
+    return "["+this.toArray().join(",")+"]"
 }
 
 Vector.prototype.operator_eq = function (other) {
@@ -238,6 +241,30 @@ Vector.prototype.join = function (s) {
         string += s + this.get(i);
     }
     return string
+}
+
+function getProperIndex(self, index) {
+    if (index < 0) {
+        return (self.length + index);
+    }
+    return index;
+}
+
+Vector.prototype.has = function (s) {
+    for (var i = 0; i < this.length; i++) {
+        if (this.get(i).operator_eq(s)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Vector.prototype.operator_add = function (s) {
+    var newArr = this;
+    for (var i = 0; i < s.length; i++) {
+        newArr = newArr.append(s.get(i));
+    }
+    return newArr;
 }
 
 function newVector() {

@@ -18,9 +18,13 @@ def parenOpen(parser):
         parser.currentNode.addNode(t0)
         parser.currentNode = t0
 
+        parser.nodeBookmark.append(0)
+
         while not parser.paren < paren:
             parser.nextToken()
             callToken(parser)
+
+        parser.nodeBookmark.pop()
         parser.currentNode = t0.owner
 
 def parenClose(parser):
@@ -155,12 +159,10 @@ def addBookmark(parser):
     parser.indent.append(parser.indentLevel)
     parser.parenBookmark.append(parser.paren)
 
-
 def returnBookmark(parser):
     parser.bookmark.pop()
     parser.indent.pop()
     parser.parenBookmark.pop()
-
 
 def selectExpr(parser, token):
     addBookmark(parser)
@@ -234,11 +236,13 @@ class Parser:  # all mutable state
 
     def __init__(self, tokens, filename):
         self.paren = 1  # must be atleast 1, otherwise multiplication = 0
-        self.parenBookmark = []
+        self.parenBookmark = [[]]
         self.indentLevel = 0
 
         self.lineNumber = 1
         self.stack = []
+
+        self.nodeBookmark = [0]
 
         self.indent = []
         self.normalIndent = 0
@@ -247,18 +251,23 @@ class Parser:  # all mutable state
 
         Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )})
         Lengthable = Types.Interface(False, {"length": Types.I32()})
+        Intable = Types.Interface(False, {"toInt": Types.FuncPointer([], Types.I32() )})
+        Floatable = Types.Interface(False, {"toFloat": Types.FuncPointer([], Types.Float())})
 
         self.scope = {"_global": [{
-            "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
-            "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
-            "newString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
-            "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
-            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null())),
+            "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
+            "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
+            "toString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
+            "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
+            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "min": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
             "max": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
             "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
             "isOdd": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
-            "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32()))
+            "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32())),
+            "toInt": Scope.Type(True, Types.FuncPointer([Intable], Types.I32())),
+            "toFloat": Scope.Type(True, Types.FuncPointer([Floatable], Types.Float())),
+
         }]}
 
         self.iter = 0

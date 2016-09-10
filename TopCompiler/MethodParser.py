@@ -31,7 +31,8 @@ def checkIfOperator(parser, attachTyp, name, func):
         "ne": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
         "mod": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
         "pow": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "getitem": Types.FuncPointer([attachTyp, Types.I32()], Types.I32() )
+        "gt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
+        "lt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
     }
 
     unary = {

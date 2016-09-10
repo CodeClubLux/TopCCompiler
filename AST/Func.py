@@ -110,7 +110,10 @@ class FuncBody(Node):
 
         import AST as Tree
 
-        returnType.duckType(parser,actReturnType,self, self.nodes[-1] if len(self.nodes) > 0 else Tree.Under(self),0)
+        try:
+            returnType.duckType(parser,actReturnType,self, self.nodes[-1] if len(self.nodes) > 0 else Tree.Under(self),0)
+        except EOFError as e:
+            Error.beforeError(e, "Return Type: ")
 
         Scope.decrScope(parser)
 
@@ -191,6 +194,20 @@ class Bind(Node):
         codegen.append(").bind(null,")
         self.nodes[1].compileToJS(codegen)
         codegen.append(")")
+
+class ArrBind(Node):
+    def __init__(self, name, what, parser):
+        Node.__init__(self, parser)
+        self.addNode(what)
+        self.field = name
+
+    def validate(self, parser): pass
+
+    def compileToJS(self, codegen):
+        codegen.append("Vector.prototype."+self.field+".bind(")
+        self.nodes[0].compileToJS(codegen)
+        codegen.append(")")
+
 
 class Under(Node):
     def __init__(self, parser):

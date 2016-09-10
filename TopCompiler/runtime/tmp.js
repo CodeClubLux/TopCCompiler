@@ -23,10 +23,12 @@ Number.prototype.operator_eq = function (other) { return this == other }
 Number.prototype.operator_mod = function (other) { return this % other }
 Number.prototype.operator_lt = function (other) { return this < other }
 Number.prototype.operator_gt = function (other) { return this > other }
+Number.prototype.toFloat = function () { return this }
+Number.prototype.toInt = function () { return this | 0 }
 
 String.prototype.operator_eq = function (other) { return this == other }
 String.prototype.operator_add = function (other) { return this + other }
-function newString(s) {
+function toString(s) {
     return s.toString()
 }
 
@@ -34,6 +36,12 @@ function string_toString(s) {return s}
 function int_toString(s) { return s.toString() }
 function float_toString(s) { return s.toString() }
 function array_toString(s) { return s.toString() }
+
+function float_toInt(s) { return s | 0 }
+function int_toInt(s) { return s }
+
+function float_toFloat(s) { return s }
+function int_toFloat(s) { return s }
 
 function log(s) { console.log(s.toString()); }
 
@@ -55,6 +63,14 @@ function max(a,b) {
 
 function len(x) {
     return x.length
+}
+
+function toFloat(x) {
+    return x.toFloat()
+}
+
+function toInt(x) {
+    return x.toInt()
 }
 //linked list
 function List(value, list) {
@@ -297,7 +313,8 @@ Vector.prototype.mask = Vector.prototype.width - 1;
 var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
 
 Vector.prototype.get = function (key) {
-    if (key >= this.length && key < 0) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -357,7 +374,8 @@ Vector.prototype.append = function (value) {
 }
 
 Vector.prototype.set = function (key, value) {
-    if (key >= this.length && key < 0) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -392,7 +410,8 @@ Vector.prototype.set = function (key, value) {
 }
 
 Vector.prototype.insert = function (key, val) {
-    if (key >= this.length && key < 0) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -464,7 +483,7 @@ Vector.prototype.toArray = function () {
 }
 
 Vector.prototype.toString = function () {
-    return "Vector("+this.toArray().join(",")+")"
+    return "["+this.toArray().join(",")+"]"
 }
 
 Vector.prototype.operator_eq = function (other) {
@@ -523,6 +542,30 @@ Vector.prototype.join = function (s) {
         string += s + this.get(i);
     }
     return string
+}
+
+function getProperIndex(self, index) {
+    if (index < 0) {
+        return (self.length + index);
+    }
+    return index;
+}
+
+Vector.prototype.has = function (s) {
+    for (var i = 0; i < this.length; i++) {
+        if (this.get(i).operator_eq(s)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Vector.prototype.operator_add = function (s) {
+    var newArr = this;
+    for (var i = 0; i < s.length; i++) {
+        newArr = newArr.append(s.get(i));
+    }
+    return newArr;
 }
 
 function newVector() {
@@ -585,6 +628,9 @@ assertEq(newVector(1,2,3).insert(0, 0), newVector(0,1,2,3))
 
 //set
 assertEq(newVector(1,1,2,3).set(0,0), newVector(0,1,2,3))
+
+//add
+assertEq(newVector(1,2,3).operator_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))
 function assert(condition) {
     if (!condition) {
         throw new Error("Assertion failed");

@@ -147,25 +147,32 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         parser.nextToken()
 
     t = parser.thisToken()
-    if t.token != "=" :
+    do = False
+
+    if t.token != "=" and t.token != "do":
         returnType = Types.parseType(parser)
 
-        if parser.nextToken().token != "=":
-            Error.parseError(parser, "expecting =")
+        t = parser.nextToken()
+        if t.token != "=" and t.token != "do":
+            Error.parseError(parser, "expecting = or do")
+
+    if t.token == "do":
+        do = True
 
     parser.currentNode = brace.owner
 
     names = [i.name for i in brace.nodes]
     types = [i.varType for i in brace.nodes]
 
+    func = Types.FuncPointer(
+        types,
+        returnType,
+        g,
+        do
+    )
+
     if method:
         Scope.decrScope(parser)
-
-        func = Types.FuncPointer(
-            types,
-            returnType,
-            g
-        )
 
         header.method = True
         header.types = types[1:]
@@ -178,26 +185,23 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         if decl:
             MethodParser.addMethod(brace, parser, attachTyp, name, func)
 
-        return attachTyp.normalName+"_"+name, names, types, header, returnType
+        return attachTyp.normalName+"_"+name, names, types, header, returnType, do
 
-    parser.func[parser.package][name] = Types.FuncPointer(
-        types,
-        returnType,
-        g
-    )
+    parser.func[parser.package][name] = func
 
     header.ftype = Types.FuncPointer(types, returnType, g)
     if decl:
         if not dontAdd:
             Scope.addFunc(header, parser, name, Types.FuncPointer(types, returnType, g))
 
-    return name, names, types, header, returnType
+    return name, names, types, header, returnType, do
 
-def funcBody(parser, name, names, types, header, returnType):
+def funcBody(parser, name, names, types, header, returnType, do):
     body = Tree.FuncBody(parser)
     body.name = name
     body.returnType = returnType
     body.package = parser.package
+    body.do = do
 
     parser.currentNode.addNode(body)
     parser.currentNode = body
@@ -224,10 +228,12 @@ def funcBody(parser, name, names, types, header, returnType):
     Scope.decrScope(parser)
 
 def func(parser):
-    (name, names, types, header, returnType) = funcHead(parser)
-    funcBody(parser, name, names, types, header, returnType)
+    (name, names, types, header, returnType, do) = funcHead(parser)
+    funcBody(parser, name, names, types, header, returnType, do)
 
 def funcCallBody(parser, paren):
+    parser.nodeBookmark.append(1)
+
     def notParen():
         return not Parser.isEnd(parser)
 
@@ -240,12 +246,14 @@ def funcCallBody(parser, paren):
         t = parser.nextToken()
         if t.token == "," :
             ExprParser.endExpr(parser)
+            parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             continue
 
         Parser.callToken(parser)
 
-    if not paren:
-        ExprParser.endExpr(parser)
+    ExprParser.endExpr(parser)
+
+    parser.nodeBookmark.pop()
 
 def callFunc(parser,paren):
 
@@ -263,7 +271,6 @@ def callFunc(parser,paren):
 
     funcCallBody(parser, paren)
 
-    ExprParser.endExpr(parser)
     parser.currentNode = tail.owner
 
 def genericT(parser):
@@ -287,6 +294,7 @@ def genericT(parser):
     while parser.thisToken().token != "]":
         if parser.thisToken().token == ",":
             parser.nextToken()
+            parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             continue
 
         generic.generic.append(Types.parseType(parser))

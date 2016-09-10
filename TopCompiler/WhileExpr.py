@@ -41,8 +41,8 @@ def whileExpr(parser):
 
 Parser.exprToken["while"] = whileExpr
 
-Parser.exprToken["break"] = lambda parser: parser.currentNode.addNode(Tree.Break())
-Parser.exprToken["continue"] = lambda parser: parser.currentNode.addNode(Tree.Continue())
+Parser.exprToken["break"] = lambda parser: parser.currentNode.addNode(Tree.Break(parser))
+Parser.exprToken["continue"] = lambda parser: parser.currentNode.addNode(Tree.Continue(parser))
 
 Parser.exprToken["then"] = lambda parser: Error.parseError(parser, "unexpected then keyword")
 Parser.exprToken["do"] = lambda parser: Error.parseError(parser, "unexpected do keyword")

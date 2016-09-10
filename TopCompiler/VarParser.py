@@ -67,6 +67,15 @@ def assignParser(parser, name= "", init= False, package = ""):
     ExprParser.endExpr(parser)
     parser.currentNode = node.owner
 
+    self = node
+
+    if self.init:
+        if len(node.nodes) > 1 or len(node.nodes) == 0:
+            self.error("expecting single expression")
+    else:
+        if len(node.nodes) > 2 or len(node.nodes) == 1:
+            self.error("expecting single expression")
+
 def createAndAssignParser(parser, imutable= True): # let i assignment
     node = parser.currentNode
 

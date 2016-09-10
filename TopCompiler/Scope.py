@@ -1,9 +1,9 @@
 __author__ = 'antonellacalvia'
 
 
-from .Parser import *
-from .Error import *
-from .Types import *
+from TopCompiler import Parser
+from TopCompiler import Error
+from TopCompiler import Types
 
 class Type :
     def __init__(self, imutable, type):

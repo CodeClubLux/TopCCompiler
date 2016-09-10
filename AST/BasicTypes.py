@@ -61,7 +61,8 @@ class String(Node):
         string = self.string.\
             replace("<", "&lt").\
             replace(">", "&gt").\
-            replace("[ ]+", "&nbsp").\
+            replace("[ ]+ ", "&nbsp").\
+            replace("\\t", "&nbsp"*4).\
             replace("\n", "<br>").\
             replace("\\n", "<br>")
 

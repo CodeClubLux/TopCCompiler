@@ -22,11 +22,17 @@ def ifBody(parser):
 
     single = 0
 
-    while not Parser.isEnd(parser):
+    parser.nodeBookmark.append(0)
+
+    then = False
+    while not (Parser.isEnd(parser) and then) :
         token = parser.nextToken()
 
-        if token.token == "then":
+        if token.token == "then" and not then:
+            then = True
             ExprParser.endExpr(parser)
+
+            parser.nodeBookmark.pop()
 
             block = Tree.Block(parser)
             cond.owner.addNode(block)

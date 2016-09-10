@@ -11,6 +11,8 @@ import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+#sys.stderr = open(os.devnull, "w")
+
 from flask import Flask
 app = Flask(__name__)
 
@@ -30,6 +32,14 @@ def initial():
 <HTML>
     <HEAD>
         <meta charset="UTF-8">
+        <style>
+            .error {
+                font-family: Consolas, Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace, serif;
+                background-color: lightblue;
+                position: fixed; bottom: 0; margin: 0; width: 100%;
+                padding-top: 10px; padding-left: 30px;
+            }
+        </style>
     </HEAD>
     <BODY>
         <div id= "code"></div>
@@ -61,6 +71,7 @@ def initial():
 @app.route("/js/<received>", methods=["get", "post"])
 def hot(received):
     i = topc.start(False, dev= True, init= received == "false")
+    topc.error = ""
 
     if i[0]:
         return "error= false;\n"+i[1]+ "ended=true;\n"
@@ -71,6 +82,7 @@ def hot(received):
 
 def compile():
     i = topc.start(False, dev= True, init= True)
+    topc.error = ""
     if i[0]:
         return "var ended= false;var error= false;\n"+i[1]+";\nmain_Init();ended=true;"
 

@@ -1,0 +1,115 @@
+def lcm(x: int, y: int) int do
+    let i = (commonMultiple x, y)
+    let res = i[0]
+    println "lowest common multiple of {x} & {y}:\t{res}"
+    res
+
+def commonMultiple(x: int, y: int) []int do
+    let arr0 = multiples x, y
+    let arr1 = multiples y, x
+
+    println "multiples of {x}:\t{arr0.join ", "}"
+    println "multiples of {y}:\t{arr1.join ", "}"
+
+    let res = arr0.filter arr1.has
+
+    println "common multiples of {x} & {y}:\t{res.join ", "}"
+
+    res
+
+def commonFactor(x: int, y: int) []int do
+    let arr0 = factors x
+    let arr1 = factors y
+
+    println "factors of {x}:\t{arr1.join ", "}"
+    println "factors of {y}:\t{arr0.join ", "}"
+
+    let res = arr0.filter arr1.has
+
+    println "common factors of {x} & {y}:\t{res.join ", "}"
+
+    res
+
+def slice[T](x: []T, sx : int, yx: int) []T do
+    let s =
+        if sx < 0 then (x.length + sx)
+        else sx
+    let y =
+        if yx < 0 then (x.length + yx)
+        else yx
+
+    def add(elem: int) T =
+        x[elem]
+
+    //println "slice of {x}: from {s} to {y}: {[s..y].map add}"
+    [s..y].map add
+
+def multiples(x: int, number: int) []int =
+    [1..number+1].map (x*)
+
+def factors(number: int) []int =
+    [1..number+1].filter isFactor number
+
+def factorsEx(number: int) []int =
+    slice::[int] (factors number), 1, -1
+
+def hcf(x: int, y: int) int do
+    let i = (commonFactor x, y)
+    let res = i[-1]
+    println "highest common factor of {x} & {y}:\t{res}"
+    res
+
+def isMultiple(number: int, multiple: int) bool =
+    multiple % number == 0
+
+def isFactor(number: int, factor: int) bool =
+    number % factor == 0
+
+def isPrime(x: int) bool =
+    (factors x).length == 2
+
+def primeFactors(x: int) []int do
+    if (isPrime x) or x == 1 then [x]
+    else
+        var i = 2
+        while true do
+            if x % i == 0 then
+                break
+            i += 1
+
+        (primeFactors x/i) + (primeFactors i)
+
+def findPerfect(x: int) string do
+    println x
+    let perfect = [1..30].map (_ ^ 2)
+
+    def find(index: int) int do
+        let i = perfect[index]
+        let b = perfect[index-1]
+        i - b
+
+    let diff = ([1..perfect.length]).map find
+    println diff
+    println perfect
+
+    if (not isEven x) then
+        if x > 2 then
+            "({(x/2)+1} ^ 2) - ({x/2} ^ 2)"
+        elif x == 1 then
+            "(1 ^ 1) - (0 ^ 1)"
+        else
+            "cannot find for {x}"
+    else
+        "cannot find for {x}"
+
+
+
+
+
+
+
+
+
+
+
+

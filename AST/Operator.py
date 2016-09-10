@@ -77,19 +77,25 @@ class Operator(Node):
 
             if len(self.nodes) > 1:
                 codegen.append(",") if not self.interface else 0
-                self.nodes[0].compileToJS(codegen)
+                self.nodes[1].compileToJS(codegen)
 
             codegen.append(")")
             return
 
         codegen.append("(")
+
         if self.kind == "concat":
             codegen.append("(")
 
         if self.type == Types.I32():
             codegen.append("(")
+
+        if self.kind == "^":
+            codegen.append("Math.pow(")
+
         if self.kind in ["+", "-", "*", "/", "<", ">", "<=", ">="]:
             op = self.kind
+
         else:
             translate = {
                 "==": "===",
@@ -99,6 +105,7 @@ class Operator(Node):
                 "or": "||",
                 "%": "%",
                 "concat": ")+(",
+                "^": ",",
             }
 
             op = translate[self.kind]
@@ -112,6 +119,8 @@ class Operator(Node):
             self.nodes[1].compileToJS(codegen)
             if self.kind == "concat":
                 codegen.append(").toString()")
+            if self.kind == "^":
+                codegen.append(")")
 
         codegen.append(")")
 
@@ -146,7 +155,7 @@ class Operator(Node):
 
         if i.kind in ["|>", "concat"] : return
 
-        if not i.type.name in operators or i.curry or i.partial:
+        if not i.opT.name in operators or i.curry or i.partial:
             if unary:
                overloads = {
                     "+": "unary_add",
@@ -177,29 +186,27 @@ class Operator(Node):
                 i.interface = True
                 i.name = overloads[i.kind]
                 return
-            if type(i.opT) in [Types.Struct, Types.Interface, Types.T]:
-                if type(i.opT) in [Types.Interface, Types.T]:
-                    func = i.opT.hasMethod(parser, overloads[i.kind])
-                    if not func:
+
+            if type(i.opT) in [Types.Struct, Types.Interface, Types.T, Types.Array]:
+                func = i.opT.hasMethod(parser, overloads[i.kind])
+                if not func:
+                    try:
+                        i.opT.types[overloads[i.kind]]
+                        i.interface = True
+                        i.name = overloads[i.kind]
+
+                    except KeyError:
                         i.error( "Operator " + i.kind + ", cannot operate on type " + str(i.opT))
-
-                    i.interface = True
-                    i.name = overloads[i.kind]
                 else:
-                    func = parser.structs[i.opT.package][i.opT.normalName].hasMethod(parser, overloads[i.kind])
-                    if not func:
-                        i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))
-
-                    i.package = i.type.package
-                    i.name = i.type.normalName + "_" + overloads[i.kind]
+                    i.name = i.opT.normalName + "_" + overloads[i.kind]
+                    i.package = i.opT.package
 
                 i.overload = True
-
             else:
                 if not i.kind in operators[i.opT.name]:
                     i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))
                 i.package = ""
                 i.name = overloads[i.kind]
 
-        elif not i.kind in operators[i.nodes[0].type.name]:
+        elif not i.kind in operators[i.opT.name]:
             i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))

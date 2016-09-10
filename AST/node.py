@@ -3,6 +3,7 @@ __author__ = 'antonellacalvia'
 from TopCompiler import Types
 from TopCompiler import Error
 import AST as Tree
+import copy
 
 variables = [{}]
 destructors = [[]]
@@ -59,7 +60,7 @@ class Root:
         self.nodes.insert(index, node)
 
     def iterator(self):
-        for i in self.nodes:
+        for i in copy.copy(self.nodes):
             yield i
 
     def isEnd(self):
@@ -81,6 +82,9 @@ class Root:
 def isUseless(i):
     if type(i) is Tree.ReadVar:
         i.error("useless variable read")
+    elif type(i) is Tree.FuncCall:
+        if i.type != Types.Null():
+            i.error("not using return of function")
     try:
         t = type(i).curry
         if t: i.error("useless curry")
@@ -90,7 +94,7 @@ def isUseless(i):
         pass
 
 def checkUseless(self):
-    for i in self.nodes[1:]:
+    for i in self.nodes[:-1]:
         isUseless(i)
 
 def toStr(array):  # turn names list into something for llvm

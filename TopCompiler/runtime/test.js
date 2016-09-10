@@ -31,3 +31,6 @@ assertEq(newVector(1,2,3).insert(0, 0), newVector(0,1,2,3))
 
 //set
 assertEq(newVector(1,1,2,3).set(0,0), newVector(0,1,2,3))
+
+//add
+assertEq(newVector(1,2,3).operator_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))

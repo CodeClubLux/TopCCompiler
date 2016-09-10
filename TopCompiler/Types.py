@@ -3,6 +3,7 @@ __author__ = 'antonellacalvia'
 import ctypes as c
 import AST as Tree
 from .Scope import *
+from .Error import *
 import collections as coll
 
 def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
@@ -155,11 +156,13 @@ class String(Type):
 
 
 class FuncPointer(Type):
-    def __init__(self, argtypes, returnType, generic= coll.OrderedDict()):
+    def __init__(self, argtypes, returnType, generic= coll.OrderedDict(), do= False):
         self.args = argtypes
         self.name = "|"+", ".join([i.name for i in argtypes])+"| -> "+returnType.name
         self.returnType = returnType
         self.generic = generic
+        self.types = {}
+        self.do = do
 
     def duckType(self, parser, other, node, mynode, iter= 0):
         if not type(other) is FuncPointer:
@@ -181,7 +184,8 @@ class FuncPointer(Type):
 
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen):
-        self.name = ("mut " if mutable else "")+ package+"."+name+"["+",".join([i+": "+str(gen[i]) for i in gen]) + "]"
+        genericS = "["+",".join([i+": "+str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+        self.name = ("mut " if mutable else "")+ package+"."+name + genericS
 
         self.types = {i: replaceT(types[i], gen) for i in types}
 
@@ -242,6 +246,14 @@ class Array(Pointer):
                     [FuncPointer([self.elemT, self.elemT], self.elemT)],
                     self.elemT
                 ),
+                "has": FuncPointer(
+                    [self.elemT],
+                    Bool()
+                ),
+                "operator_add": FuncPointer(
+                    [self.elemT],
+                    Array(False, self.elemT)
+                ),
                 "length": I32(),
                 "join": FuncPointer([String(0)], String(0))
             }
@@ -254,8 +266,6 @@ class Array(Pointer):
             self.elemT.duckType(parser, other.elemT, node, mynode, iter)
         except EOFError as e:
             beforeError(e, "Element type in array: ")
-
-
 
 def isMutable(typ):
     if type(typ) in [Struct, Array]:
@@ -348,6 +358,11 @@ def replaceT(typ, gen):
     else:
         return typ
 
+class Null(Type):
+    name = "none"
+    types = {}
+    pass
+
 def remainingT(s):
     args = coll.OrderedDict()
     if type(s) is FuncPointer:
@@ -359,13 +374,42 @@ def remainingT(s):
 
     return args
 
+class I32(Type):
+    def __init__(self):
+        Type.__init__(self)
+        self.name = "int"
 
-I32 = newType("int")
-Null = newType("none")
+        self.__types__ = None
+
+    @property
+    def types(self):
+        if self.__types__ is None:
+            self.__types__ = {
+                "toInt": FuncPointer([], self),
+                "toFloat": FuncPointer([], Float()),
+                "toString": FuncPointer([], String(0))
+            }
+        return self.__types__
+
+class Float(Type):
+    def __init__(self):
+        Type.__init__(self)
+
+        self.name = "float"
+        self.__types__ = None
+
+    @property
+    def types(self):
+        if self.__types__ is None:
+            self.__types__ = {
+                "toInt": FuncPointer([], I32()),
+                "toFloat": FuncPointer([], self),
+                "toString": FuncPointer([], String(0))
+            }
+
+        return self.__types__
 
 Bool = newType("bool")
-
-Float = newType("float")
 Func = newType("Func")
 
 Package = newType("package")

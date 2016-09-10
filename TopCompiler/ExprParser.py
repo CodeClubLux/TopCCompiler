@@ -16,14 +16,21 @@ def operatorPop(parser, op, takesIn, unary= False):
     op.unary = unary
     parser.currentNode.addNode(op)
 
-    count = len(parser.currentNode.nodes[-1 - takesIn:-1])
-    for i in parser.currentNode.nodes[-1 - takesIn:-1]:
+    count = 0
+    min = -1 - takesIn
+
+    #print(parser.currentNode.nodes[parser.nodeBookmark[-1]:])
+    #print("=====")
+
+    for i in parser.currentNode.nodes[parser.nodeBookmark[-1]:][min:-1]:
         parser.currentNode.nodes[-1].addNode(i)
+        count += 1
 
     if count < takesIn:
         op.curry = True
 
-    parser.currentNode.nodes = parser.currentNode.nodes[:-1 - takesIn] + parser.currentNode.nodes[-1:]
+    parser.currentNode.nodes = parser.currentNode.nodes[:-1 - len(op.nodes)] + [op]
+    #parser.nodeBookmark.pop()
     pass
    # checkOperator(parser, parser.currentNode.nodes[-1], unary)
 
@@ -31,11 +38,13 @@ def operatorPop(parser, op, takesIn, unary= False):
 def newOperator(kind, precidence, takesIn, func=None, unary= False):
     def f(parser):
         op = Tree.Operator(kind, parser)
-        if kind != "|>" and len(parser.currentNode.nodes) == 0:
+        if kind != "|>" and len(parser.currentNode.nodes) != 0:
             if not unary and isUnary(parser, parser.lookBehind()):
                 Error.parseError(parser, "unexpected "+kind)
             elif unary and not isUnary(parser, parser.lookBehind()):
                 Error.parseError(parser, "unexpected "+kind)
+
+        #parser.nodeBookmark.append(len(parser.currentNode.nodes)-1)
         Parser.Opcode(parser, kind, lambda: operatorPop(parser, op, takesIn, unary))
 
     if func == None: func = f
@@ -50,7 +59,7 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    return lastToken.type in ["operator", "indent", "keyword"] or lastToken.token in ["(", "{", "[", ",", ":", ".."] or Parser.selectStmt(parser, lastToken) != None
+    return lastToken.type in ["operator", "indent", "keyword"] or lastToken.token in ["(", "{", "[", ",", ":", "..", "=", "\n"] or Parser.selectStmt(parser, lastToken) != None
 
 def plus(parser):
     lastToken = parser.lookBehind()

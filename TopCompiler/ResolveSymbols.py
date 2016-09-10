@@ -15,7 +15,7 @@ from TopCompiler import MethodParser
 import os
 
 def funcHead(parser):
-    (name, names, types, header, returnType) = FuncParser.funcHead(parser, True)
+    (name, names, types, header, returnType, do) = FuncParser.funcHead(parser, True)
     Scope.decrScope(parser)
 
 def resolve(self):
@@ -24,15 +24,15 @@ def resolve(self):
     filenames = self.filename
 
     for c in filenames:
+        PackageParser.packDec(self, os.path.basename(filenames[c][0][0]), pack=True)
         for i in range(len(tokens[c])):
             self.allImports[filenames[c][i][0]] = []
-            PackageParser.packDec(self, os.path.basename(filenames[c][i][0]), pack= True)
             _resolve(self, tokens[c][i], filenames[c][i][1], passN=0)
 
     for n in range(1,3):
         for c in filenames:
+            self.package = filenames[c][0][0]
             for i in range(len(tokens[c])):
-                PackageParser.packDec(self, os.path.basename(filenames[c][i][0]))
                 _resolve(self, tokens[c][i], filenames[c][i][1], passN=n)
 
     self.rootAst = Tree.Root()
@@ -56,10 +56,11 @@ def _resolve(self, tokens, filename, passN= 0 ):
         if passN == 2:
             if b == "import":
                 ImportParser.importParser(self, True)
-            elif b == "def" and len(self.scope[self.package]) == 1:
-                Parser.addBookmark(self)
-                funcHead(self)
-                Parser.returnBookmark(self)
+            elif b == "def" :
+                if self.indentLevel == 0:
+                    Parser.addBookmark(self)
+                    funcHead(self)
+                    Parser.returnBookmark(self)
         elif passN == 1:
             if b == "import":
                 ImportParser.importParser(self, True)

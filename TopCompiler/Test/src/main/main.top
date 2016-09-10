@@ -1,13 +1,21 @@
-type Addable[T] with
-    operator_add: |T| -> T
+import "math"
 
-type S =
-    x: int
+let hcfIs30 = math.hcf |> (3 ==)
+let lcmIs315 = math.lcm |> (315 ==)
 
-def S.operator_add(self, other: S) S =
-    S{ self.x + other.x }
+def hcfAndLcm(x: int, y: int) bool =
+    (hcfIs30 x, y) and (lcmIs315 x, y)
 
-def S.toString(self) string =
-    "S({self.x})"
+def factAndHCF(x: int, y: int) int do
+    println math.primeFactors x
+    println math.primeFactors y
+    math.hcf x, y
 
-println S{ 10 } + S{ 20 }
+    //ii
+
+def minToHours(x: int) string =
+    "{x/60}.{x%60}"
+
+//println math.primeFactors 196
+//println factAndHCF 441, 1999
+println math.Fraction{ 2, 10} + math.Fraction { 1, 5 }

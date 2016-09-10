@@ -10,7 +10,7 @@ from TopCompiler import MethodParser
 
 def infer(parser, tree):
     varTypes = {}
-    def loop(n):
+    def loop(n, always= copy.deepcopy(tree)):
         count = 0
         for i in n:
             if type(i) is Tree.FuncStart:
@@ -25,8 +25,9 @@ def infer(parser, tree):
                 loop(i)
 
             if type(i) is Tree.CreateAssign:
-                if i.nodes[0].varType is None:
+                if i.nodes[0].varType is None and i.nodes[0].name != "_":
                     i.nodes[0].varType = i.nodes[1].nodes[0].type
+
                     if i.nodes[0].attachTyp:
                         MethodParser.addMethod(i, parser, i.nodes[0].attachTyp, i.nodes[0].name, i.nodes[1].nodes[0].type)
                         i.nodes[0].isGlobal = True
@@ -35,6 +36,15 @@ def infer(parser, tree):
                         i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
             elif type(i) is Tree.FuncBody:
                 Scope.decrScope(parser)
+                def check(n):
+                    for c in n:
+                        if type(c) is Tree.FuncCall:
+                            if c.nodes[0].type.do and not i.do:
+                                c.nodes[0].error("cannot call function with side effects in a pure function")
+
+                        if not c.isEnd():
+                            check(c)
+                check(i)
 
             elif type(i) is Tree.Create:
                 if not i.varType is None:
@@ -54,6 +64,21 @@ def infer(parser, tree):
                 self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
                 self.package = Scope.packageOfVar(parser, parser.package, self.name)
             elif type(i) is Tree.Field:
+                def bind():
+                    if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i: return
+                    typ = type(i.type)
+
+                    if typ is Types.FuncPointer:
+                        if not type(i.nodes[0].type) in [Types.Struct]:
+                            bind = Tree.ArrBind(i.field, self.nodes[0], self)
+                            bind.type = i.type
+                        else:
+                            bind = Tree.Bind(r, self.nodes[0], self)
+                            bind.type = Types.FuncPointer(self.type.args[1:], self.type.returnType)
+                        self.owner.nodes[count] = bind
+                        bind.owner = self.owner
+
+
                 typ = i.nodes[0].type
                 t = i.nodes[0]
 
@@ -72,6 +97,9 @@ def infer(parser, tree):
                     self = i
                     try:
                         i.type = struct.types[self.field]
+
+                        if type(i.nodes[0].type) is Types.Array:
+                            bind()
                     except KeyError:
                         method = struct.hasMethod(parser, self.field)
 
@@ -80,7 +108,7 @@ def infer(parser, tree):
 
                         self.type = method
 
-                        r = Tree.ReadVar(typ.normalName+"_"+self.field, self.type, self)
+                        r = Tree.ReadVar(typ.normalName + "_" + self.field, self.type, self)
                         r.type = self.type
                         r.package = typ.package if not typ.package == "_global" else ""
                         r.owner = self.owner
@@ -88,11 +116,8 @@ def infer(parser, tree):
                         if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
                             self.owner.nodes[0] = r
                             self.owner.nodes.insert(1, self.nodes[0])
-                        elif type(i.type) is Types.FuncPointer:
-                            bind = Tree.Bind(r, self.nodes[0], self)
-                            self.owner.nodes[0] = bind
-                            bind.owner = self.owner
-                            bind.type = Types.FuncPointer(self.type.args[1:], self.type.returnType)
+                            count += 1
+                        else: bind()
 
             elif type(i) is Tree.Operator:
                 if i.kind == "|>":
@@ -222,7 +247,7 @@ def infer(parser, tree):
 
                 if len(args) > len(i.nodes)-1:
                     i.curry = True
-                    i.type = Types.FuncPointer([Types.replaceT(args[c], generics) for c in args[:len(args)-len(i.nodes)-1]], Types.replaceT(i.nodes[0].type.returnType, generics))
+                    i.type = Types.FuncPointer([Types.replaceT(c, generics) for c in args[:len(args)-len(i.nodes)-1]], Types.replaceT(i.nodes[0].type.returnType, generics))
                 elif not partial:
                     i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
                 else:

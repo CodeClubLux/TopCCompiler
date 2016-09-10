@@ -21,6 +21,8 @@ def arrayLiteral(parser):
     parser.currentNode.addNode(arr)
     parser.currentNode = arr
 
+    parser.nodeBookmark.append(0)
+
     rang = False
     init = False
 
@@ -37,6 +39,7 @@ def arrayLiteral(parser):
             continue
         elif parser.thisToken().token == "..":
             endExpr(parser)
+            parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             if init:
                 parseError(parser, "unexpected ..")
 
@@ -74,12 +77,22 @@ def arrayLiteral(parser):
         typ = parseType(parser)
         arr.type = Array(False, typ)
 
+    if arr.range:
+        if len(arr.nodes) != 2:
+            Error.parseError(parser, "unexpected ]")
+
+    parser.nodeBookmark.pop()
+
 from .Scope import *
 from .VarParser import *
 
 def arrayRead(parser):
     parser.nextToken()
-    arr = parser.currentNode.nodes[-1]
+    parser.nodeBookmark.append(1)
+    try:
+        arr = parser.currentNode.nodes[-1]
+    except IndexError:
+        print(parser.tokens[parser.iter-2])
 
     del parser.currentNode.nodes[-1]
 
@@ -93,7 +106,10 @@ def arrayRead(parser):
         Parser.callToken(parser)
         parser.nextToken()
 
+    ExprParser.endExpr(parser)
+
     parser.currentNode = arrRead.owner
+    parser.nodeBookmark.pop()
 
 
 Parser.exprToken["["] = arrayLiteral
