@@ -6,7 +6,7 @@ The Top programming language, also known as Toplang is a functional, staticly-ty
 ## Installing topc
 1. Clone this repo
 2. Cd into the downloaded clone
-3. Call 'pip install .'
+3. Call 'python3 setup.py install'
 
 ## Setting Up a New Project
 1. Open up terminal or command prompt`
