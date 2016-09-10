@@ -12,9 +12,11 @@ The Top programming language, also known as Toplang is a functional, staticly-ty
 1. Open up terminal or command prompt`
 2. Cd into the directory you wish to create the project folder in.
 3. Execute `topc new project HelloWorld`, this will create a new top project in the current directory
+4. Execute `cd HelloWorld`, this will go into the project directory
+5. Execute `topc new package main`, this will create a new main package inside the src directory, which will contain a port.json file for configurations, the main package and it the entry point to your application
 4. Execute `topdev 8080`, this will start a live reloading build server, that can be viewed at port 8080
-5. Open up any web browser with the url `127.0.0.1:8080`, the result should be a blank page
-6. Create a new file called `TopCompiler/main/main.top`
+6. Open up any web browser with the url `127.0.0.1:8080`, the result should be a blank page
+7. Create a new file called `TopCompiler/main/main.top`, then add the filename `main` to the port.json file in the package directory under the `files` property, the `files` property lists in which order the package files should be compiled in.
 
 ## Introduction
 Like many functional programming languages, blocks in Top are delimited by whitespace. Indenting blocks are required to be with spaces and not tabs to facilitate platform independence. In addition, newlines end statements if the expression is not further indented and no unclosed parenthesis.
@@ -29,7 +31,7 @@ Once the topdev server is running all you have to do recompile, is save the file
 
 ## Literals
 ### Integers
-Integers are like long's in languages like java, however they may contain underscores to make them more readable.
+Integers are javascript like long's in languages like java, however they may contain underscores to make them more readable.
 ```scala
 1_000_000
 ```
