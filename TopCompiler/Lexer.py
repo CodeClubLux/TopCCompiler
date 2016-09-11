@@ -53,8 +53,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('closeB', '}'),
         ('openC', '\('),
         ('closeC', '\)'),
-        ('f32', r'\d+\.\d+'),
-        ('i32', r'\d+'),
+        ('f32', r'[\d_]+(\.[\d_]+|f)'),
+        ('i32', r'[\d_]+'),
         ('arrow', r'->'),
         ('equal',  r'=='),
         ('doublecolon', r'::'),
@@ -170,7 +170,10 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     typ = "symbol"
                 else:
                     typ = "keyword"
-
+            elif typ == "f32":
+                val = val[:-1]+".0" if val[-1] == "f" else val
+            if typ == "i32" or typ == "f32":
+                val = val.replace("_", "")
             elif typ in special:
                 typ = "symbol"
             elif typ == "equal" or typ == "mut" or typ == "ne":
