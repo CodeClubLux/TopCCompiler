@@ -56,11 +56,32 @@ Strings look the same as javascript strings and have the same methods.
 "hello toplang"
 ```
 
-However strings can also be interpolated with other values as long as they have a toString method.
+However strings can also be interpolated with an expression inside the braces as long as they have a toString method.
 ```scala
 "fib(20) = {6765}"
 ```
 
 Their type signature is `string`
 
+### None
+The `none` type is a type and a value `none`, it represents the absence of a value like void in java.
 
+## Functions
+
+### Defining named functions
+
+The syntax for defining functions is the `def` keyword followed by the function name and opening paranthesis then list the arguments followed by a colon and the argument type seperated by a comma, followed by a closing paranthesis the return type, if no return type is specified the return type of the function is `none` and then = or do. 
+
+Functions defined with `=` must be pure and cannot perform any side effects.
+
+```scala
+def add(arg0: int, arg1: int) int =
+  arg0 + arg1
+```
+
+Functions defined with `do` can perform side effects.  
+```scala
+def printHello() =
+  println "hello world" //logs hello world to console
+```
+  
