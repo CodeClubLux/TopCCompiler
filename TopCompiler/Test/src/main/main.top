@@ -16,7 +16,10 @@ def factAndHCF(x: int, y: int) int do
 def minToHours(x: int) string =
     "{x/60}.{x%60}"
 
-//println math.primeFactors 196
-//println factAndHCF 441, 1999
+println math.primeFactors 196
+println factAndHCF 441, 1999
 
-println math.Fraction{ 2, 5} + math.Fraction { 1, 5 }
+def pr[T: Stringable](x: T) do
+    println x
+
+pr "hello world"

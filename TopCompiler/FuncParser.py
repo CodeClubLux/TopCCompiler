@@ -63,8 +63,13 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     if parser.tokens[parser.iter+2].token == ".":
         if attachTyp: Error.parseError(parser, "unexpected .")
         parser.nextToken()
-        attachTyp = Types.parseType(parser)
+        name = parser.thisToken().token
         parser.nextToken()
+
+        try:
+            attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package, {})
+        except KeyError:
+            Error.parseError(parser, "no attachable data structure found, called "+name)
         return funcHead(parser, decl, dontAdd, True, attachTyp)
     name = parser.nextToken()
 
@@ -77,18 +82,20 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     g = {}
     if parser.thisToken().token != "(":
         if parser.thisToken().token == "[":
-            g = generics(parser, (str(attachTyp) if method else "")+name)
+            g = generics(parser, (str(attachTyp)+"." if method else "")+name)
             if parser.thisToken().token == ".":
                 if attachTyp: Error.parseError(parser, "unexpected .")
                 if not Scope.varExists(parser, parser.package, name): Error.parseError(parser,
                      "cannot attach method to unknown type main."+name)
 
-                attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package, parserMethodGen(parser, g, parser.structs[parser.package][name]))
+                try:
+                    attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package,
+                                         parserMethodGen(parser, g, parser.structs[parser.package][name]))
+                except KeyError:
+                    Error.parseError(parser, "no attachable data structure found, called " + name)
 
-                f = funcHead(parser, decl, dontAdd, True, attachTyp)
-                Scope.decrScope(parser)
+                return funcHead(parser, decl, dontAdd, True, attachTyp)
 
-                return f
 
         if parser.thisToken().token != "(":
             Error.parseError(parser, "expecting (")
@@ -192,7 +199,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     header.ftype = Types.FuncPointer(types, returnType, g)
     if decl:
         if not dontAdd:
-            Scope.addFunc(header, parser, name, Types.FuncPointer(types, returnType, g))
+            Scope.addFunc(header, parser, name, Types.FuncPointer(types, returnType, g, do))
 
     return name, names, types, header, returnType, do
 

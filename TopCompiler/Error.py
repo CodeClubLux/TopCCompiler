@@ -24,7 +24,7 @@ def errorAst(message, package, filename, token):
     err = ("File \"" + os.path.abspath("src/"+package + "/" + filename + ".top") + "\", line " + str(
         token.line + 1) + "\n\t" + message[0].capitalize() + message[1:])+"\n"
 
-    html += "<p>"+("File \"" + os.path.abspath("TopCompiler/" + package + "/" + filename + ".top") + "\", line " + str(
+    html += "<p>"+("File \"" + os.path.abspath("src/"+package + "/" + filename + ".top") + "\", line " + str(
         token.line + 1) + "</p><p style=\"text-indent: 50px;\">"+message[0].capitalize() + message[1:])+"\n"+"</p><br>"
 
     f = open(os.path.abspath("src/"+ package + "/" + filename + ".top"))  # change to use already read version

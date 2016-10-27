@@ -1,3 +1,4 @@
+
 def map[T, X](func: |T| -> X, x: []T) []X =
     x.map func
 

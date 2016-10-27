@@ -58,6 +58,8 @@ def _resolve(self, tokens, filename, passN= 0 ):
                 ImportParser.importParser(self, True)
             elif b == "def" :
                 if self.indentLevel == 0:
+                    nex = self.lookInfront()
+
                     Parser.addBookmark(self)
                     funcHead(self)
                     Parser.returnBookmark(self)

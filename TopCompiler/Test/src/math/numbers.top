@@ -1,3 +1,4 @@
+
 def lcm(x: int, y: int) int do
     let i = (commonMultiple x, y)
     let res = i[0]
@@ -83,6 +84,7 @@ def findPerfect(x: int) string do
     println x
     let perfect = [1..30].map (_ ^ 2)
 
+
     def find(index: int) int do
         let i = perfect[index]
         let b = perfect[index-1]
@@ -101,9 +103,6 @@ def findPerfect(x: int) string do
             "cannot find for {x}"
     else
         "cannot find for {x}"
-
-
-
 
 
 

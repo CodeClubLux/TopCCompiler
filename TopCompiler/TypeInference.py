@@ -239,7 +239,7 @@ def infer(parser, tree):
                         normalNode = i
 
                         if Types.isGeneric(normalTyp):
-                            normalTyp = resolveGen(normalTyp, myNode.type, generics)
+                            normalTyp = resolveGen(normalTyp, myNode.type, generics, parser)
 
                         normalTyp.duckType(parser, myNode.type, i, myNode, iter+1)
 
@@ -338,9 +338,15 @@ def infer(parser, tree):
                     i.error(str(len(i.generic)-len(gen))+" too many generic parameters")
 
                 v = list(gen.keys())
-                replace = {v[index]: i for index, i in enumerate(i.generic)}
+                replace = {v[index]: c for index, c in enumerate(i.generic)}
+
+                for index, c in enumerate(gen):
+                    gen[c].duckType(parser, i.generic[index], i.nodes[0], i, 0)
 
                 i.type = Types.replaceT(i.nodes[0].type, replace)
+
+                i.nodes[0].type.duckType(parser, i.type, i, i.nodes[0])
+
 
             if type(i) in [Tree.If, Tree.While]:
                 Scope.decrScope(parser)
@@ -357,7 +363,7 @@ def validate(parser, tree):
     if type(tree) is Tree.Root:
         tree.validate(parser)
 
-def resolveGen(shouldBeTyp, normalTyp, generics):
+def resolveGen(shouldBeTyp, normalTyp, generics, parser):
     if type(shouldBeTyp) is Types.T:
         if shouldBeTyp.normalName in generics:
             return generics[shouldBeTyp.normalName]
@@ -368,7 +374,7 @@ def resolveGen(shouldBeTyp, normalTyp, generics):
         if type(normalTyp) != Tree.Array:
             return shouldBeTyp
 
-        t = Types.Array(shouldBeTyp.mutable, resolveGen(shouldBeTyp.elemT, normalTyp.elemT, generics))
+        t = Types.Array(shouldBeTyp.mutable, resolveGen(shouldBeTyp.elemT, normalTyp.elemT, generics, parser))
         return t
     elif type(shouldBeTyp) is Types.FuncPointer:
         args = []
@@ -379,9 +385,22 @@ def resolveGen(shouldBeTyp, normalTyp, generics):
             return shouldBeTyp
 
         for (should, nor) in zip(shouldBeTyp.args, normalTyp.args):
-            args.append(resolveGen(should, nor, generics))
+            args.append(resolveGen(should, nor, generics, parser))
 
-        b = Types.FuncPointer(args, resolveGen(shouldBeTyp.returnType, normalTyp.returnType, generics))
+        b = Types.FuncPointer(args, resolveGen(shouldBeTyp.returnType, normalTyp.returnType, generics, parser))
         return b
+    elif type(shouldBeTyp) is Types.Interface:
+        types = {}
+        for i in shouldBeTyp.types:
+            try:
+                types[i] = resolveGen(shouldBeTyp.types[i], normalTyp.types[i], generics)
+            except:
+                try:
+                    meth = normalTyp.hasMethod(parser, i)
+                    types[i] = resolveGen(shouldBeTyp.types[i], Types.FuncPointer(meth.args[1:], meth.returnType), generics, parser)
+                except AttributeError:
+                    types[i] = shouldBeTyp.types[i]
+        return Types.Interface(False, types, generics)
+
     else:
         return shouldBeTyp

@@ -46,10 +46,10 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
 
         ret = Null()
 
-        parser.nextToken()
-
-        if parser.thisToken().token == "->":
+        if parser.lookInfront().token == "->":
             parser.nextToken()
+            parser.nextToken()
+
             ret = parseType(parser, package)
 
         return FuncPointer(args, ret, gen)
@@ -65,9 +65,19 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
     elif (token in parser.interfaces[package]) or (token in parser.interfaces["_global"] and parser.package == package):
         if token in parser.interfaces["_global"]:
             package = "_global"
-        return Interface(mutable, parser.interfaces[package][token].types)
+
+        if parser.interfaces[package][token].generic != coll.OrderedDict():
+            if parser.lookInfront().token != "[":
+                #parseError(parser, "must specify generic parameters for generic type")
+                pass
+            else:
+                parser.nextToken()
+                gen = parseGeneric(parser, parser.interfaces[package][token])
+                return replaceT(Interface(False, parser.interfaces[package][token].types), gen)
+
+        return Interface(False, parser.interfaces[package][token].types)
+
     elif token in parser.structs[package]:
-        import collections as coll
         gen = coll.OrderedDict()
         if attachTyp:
             return parser.structs[package][token]
@@ -141,6 +151,7 @@ def newType(n):
         normalName=n
         package= "_global"
         types = {"toString": FuncPointer([], String(0))}
+
     return BasicType
 
 class Pointer(Type):
@@ -158,7 +169,7 @@ class String(Type):
 class FuncPointer(Type):
     def __init__(self, argtypes, returnType, generic= coll.OrderedDict(), do= False):
         self.args = argtypes
-        self.name = "|"+", ".join([i.name for i in argtypes])+"| -> "+returnType.name
+        self.name = ("do " if do else "") + "|"+", ".join([i.name for i in argtypes])+"| -> "+returnType.name
         self.returnType = returnType
         self.generic = generic
         self.types = {}
@@ -166,10 +177,13 @@ class FuncPointer(Type):
 
     def duckType(self, parser, other, node, mynode, iter= 0):
         if not type(other) is FuncPointer:
-            mynode.error("expecting type "+str(self)+" and got type "+str(other))
+            mynode.error("expecting function type "+str(self)+" and got type "+str(other))
 
         if len(other.args) != len(self.args):
-            mynode.error("expecting type "+str(self)+" and got type "+str(other))
+            mynode.error("expecting function type "+str(self)+" and got type "+str(other))
+
+        if not self.do and other.do:
+            mynode.error("Expecting pure function " + str(self) + " and got effectfull function " + str(other))
 
         count = -1
         for (a, i) in zip(self.args, other.args):
@@ -181,11 +195,10 @@ class FuncPointer(Type):
 
         self.returnType.duckType(parser, other.returnType, node, mynode, iter)
 
-
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen):
         genericS = "["+",".join([i+": "+str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
-        self.name = ("mut " if mutable else "")+ package+"."+name + genericS
+        self.name = package+"."+name + genericS
 
         self.types = {i: replaceT(types[i], gen) for i in types}
 
@@ -206,8 +219,8 @@ class Struct(Type):
             node.error("expecting type "+str(self)+", not "+str(other))
 
         for key in self.gen:
-            i = self.gen[i]
-            othk = other.gen[i]
+            i = self.gen[key]
+            othk = other.gen[key]
 
             try:
                 i.duckType(parser, othk, node, mynode, iter)
@@ -273,15 +286,17 @@ def isMutable(typ):
     return False
 
 class Interface(Type):
-    def __init__(self, mutable, args):
+    def __init__(self, mutable, args, generic= coll.OrderedDict()):
         self.name = "{"+", ".join([str(i)+": "+str(args[i]) for i in args])+"}"
-        self.mutable = mutable
+        self.mutable = False
         self.types = args
+        self.generic = generic
 
     def hasMethod(self, parser, field):
-        if field in self.types:
+        """if field in self.types:
             return self.types[field]
-
+        """
+        pass
     def duckType(self, parser, other, node, mynode, iter):
         try:
             isStruct = other
@@ -302,7 +317,7 @@ class Interface(Type):
                 if meth:
                     if type(meth) is FuncPointer:
                         try:
-                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType), node, mynode, iter)
+                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType, meth.do), node, mynode, iter)
                         except EOFError as e:
                             beforeError(e, "Field '"+ field+ "' in " + str(other) +": ")
                     else:
@@ -333,30 +348,10 @@ def isGeneric(t):
         return isGeneric(t.returnType)
     elif type(t) is Array and isGeneric(t.elemT): return True
     elif type(t) is T: return True
+    elif type(t) is Interface: return True
     return False
 
-def replaceT(typ, gen):
-    if type(typ) is T:
-        if typ.normalName in gen:
-            r = gen[typ.normalName]
-            if type(r) is Underscore:
-                return typ
-            return r
-        else:
-            return typ
-    elif isGeneric(typ):
-        if type(typ) is Array:
-            return Array(False, replaceT(typ.elemT, gen))
-        generics = typ.generic
-        if type(typ) is FuncPointer:
-            arr = []
-            for i in typ.args:
-                arr.append(replaceT(i, gen))
 
-            newTyp = replaceT(typ.returnType, gen)
-            return FuncPointer(arr, newTyp, remainingT(newTyp))
-    else:
-        return typ
 
 class Null(Type):
     name = "none"
@@ -387,7 +382,11 @@ class I32(Type):
             self.__types__ = {
                 "toInt": FuncPointer([], self),
                 "toFloat": FuncPointer([], Float()),
-                "toString": FuncPointer([], String(0))
+                "toString": FuncPointer([], String(0)),
+                "operator_add": FuncPointer([self], self),
+                "operator_sub": FuncPointer([self], self),
+                "operator_div": FuncPointer([self], self),
+                "operator_mul": FuncPointer([self], self)
             }
         return self.__types__
 
@@ -404,7 +403,11 @@ class Float(Type):
             self.__types__ = {
                 "toInt": FuncPointer([], I32()),
                 "toFloat": FuncPointer([], self),
-                "toString": FuncPointer([], String(0))
+                "toString": FuncPointer([], String(0)),
+                "operator_add": FuncPointer([self], self),
+                "operator_sub": FuncPointer([self], self),
+                "operator_div": FuncPointer([self], self),
+                "operator_mul": FuncPointer([self], self)
             }
 
         return self.__types__
@@ -415,6 +418,36 @@ Func = newType("Func")
 Package = newType("package")
 
 Underscore = newType("_")
+
+def replaceT(typ, gen):
+    if type(typ) is T:
+        if typ.normalName in gen:
+            r = gen[typ.normalName]
+            if type(r) is Underscore:
+                return typ
+            return r
+        else:
+            return typ
+    elif type(typ) is Struct:
+        return Struct(False, typ.normalName, typ.types, typ.package, gen)
+    elif type(typ) is Interface:
+        types = typ.types
+        types = {i: replaceT(types[i], gen) for i in types}
+
+        return Interface(False, types)
+    elif isGeneric(typ):
+        if type(typ) is Array:
+            return Array(False, replaceT(typ.elemT, gen))
+        generics = typ.generic
+        if type(typ) is FuncPointer:
+            arr = []
+            for i in typ.args:
+                arr.append(replaceT(i, gen))
+
+            newTyp = replaceT(typ.returnType, gen)
+            return FuncPointer(arr, newTyp, remainingT(newTyp))
+    else:
+        return typ
 
 
 
