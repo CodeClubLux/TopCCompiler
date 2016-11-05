@@ -141,7 +141,11 @@ def initStruct(parser, package= ""):
     init.package = package
 
     del parser.currentNode.nodes[-1]
-    s = parser.structs[package][name]
+
+    try:
+        s = parser.structs[package][name]
+    except KeyError:
+        init.error("no struct called "+package+"."+name)
 
     init.paramNames = offsetsToList(parser.structs[package][name].offsets)
     init.s = s

@@ -48,10 +48,7 @@ def importParser(parser, decl= False):
             parser.compiled[name] = None
             parser.externFuncs[name] = []
 
-            if sc:
-                parsed = p.parse()
-            else:
-                parsed = None
+            parsed = p.parse()
 
             declar = parser.externFuncs[name]
 

@@ -79,6 +79,7 @@ from .FuncParser import *
 from .String import *
 from .ImportParser import *
 import os
+from .ExternParser import *
 from .Array import *
 from .MethodParser import *
 from .Struct import *
@@ -87,7 +88,7 @@ from .TypeInference import *
 def isEnd(parser):
     token = parser.thisToken()
 
-    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren:
+    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket:
         return maybeEnd(parser)
     return False
 
@@ -121,7 +122,7 @@ def declareOnly(self, noVar=False):
 
 
 def maybeEnd(parser):
-    if parser.indent[-1] >= parser.indentLevel and parser.paren <= parser.parenBookmark[-1]:
+    if parser.indent[-1] >= parser.indentLevel and parser.paren <= parser.parenBookmark[-1] and parser.bracket <= parser.bracketBookmark[-1]:
         #parser.iter -= 1
         return True
     return False
@@ -158,11 +159,13 @@ def addBookmark(parser):
     parser.bookmark.append(len(parser.stack))
     parser.indent.append(parser.indentLevel)
     parser.parenBookmark.append(parser.paren)
+    parser.bracketBookmark.append(parser.bracket)
 
 def returnBookmark(parser):
     parser.bookmark.pop()
     parser.indent.pop()
     parser.parenBookmark.pop()
+    parser.bracketBookmark.pop()
 
 def selectExpr(parser, token):
     addBookmark(parser)
@@ -193,7 +196,10 @@ def callToken(self):
         s1(self)
         returnBookmark(self)
     else:
-        if (b.token in ["!", "_", "("] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if (b.token in ["!", "_", "(", "\\", "!>"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+            if b.token == "!>":
+                print("weird symbol thing")
+                ExprParser.endExpr(self, -2)
             addBookmark(self)
             FuncParser.callFunc(self, False)
             returnBookmark(self)
@@ -236,7 +242,9 @@ class Parser:  # all mutable state
 
     def __init__(self, tokens, filename):
         self.paren = 1  # must be atleast 1, otherwise multiplication = 0
+        self.bracket = 0
         self.parenBookmark = [[]]
+        self.bracketBookmark = [0]
         self.indentLevel = 0
 
         self.lineNumber = 1
@@ -254,6 +262,14 @@ class Parser:  # all mutable state
         Intable = Types.Interface(False, {"toInt": Types.FuncPointer([], Types.I32() )})
         Floatable = Types.Interface(False, {"toFloat": Types.FuncPointer([], Types.Float())})
 
+        T = Types.T("T", All, "Atom")
+
+        Atom = Types.Interface(False, {
+            "unary_read": FuncPointer([], T, True),
+            "operator_set": FuncPointer([T], Null(), do= True),
+            "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True)
+        }, coll.OrderedDict([("Atom.T", T)]))
+
         self.scope = {"_global": [{
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
@@ -267,7 +283,10 @@ class Parser:  # all mutable state
             "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32())),
             "toInt": Scope.Type(True, Types.FuncPointer([Intable], Types.I32())),
             "toFloat": Scope.Type(True, Types.FuncPointer([Floatable], Types.Float())),
-
+            "Stringable": Stringable,
+            "Atom": Scope.Type(True, Atom),
+            "All": Scope.Type(True, All),
+            "newAtom": Scope.Type(True, Types.FuncPointer([T], Atom, coll.OrderedDict([("Atom.T", T)])))
         }]}
 
         self.iter = 0
@@ -301,7 +320,9 @@ class Parser:  # all mutable state
 
         self.interfaces = {
             "_global": {
-                "Stringable": Stringable
+                "Stringable": Stringable,
+                "Atom": Atom,
+                "All": All,
             }
         }
 

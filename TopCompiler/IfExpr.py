@@ -39,11 +39,17 @@ def ifBody(parser):
             parser.currentNode = block
             continue
 
+        isEnd = Parser.maybeEnd(parser)
+
+        if (token.token in ["else", "elif"]) and isEnd:
+            break
+
+        token = parser.thisToken()
+
         Parser.callToken(parser)
 
         next = parser.lookInfront()
-        if (next.token == "else" or next.token == "elif") and Parser.maybeEnd(parser):
-            parser.iter -= 1
+        if (next.token == "else" or next.token == "elif") and isEnd:
             break
 
 

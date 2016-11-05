@@ -166,6 +166,7 @@ class Operator(Node):
                     "!=": "unary_ne",
                     "==": "unary_eq",
                     "not": "unary_not",
+                   "<-": "unary_read",
                 }
             else:
                 overloads = {

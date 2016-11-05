@@ -49,18 +49,17 @@ def initial():
     <script>
         var received = false;
         function update(){
-            $.getScript("//127.0.0.1:"""+str(port)+"""/js/\"+received.toString()).done(function (value, status, jqxhr){
+            $.getScript("//127.0.0.1:"""+str(port)+"""/js/"+received.toString()+","+error.toString()).done(function (value, status, jqxhr){
                 received = true;
                 if (value !== "" && !error && ended) {
-                    code.innerHTML = "";
                     document.getElementById("error").innerHTML = "";
-                    main_Init();
-                    received = false;
+                    //console.log("reset");
+                    //main_Init();
                 }
-                setTimeout(update, 200);
+                setTimeout(update, 500);
             }).fail(function (handler) {
                 received = false;
-                setTimeout(update, 200);
+                setTimeout(update, 500);
             })
         };
         update();
@@ -68,23 +67,27 @@ def initial():
     <script id= "js">"""+compile()+"""</script>
 </HTML>"""
 
-@app.route("/js/<received>", methods=["get", "post"])
-def hot(received):
-    i = topc.start(False, dev= True, init= received == "false")
+@app.route("/js/<received>,<error>", methods=["get", "post"])
+def hot(received, error):
+    error = error == "true"
+    i = topc.start(False, dev= True, init= received == "false", hotswap= not error)
     topc.error = ""
 
     if i[0]:
-        return "error= false;\n"+i[1]+ "ended=true;\n"
+        #print("resetting")
+        return "error= false;\n"+i[1]+ "ended=true;\nmain_Init();\n"
 
     if i[1] == "":
+        #print("not ressetting")
         return ""
-    return """var error= true; document.getElementById("error").innerHTML = " """+i[1] + """ ";"""
+    return """var error= true; document.getElementById("error").innerHTML = " """+i[1] + """ ";\n"""
 
 def compile():
-    i = topc.start(False, dev= True, init= True)
+    print("initing")
+    i = topc.start(False, dev= True, init= True, hotswap= False)
     topc.error = ""
     if i[0]:
-        return "var ended= false;var error= false;\n"+i[1]+";\nmain_Init();ended=true;"
+        return "var ended= false;var error= false;\n"+i[1]+";\nmain_Init();ended=true; main_Init()\n"
 
     return """var error= true; document.getElementById("error").innerHTML = " """+i[1] + """ ";"""
 

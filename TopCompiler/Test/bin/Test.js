@@ -1,1 +1,1687 @@
-"use strict";function main_Init(){main_i = main_add(new main_Int(10),new main_Int(78));main_c = main_pr;main_pure();}function main_Int(b){this.x=b;}main_Int.prototype.toString=(function(){return main_Int_toString(this)});function main_Int_toString(c){return c.x.toString();}main_Int.prototype.operator_add=(function(d){return main_Int_operator_add(this,d)});function main_Int_operator_add(f, g){return new main_Int(((f.x+g.x)|0));}function main_add(h, j){return h.operator_add(j);}function main_pr(k){print(k);;}function main_pure(){main_pr("hello world");;}var main_i;var main_c;function log(t){console.log(t.toString())}function alert(t){alert(t.toString())}function println(t){stdout.innerHTML+=t.toString()+"<br>"}function print(t){stdout.innerHTML+=t}function operator_add(t,r){return t.operator_add(r)}function operator_sub(t,r){return t.operator_sub(r)}function operator_mul(t,r){return t.operator_mul(r)}function operator_div(t,r){return t.operator_div(r)}function operator_mod(t,r){return t.operator_mod(r)}function operator_eq(t,r){return t.operator_eq(r)}function operator_pow(t,r){return Math.pow(t,r)}function operator_lt(t,r){return t.operator_lt(r)}function operator_gt(t,r){return t.operator_gt(r)}function operator_or(t,r){return t||r}function operator_not(t){return!t}function operator_and(t,r){return t&&r}function unary_add(t){return t}function unary_sub(t){return-t}function toString(t){return t.toString()}function string_toString(t){return t}function int_toString(t){return t.toString()}function float_toString(t){return t.toString()}function array_toString(t){return t.toString()}function float_toInt(t){return 0|t}function int_toInt(t){return t}function float_toFloat(t){return t}function int_toFloat(t){return t}function log(t){console.log(t.toString())}function isOdd(t){return t%2!=0}function isEven(t){return t%2==0}function min(t,r){return r>t?t:r}function max(t,r){return t>r?t:r}function len(t){return t.length}function toFloat(t){return t.toFloat()}function toInt(t){return t.toInt()}function List(t,r){this.head=t,this.tail=r,null===r?null===t?this.length=0:this.length=1:this.length=r.length+1}function listFromArray(t){for(var r=t.length,n=EmptyList,e=0;r>e;e++)n=n.append(t[e]);return n}function newList(){return listFromArray(Array.prototype.slice.call(arguments))}function newListRange(t,r){for(var n=EmptyList,e=t;r>e;e++)n=n.append(e);return n}function newListInit(t,r){for(var n=EmptyList,e=0;t>e;e++)n=n.append(e);return n}function Vector(t,r,n){this.shift=(n-1)*this.bits,this.root=t,this.length=r,this.depth=n}function getProperIndex(t,r){return 0>r?t.length+r:r}function newVector(){return fromArray(Array.prototype.slice.call(arguments))}function fromArray(t){for(var r=EmptyVector,n=0;n<t.length;n++)r=r.append(t[n]);return r}function newVectorRange(t,r){for(var n=EmptyVector,e=t;r>e;e++)n=n.append(e);return n}function newVectorInit(t,r){for(var n=EmptyVector,e=0;t>e;e++)n=n.append(e);return n}var stdout=document.getElementById("code");Number.prototype.operator_add=function(t){return this+t},Number.prototype.operator_div=function(t){return this/t},Number.prototype.operator_sub=function(t){return this-t},Number.prototype.operator_mul=function(t){return this*t},Number.prototype.operator_eq=function(t){return this==t},Number.prototype.operator_mod=function(t){return this%t},Number.prototype.operator_lt=function(t){return t>this},Number.prototype.operator_gt=function(t){return this>t},Number.prototype.toFloat=function(){return this},Number.prototype.toInt=function(){return 0|this},String.prototype.operator_eq=function(t){return this==t},String.prototype.operator_add=function(t){return this+t};var EmptyList=new List(null,null);List.prototype.append=function(t){return new List(t,this)},List.prototype.toArray=function(){for(var t=[],r=this,n=0;n<this.length;n++)t.push(r.head),r=r.tail;return t.reverse()},List.prototype.getProperIndex=function(t){return 0>t?this.length+t:t},List.prototype.getList=function(t){t=this.getProperIndex(t);for(var r=this.length-t-1,n=this,e=0;r>e;e++)n=n.tail;return n},List.prototype.get=function(t){return this.getList(t).head},List.prototype.toString=function(){return"List("+this.join(", ")+")"},List.prototype.join=function(t){null===t&&(t=",");var r=this;if(0===this.length)return"";for(var n=r.head.toString(),e=1;e<this.length;e++)r=r.tail,n=r.head.toString()+t.toString()+n;return n},List.prototype.insert=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?t.append(e):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t,r)},List.prototype.del=function(t){function r(t,n){if(0>n)throw new Error("");if(1===n){var e=t.tail;return null===e&&(e=EmptyList),e}return r(t.tail,n-1).append(t.head)}return t=this.getProperIndex(t),r(this,this.length-t)},List.prototype.slice=function(t,r){null==t&&(t=0),null==r&&(r=this.length),r=this.getProperIndex(r-1),t=this.getProperIndex(t);var n=this.getList(r),e=new List(n.head,n.tail);return e.length=r-t+1,e},List.prototype.reverse=function(){for(var t=EmptyList,r=this,n=0;n<this.length;n++)t=t.append(r.head),r=r.tail;return t},List.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(r===t)return!0;for(var r=this,n=0;n<this.length;n++){if(!r.head.operator_eq(t.head))return!1;r=r.tail,t=t.tail}return!0},List.prototype.operator_add=function(t){function r(t,n,e){if(0>n)throw new Exception;return 0==n?new List(e.head,e.tail):r(t.tail,n-1,e).append(t.head)}return r(t,t.length,this)},List.prototype.copy=function(){function t(r,n){if(0>n)throw new Exception;return 0==n?r:t(r.tail,n-1).append(r.head)}return t(this,this.length)},List.prototype.set=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?new List(e,t.tail):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t-1,r)},Vector.prototype.bits=5,Vector.prototype.width=1<<Vector.prototype.bits,Vector.prototype.mask=Vector.prototype.width-1;var EmptyVector=new Vector(Array(Vector.prototype.width),0,1);Vector.prototype.get=function(t){if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());for(var r=this.root,n=this.bits,e=this.mask,o=this.shift;o>0;o-=n)r=r[t>>o&e];return r[t&e]},Vector.prototype.append=function(t){function r(i,u,p){if(u>0){var h=p>>u&e;if(i)var s=i.slice();else var s=Array(o);return s[h]=r(s[h],u-n,p),s}var h=p&e;if(null==i)var s=Array(o);else var s=i.slice();return s[h]=t,s}var n=this.bits,e=this.mask,o=Vector.prototype.width;if(Math.pow(o,this.depth)===this.length){var i=Array(o);i[0]=this.root,i[1]=Array(o);var u=r(i,this.depth*this.bits,this.length);return new Vector(u,this.length+1,this.depth+1)}var u=r(this.root,this.shift,this.length);return new Vector(u,this.length+1,this.depth)},Vector.prototype.set=function(t,r){function n(t,u,p){if(u>0){var h=p>>u&o;if(t)var s=t.slice();else var s=Array(i);return s[h]=n(s[h],u-e,p),s}var h=p&o,s=t.slice();return s[h]=r,s}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var e=this.bits,o=this.mask,i=Vector.prototype.width,u=n(this.root,this.shift,t);return new Vector(u,this.length,this.depth)},Vector.prototype.insert=function(t,r){function n(t,r,p,h){if(r>0){var s=p>>r&i;if(t)var a=t.slice();else var a=Array(u);var f=n(a[s],r-o,p,h);a[s]=f[0];var c=null;if(f[1]){c=f[1];for(var l=s+1;u>l;l++){var f=n(a[l],r-o,l<<r,c);a[l]=f[0],c=f[1]}}return[a,c]}var s=p&i;return e(t,s,h)}function e(t,r,n){for(var e=[],o=0;u-1>o;o++)r===o&&e.push(n),e.push(t[o]);return r===o&&e.push(n),[e,t[u-1]]}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var o=this.bits,i=this.mask,u=Vector.prototype.width,p=n(this.root,this.shift,t,r);return p[1]?new Vector(p[0],this.length+1,this.depth).append(p[1]):new Vector(p[0],this.length+1,this.depth)},Vector.prototype.toArray=function(){for(var t=Array(this.length),r=0;r<this.length;r++)t[r]=this.get(r);return t},Vector.prototype.toString=function(){return"["+this.toArray().join(",")+"]"},Vector.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(this===t)return!0;for(var r=0;r<this.length;r++)if(!this.get(r).operator_eq(t.get(r)))return!1;return!0},Vector.prototype.map=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++)r=r.append(t(this.get(e)));return r},Vector.prototype.filter=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++){var o=this.get(e);t(o)&&(r=r.append(o))}return r},Vector.prototype.reduce=function(t){if(1==this.length)return this.get(0);if(0===this.length)throw Error("Cannot reduce empty vector");for(var r=this.length,n=this.get(0),e=1;r>e;e++)n=t(n,this.get(e));return n},Vector.prototype.join=function(t){if(0==t.length)return"";for(var r=this.get(0),n=this.length,e=1;n>e;e++)r+=t+this.get(e);return r},Vector.prototype.has=function(t){for(var r=0;r<this.length;r++)if(this.get(r).operator_eq(t))return!0;return!1},Vector.prototype.operator_add=function(t){for(var r=this,n=0;n<t.length;n++)r=r.append(t.get(n));return r};
+"use strict";(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+window.virtualDom = require("virtual-dom");
+
+window.clearElement = function(elem) {
+    elem.innerHTML = ""
+}
+
+window.html_h = function (type, attrib, children) {
+    var at = {}
+    for (var i = 0; i < attrib.length; i++) {
+        at[attrib[i].name] = attrib[i].value;
+    }
+    return virtualDom.h(type, at, children);
+}
+
+window.core_watcher = function (a, b) {
+    a.watch(b);
+}
+},{"virtual-dom":5}],2:[function(require,module,exports){
+var createElement = require("./vdom/create-element.js")
+
+module.exports = createElement
+
+},{"./vdom/create-element.js":15}],3:[function(require,module,exports){
+var diff = require("./vtree/diff.js")
+
+module.exports = diff
+
+},{"./vtree/diff.js":35}],4:[function(require,module,exports){
+var h = require("./virtual-hyperscript/index.js")
+
+module.exports = h
+
+},{"./virtual-hyperscript/index.js":22}],5:[function(require,module,exports){
+var diff = require("./diff.js")
+var patch = require("./patch.js")
+var h = require("./h.js")
+var create = require("./create-element.js")
+var VNode = require('./vnode/vnode.js')
+var VText = require('./vnode/vtext.js')
+
+module.exports = {
+    diff: diff,
+    patch: patch,
+    h: h,
+    create: create,
+    VNode: VNode,
+    VText: VText
+}
+
+},{"./create-element.js":2,"./diff.js":3,"./h.js":4,"./patch.js":13,"./vnode/vnode.js":31,"./vnode/vtext.js":33}],6:[function(require,module,exports){
+/*!
+ * Cross-Browser Split 1.1.1
+ * Copyright 2007-2012 Steven Levithan <stevenlevithan.com>
+ * Available under the MIT License
+ * ECMAScript compliant, uniform cross-browser split method
+ */
+
+/**
+ * Splits a string into an array of strings using a regex or string separator. Matches of the
+ * separator are not included in the result array. However, if `separator` is a regex that contains
+ * capturing groups, backreferences are spliced into the result each time `separator` is matched.
+ * Fixes browser bugs compared to the native `String.prototype.split` and can be used reliably
+ * cross-browser.
+ * @param {String} str String to split.
+ * @param {RegExp|String} separator Regex or string to use for separating the string.
+ * @param {Number} [limit] Maximum number of items to include in the result array.
+ * @returns {Array} Array of substrings.
+ * @example
+ *
+ * // Basic use
+ * split('a b c d', ' ');
+ * // -> ['a', 'b', 'c', 'd']
+ *
+ * // With limit
+ * split('a b c d', ' ', 2);
+ * // -> ['a', 'b']
+ *
+ * // Backreferences in result array
+ * split('..word1 word2..', /([a-z]+)(\d+)/i);
+ * // -> ['..', 'word', '1', ' ', 'word', '2', '..']
+ */
+module.exports = (function split(undef) {
+
+  var nativeSplit = String.prototype.split,
+    compliantExecNpcg = /()??/.exec("")[1] === undef,
+    // NPCG: nonparticipating capturing group
+    self;
+
+  self = function(str, separator, limit) {
+    // If `separator` is not a regex, use `nativeSplit`
+    if (Object.prototype.toString.call(separator) !== "[object RegExp]") {
+      return nativeSplit.call(str, separator, limit);
+    }
+    var output = [],
+      flags = (separator.ignoreCase ? "i" : "") + (separator.multiline ? "m" : "") + (separator.extended ? "x" : "") + // Proposed for ES6
+      (separator.sticky ? "y" : ""),
+      // Firefox 3+
+      lastLastIndex = 0,
+      // Make `global` and avoid `lastIndex` issues by working with a copy
+      separator = new RegExp(separator.source, flags + "g"),
+      separator2, match, lastIndex, lastLength;
+    str += ""; // Type-convert
+    if (!compliantExecNpcg) {
+      // Doesn't need flags gy, but they don't hurt
+      separator2 = new RegExp("^" + separator.source + "$(?!\\s)", flags);
+    }
+    /* Values for `limit`, per the spec:
+     * If undefined: 4294967295 // Math.pow(2, 32) - 1
+     * If 0, Infinity, or NaN: 0
+     * If positive number: limit = Math.floor(limit); if (limit > 4294967295) limit -= 4294967296;
+     * If negative number: 4294967296 - Math.floor(Math.abs(limit))
+     * If other: Type-convert, then use the above rules
+     */
+    limit = limit === undef ? -1 >>> 0 : // Math.pow(2, 32) - 1
+    limit >>> 0; // ToUint32(limit)
+    while (match = separator.exec(str)) {
+      // `separator.lastIndex` is not reliable cross-browser
+      lastIndex = match.index + match[0].length;
+      if (lastIndex > lastLastIndex) {
+        output.push(str.slice(lastLastIndex, match.index));
+        // Fix browsers whose `exec` methods don't consistently return `undefined` for
+        // nonparticipating capturing groups
+        if (!compliantExecNpcg && match.length > 1) {
+          match[0].replace(separator2, function() {
+            for (var i = 1; i < arguments.length - 2; i++) {
+              if (arguments[i] === undef) {
+                match[i] = undef;
+              }
+            }
+          });
+        }
+        if (match.length > 1 && match.index < str.length) {
+          Array.prototype.push.apply(output, match.slice(1));
+        }
+        lastLength = match[0].length;
+        lastLastIndex = lastIndex;
+        if (output.length >= limit) {
+          break;
+        }
+      }
+      if (separator.lastIndex === match.index) {
+        separator.lastIndex++; // Avoid an infinite loop
+      }
+    }
+    if (lastLastIndex === str.length) {
+      if (lastLength || !separator.test("")) {
+        output.push("");
+      }
+    } else {
+      output.push(str.slice(lastLastIndex));
+    }
+    return output.length > limit ? output.slice(0, limit) : output;
+  };
+
+  return self;
+})();
+
+},{}],7:[function(require,module,exports){
+'use strict';
+
+var OneVersionConstraint = require('individual/one-version');
+
+var MY_VERSION = '7';
+OneVersionConstraint('ev-store', MY_VERSION);
+
+var hashKey = '__EV_STORE_KEY@' + MY_VERSION;
+
+module.exports = EvStore;
+
+function EvStore(elem) {
+    var hash = elem[hashKey];
+
+    if (!hash) {
+        hash = elem[hashKey] = {};
+    }
+
+    return hash;
+}
+
+},{"individual/one-version":9}],8:[function(require,module,exports){
+(function (global){
+'use strict';
+
+/*global window, global*/
+
+var root = typeof window !== 'undefined' ?
+    window : typeof global !== 'undefined' ?
+    global : {};
+
+module.exports = Individual;
+
+function Individual(key, value) {
+    if (key in root) {
+        return root[key];
+    }
+
+    root[key] = value;
+
+    return value;
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],9:[function(require,module,exports){
+'use strict';
+
+var Individual = require('./index.js');
+
+module.exports = OneVersion;
+
+function OneVersion(moduleName, version, defaultValue) {
+    var key = '__INDIVIDUAL_ONE_VERSION_' + moduleName;
+    var enforceKey = key + '_ENFORCE_SINGLETON';
+
+    var versionValue = Individual(enforceKey, version);
+
+    if (versionValue !== version) {
+        throw new Error('Can only have one copy of ' +
+            moduleName + '.\n' +
+            'You already have version ' + versionValue +
+            ' installed.\n' +
+            'This means you cannot install version ' + version);
+    }
+
+    return Individual(key, defaultValue);
+}
+
+},{"./index.js":8}],10:[function(require,module,exports){
+(function (global){
+var topLevel = typeof global !== 'undefined' ? global :
+    typeof window !== 'undefined' ? window : {}
+var minDoc = require('min-document');
+
+if (typeof document !== 'undefined') {
+    module.exports = document;
+} else {
+    var doccy = topLevel['__GLOBAL_DOCUMENT_CACHE@4'];
+
+    if (!doccy) {
+        doccy = topLevel['__GLOBAL_DOCUMENT_CACHE@4'] = minDoc;
+    }
+
+    module.exports = doccy;
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"min-document":36}],11:[function(require,module,exports){
+"use strict";
+
+module.exports = function isObject(x) {
+	return typeof x === "object" && x !== null;
+};
+
+},{}],12:[function(require,module,exports){
+var nativeIsArray = Array.isArray
+var toString = Object.prototype.toString
+
+module.exports = nativeIsArray || isArray
+
+function isArray(obj) {
+    return toString.call(obj) === "[object Array]"
+}
+
+},{}],13:[function(require,module,exports){
+var patch = require("./vdom/patch.js")
+
+module.exports = patch
+
+},{"./vdom/patch.js":18}],14:[function(require,module,exports){
+var isObject = require("is-object")
+var isHook = require("../vnode/is-vhook.js")
+
+module.exports = applyProperties
+
+function applyProperties(node, props, previous) {
+    for (var propName in props) {
+        var propValue = props[propName]
+
+        if (propValue === undefined) {
+            removeProperty(node, propName, propValue, previous);
+        } else if (isHook(propValue)) {
+            removeProperty(node, propName, propValue, previous)
+            if (propValue.hook) {
+                propValue.hook(node,
+                    propName,
+                    previous ? previous[propName] : undefined)
+            }
+        } else {
+            if (isObject(propValue)) {
+                patchObject(node, props, previous, propName, propValue);
+            } else {
+                node[propName] = propValue
+            }
+        }
+    }
+}
+
+function removeProperty(node, propName, propValue, previous) {
+    if (previous) {
+        var previousValue = previous[propName]
+
+        if (!isHook(previousValue)) {
+            if (propName === "attributes") {
+                for (var attrName in previousValue) {
+                    node.removeAttribute(attrName)
+                }
+            } else if (propName === "style") {
+                for (var i in previousValue) {
+                    node.style[i] = ""
+                }
+            } else if (typeof previousValue === "string") {
+                node[propName] = ""
+            } else {
+                node[propName] = null
+            }
+        } else if (previousValue.unhook) {
+            previousValue.unhook(node, propName, propValue)
+        }
+    }
+}
+
+function patchObject(node, props, previous, propName, propValue) {
+    var previousValue = previous ? previous[propName] : undefined
+
+    // Set attributes
+    if (propName === "attributes") {
+        for (var attrName in propValue) {
+            var attrValue = propValue[attrName]
+
+            if (attrValue === undefined) {
+                node.removeAttribute(attrName)
+            } else {
+                node.setAttribute(attrName, attrValue)
+            }
+        }
+
+        return
+    }
+
+    if(previousValue && isObject(previousValue) &&
+        getPrototype(previousValue) !== getPrototype(propValue)) {
+        node[propName] = propValue
+        return
+    }
+
+    if (!isObject(node[propName])) {
+        node[propName] = {}
+    }
+
+    var replacer = propName === "style" ? "" : undefined
+
+    for (var k in propValue) {
+        var value = propValue[k]
+        node[propName][k] = (value === undefined) ? replacer : value
+    }
+}
+
+function getPrototype(value) {
+    if (Object.getPrototypeOf) {
+        return Object.getPrototypeOf(value)
+    } else if (value.__proto__) {
+        return value.__proto__
+    } else if (value.constructor) {
+        return value.constructor.prototype
+    }
+}
+
+},{"../vnode/is-vhook.js":26,"is-object":11}],15:[function(require,module,exports){
+var document = require("global/document")
+
+var applyProperties = require("./apply-properties")
+
+var isVNode = require("../vnode/is-vnode.js")
+var isVText = require("../vnode/is-vtext.js")
+var isWidget = require("../vnode/is-widget.js")
+var handleThunk = require("../vnode/handle-thunk.js")
+
+module.exports = createElement
+
+function createElement(vnode, opts) {
+    var doc = opts ? opts.document || document : document
+    var warn = opts ? opts.warn : null
+
+    vnode = handleThunk(vnode).a
+
+    if (isWidget(vnode)) {
+        return vnode.init()
+    } else if (isVText(vnode)) {
+        return doc.createTextNode(vnode.text)
+    } else if (!isVNode(vnode)) {
+        if (warn) {
+            warn("Item is not a valid virtual dom node", vnode)
+        }
+        return null
+    }
+
+    var node = (vnode.namespace === null) ?
+        doc.createElement(vnode.tagName) :
+        doc.createElementNS(vnode.namespace, vnode.tagName)
+
+    var props = vnode.properties
+    applyProperties(node, props)
+
+    var children = vnode.children
+
+    for (var i = 0; i < children.length; i++) {
+        var childNode = createElement(children[i], opts)
+        if (childNode) {
+            node.appendChild(childNode)
+        }
+    }
+
+    return node
+}
+
+},{"../vnode/handle-thunk.js":24,"../vnode/is-vnode.js":27,"../vnode/is-vtext.js":28,"../vnode/is-widget.js":29,"./apply-properties":14,"global/document":10}],16:[function(require,module,exports){
+// Maps a virtual DOM tree onto a real DOM tree in an efficient manner.
+// We don't want to read all of the DOM nodes in the tree so we use
+// the in-order tree indexing to eliminate recursion down certain branches.
+// We only recurse into a DOM node if we know that it contains a child of
+// interest.
+
+var noChild = {}
+
+module.exports = domIndex
+
+function domIndex(rootNode, tree, indices, nodes) {
+    if (!indices || indices.length === 0) {
+        return {}
+    } else {
+        indices.sort(ascending)
+        return recurse(rootNode, tree, indices, nodes, 0)
+    }
+}
+
+function recurse(rootNode, tree, indices, nodes, rootIndex) {
+    nodes = nodes || {}
+
+
+    if (rootNode) {
+        if (indexInRange(indices, rootIndex, rootIndex)) {
+            nodes[rootIndex] = rootNode
+        }
+
+        var vChildren = tree.children
+
+        if (vChildren) {
+
+            var childNodes = rootNode.childNodes
+
+            for (var i = 0; i < tree.children.length; i++) {
+                rootIndex += 1
+
+                var vChild = vChildren[i] || noChild
+                var nextIndex = rootIndex + (vChild.count || 0)
+
+                // skip recursion down the tree if there are no nodes down here
+                if (indexInRange(indices, rootIndex, nextIndex)) {
+                    recurse(childNodes[i], vChild, indices, nodes, rootIndex)
+                }
+
+                rootIndex = nextIndex
+            }
+        }
+    }
+
+    return nodes
+}
+
+// Binary search for an index in the interval [left, right]
+function indexInRange(indices, left, right) {
+    if (indices.length === 0) {
+        return false
+    }
+
+    var minIndex = 0
+    var maxIndex = indices.length - 1
+    var currentIndex
+    var currentItem
+
+    while (minIndex <= maxIndex) {
+        currentIndex = ((maxIndex + minIndex) / 2) >> 0
+        currentItem = indices[currentIndex]
+
+        if (minIndex === maxIndex) {
+            return currentItem >= left && currentItem <= right
+        } else if (currentItem < left) {
+            minIndex = currentIndex + 1
+        } else  if (currentItem > right) {
+            maxIndex = currentIndex - 1
+        } else {
+            return true
+        }
+    }
+
+    return false;
+}
+
+function ascending(a, b) {
+    return a > b ? 1 : -1
+}
+
+},{}],17:[function(require,module,exports){
+var applyProperties = require("./apply-properties")
+
+var isWidget = require("../vnode/is-widget.js")
+var VPatch = require("../vnode/vpatch.js")
+
+var updateWidget = require("./update-widget")
+
+module.exports = applyPatch
+
+function applyPatch(vpatch, domNode, renderOptions) {
+    var type = vpatch.type
+    var vNode = vpatch.vNode
+    var patch = vpatch.patch
+
+    switch (type) {
+        case VPatch.REMOVE:
+            return removeNode(domNode, vNode)
+        case VPatch.INSERT:
+            return insertNode(domNode, patch, renderOptions)
+        case VPatch.VTEXT:
+            return stringPatch(domNode, vNode, patch, renderOptions)
+        case VPatch.WIDGET:
+            return widgetPatch(domNode, vNode, patch, renderOptions)
+        case VPatch.VNODE:
+            return vNodePatch(domNode, vNode, patch, renderOptions)
+        case VPatch.ORDER:
+            reorderChildren(domNode, patch)
+            return domNode
+        case VPatch.PROPS:
+            applyProperties(domNode, patch, vNode.properties)
+            return domNode
+        case VPatch.THUNK:
+            return replaceRoot(domNode,
+                renderOptions.patch(domNode, patch, renderOptions))
+        default:
+            return domNode
+    }
+}
+
+function removeNode(domNode, vNode) {
+    var parentNode = domNode.parentNode
+
+    if (parentNode) {
+        parentNode.removeChild(domNode)
+    }
+
+    destroyWidget(domNode, vNode);
+
+    return null
+}
+
+function insertNode(parentNode, vNode, renderOptions) {
+    var newNode = renderOptions.render(vNode, renderOptions)
+
+    if (parentNode) {
+        parentNode.appendChild(newNode)
+    }
+
+    return parentNode
+}
+
+function stringPatch(domNode, leftVNode, vText, renderOptions) {
+    var newNode
+
+    if (domNode.nodeType === 3) {
+        domNode.replaceData(0, domNode.length, vText.text)
+        newNode = domNode
+    } else {
+        var parentNode = domNode.parentNode
+        newNode = renderOptions.render(vText, renderOptions)
+
+        if (parentNode && newNode !== domNode) {
+            parentNode.replaceChild(newNode, domNode)
+        }
+    }
+
+    return newNode
+}
+
+function widgetPatch(domNode, leftVNode, widget, renderOptions) {
+    var updating = updateWidget(leftVNode, widget)
+    var newNode
+
+    if (updating) {
+        newNode = widget.update(leftVNode, domNode) || domNode
+    } else {
+        newNode = renderOptions.render(widget, renderOptions)
+    }
+
+    var parentNode = domNode.parentNode
+
+    if (parentNode && newNode !== domNode) {
+        parentNode.replaceChild(newNode, domNode)
+    }
+
+    if (!updating) {
+        destroyWidget(domNode, leftVNode)
+    }
+
+    return newNode
+}
+
+function vNodePatch(domNode, leftVNode, vNode, renderOptions) {
+    var parentNode = domNode.parentNode
+    var newNode = renderOptions.render(vNode, renderOptions)
+
+    if (parentNode && newNode !== domNode) {
+        parentNode.replaceChild(newNode, domNode)
+    }
+
+    return newNode
+}
+
+function destroyWidget(domNode, w) {
+    if (typeof w.destroy === "function" && isWidget(w)) {
+        w.destroy(domNode)
+    }
+}
+
+function reorderChildren(domNode, moves) {
+    var childNodes = domNode.childNodes
+    var keyMap = {}
+    var node
+    var remove
+    var insert
+
+    for (var i = 0; i < moves.removes.length; i++) {
+        remove = moves.removes[i]
+        node = childNodes[remove.from]
+        if (remove.key) {
+            keyMap[remove.key] = node
+        }
+        domNode.removeChild(node)
+    }
+
+    var length = childNodes.length
+    for (var j = 0; j < moves.inserts.length; j++) {
+        insert = moves.inserts[j]
+        node = keyMap[insert.key]
+        // this is the weirdest bug i've ever seen in webkit
+        domNode.insertBefore(node, insert.to >= length++ ? null : childNodes[insert.to])
+    }
+}
+
+function replaceRoot(oldRoot, newRoot) {
+    if (oldRoot && newRoot && oldRoot !== newRoot && oldRoot.parentNode) {
+        oldRoot.parentNode.replaceChild(newRoot, oldRoot)
+    }
+
+    return newRoot;
+}
+
+},{"../vnode/is-widget.js":29,"../vnode/vpatch.js":32,"./apply-properties":14,"./update-widget":19}],18:[function(require,module,exports){
+var document = require("global/document")
+var isArray = require("x-is-array")
+
+var render = require("./create-element")
+var domIndex = require("./dom-index")
+var patchOp = require("./patch-op")
+module.exports = patch
+
+function patch(rootNode, patches, renderOptions) {
+    renderOptions = renderOptions || {}
+    renderOptions.patch = renderOptions.patch && renderOptions.patch !== patch
+        ? renderOptions.patch
+        : patchRecursive
+    renderOptions.render = renderOptions.render || render
+
+    return renderOptions.patch(rootNode, patches, renderOptions)
+}
+
+function patchRecursive(rootNode, patches, renderOptions) {
+    var indices = patchIndices(patches)
+
+    if (indices.length === 0) {
+        return rootNode
+    }
+
+    var index = domIndex(rootNode, patches.a, indices)
+    var ownerDocument = rootNode.ownerDocument
+
+    if (!renderOptions.document && ownerDocument !== document) {
+        renderOptions.document = ownerDocument
+    }
+
+    for (var i = 0; i < indices.length; i++) {
+        var nodeIndex = indices[i]
+        rootNode = applyPatch(rootNode,
+            index[nodeIndex],
+            patches[nodeIndex],
+            renderOptions)
+    }
+
+    return rootNode
+}
+
+function applyPatch(rootNode, domNode, patchList, renderOptions) {
+    if (!domNode) {
+        return rootNode
+    }
+
+    var newNode
+
+    if (isArray(patchList)) {
+        for (var i = 0; i < patchList.length; i++) {
+            newNode = patchOp(patchList[i], domNode, renderOptions)
+
+            if (domNode === rootNode) {
+                rootNode = newNode
+            }
+        }
+    } else {
+        newNode = patchOp(patchList, domNode, renderOptions)
+
+        if (domNode === rootNode) {
+            rootNode = newNode
+        }
+    }
+
+    return rootNode
+}
+
+function patchIndices(patches) {
+    var indices = []
+
+    for (var key in patches) {
+        if (key !== "a") {
+            indices.push(Number(key))
+        }
+    }
+
+    return indices
+}
+
+},{"./create-element":15,"./dom-index":16,"./patch-op":17,"global/document":10,"x-is-array":12}],19:[function(require,module,exports){
+var isWidget = require("../vnode/is-widget.js")
+
+module.exports = updateWidget
+
+function updateWidget(a, b) {
+    if (isWidget(a) && isWidget(b)) {
+        if ("name" in a && "name" in b) {
+            return a.id === b.id
+        } else {
+            return a.init === b.init
+        }
+    }
+
+    return false
+}
+
+},{"../vnode/is-widget.js":29}],20:[function(require,module,exports){
+'use strict';
+
+var EvStore = require('ev-store');
+
+module.exports = EvHook;
+
+function EvHook(value) {
+    if (!(this instanceof EvHook)) {
+        return new EvHook(value);
+    }
+
+    this.value = value;
+}
+
+EvHook.prototype.hook = function (node, propertyName) {
+    var es = EvStore(node);
+    var propName = propertyName.substr(3);
+
+    es[propName] = this.value;
+};
+
+EvHook.prototype.unhook = function(node, propertyName) {
+    var es = EvStore(node);
+    var propName = propertyName.substr(3);
+
+    es[propName] = undefined;
+};
+
+},{"ev-store":7}],21:[function(require,module,exports){
+'use strict';
+
+module.exports = SoftSetHook;
+
+function SoftSetHook(value) {
+    if (!(this instanceof SoftSetHook)) {
+        return new SoftSetHook(value);
+    }
+
+    this.value = value;
+}
+
+SoftSetHook.prototype.hook = function (node, propertyName) {
+    if (node[propertyName] !== this.value) {
+        node[propertyName] = this.value;
+    }
+};
+
+},{}],22:[function(require,module,exports){
+'use strict';
+
+var isArray = require('x-is-array');
+
+var VNode = require('../vnode/vnode.js');
+var VText = require('../vnode/vtext.js');
+var isVNode = require('../vnode/is-vnode');
+var isVText = require('../vnode/is-vtext');
+var isWidget = require('../vnode/is-widget');
+var isHook = require('../vnode/is-vhook');
+var isVThunk = require('../vnode/is-thunk');
+
+var parseTag = require('./parse-tag.js');
+var softSetHook = require('./hooks/soft-set-hook.js');
+var evHook = require('./hooks/ev-hook.js');
+
+module.exports = h;
+
+function h(tagName, properties, children) {
+    var childNodes = [];
+    var tag, props, key, namespace;
+
+    if (!children && isChildren(properties)) {
+        children = properties;
+        props = {};
+    }
+
+    props = props || properties || {};
+    tag = parseTag(tagName, props);
+
+    // support keys
+    if (props.hasOwnProperty('key')) {
+        key = props.key;
+        props.key = undefined;
+    }
+
+    // support namespace
+    if (props.hasOwnProperty('namespace')) {
+        namespace = props.namespace;
+        props.namespace = undefined;
+    }
+
+    // fix cursor bug
+    if (tag === 'INPUT' &&
+        !namespace &&
+        props.hasOwnProperty('value') &&
+        props.value !== undefined &&
+        !isHook(props.value)
+    ) {
+        props.value = softSetHook(props.value);
+    }
+
+    transformProperties(props);
+
+    if (children !== undefined && children !== null) {
+        addChild(children, childNodes, tag, props);
+    }
+
+
+    return new VNode(tag, props, childNodes, key, namespace);
+}
+
+function addChild(c, childNodes, tag, props) {
+    if (typeof c === 'string') {
+        childNodes.push(new VText(c));
+    } else if (typeof c === 'number') {
+        childNodes.push(new VText(String(c)));
+    } else if (isChild(c)) {
+        childNodes.push(c);
+    } else if (isArray(c)) {
+        for (var i = 0; i < c.length; i++) {
+            addChild(c[i], childNodes, tag, props);
+        }
+    } else if (c === null || c === undefined) {
+        return;
+    } else {
+        throw UnexpectedVirtualElement({
+            foreignObject: c,
+            parentVnode: {
+                tagName: tag,
+                properties: props
+            }
+        });
+    }
+}
+
+function transformProperties(props) {
+    for (var propName in props) {
+        if (props.hasOwnProperty(propName)) {
+            var value = props[propName];
+
+            if (isHook(value)) {
+                continue;
+            }
+
+            if (propName.substr(0, 3) === 'ev-') {
+                // add ev-foo support
+                props[propName] = evHook(value);
+            }
+        }
+    }
+}
+
+function isChild(x) {
+    return isVNode(x) || isVText(x) || isWidget(x) || isVThunk(x);
+}
+
+function isChildren(x) {
+    return typeof x === 'string' || isArray(x) || isChild(x);
+}
+
+function UnexpectedVirtualElement(data) {
+    var err = new Error();
+
+    err.type = 'virtual-hyperscript.unexpected.virtual-element';
+    err.message = 'Unexpected virtual child passed to h().\n' +
+        'Expected a VNode / Vthunk / VWidget / string but:\n' +
+        'got:\n' +
+        errorString(data.foreignObject) +
+        '.\n' +
+        'The parent vnode is:\n' +
+        errorString(data.parentVnode)
+        '\n' +
+        'Suggested fix: change your `h(..., [ ... ])` callsite.';
+    err.foreignObject = data.foreignObject;
+    err.parentVnode = data.parentVnode;
+
+    return err;
+}
+
+function errorString(obj) {
+    try {
+        return JSON.stringify(obj, null, '    ');
+    } catch (e) {
+        return String(obj);
+    }
+}
+
+},{"../vnode/is-thunk":25,"../vnode/is-vhook":26,"../vnode/is-vnode":27,"../vnode/is-vtext":28,"../vnode/is-widget":29,"../vnode/vnode.js":31,"../vnode/vtext.js":33,"./hooks/ev-hook.js":20,"./hooks/soft-set-hook.js":21,"./parse-tag.js":23,"x-is-array":12}],23:[function(require,module,exports){
+'use strict';
+
+var split = require('browser-split');
+
+var classIdSplit = /([\.#]?[a-zA-Z0-9\u007F-\uFFFF_:-]+)/;
+var notClassId = /^\.|#/;
+
+module.exports = parseTag;
+
+function parseTag(tag, props) {
+    if (!tag) {
+        return 'DIV';
+    }
+
+    var noId = !(props.hasOwnProperty('id'));
+
+    var tagParts = split(tag, classIdSplit);
+    var tagName = null;
+
+    if (notClassId.test(tagParts[1])) {
+        tagName = 'DIV';
+    }
+
+    var classes, part, type, i;
+
+    for (i = 0; i < tagParts.length; i++) {
+        part = tagParts[i];
+
+        if (!part) {
+            continue;
+        }
+
+        type = part.charAt(0);
+
+        if (!tagName) {
+            tagName = part;
+        } else if (type === '.') {
+            classes = classes || [];
+            classes.push(part.substring(1, part.length));
+        } else if (type === '#' && noId) {
+            props.id = part.substring(1, part.length);
+        }
+    }
+
+    if (classes) {
+        if (props.className) {
+            classes.push(props.className);
+        }
+
+        props.className = classes.join(' ');
+    }
+
+    return props.namespace ? tagName : tagName.toUpperCase();
+}
+
+},{"browser-split":6}],24:[function(require,module,exports){
+var isVNode = require("./is-vnode")
+var isVText = require("./is-vtext")
+var isWidget = require("./is-widget")
+var isThunk = require("./is-thunk")
+
+module.exports = handleThunk
+
+function handleThunk(a, b) {
+    var renderedA = a
+    var renderedB = b
+
+    if (isThunk(b)) {
+        renderedB = renderThunk(b, a)
+    }
+
+    if (isThunk(a)) {
+        renderedA = renderThunk(a, null)
+    }
+
+    return {
+        a: renderedA,
+        b: renderedB
+    }
+}
+
+function renderThunk(thunk, previous) {
+    var renderedThunk = thunk.vnode
+
+    if (!renderedThunk) {
+        renderedThunk = thunk.vnode = thunk.render(previous)
+    }
+
+    if (!(isVNode(renderedThunk) ||
+            isVText(renderedThunk) ||
+            isWidget(renderedThunk))) {
+        throw new Error("thunk did not return a valid node");
+    }
+
+    return renderedThunk
+}
+
+},{"./is-thunk":25,"./is-vnode":27,"./is-vtext":28,"./is-widget":29}],25:[function(require,module,exports){
+module.exports = isThunk
+
+function isThunk(t) {
+    return t && t.type === "Thunk"
+}
+
+},{}],26:[function(require,module,exports){
+module.exports = isHook
+
+function isHook(hook) {
+    return hook &&
+      (typeof hook.hook === "function" && !hook.hasOwnProperty("hook") ||
+       typeof hook.unhook === "function" && !hook.hasOwnProperty("unhook"))
+}
+
+},{}],27:[function(require,module,exports){
+var version = require("./version")
+
+module.exports = isVirtualNode
+
+function isVirtualNode(x) {
+    return x && x.type === "VirtualNode" && x.version === version
+}
+
+},{"./version":30}],28:[function(require,module,exports){
+var version = require("./version")
+
+module.exports = isVirtualText
+
+function isVirtualText(x) {
+    return x && x.type === "VirtualText" && x.version === version
+}
+
+},{"./version":30}],29:[function(require,module,exports){
+module.exports = isWidget
+
+function isWidget(w) {
+    return w && w.type === "Widget"
+}
+
+},{}],30:[function(require,module,exports){
+module.exports = "2"
+
+},{}],31:[function(require,module,exports){
+var version = require("./version")
+var isVNode = require("./is-vnode")
+var isWidget = require("./is-widget")
+var isThunk = require("./is-thunk")
+var isVHook = require("./is-vhook")
+
+module.exports = VirtualNode
+
+var noProperties = {}
+var noChildren = []
+
+function VirtualNode(tagName, properties, children, key, namespace) {
+    this.tagName = tagName
+    this.properties = properties || noProperties
+    this.children = children || noChildren
+    this.key = key != null ? String(key) : undefined
+    this.namespace = (typeof namespace === "string") ? namespace : null
+
+    var count = (children && children.length) || 0
+    var descendants = 0
+    var hasWidgets = false
+    var hasThunks = false
+    var descendantHooks = false
+    var hooks
+
+    for (var propName in properties) {
+        if (properties.hasOwnProperty(propName)) {
+            var property = properties[propName]
+            if (isVHook(property) && property.unhook) {
+                if (!hooks) {
+                    hooks = {}
+                }
+
+                hooks[propName] = property
+            }
+        }
+    }
+
+    for (var i = 0; i < count; i++) {
+        var child = children[i]
+        if (isVNode(child)) {
+            descendants += child.count || 0
+
+            if (!hasWidgets && child.hasWidgets) {
+                hasWidgets = true
+            }
+
+            if (!hasThunks && child.hasThunks) {
+                hasThunks = true
+            }
+
+            if (!descendantHooks && (child.hooks || child.descendantHooks)) {
+                descendantHooks = true
+            }
+        } else if (!hasWidgets && isWidget(child)) {
+            if (typeof child.destroy === "function") {
+                hasWidgets = true
+            }
+        } else if (!hasThunks && isThunk(child)) {
+            hasThunks = true;
+        }
+    }
+
+    this.count = count + descendants
+    this.hasWidgets = hasWidgets
+    this.hasThunks = hasThunks
+    this.hooks = hooks
+    this.descendantHooks = descendantHooks
+}
+
+VirtualNode.prototype.version = version
+VirtualNode.prototype.type = "VirtualNode"
+
+},{"./is-thunk":25,"./is-vhook":26,"./is-vnode":27,"./is-widget":29,"./version":30}],32:[function(require,module,exports){
+var version = require("./version")
+
+VirtualPatch.NONE = 0
+VirtualPatch.VTEXT = 1
+VirtualPatch.VNODE = 2
+VirtualPatch.WIDGET = 3
+VirtualPatch.PROPS = 4
+VirtualPatch.ORDER = 5
+VirtualPatch.INSERT = 6
+VirtualPatch.REMOVE = 7
+VirtualPatch.THUNK = 8
+
+module.exports = VirtualPatch
+
+function VirtualPatch(type, vNode, patch) {
+    this.type = Number(type)
+    this.vNode = vNode
+    this.patch = patch
+}
+
+VirtualPatch.prototype.version = version
+VirtualPatch.prototype.type = "VirtualPatch"
+
+},{"./version":30}],33:[function(require,module,exports){
+var version = require("./version")
+
+module.exports = VirtualText
+
+function VirtualText(text) {
+    this.text = String(text)
+}
+
+VirtualText.prototype.version = version
+VirtualText.prototype.type = "VirtualText"
+
+},{"./version":30}],34:[function(require,module,exports){
+var isObject = require("is-object")
+var isHook = require("../vnode/is-vhook")
+
+module.exports = diffProps
+
+function diffProps(a, b) {
+    var diff
+
+    for (var aKey in a) {
+        if (!(aKey in b)) {
+            diff = diff || {}
+            diff[aKey] = undefined
+        }
+
+        var aValue = a[aKey]
+        var bValue = b[aKey]
+
+        if (aValue === bValue) {
+            continue
+        } else if (isObject(aValue) && isObject(bValue)) {
+            if (getPrototype(bValue) !== getPrototype(aValue)) {
+                diff = diff || {}
+                diff[aKey] = bValue
+            } else if (isHook(bValue)) {
+                 diff = diff || {}
+                 diff[aKey] = bValue
+            } else {
+                var objectDiff = diffProps(aValue, bValue)
+                if (objectDiff) {
+                    diff = diff || {}
+                    diff[aKey] = objectDiff
+                }
+            }
+        } else {
+            diff = diff || {}
+            diff[aKey] = bValue
+        }
+    }
+
+    for (var bKey in b) {
+        if (!(bKey in a)) {
+            diff = diff || {}
+            diff[bKey] = b[bKey]
+        }
+    }
+
+    return diff
+}
+
+function getPrototype(value) {
+  if (Object.getPrototypeOf) {
+    return Object.getPrototypeOf(value)
+  } else if (value.__proto__) {
+    return value.__proto__
+  } else if (value.constructor) {
+    return value.constructor.prototype
+  }
+}
+
+},{"../vnode/is-vhook":26,"is-object":11}],35:[function(require,module,exports){
+var isArray = require("x-is-array")
+
+var VPatch = require("../vnode/vpatch")
+var isVNode = require("../vnode/is-vnode")
+var isVText = require("../vnode/is-vtext")
+var isWidget = require("../vnode/is-widget")
+var isThunk = require("../vnode/is-thunk")
+var handleThunk = require("../vnode/handle-thunk")
+
+var diffProps = require("./diff-props")
+
+module.exports = diff
+
+function diff(a, b) {
+    var patch = { a: a }
+    walk(a, b, patch, 0)
+    return patch
+}
+
+function walk(a, b, patch, index) {
+    if (a === b) {
+        return
+    }
+
+    var apply = patch[index]
+    var applyClear = false
+
+    if (isThunk(a) || isThunk(b)) {
+        thunks(a, b, patch, index)
+    } else if (b == null) {
+
+        // If a is a widget we will add a remove patch for it
+        // Otherwise any child widgets/hooks must be destroyed.
+        // This prevents adding two remove patches for a widget.
+        if (!isWidget(a)) {
+            clearState(a, patch, index)
+            apply = patch[index]
+        }
+
+        apply = appendPatch(apply, new VPatch(VPatch.REMOVE, a, b))
+    } else if (isVNode(b)) {
+        if (isVNode(a)) {
+            if (a.tagName === b.tagName &&
+                a.namespace === b.namespace &&
+                a.key === b.key) {
+                var propsPatch = diffProps(a.properties, b.properties)
+                if (propsPatch) {
+                    apply = appendPatch(apply,
+                        new VPatch(VPatch.PROPS, a, propsPatch))
+                }
+                apply = diffChildren(a, b, patch, apply, index)
+            } else {
+                apply = appendPatch(apply, new VPatch(VPatch.VNODE, a, b))
+                applyClear = true
+            }
+        } else {
+            apply = appendPatch(apply, new VPatch(VPatch.VNODE, a, b))
+            applyClear = true
+        }
+    } else if (isVText(b)) {
+        if (!isVText(a)) {
+            apply = appendPatch(apply, new VPatch(VPatch.VTEXT, a, b))
+            applyClear = true
+        } else if (a.text !== b.text) {
+            apply = appendPatch(apply, new VPatch(VPatch.VTEXT, a, b))
+        }
+    } else if (isWidget(b)) {
+        if (!isWidget(a)) {
+            applyClear = true
+        }
+
+        apply = appendPatch(apply, new VPatch(VPatch.WIDGET, a, b))
+    }
+
+    if (apply) {
+        patch[index] = apply
+    }
+
+    if (applyClear) {
+        clearState(a, patch, index)
+    }
+}
+
+function diffChildren(a, b, patch, apply, index) {
+    var aChildren = a.children
+    var orderedSet = reorder(aChildren, b.children)
+    var bChildren = orderedSet.children
+
+    var aLen = aChildren.length
+    var bLen = bChildren.length
+    var len = aLen > bLen ? aLen : bLen
+
+    for (var i = 0; i < len; i++) {
+        var leftNode = aChildren[i]
+        var rightNode = bChildren[i]
+        index += 1
+
+        if (!leftNode) {
+            if (rightNode) {
+                // Excess nodes in b need to be added
+                apply = appendPatch(apply,
+                    new VPatch(VPatch.INSERT, null, rightNode))
+            }
+        } else {
+            walk(leftNode, rightNode, patch, index)
+        }
+
+        if (isVNode(leftNode) && leftNode.count) {
+            index += leftNode.count
+        }
+    }
+
+    if (orderedSet.moves) {
+        // Reorder nodes last
+        apply = appendPatch(apply, new VPatch(
+            VPatch.ORDER,
+            a,
+            orderedSet.moves
+        ))
+    }
+
+    return apply
+}
+
+function clearState(vNode, patch, index) {
+    // TODO: Make this a single walk, not two
+    unhook(vNode, patch, index)
+    destroyWidgets(vNode, patch, index)
+}
+
+// Patch records for all destroyed widgets must be added because we need
+// a DOM node reference for the destroy function
+function destroyWidgets(vNode, patch, index) {
+    if (isWidget(vNode)) {
+        if (typeof vNode.destroy === "function") {
+            patch[index] = appendPatch(
+                patch[index],
+                new VPatch(VPatch.REMOVE, vNode, null)
+            )
+        }
+    } else if (isVNode(vNode) && (vNode.hasWidgets || vNode.hasThunks)) {
+        var children = vNode.children
+        var len = children.length
+        for (var i = 0; i < len; i++) {
+            var child = children[i]
+            index += 1
+
+            destroyWidgets(child, patch, index)
+
+            if (isVNode(child) && child.count) {
+                index += child.count
+            }
+        }
+    } else if (isThunk(vNode)) {
+        thunks(vNode, null, patch, index)
+    }
+}
+
+// Create a sub-patch for thunks
+function thunks(a, b, patch, index) {
+    var nodes = handleThunk(a, b)
+    var thunkPatch = diff(nodes.a, nodes.b)
+    if (hasPatches(thunkPatch)) {
+        patch[index] = new VPatch(VPatch.THUNK, null, thunkPatch)
+    }
+}
+
+function hasPatches(patch) {
+    for (var index in patch) {
+        if (index !== "a") {
+            return true
+        }
+    }
+
+    return false
+}
+
+// Execute hooks when two nodes are identical
+function unhook(vNode, patch, index) {
+    if (isVNode(vNode)) {
+        if (vNode.hooks) {
+            patch[index] = appendPatch(
+                patch[index],
+                new VPatch(
+                    VPatch.PROPS,
+                    vNode,
+                    undefinedKeys(vNode.hooks)
+                )
+            )
+        }
+
+        if (vNode.descendantHooks || vNode.hasThunks) {
+            var children = vNode.children
+            var len = children.length
+            for (var i = 0; i < len; i++) {
+                var child = children[i]
+                index += 1
+
+                unhook(child, patch, index)
+
+                if (isVNode(child) && child.count) {
+                    index += child.count
+                }
+            }
+        }
+    } else if (isThunk(vNode)) {
+        thunks(vNode, null, patch, index)
+    }
+}
+
+function undefinedKeys(obj) {
+    var result = {}
+
+    for (var key in obj) {
+        result[key] = undefined
+    }
+
+    return result
+}
+
+// List diff, naive left to right reordering
+function reorder(aChildren, bChildren) {
+    // O(M) time, O(M) memory
+    var bChildIndex = keyIndex(bChildren)
+    var bKeys = bChildIndex.keys
+    var bFree = bChildIndex.free
+
+    if (bFree.length === bChildren.length) {
+        return {
+            children: bChildren,
+            moves: null
+        }
+    }
+
+    // O(N) time, O(N) memory
+    var aChildIndex = keyIndex(aChildren)
+    var aKeys = aChildIndex.keys
+    var aFree = aChildIndex.free
+
+    if (aFree.length === aChildren.length) {
+        return {
+            children: bChildren,
+            moves: null
+        }
+    }
+
+    // O(MAX(N, M)) memory
+    var newChildren = []
+
+    var freeIndex = 0
+    var freeCount = bFree.length
+    var deletedItems = 0
+
+    // Iterate through a and match a node in b
+    // O(N) time,
+    for (var i = 0 ; i < aChildren.length; i++) {
+        var aItem = aChildren[i]
+        var itemIndex
+
+        if (aItem.key) {
+            if (bKeys.hasOwnProperty(aItem.key)) {
+                // Match up the old keys
+                itemIndex = bKeys[aItem.key]
+                newChildren.push(bChildren[itemIndex])
+
+            } else {
+                // Remove old keyed items
+                itemIndex = i - deletedItems++
+                newChildren.push(null)
+            }
+        } else {
+            // Match the item in a with the next free item in b
+            if (freeIndex < freeCount) {
+                itemIndex = bFree[freeIndex++]
+                newChildren.push(bChildren[itemIndex])
+            } else {
+                // There are no free items in b to match with
+                // the free items in a, so the extra free nodes
+                // are deleted.
+                itemIndex = i - deletedItems++
+                newChildren.push(null)
+            }
+        }
+    }
+
+    var lastFreeIndex = freeIndex >= bFree.length ?
+        bChildren.length :
+        bFree[freeIndex]
+
+    // Iterate through b and append any new keys
+    // O(M) time
+    for (var j = 0; j < bChildren.length; j++) {
+        var newItem = bChildren[j]
+
+        if (newItem.key) {
+            if (!aKeys.hasOwnProperty(newItem.key)) {
+                // Add any new keyed items
+                // We are adding new items to the end and then sorting them
+                // in place. In future we should insert new items in place.
+                newChildren.push(newItem)
+            }
+        } else if (j >= lastFreeIndex) {
+            // Add any leftover non-keyed items
+            newChildren.push(newItem)
+        }
+    }
+
+    var simulate = newChildren.slice()
+    var simulateIndex = 0
+    var removes = []
+    var inserts = []
+    var simulateItem
+
+    for (var k = 0; k < bChildren.length;) {
+        var wantedItem = bChildren[k]
+        simulateItem = simulate[simulateIndex]
+
+        // remove items
+        while (simulateItem === null && simulate.length) {
+            removes.push(remove(simulate, simulateIndex, null))
+            simulateItem = simulate[simulateIndex]
+        }
+
+        if (!simulateItem || simulateItem.key !== wantedItem.key) {
+            // if we need a key in this position...
+            if (wantedItem.key) {
+                if (simulateItem && simulateItem.key) {
+                    // if an insert doesn't put this key in place, it needs to move
+                    if (bKeys[simulateItem.key] !== k + 1) {
+                        removes.push(remove(simulate, simulateIndex, simulateItem.key))
+                        simulateItem = simulate[simulateIndex]
+                        // if the remove didn't put the wanted item in place, we need to insert it
+                        if (!simulateItem || simulateItem.key !== wantedItem.key) {
+                            inserts.push({key: wantedItem.key, to: k})
+                        }
+                        // items are matching, so skip ahead
+                        else {
+                            simulateIndex++
+                        }
+                    }
+                    else {
+                        inserts.push({key: wantedItem.key, to: k})
+                    }
+                }
+                else {
+                    inserts.push({key: wantedItem.key, to: k})
+                }
+                k++
+            }
+            // a key in simulate has no matching wanted key, remove it
+            else if (simulateItem && simulateItem.key) {
+                removes.push(remove(simulate, simulateIndex, simulateItem.key))
+            }
+        }
+        else {
+            simulateIndex++
+            k++
+        }
+    }
+
+    // remove all the remaining nodes from simulate
+    while(simulateIndex < simulate.length) {
+        simulateItem = simulate[simulateIndex]
+        removes.push(remove(simulate, simulateIndex, simulateItem && simulateItem.key))
+    }
+
+    // If the only moves we have are deletes then we can just
+    // let the delete patch remove these items.
+    if (removes.length === deletedItems && !inserts.length) {
+        return {
+            children: newChildren,
+            moves: null
+        }
+    }
+
+    return {
+        children: newChildren,
+        moves: {
+            removes: removes,
+            inserts: inserts
+        }
+    }
+}
+
+function remove(arr, index, key) {
+    arr.splice(index, 1)
+
+    return {
+        from: index,
+        key: key
+    }
+}
+
+function keyIndex(children) {
+    var keys = {}
+    var free = []
+    var length = children.length
+
+    for (var i = 0; i < length; i++) {
+        var child = children[i]
+
+        if (child.key) {
+            keys[child.key] = i
+        } else {
+            free.push(i)
+        }
+    }
+
+    return {
+        keys: keys,     // A hash of key name to index
+        free: free      // An array of unkeyed item indices
+    }
+}
+
+function appendPatch(apply, patch) {
+    if (apply) {
+        if (isArray(apply)) {
+            apply.push(patch)
+        } else {
+            apply = [apply, patch]
+        }
+
+        return apply
+    } else {
+        return patch
+    }
+}
+
+},{"../vnode/handle-thunk":24,"../vnode/is-thunk":25,"../vnode/is-vnode":27,"../vnode/is-vtext":28,"../vnode/is-widget":29,"../vnode/vpatch":32,"./diff-props":34,"x-is-array":12}],36:[function(require,module,exports){
+
+},{}]},{},[1]);
+
+function html_Init(){html_watchHack = fromJS(core_watcher);html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_h);html_createElement = fromJS(virtualDom.create);html_diff = fromJS(virtualDom.diff);html_patch = fromJS(virtualDom.patch);html_clear = fromJS(clearElement);html_cssSelector = fromJS(document.querySelector.bind(document));html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = newVector();html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");}function html_Event(b){this.target=b;}function html_Attribute(c,d){this.name=c;this.value=d;}function html_None(){}function html_newAttrib(f, g){return new html_Attribute(f,g);}function html_onEvent(h, j, k){function l(m){k.operator_set(j(k.unary_read(),m));;}return new html_Attribute(h,l);}function html_async(n, p){function q(){p.operator_set(n(p.unary_read()));;}return q;}function html_ignoreAct(r){function s(t, v){return r(t);}return s;}function html_withId(w){function x(y, z, B){return z.set(y,(w(z.get(y),B)));}return x;}function html_mapWithId(C, D, F){function G(H){return C(D.get(H),H,F);}return newVectorRange(0,D.length).map(G);}var html_watchHack;function html_mapView(J, K, L){function M(N){function P(Q){L.operator_set((K.set(N,Q)));;}var R;R = K.get(N);var S;S = newAtom(R);html_watchHack(S,P);return J(R,S);}return newVectorRange(0,K.length).map(M);}var html_style;var html_placeHolder;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;function html_render(T){var V;V = html_createElement(T);var W;W = html_cssSelector("#code");html_clear(W);W.appendChild(V);return V;}function html_app(X, Y){var Z;Z = X((Y.unary_read()),Y);var bb;bb = html_render(Z);function bc(bd){var bf;bf = X(bd,Y);var bg;bg = html_diff(Z,bf);bb = html_patch(bb,bg);Z = bf;;}Y.watch(bc);;}function main_Init(){html_Init();main_appstate = newAtom(newVector());main_add = html_ignoreAct(operator_add.bind(null,1));main_sub = html_ignoreAct((function(q){return function(p){return operator_sub(p,q);}})(1));main_addCounter = html_ignoreAct(main_append.bind(null,0));html_app(main_view,main_appstate);}function main_map(b, c){return c.map(b);}function main_filter(d, f){return f.filter(d);}function main_reduce(g, h){return h.reduce(g);}function main_comp(j, k){return j((k));}function main_append(l, m){return m.append(l);}function main_first(n){return n.get(0);}var main_appstate;var main_add;var main_sub;function main_counter(r, s){return html_div(html_noAttrib,newVector(html_button(newVector(html_onClick(main_add,s)),"+"),(((("Counter ")+((r)).toString()))+("").toString()),html_button(newVector(html_onClick(main_sub,s)),"-")));}var main_addCounter;function main_view(t, v){return html_div(html_noAttrib,newVector(html_div(html_noAttrib,(html_mapView(main_counter,t,v))),html_button(newVector(html_onClick(main_addCounter,v)),"Add")));}function log(t){console.log(t.toString())}function alert(t){alert(t.toString())}function println(t){stdout.innerHTML+=t.toString()+"<br>"}function print(t){stdout.innerHTML+=t}function operator_add(t,r){return t.operator_add(r)}function operator_sub(t,r){return t.operator_sub(r)}function operator_mul(t,r){return t.operator_mul(r)}function operator_div(t,r){return t.operator_div(r)}function operator_mod(t,r){return t.operator_mod(r)}function operator_eq(t,r){return t.operator_eq(r)}function operator_pow(t,r){return Math.pow(t,r)}function operator_lt(t,r){return t.operator_lt(r)}function operator_gt(t,r){return t.operator_gt(r)}function operator_or(t,r){return t||r}function operator_not(t){return!t}function operator_and(t,r){return t&&r}function unary_add(t){return t}function unary_sub(t){return-t}function toString(t){return t.toString()}function string_toString(t){return t}function int_toString(t){return t.toString()}function float_toString(t){return t.toString()}function array_toString(t){return t.toString()}function float_toInt(t){return 0|t}function int_toInt(t){return t}function float_toFloat(t){return t}function int_toFloat(t){return t}function log(t){console.log(t.toString())}function isOdd(t){return t%2!=0}function isEven(t){return t%2==0}function min(t,r){return r>t?t:r}function max(t,r){return t>r?t:r}function len(t){return t.length}function toFloat(t){return t.toFloat()}function toInt(t){return t.toInt()}function toJS(t){return t instanceof Vector?t.map(toJS).toArray():t instanceof Function?funcWrapper(t):t}function fromJS(t){return t instanceof Array?fromArray(t.map(fromJS)):t instanceof Function?jsFuncWrapper(t):t}function funcWrapper(t){return function(){for(var r=Array.prototype.slice.call(arguments),n=[],e=0;e<r.length;e++)n.push(fromJS(r[e]));return toJS(t.apply(null,n))}}function jsFuncWrapper(t){return function(){for(var r=Array.prototype.slice.call(arguments),n=[],e=0;e<r.length;e++)n.push(toJS(r[e]));return fromJS(t.apply(null,n))}}function unary_read(){return this.arg}function operator_set(t){this.arg=t;for(var r=0;r<this.events.length;r++)this.events[r](t)}function atom_watch(t){this.events.push(t)}function newAtom(t){return{unary_read:unary_read,operator_set:operator_set,arg:t,watch:atom_watch,events:[]}}function List(t,r){this.head=t,this.tail=r,null===r?null===t?this.length=0:this.length=1:this.length=r.length+1}function listFromArray(t){for(var r=t.length,n=EmptyList,e=0;r>e;e++)n=n.append(t[e]);return n}function newList(){return listFromArray(Array.prototype.slice.call(arguments))}function newListRange(t,r){for(var n=EmptyList,e=t;r>e;e++)n=n.append(e);return n}function newListInit(t,r){for(var n=EmptyList,e=0;t>e;e++)n=n.append(e);return n}function Vector(t,r,n){this.shift=(n-1)*this.bits,this.root=t,this.length=r,this.depth=n}function getProperIndex(t,r){return 0>r?t.length+r:r}function newVector(){return fromArray(Array.prototype.slice.call(arguments))}function fromArray(t){for(var r=EmptyVector,n=0;n<t.length;n++)r=r.append(t[n]);return r}function newVectorRange(t,r){for(var n=EmptyVector,e=t;r>e;e++)n=n.append(e);return n}function newVectorInit(t,r){for(var n=EmptyVector,e=0;t>e;e++)n=n.append(e);return n}var stdout=document.getElementById("code");Number.prototype.operator_add=function(t){return this+t},Number.prototype.operator_div=function(t){return this/t},Number.prototype.operator_sub=function(t){return this-t},Number.prototype.operator_mul=function(t){return this*t},Number.prototype.operator_eq=function(t){return this==t},Number.prototype.operator_mod=function(t){return this%t},Number.prototype.operator_lt=function(t){return t>this},Number.prototype.operator_gt=function(t){return this>t},Number.prototype.toFloat=function(){return this},Number.prototype.toInt=function(){return 0|this},String.prototype.operator_eq=function(t){return this==t},String.prototype.operator_add=function(t){return this+t};var EmptyList=new List(null,null);List.prototype.append=function(t){return new List(t,this)},List.prototype.toArray=function(){for(var t=[],r=this,n=0;n<this.length;n++)t.push(r.head),r=r.tail;return t.reverse()},List.prototype.getProperIndex=function(t){return 0>t?this.length+t:t},List.prototype.getList=function(t){t=this.getProperIndex(t);for(var r=this.length-t-1,n=this,e=0;r>e;e++)n=n.tail;return n},List.prototype.get=function(t){return this.getList(t).head},List.prototype.toString=function(){return"List("+this.join(", ")+")"},List.prototype.join=function(t){null===t&&(t=",");var r=this;if(0===this.length)return"";for(var n=r.head.toString(),e=1;e<this.length;e++)r=r.tail,n=r.head.toString()+t.toString()+n;return n},List.prototype.insert=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?t.append(e):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t,r)},List.prototype.del=function(t){function r(t,n){if(0>n)throw new Error("");if(1===n){var e=t.tail;return null===e&&(e=EmptyList),e}return r(t.tail,n-1).append(t.head)}return t=this.getProperIndex(t),r(this,this.length-t)},List.prototype.slice=function(t,r){null==t&&(t=0),null==r&&(r=this.length),r=this.getProperIndex(r-1),t=this.getProperIndex(t);var n=this.getList(r),e=new List(n.head,n.tail);return e.length=r-t+1,e},List.prototype.reverse=function(){for(var t=EmptyList,r=this,n=0;n<this.length;n++)t=t.append(r.head),r=r.tail;return t},List.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(r===t)return!0;for(var r=this,n=0;n<this.length;n++){if(!r.head.operator_eq(t.head))return!1;r=r.tail,t=t.tail}return!0},List.prototype.operator_add=function(t){function r(t,n,e){if(0>n)throw new Exception;return 0==n?new List(e.head,e.tail):r(t.tail,n-1,e).append(t.head)}return r(t,t.length,this)},List.prototype.copy=function(){function t(r,n){if(0>n)throw new Exception;return 0==n?r:t(r.tail,n-1).append(r.head)}return t(this,this.length)},List.prototype.set=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?new List(e,t.tail):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t-1,r)},Vector.prototype.bits=5,Vector.prototype.width=1<<Vector.prototype.bits,Vector.prototype.mask=Vector.prototype.width-1;var EmptyVector=new Vector(Array(Vector.prototype.width),0,1);Vector.prototype.get=function(t){if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());for(var r=this.root,n=this.bits,e=this.mask,o=this.shift;o>0;o-=n)r=r[t>>o&e];return r[t&e]},Vector.prototype.append=function(t){function r(i,u,p){if(u>0){var s=p>>u&e;if(i)var a=i.slice();else var a=Array(o);return a[s]=r(a[s],u-n,p),a}var s=p&e;if(null==i)var a=Array(o);else var a=i.slice();return a[s]=t,a}var n=this.bits,e=this.mask,o=Vector.prototype.width;if(Math.pow(o,this.depth)===this.length){var i=Array(o);i[0]=this.root,i[1]=Array(o);var u=r(i,this.depth*this.bits,this.length);return new Vector(u,this.length+1,this.depth+1)}var u=r(this.root,this.shift,this.length);return new Vector(u,this.length+1,this.depth)},Vector.prototype.set=function(t,r){function n(t,u,p){if(u>0){var s=p>>u&o;if(t)var a=t.slice();else var a=Array(i);return a[s]=n(a[s],u-e,p),a}var s=p&o,a=t.slice();return a[s]=r,a}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var e=this.bits,o=this.mask,i=Vector.prototype.width,u=n(this.root,this.shift,t);return new Vector(u,this.length,this.depth)},Vector.prototype.insert=function(t,r){function n(t,r,p,s){if(r>0){var a=p>>r&i;if(t)var h=t.slice();else var h=Array(u);var f=n(h[a],r-o,p,s);h[a]=f[0];var c=null;if(f[1]){c=f[1];for(var l=a+1;u>l;l++){var f=n(h[l],r-o,l<<r,c);h[l]=f[0],c=f[1]}}return[h,c]}var a=p&i;return e(t,a,s)}function e(t,r,n){for(var e=[],o=0;u-1>o;o++)r===o&&e.push(n),e.push(t[o]);return r===o&&e.push(n),[e,t[u-1]]}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var o=this.bits,i=this.mask,u=Vector.prototype.width,p=n(this.root,this.shift,t,r);return p[1]?new Vector(p[0],this.length+1,this.depth).append(p[1]):new Vector(p[0],this.length+1,this.depth)},Vector.prototype.toArray=function(){for(var t=Array(this.length),r=0;r<this.length;r++)t[r]=this.get(r);return t},Vector.prototype.toString=function(){return"["+this.toArray().join(",")+"]"},Vector.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(this===t)return!0;for(var r=0;r<this.length;r++)if(!this.get(r).operator_eq(t.get(r)))return!1;return!0},Vector.prototype.map=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++)r=r.append(t(this.get(e)));return r},Vector.prototype.filter=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++){var o=this.get(e);t(o)&&(r=r.append(o))}return r},Vector.prototype.reduce=function(t){if(1==this.length)return this.get(0);if(0===this.length)throw Error("Cannot reduce empty vector");for(var r=this.length,n=this.get(0),e=1;r>e;e++)n=t(n,this.get(e));return n},Vector.prototype.join=function(t){if(0==t.length)return"";for(var r=this.get(0),n=this.length,e=1;n>e;e++)r+=t+this.get(e);return r},Vector.prototype.has=function(t){for(var r=0;r<this.length;r++)if(this.get(r).operator_eq(t))return!0;return!1},Vector.prototype.operator_add=function(t){for(var r=this,n=0;n<t.length;n++)r=r.append(t.get(n));return r};

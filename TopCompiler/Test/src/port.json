@@ -2,6 +2,5 @@
     {
         "name": "Test",
         "version": 0.0,
-        "link": []
+        "link": ["js/bundle.js"]
     }
-    

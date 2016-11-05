@@ -61,12 +61,9 @@ class String(Node):
         string = self.string.\
             replace("<", "&lt").\
             replace(">", "&gt").\
-            replace("[ ]+ ", "&nbsp").\
             replace("\\t", "&nbsp"*4).\
-            replace("\n", "<br>").\
-            replace("\\n", "<br>")
+            replace("\n", "")
 
-        if string[1:2] == " ": string = '"&nbsp' + string[2:]
         codegen.append(string)
 
     def validate(self, parser): pass

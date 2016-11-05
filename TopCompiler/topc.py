@@ -124,7 +124,7 @@ compiled = []
 
 error = ""
 
-def start(run= False, dev= False, init= False):
+def start(run= False, dev= False, init= False, hotswap= False):
     try:
         opt = 0
         skip = 0
@@ -175,12 +175,24 @@ def start(run= False, dev= False, init= False):
                 except FileNotFoundError:
                     Error.error("file " + i[1] +", not found")
 
-        if outputFile == "":
-            port = open("src/port.json")
+        port = open("src/port.json")
+        data = port.read()
+        jsonLoad = json.loads(data)
 
-            data = port.read()
-            outputFile = (json.loads(data)["name"])
-            port.close()
+        port.close()
+
+        try:
+            linkWithFiles = jsonLoad["link"]
+        except:
+            linkWithFiles = []
+
+        try:
+            require = jsonLoad["require"]
+        except:
+            require = False
+
+        if outputFile == "":
+            outputFile = (jsonLoad["name"])
 
         if filenames == []:
             Error.error("no input files")
@@ -242,9 +254,12 @@ def start(run= False, dev= False, init= False):
 
             for i in parser.compiled:
                 if parser.compiled[i][0]:
+                    if hotswap:
+                        print("hotswap")
+                        prepareForHotswap(parser.compiled[i][1][0])
                     CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1]).compile(opt=opt)
 
-            l = CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev)
+            l = CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev, linkWith= linkWithFiles)
             print("Compilation took : "+str(time() - time1))
             return (True, l)
         elif run:
@@ -262,6 +277,30 @@ def start(run= False, dev= False, init= False):
             print(e, file= sys.stderr)
 
     #profile.print_stats("time")
+
+def prepareForHotswap(arg):
+    count = 0
+    for i in arg:
+        if type(i) in [Tree.FuncBody, Tree.FuncBraceOpen, Tree.FuncStart]:
+            count += 1
+            continue
+
+        """if type(i) is Tree.FuncCall and i.nodes[0].type.do:
+            print("side effect function")
+            return True
+        """
+
+        if type(i) is Tree.Create and not i.imutable:
+            return True
+
+        if not i.isEnd():
+            if prepareForHotswap(i) and type(arg) is Tree.Root:
+                del i.owner.nodes[count]
+                return True
+        count += 1
+
+    return False
+
 
 import datetime
 def modified(files, outputfile):

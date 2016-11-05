@@ -20,21 +20,28 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
     elif token == "bool":
         return Bool()
     elif token == "[":
+        incrScope(parser)
         if parser.lookInfront().token != "]":
             from TopCompiler import FuncParser
             gen = FuncParser.generics(parser, "anonymous")
             if parser.thisToken().token != "|":
                 parseError(parser, "expecting |")
-            return parseType(parser, package, mutable, attachTyp, gen)
+
+            res = parseType(parser, package, mutable, attachTyp, gen)
+
+            decrScope(parser)
+
+            return res
         else:
             parser.nextToken()
             parser.nextToken()
+            decrScope(parser)
             return Array(False, parseType(parser, package))
     elif token == "|":
         parser.nextToken()
 
         args = []
-        while parser.thisToken().token != "|":
+        while not (parser.thisToken().token == "|" and parser.lookInfront().token in ["->", "do"]):
             if parser.thisToken().token == ",":
                 if parser.lookBehind().token == ",":
                     parseError(parser, "unexpected ,")
@@ -46,13 +53,22 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
 
         ret = Null()
 
+        do = False
+
         if parser.lookInfront().token == "->":
             parser.nextToken()
             parser.nextToken()
 
             ret = parseType(parser, package)
 
-        return FuncPointer(args, ret, gen)
+        if parser.lookInfront().token == "do":
+            parser.nextToken()
+            parser.nextToken()
+
+            ret = parseType(parser, package)
+            do = True
+
+        return FuncPointer(args, ret, gen, do)
     elif token == "none":
         return Null()
     elif token in parser.imports:
@@ -193,13 +209,14 @@ class FuncPointer(Type):
             except EOFError as e:
                 beforeError(e, "Function argument "+str(count)+": ")
 
-        self.returnType.duckType(parser, other.returnType, node, mynode, iter)
-
+        try:
+            self.returnType.duckType(parser, other.returnType, node, mynode, iter)
+        except EOFError as e:
+            beforeError(e, "Function type return type: ")
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen):
-        genericS = "["+",".join([i+": "+str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
-        self.name = package+"."+name + genericS
-
+        self.types = types
+        gen = remainingT(self)
         self.types = {i: replaceT(types[i], gen) for i in types}
 
         self.package = package
@@ -209,12 +226,17 @@ class Struct(Type):
 
         self.gen = gen
 
+        genericS = "[" + ",".join([i + ": " + str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+        self.name = package + "." + name + genericS
+
     def hasMethod(self, parser, field):
         m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
         if m:
             return replaceT(m, self.gen)
 
     def duckType(self, parser, other, node, mynode, iter=0):
+        if not type(other) is Struct:
+            node.error("expecting type "+str(self)+", not "+str(other))
         if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
             node.error("expecting type "+str(self)+", not "+str(other))
 
@@ -247,10 +269,12 @@ class Array(Pointer):
                 "append": FuncPointer([self.elemT], self),
                 "insert": FuncPointer([I32(), self.elemT], self),
                 "map": FuncPointer(
-                    [FuncPointer([self.elemT], T("T", All, str(self)))],
-                    Array(False, T("T", All,  str(self))),
-                    coll.OrderedDict([("T", All)])
+                    [FuncPointer([self.elemT], T("T", All, "Array"))],
+                    Array(False, T("T", All,  "Array")),
+                    coll.OrderedDict([("Array.T", All)])
                 ),
+                "set": FuncPointer([Types.I32(), self.elemT], self)
+                ,
                 "filter": FuncPointer(
                     [FuncPointer([self.elemT], Bool())],
                     self,
@@ -329,12 +353,13 @@ class Interface(Type):
 class T(Type):
     def __init__(self, name, typ, owner):
         self.type = typ
-        self.normalName = name
+        self.normalName = owner+"."+name
         self.name = owner+"."+name
         self.types = self.type.types
 
-    def duckType(self, parser, other, node, mynode, iter):
+    """def duckType(self, parser, other, node, mynode, iter):
         self.type.duckType(parser, other, node, mynode, iter)
+    """
 
     def hasMethod(self, parser, name):
         self.type.hasMethod(parser, name)
@@ -352,7 +377,6 @@ def isGeneric(t):
     return False
 
 
-
 class Null(Type):
     name = "none"
     types = {}
@@ -362,8 +386,11 @@ def remainingT(s):
     args = coll.OrderedDict()
     if type(s) is FuncPointer:
         for i in s.args:
-            args += remainingT(i)
-        args += remainingT(s.returnType)
+            args.update(remainingT(i))
+        args.update(remainingT(s.returnType))
+    elif type(s) is Struct:
+        for i in s.types:
+            args.update(remainingT(i))
     elif type(s) is T:
         args[s.name] = s.type
 

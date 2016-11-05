@@ -48,7 +48,7 @@ def generics(parser, fname):
                 parser.nextToken()
 
         Scope.addVar(Tree.PlaceHolder(parser), parser, name, Scope.Type(False, typ))
-        generic[name] = typ
+        generic[typ.name] = typ
 
         if parser.lookInfront().token == "]":
             parser.nextToken()

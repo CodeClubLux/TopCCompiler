@@ -7,11 +7,12 @@ from .ExprParser import *
 from .Error import *
 
 def arrayLiteral(parser):
-    if not isUnary(parser, parser.lookBehind()):
-        arrayRead(parser)
-        return
+    numB = parser.bracket
+    parser.bracket += 1
 
-    mutable = parser.lookBehind().token == "mut"
+    if not isUnary(parser, parser.lookBehind()):
+        return arrayRead(parser)
+
     parser.nextToken()
 
     lastSize = 0
@@ -64,12 +65,18 @@ def arrayLiteral(parser):
             continue
 
         Parser.callToken(parser)
+
+        if parser.thisToken().token == "]":
+            break
+
         parser.nextToken()
+    else:
+        closeBracket(parser)
 
     endExpr(parser)
 
     parser.currentNode = arr.owner
-    arr.mutable = mutable
+    arr.mutable = False
 
     if len(arr.nodes) < 1 :
         #emtpy array
@@ -104,13 +111,26 @@ def arrayRead(parser):
 
     while parser.thisToken().token != "]":
         Parser.callToken(parser)
+
+        if parser.thisToken().token == "]":
+            break
+
         parser.nextToken()
+    else:
+        closeBracket(parser)
 
     ExprParser.endExpr(parser)
 
     parser.currentNode = arrRead.owner
     parser.nodeBookmark.pop()
 
+def closeBracket(parser):
+    parser.bracket -= 1
+
+    if parser.bracket < 0:
+        Error.parseError(parser, "unexpected ], found no matching [")
+
 
 Parser.exprToken["["] = arrayLiteral
+Parser.exprToken["]"] = closeBracket
 Parser.exprToken[".."] = lambda parser: Error.parseError(parser, "unexpected ..")

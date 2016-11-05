@@ -38,7 +38,7 @@ def operatorPop(parser, op, takesIn, unary= False):
 def newOperator(kind, precidence, takesIn, func=None, unary= False):
     def f(parser):
         op = Tree.Operator(kind, parser)
-        if kind != "|>" and len(parser.currentNode.nodes) != 0:
+        if not kind in ["|>"] and len(parser.currentNode.nodes) != 0:
             if not unary and isUnary(parser, parser.lookBehind()):
                 Error.parseError(parser, "unexpected "+kind)
             elif unary and not isUnary(parser, parser.lookBehind()):
@@ -93,6 +93,7 @@ newOperator("|>", (2, True), 2)
 newOperator("and", (3, True), 2)
 newOperator("or", (4, True), 2)
 newOperator("not", (6, False), 1, unary= True)
+newOperator("<-", (100, False), 1, unary= True)
 newOperator("==", (8, True), 2)
 newOperator("!=", (8, True), 2)
 newOperator("<", (10, True), 2)

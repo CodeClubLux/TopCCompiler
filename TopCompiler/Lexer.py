@@ -12,7 +12,6 @@ class Token:
         self.line = line
         self.column = column + (len(str(token)) // 2)
 
-
     def __repr__(self):
         return str((self.token,self.type, self.line, self.column ))
 
@@ -53,8 +52,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('closeB', '}'),
         ('openC', '\('),
         ('closeC', '\)'),
-        ('f32', r'[\d_]+(\.[\d_]+|f)'),
-        ('i32', r'[\d_]+'),
+        ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f)'),
+        ('i32', r'\d*[\d_]*(\d+)'),
         ('arrow', r'->'),
         ('equal',  r'=='),
         ('doublecolon', r'::'),
@@ -68,7 +67,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('assignSub', r'\-='),
         ('assignMul', r'\*='),
         ('assignDiv', r'\/='),
-        ('operator',  r'[+*\/\-%><^]|(\|>)'),
+        ('operator',  r'(\|>|!>|<-)|[+*\/\-%><^\\]'),
         ('line', r'\|'),
         ('identifier', r'[A-Za-z0-9_]+'),
         ('underscore', '_'),
@@ -157,6 +156,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                             tokens.append(Token("concat", "operator", line, pos+iter))
                             start = iter + 1
                             inBrace = False
+                    elif i == "\n":
+                        line += 1
 
                 tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
                 array += tokens

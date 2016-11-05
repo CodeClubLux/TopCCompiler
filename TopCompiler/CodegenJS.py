@@ -28,6 +28,8 @@ class CodeGen:
         self.nameCount = 0
         self.gen = genNames()
 
+        self.indent = 0
+
     def toJSHelp(self, tree= None, isGlobal= True):
         if tree is None:
             tree = self.tree
@@ -91,13 +93,19 @@ class CodeGen:
         except:
             Error.error("Compilation failed")
 
-def link(filenames, output, run, opt, dev):
+def link(filenames, output, run, opt, dev, linkWith):
     linked = '"use strict";'
+    for i in linkWith:
+        f = open(i, mode="r")
+        linked += f.read()
+        f.close()
+
+    linked += "\n"
+
     for i in filenames:
         f = open("lib/"+i.replace("/", ".")+ ".js", mode="r")
         linked += f.read()
         f.close()
-
 
     import sys
     runtimeName = __file__[0:__file__.rfind("/")+1] + "runtime.js"

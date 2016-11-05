@@ -1,25 +1,65 @@
-import "math"
+import "html"
 
-let hcfIs30 = math.hcf |> (3 ==)
-let lcmIs315 = math.lcm |> (315 ==)
+let appstate = newAtom \[]int
 
-def hcfAndLcm(x: int, y: int) bool =
-    (hcfIs30 x, y) and (lcmIs315 x, y)
+//Counter
+let add = html.ignoreAct 1+
+let sub = html.ignoreAct _ - 1
 
-def factAndHCF(x: int, y: int) int do
-    println math.primeFactors x
-    println math.primeFactors y
-    math.hcf x, y
+def counter(model: int, a: Atom[int]) html.VNode =
+    html.div html.noAttrib,
+        [ html.button \[html.onClick add, a], "+"
+        , "Counter {model}"
+        , html.button \[html.onClick sub, a], "-"
+        ]
 
-    //ii
+//Dynamic Counter
+let addCounter = html.ignoreAct append 0
 
-def minToHours(x: int) string =
-    "{x/60}.{x%60}"
+def view(model: []int, a: Atom[[]int]) html.VNode =
+    html.div html.noAttrib,
+        [ html.div html.noAttrib, (html.mapView counter, model, a)
+        , html.button \[html.onClick addCounter, a], "Add"
+        ]
 
-println math.primeFactors 196
-println factAndHCF 441, 1999
+html.app view, appstate
 
-def pr[T: Stringable](x: T) do
-    println x
+//have to use .name of Types.T not .normalName
 
-pr "hello world"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

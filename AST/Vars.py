@@ -37,6 +37,7 @@ class CreateAssign(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.names = []
+        self.extern = False
 
     def __str__(self):
         return "CreateAssign "
@@ -70,12 +71,13 @@ class Assign(Node):
         return self.name + "="
 
     def compileToJS(self, codegen):
-
-
         if self.init:
             name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
             codegen.append(name + " = ")
-            self.nodes[0].compileToJS(codegen)
+            if self.owner.extern:
+                codegen.append("fromJS("+self.nodes[0].string[1:-1]+")")
+            else:
+                self.nodes[0].compileToJS(codegen)
             codegen.append(";")
         else:
             self.nodes[0].compileToJS(codegen)
