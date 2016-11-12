@@ -78,6 +78,7 @@ from .ElseExpr import *
 from .FuncParser import *
 from .String import *
 from .ImportParser import *
+from .Lens import *
 import os
 from .ExternParser import *
 from .Array import *
@@ -270,6 +271,14 @@ class Parser:  # all mutable state
             "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True)
         }, coll.OrderedDict([("Atom.T", T)]))
 
+        A = Types.T("A", All, "Lens")
+        B = Types.T("B", All, "Lens")
+
+        Lens = Types.Interface(False, {
+            "query": Types.FuncPointer([A], B),
+            "set": Types.FuncPointer([A, B], A),
+        }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]))
+
         self.scope = {"_global": [{
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
@@ -285,6 +294,7 @@ class Parser:  # all mutable state
             "toFloat": Scope.Type(True, Types.FuncPointer([Floatable], Types.Float())),
             "Stringable": Stringable,
             "Atom": Scope.Type(True, Atom),
+            "Lens": Scope.Type(True, Lens),
             "All": Scope.Type(True, All),
             "newAtom": Scope.Type(True, Types.FuncPointer([T], Atom, coll.OrderedDict([("Atom.T", T)])))
         }]}
@@ -322,6 +332,7 @@ class Parser:  # all mutable state
             "_global": {
                 "Stringable": Stringable,
                 "Atom": Atom,
+                "Lens": Lens,
                 "All": All,
             }
         }

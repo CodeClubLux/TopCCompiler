@@ -24,12 +24,6 @@ class InitStruct(Node):
 
     def validate(self, parser): pass
 
-def sizeof(codegen, type):
-    size = getName(codegen, "Size")
-    sizeI = getName(codegen, "SizeI")
-
-    return (sizeI, size+" = getelementptr "+type.llvmType+", "+type.llvmType+"*"+" null, i32 1\n"+sizeI+" = ptrtoint "+type.llvmType+"*"+size+" to i64\n")
-
 class Type(Node):
     def __init__(self, package, name, parser):
         super(Type, self).__init__(parser)
@@ -58,6 +52,8 @@ class Field(Node):
         self.offset = offset
         self.sType = sType
         self.indexPackage = False
+        self.newValue = False
+
 
     def __str__(self):
         return "."+self.field
@@ -65,5 +61,13 @@ class Field(Node):
     def compileToJS(self, codegen):
         self.nodes[0].compileToJS(codegen)
         codegen.append(("" if self.indexPackage else ".") +self.field)
+
+    def set(self, old, codegen):
+        if self.newValue:
+            codegen.append("return Object.assign("+old+",{"+self.field+":"+self.newValue+"})")
+        else:
+            codegen.append("return Object.assign("+old+", {"+self.field+":"+"(function("+old+"){")
+            self.nodes[0].set(old, codegen)
+            codegen.append("})("+old+"."+self.field+")})")
 
     def validate(self, parser): pass

@@ -10,7 +10,6 @@ def reduce[T](func: |T,T| -> T, x: []T) T =
 
 def comp[T,X](func: |T| -> X, x: T) X =
     func(x)
-/*
 def zip[T](x: []T, y: []T) [][]T =
     var newArr = [][]T
 
@@ -20,7 +19,6 @@ def zip[T](x: []T, y: []T) [][]T =
         i += 1
 
     newArr
-*/
 
 def append[T](x: T, arr: []T) []T =
     arr.append x

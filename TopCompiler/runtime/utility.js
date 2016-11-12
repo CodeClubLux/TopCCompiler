@@ -117,3 +117,14 @@ function newAtom(arg) {
         events: [],
     }
 }
+
+function newLens(reader, setter) {
+    return {
+        query: function(item) {
+            return reader(item);
+        },
+        set: function(old, item) {
+            return setter(old, item)
+        },
+    }
+}

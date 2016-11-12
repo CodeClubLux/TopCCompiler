@@ -32,6 +32,8 @@ def resolve(self):
     for n in range(1,3):
         for c in filenames:
             self.package = filenames[c][0][0]
+            self.opackage = filenames[c][0][0]
+
             for i in range(len(tokens[c])):
                 _resolve(self, tokens[c][i], filenames[c][i][1], passN=n)
 

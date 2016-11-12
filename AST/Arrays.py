@@ -59,6 +59,7 @@ class ArrRead(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.pointer = False
+        self.newValue = False
 
     def __str__(self):
         return ".[]"
@@ -68,6 +69,21 @@ class ArrRead(Node):
         codegen.append(".get(")
         self.nodes[1].compileToJS(codegen)
         codegen.append(")")
+
+    def set(self, old, codegen):
+        if self.newValue:
+            codegen.append("return "+old+".set(")
+            self.nodes[1].compileToJS(codegen)
+            codegen.append(","+self.newValue+")")
+        else:
+            idx = codegen.getName()
+
+            codegen.append("var "+idx+"=")
+            self.nodes[1].compileToJS(codegen)
+            codegen.append(";return "+old+".set("+idx+",")
+            codegen.append("(function("+old+"){")
+            self.owner.set(old, codegen)
+            codegen.append("})("+old+".get("+idx+")))")
 
     def validate(self, parser): pass
 

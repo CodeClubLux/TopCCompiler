@@ -82,7 +82,7 @@ class Root:
 def isUseless(i):
     if type(i) is Tree.ReadVar:
         i.error("useless variable read")
-    elif type(i) is Tree.FuncCall:
+    elif type(i) is Tree.FuncCall and not i.nodes[0].type.do:
         if i.type != Types.Null():
             i.error("not using return of function")
     try:
@@ -131,7 +131,15 @@ class Node(Root):  # partially immutable data structure
 class PlaceHolder(Node):
     def __init__(self, owner= None):
         Node.__init__(self, owner)
+
     def compile(self, codegen):
         return ""
+
+    def __str__(self):
+        return "Placeholder"
+
+    def validate(self, parser):
+        pass
+
     def compileToJS(self, codegen):
         pass

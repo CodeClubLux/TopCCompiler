@@ -9,7 +9,7 @@ def Fraction.toString(self) string =
     else
         "{self.numerator}/{self.denominator}"
 
-def Fraction.operator_add(self, other: Fraction) Fraction do
+def Fraction.operator_add(self, other: Fraction) Fraction =
     let common = lcm self.denominator, other.denominator
     let x = self.scale common
     let y = other.scale common
@@ -26,7 +26,7 @@ def Fraction.scale(self, den: int) Fraction =
         , den
     }
 
-def Fraction.operator_sub(self, other: Fraction) Fraction do
+def Fraction.operator_sub(self, other: Fraction) Fraction =
     let common = lcm self.denominator, other.denominator
     let x = self.scale common
     let y = other.scale common
@@ -36,34 +36,33 @@ def Fraction.operator_sub(self, other: Fraction) Fraction do
         common
     }.simplify!
 
-def Fraction.operator_mul(x, y: Fraction) Fraction do
+def Fraction.operator_mul(x, y: Fraction) Fraction =
     Fraction {
         x.numerator * y.numerator,
         x.denominator * y.denominator
     }.simplify!
 
-def Fraction.invert(x) Fraction do
+def Fraction.invert(x) Fraction =
     Fraction {
         x.denominator
         , x.numerator
     }.simplify!
 
-def Fraction.simplify(x) Fraction do
+def Fraction.simplify(x) Fraction =
     let common = x.denominator / hcf x.numerator, x.denominator
     x.scale common
 
 
-def Fraction.operator_div(x, y: Fraction) Fraction do
+def Fraction.operator_div(x, y: Fraction) Fraction =
     (x.invert! * y).simplify!
 
-def Fraction.operator_gt(self, other: Fraction) bool do
+def Fraction.operator_gt(self, other: Fraction) bool =
     let common = lcm self.denominator, other.denominator
     let x = self.scale common
     let y = other.scale common
-    println "{x} > {y}"
     x.numerator > y.numerator
 
-def Fraction.operator_lt(self, other: Fraction) bool do
+def Fraction.operator_lt(self, other: Fraction) bool =
     other > self
 
 def Fraction.toInt(self) int =

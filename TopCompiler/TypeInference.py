@@ -79,7 +79,7 @@ def infer(parser, tree):
                             bind.type = i.type
                         else:
                             bind = Tree.Bind(r, self.nodes[0], self)
-                            bind.type = Types.FuncPointer(self.type.args[1:], self.type.returnType)
+                            bind.type = Types.FuncPointer(self.type.args[1:], self.type.returnType, generic= self.type.generic, do= self.type.do)
                         self.owner.nodes[count] = bind
                         bind.owner = self.owner
 
@@ -141,11 +141,15 @@ def infer(parser, tree):
 
                     if len(b.args) == 0:
                         self.nodes[1].error("function must take atleast one argument")
-                    if [a.returnType] != b.args:
-                        self.nodes[1].error("function arguments don't match returnType of piped function: "+
-                            str(a.returnType)+" and "+", ".join([str(i) for i in b.args]))
 
-                    self.type = Types.FuncPointer(a.args, b.returnType)
+                    if len(b.args) != 1:
+                        self.nodes[1].error("expecting one function argument that matches return type of piped function")
+
+                    try:
+                        b.args[0].duckType(parser, a.returnType, self.nodes[0], self.nodes[1], 1)
+                    except EOFError as e:
+                        Error.beforeError(e, "Function piping to: ")
+                    self.type = Types.FuncPointer(a.args, b.returnType, generic= b.generic, do= b.do)
                 elif i.kind == "<-":
                     try:
                         meth = i.nodes[0].type.types["unary_read"]
@@ -277,12 +281,12 @@ def infer(parser, tree):
 
                 if len(args) > len(i.nodes)-1:
                     i.curry = True
-                    i.type = Types.FuncPointer([Types.replaceT(c, generics) for c in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics), do)
+                    i.type = Types.FuncPointer([Types.replaceT(c, generics) for c in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics), do= do)
                 elif not partial:
                     i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
                 else:
                     i.partial = True
-                    i.type = Types.FuncPointer(newArgs, Types.replaceT(i.nodes[0].type.returnType, generics), returnType, do)
+                    i.type = Types.FuncPointer(newArgs, Types.replaceT(i.nodes[0].type.returnType, generics), returnType, do= do)
             elif type(i) is Tree.If:
                 ElseExpr.checkIf(parser, i)
             elif type(i) is Tree.Block:
@@ -387,6 +391,13 @@ def infer(parser, tree):
 
 
                 #i.nodes[0].type.duckType(parser, i.type, i, i.nodes[0])
+            elif type(i) is Tree.Lens:
+                lensType = Types.Interface(False, {
+                    "query": Types.FuncPointer([i.lensType], i.nodes[0].type),
+                    "set": Types.FuncPointer([i.lensType, i.nodes[0].type], i.lensType),
+                })
+
+                i.type = lensType
 
 
             if type(i) in [Tree.If, Tree.While]:
@@ -439,7 +450,7 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
             except KeyError:
                 try:
                     meth = normalTyp.hasMethod(parser, i)
-                    types[i] = resolveGen(shouldBeTyp.types[i], Types.FuncPointer(meth.args[1:], meth.returnType), generics, parser)
+                    types[i] = resolveGen(shouldBeTyp.types[i], Types.FuncPointer(meth.args[1:], meth.returnType, generic= meth.generic, do= meth.do), generics, parser)
                 except AttributeError:
                     types[i] = shouldBeTyp.types[i]
         return Types.Interface(False, types, generics)

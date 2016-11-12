@@ -75,7 +75,7 @@ class Assign(Node):
             name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
             codegen.append(name + " = ")
             if self.owner.extern:
-                codegen.append("fromJS("+self.nodes[0].string[1:-1]+")")
+                codegen.append(self.nodes[0].string[1:-1])
             else:
                 self.nodes[0].compileToJS(codegen)
             codegen.append(";")

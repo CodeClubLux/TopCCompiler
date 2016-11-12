@@ -39,7 +39,8 @@ def newProj(name):
 {
     "name": \"""" + name + """\",
     "version": 0.0,
-    "link": []
+    "link": [],
+    "linkCSS": []
 }
         """)
         file.close()
@@ -58,13 +59,12 @@ def linkWith(name):
 
     port = json.loads(file.read())
 
-    file.write("""
-{
-    "name": \"""" + port["name"] + """\",
-    "version": """+str(port["version"]) + """,
-    "link": """+str(port["link"]+[name]) + """,
-}
-    """)
+    if name.endswith(".css"):
+        port["linkCSS"].append(name)
+    else:
+        port["link"].append(name)
+
+        file.write(json.dumps(port))
 
     file.close()
 
@@ -187,6 +187,11 @@ def start(run= False, dev= False, init= False, hotswap= False):
             linkWithFiles = []
 
         try:
+            linkCSSWithFiles = jsonLoad["linkCSS"]
+        except:
+            linkCSSWithFiles = []
+
+        try:
             require = jsonLoad["require"]
         except:
             require = False
@@ -259,7 +264,7 @@ def start(run= False, dev= False, init= False, hotswap= False):
                         prepareForHotswap(parser.compiled[i][1][0])
                     CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1]).compile(opt=opt)
 
-            l = CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev, linkWith= linkWithFiles)
+            l = CodeGen.link(parser.compiled, outputFile, run=run, opt= opt, dev= dev, linkWithCSS= linkCSSWithFiles, linkWith= linkWithFiles)
             print("Compilation took : "+str(time() - time1))
             return (True, l)
         elif run:
@@ -285,10 +290,9 @@ def prepareForHotswap(arg):
             count += 1
             continue
 
-        """if type(i) is Tree.FuncCall and i.nodes[0].type.do:
+        if type(i) is Tree.FuncCall and i.nodes[0].type.do:
             print("side effect function")
             return True
-        """
 
         if type(i) is Tree.Create and not i.imutable:
             return True

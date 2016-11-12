@@ -93,11 +93,28 @@ class CodeGen:
         except:
             Error.error("Compilation failed")
 
-def link(filenames, output, run, opt, dev, linkWith):
+def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
     linked = '"use strict";'
     for i in linkWith:
-        f = open(i, mode="r")
+        try:
+            f = open(i, mode="r")
+        except:
+            f.close()
+
+            Error.error("cannot find file "+i+" to link")
         linked += f.read()
+        f.close()
+
+    css = ""
+
+    for i in linkWithCSS:
+        try:
+            f = open(i, mode="r")
+        except:
+            f.close()
+
+            Error.error("cannot find file "+i+" to link")
+        css += "<style>"+f.read()+"</style>"
         f.close()
 
     linked += "\n"
@@ -134,6 +151,7 @@ def link(filenames, output, run, opt, dev, linkWith):
     <HEAD>
         <meta charset="UTF-8">
         <TITLE>""" + output + """</TITLE>
+        """+css+"""
     </HEAD>
     <body>
         <div id= "code"></div>

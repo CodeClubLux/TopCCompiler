@@ -1,6 +1,6 @@
 import "html"
 
-let appstate = newAtom \[]int
+let app-state = newAtom \[0..10000]
 
 //Counter
 let add = html.ignoreAct 1+
@@ -8,58 +8,46 @@ let sub = html.ignoreAct _ - 1
 
 def counter(model: int, a: Atom[int]) html.VNode =
     html.div html.noAttrib,
-        [ html.button \[html.onClick add, a], "+"
+        [ html.button \[html.on-click add, a], "+"
         , "Counter {model}"
-        , html.button \[html.onClick sub, a], "-"
+        , html.button \[html.on-click sub, a], "-"
         ]
 
 //Dynamic Counter
-let addCounter = html.ignoreAct append 0
+let add-counter = html.ignoreAct append 0
 
 def view(model: []int, a: Atom[[]int]) html.VNode =
     html.div html.noAttrib,
-        [ html.div html.noAttrib, (html.mapView counter, model, a)
-        , html.button \[html.onClick addCounter, a], "Add"
+        [ html.h1 html.noAttrib, "Dynamic Counter Example"
+        , html.div html.noAttrib, (html.mapView counter, model, a) //hello
+        , html.button \[html.onClick add-counter, a], "Add"
         ]
 
-html.app view, appstate
+type Point =
+    x: int
+    y: int
 
-//have to use .name of Types.T not .normalName
+def Point.toString(self) string =
+    "Point ({self.x}, {self.y})"
 
+type PosAtom[X, T] =
+    a: Atom[X]
+    pos: Lens[X, T]
 
+def PosAtom[X, T].unary_read(self) T do
+    self.pos.query \<-self.a
 
+def PosAtom[X, T].operator_set(self, new: T) do
+    self.a.operator_set self.pos.set \<-self.a, new
 
+let state = newAtom \[0..10]
 
+let firstLens = lens []int [0]
+let firstA = PosAtom {state, firstLens }
 
+firstA <- 89
 
+println \<-state
+println \<-firstA
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//html.app view, app-state

@@ -39,6 +39,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         'string',
         'var',
         "not", "or", "and",
+        "lens"
     ]
 
     special = ["bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
@@ -69,7 +70,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('assignDiv', r'\/='),
         ('operator',  r'(\|>|!>|<-)|[+*\/\-%><^\\]'),
         ('line', r'\|'),
-        ('identifier', r'[A-Za-z0-9_]+'),
+        ('identifier', r'[A-Za-z0-9_]+([A-Za-z]\-)*[A-Za-z0-9\-]*'),
         ('underscore', '_'),
         ('skip', r'[ \t]'),
         ("str", r'"(?:\\.|({.*})|[^"\\])*"'),
@@ -162,7 +163,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                 tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
                 array += tokens
 
-        elif typ != 'skip':
+        elif typ != 'skip' and not typ in ["comment", "commentLine"]:
             val = mo.group(typ)
             if typ == 'identifier' and val in keywords:
                 if val in ["true", "false"]:
@@ -173,8 +174,15 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     typ = "keyword"
             elif typ == "f32":
                 val = val[:-1]+".0" if val[-1] == "f" else val
+
             if typ == "i32" or typ == "f32":
                 val = val.replace("_", "")
+            if typ == "identifier":
+                def my_replace(match):
+                    match = match.group()
+                    return match[1].upper()
+
+                val = re.sub(r'\-[A-Za-z]', my_replace, val)
             elif typ in special:
                 typ = "symbol"
             elif typ == "equal" or typ == "mut" or typ == "ne":

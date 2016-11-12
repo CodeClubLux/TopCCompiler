@@ -33,12 +33,14 @@ def checkIfOperator(parser, attachTyp, name, func):
         "pow": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
         "gt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
         "lt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
+        "set": Types.FuncPointer([attachTyp, Types.All], Types.Null(), do=True),
     }
 
     unary = {
         "add": Types.FuncPointer([attachTyp], attachTyp),
         "sub": Types.FuncPointer([attachTyp], attachTyp),
-        "mul": Types.FuncPointer([attachTyp], attachTyp)
+        "mul": Types.FuncPointer([attachTyp], attachTyp),
+        "read": Types.FuncPointer([attachTyp], Types.All, do= True),
     }
 
     if name.startswith("operator_"):
@@ -46,16 +48,16 @@ def checkIfOperator(parser, attachTyp, name, func):
         if not op in operators:
             Error.parseError(parser, "overload not found for operator_"+op)
 
-        f = Types.FuncPointer(func.args, func.returnType)
-
-        if f != operators[op]:
-            Error.parseError(parser, "expecting function declaration "+str(operators[op])+", not "+str(f))
+        try:
+            func.duckType(parser, operators[op], Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
+        except EOFError as e:
+            Error.beforeError(e, "Operator overload: ")
     elif name.startswith("unary_"):
         op = name[len("unary_"):]
         if not op in unary:
             Error.parseError(parser, "overload not found for unary_"+op)
 
-        f = Types.FuncPointer(func.args, func.returnType)
-
-        if f != unary[op]:
-            Error.parseError(parser, "expecting function declaration "+str(unary[op])+", not "+str(f))
+        try:
+            unary[op].duckType(parser, func, Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
+        except EOFError as e:
+            Error.beforeError(e, "Unary overload: ")

@@ -205,9 +205,9 @@ class FuncPointer(Type):
         for (a, i) in zip(self.args, other.args):
             count += 1
             try:
-                a.duckType(parser, i, node, mynode, iter)
+                i.duckType(parser, a, mynode, node, iter)
             except EOFError as e:
-                beforeError(e, "Function argument "+str(count)+": ")
+                beforeError(e, "Function type argument "+str(count)+": ")
 
         try:
             self.returnType.duckType(parser, other.returnType, node, mynode, iter)
@@ -216,7 +216,7 @@ class FuncPointer(Type):
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen):
         self.types = types
-        gen = remainingT(self)
+
         self.types = {i: replaceT(types[i], gen) for i in types}
 
         self.package = package
@@ -225,8 +225,11 @@ class Struct(Type):
         self.mutable = mutable
 
         self.gen = gen
+        self.remainingGen = remainingT(self)
 
-        genericS = "[" + ",".join([i + ": " + str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+        gen = self.remainingGen
+
+        genericS = "[" + ",".join([i + ": " + str(gen[i].type) for i in gen]) + "]" if len(gen) > 0 else ""
         self.name = package + "." + name + genericS
 
     def hasMethod(self, parser, field):
@@ -240,7 +243,7 @@ class Struct(Type):
         if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
             node.error("expecting type "+str(self)+", not "+str(other))
 
-        for key in self.gen:
+        for key in self.remainingGen:
             i = self.gen[key]
             othk = other.gen[key]
 
@@ -388,11 +391,14 @@ def remainingT(s):
         for i in s.args:
             args.update(remainingT(i))
         args.update(remainingT(s.returnType))
+    elif type(s) is Interface:
+        for i in s.types:
+            args.update(remainingT(s.types[i]))
     elif type(s) is Struct:
         for i in s.types:
-            args.update(remainingT(i))
+            args.update(remainingT(s.types[i]))
     elif type(s) is T:
-        args[s.name] = s.type
+        args[s.name] = s
 
     return args
 
@@ -472,7 +478,7 @@ def replaceT(typ, gen):
                 arr.append(replaceT(i, gen))
 
             newTyp = replaceT(typ.returnType, gen)
-            return FuncPointer(arr, newTyp, remainingT(newTyp))
+            return FuncPointer(arr, newTyp, remainingT(newTyp), do= typ.do)
     else:
         return typ
 

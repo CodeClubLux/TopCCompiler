@@ -16,8 +16,6 @@ type Attribute =
     name: string
     value: Nothing
 
-type None =
-
 def newAttrib[T](name: string, value: T) Attribute =
     Attribute {name, value}
 
@@ -64,7 +62,6 @@ def mapView[T](v: |T, Atom[T]| -> VNode, model: []T, a: Atom[[]T]) VNode =
         watchHack newA, update
 
         v result, newA
-        //T should not duckType, instead it should use equal
 
     [0..model.length].map mapper
 
@@ -76,7 +73,7 @@ let onClick = onEvent "onclick"
 let onInput = onEvent "oninput"
 let onChange = onEvent "onchange"
 
-ext h: |string, []Attribute, VNode| -> VNode = "html_h"
+ext h: |string, []Attribute, VNode| -> VNode = "fromJS(html_h)"
 ext createElement: |VNode| -> HtmlElem = "virtualDom.create"
 ext diff: |VNode, VNode| -> Patches = "virtualDom.diff"
 ext patch: |HtmlElem, Patches| do HtmlElem = "virtualDom.patch"

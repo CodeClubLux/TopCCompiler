@@ -27,7 +27,7 @@ def arrayLiteral(parser):
     rang = False
     init = False
 
-    while parser.thisToken().token != "]":
+    while parser.thisToken().token != "]" :
         t = parser.thisToken()
         if parser.thisToken().token == ",":
             endExpr(parser)
@@ -66,7 +66,7 @@ def arrayLiteral(parser):
 
         Parser.callToken(parser)
 
-        if parser.thisToken().token == "]":
+        if parser.thisToken().token == "]" and parser.bracket <= numB:
             break
 
         parser.nextToken()

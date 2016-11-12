@@ -59,7 +59,8 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    return lastToken.type in ["operator", "indent", "keyword"] or lastToken.token in ["(", "{", "[", ",", ":", "..", "=", "\n"] or Parser.selectStmt(parser, lastToken) != None
+    return (lastToken.type in ["operator", "indent", "keyword"] or lastToken.token in ["(", "{", "[", ",", ":", "..", "=", "\n"] or Parser.selectStmt(parser, lastToken) != None) and\
+        not lastToken.token in ["int", "float", "bool"]
 
 def plus(parser):
     lastToken = parser.lookBehind()
