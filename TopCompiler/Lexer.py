@@ -39,7 +39,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         'string',
         'var',
         "not", "or", "and",
-        "lens"
+        "lens",
     ]
 
     special = ["bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
@@ -70,7 +70,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('assignDiv', r'\/='),
         ('operator',  r'(\|>|!>|<-)|[+*\/\-%><^\\]'),
         ('line', r'\|'),
-        ('identifier', r'[A-Za-z0-9_]+([A-Za-z]\-)*[A-Za-z0-9\-]*'),
+        ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  #[A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
         ('underscore', '_'),
         ('skip', r'[ \t]'),
         ("str", r'"(?:\\.|({.*})|[^"\\])*"'),

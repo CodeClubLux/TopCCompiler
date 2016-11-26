@@ -64,6 +64,12 @@ class FuncBraceOpen(Node):
 
         if len(self.nodes) > 0:
             self.nodes[-1].compileToJS(codegen)
+
+        if self.body.do:
+            self._next = codegen.getName()
+            self.body._next = self._next
+            codegen.append(("," if len(self.nodes) > 0 else "")+self._next)
+
         codegen.append('){')
 
     def validate(self, parser):
@@ -78,16 +84,44 @@ class FuncBody(Node):
         return "}"
 
     def compileToJS(self, codegen):
+        self.res = codegen.getName()
+        self._name = codegen.getName()
+        self._context = codegen.getName()
+
+        if self.do:
+            codegen.append("var "+self._context+"=0;")
+            codegen.append("return function "+self._name+"("+self.res+"){")
+            codegen.append("while(1){")
+            codegen.append("switch("+self._context+"){")
+            codegen.append("case 0:")
+
         for i in self.nodes[:-1]:
             i.compileToJS(codegen)
+
+        did = False
+
         if self.returnType != Types.Null():
-            codegen.append("return ")
+            if self.do:
+                did = True
+                codegen.append("return " + self._next + "(")
+            else:
+                codegen.append("return ")
 
         if len(self.nodes) > 0:
             self.nodes[-1].compileToJS(codegen)
+
+        if self.do:
+            if not did:
+                codegen.append("return "+self._next + "()")
+            else:
+                codegen.append(")")
+
         codegen.append(";}")
 
         codegen.decrScope()
+
+        if self.do:
+            codegen.append("}}()}")
 
         import AST as Tree
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
@@ -115,7 +149,68 @@ class FuncBody(Node):
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
 
+        if self.do:
+            transform(self)
+
         Scope.decrScope(parser)
+
+syncFuncs = [
+    "println",
+    "log",
+]
+
+def yields(i):
+    if type(i) is Tree.FuncCall and i.nodes[0].type.do:
+        if not (type(i.nodes[0]) is Tree.ReadVar and i.nodes[0].name in syncFuncs):
+            return True
+    return False
+
+
+def transform(body):
+    outer_scope = [body]
+
+    def loop(node, o_iter):
+        iter = -1
+        for i in node:
+            iter += 1
+            if yields(i):
+                i.body = body
+
+                if not i.owner == outer_scope[-1]:
+                    outer_scope[-1].nodes.insert(o_iter, i)
+
+                    c = Context(body, i)
+                    c.type = i.type
+                    c.owner = i.owner
+
+                    i.owner.nodes[iter] = c
+
+                    i.owner = outer_scope[-1]
+
+                    o_iter += 1
+
+
+            if type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
+                continue
+
+            if not i.isEnd():
+                loop(i, o_iter)
+
+    loop(body, 0)
+
+class Context(Node):
+    def __init__(self, body, parser):
+        super(Context, self).__init__(parser)
+        self.body = body
+
+    def compileToJS(self, codegen):
+        codegen.append(self.body.res)
+
+    def __str__(self):
+        return "context"
+
+    def validate(self, parser): pass
+
 
 class FuncCall(Node):
     def __init__(self, parser):
@@ -126,6 +221,14 @@ class FuncCall(Node):
         return ""
 
     def compileToJS(self, codegen):
+        yilds = yields(self) and not self.inline and not self.partial and not self.curry
+        if yilds:
+            nextNum = str(codegen.count + 1)
+            codegen.count += 1
+
+            codegen.append(self.body._context + "=" + nextNum)
+            codegen.append(";return ")
+
         if self.inline:
             if type(self.type) != Types.Null():
                 codegen.append("(function(){")
@@ -173,9 +276,16 @@ class FuncCall(Node):
         if len(self.nodes) > 1 and not type(self.nodes[-1]) is Under:
             self.nodes[-1].compileToJS(codegen)
 
+        if yilds:
+            codegen.append(("," if len(self.nodes) > 1 else "")+self.body._name)
+
         codegen.append(")")
 
-        if self.type == Types.Null():
+        if yilds:
+            codegen.append(";")
+            codegen.append("case "+nextNum+":")
+
+        elif self.type == Types.Null():
             codegen.append(";")
 
     def validate(self, parser): pass

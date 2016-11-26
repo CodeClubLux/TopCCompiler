@@ -1,6 +1,9 @@
-import "html"
+//import "html"
+//import "math"
+/*
+let app-state = newAtom \[10: 0]
 
-let app-state = newAtom \[0..10000]
+//hh
 
 //Counter
 let add = html.ignoreAct 1+
@@ -23,31 +26,26 @@ def view(model: []int, a: Atom[[]int]) html.VNode =
         , html.button \[html.onClick add-counter, a], "Add"
         ]
 
-type Point =
-    x: int
-    y: int
+def mapF[X](x: |int| -> X) X =
+    x 10
 
-def Point.toString(self) string =
-    "Point ({self.x}, {self.y})"
 
-type PosAtom[X, T] =
-    a: Atom[X]
-    pos: Lens[X, T]
+def serial[T](x: []|| do T) []T do
+    var i = 0
+    var arr = []T
+    while (i < x.length) do
+        arr = arr.append x[i]!
+        i += 1
 
-def PosAtom[X, T].unary_read(self) T do
-    self.pos.query \<-self.a
+    arr
+*/
 
-def PosAtom[X, T].operator_set(self, new: T) do
-    self.a.operator_set self.pos.set \<-self.a, new
+def get() string do
+    "hello world"
 
-let state = newAtom \[0..10]
+def test() do
+    println get!
 
-let firstLens = lens []int [0]
-let firstA = PosAtom {state, firstLens }
-
-firstA <- 89
-
-println \<-state
-println \<-firstA
+test!
 
 //html.app view, app-state

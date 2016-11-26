@@ -1,37 +1,37 @@
 
-def lcm(x: int, y: int) int do
+def lcm(x: int, y: int) int =
     let i = (commonMultiple x, y)
     let res = i[0]
-    println "lowest common multiple of {x} & {y}:\t{res}"
+    //println "lowest common multiple of {x} & {y}:\t{res}"
     res
 
-def commonMultiple(x: int, y: int) []int do
+def commonMultiple(x: int, y: int) []int =
     let arr0 = multiples x, y
     let arr1 = multiples y, x
 
-    println "multiples of {x}:\t{arr0.join ", "}"
-    println "multiples of {y}:\t{arr1.join ", "}"
+    //println "multiples of {x}:\t{arr0.join ", "}"
+    //println "multiples of {y}:\t{arr1.join ", "}"
 
     let res = arr0.filter arr1.has
 
-    println "common multiples of {x} & {y}:\t{res.join ", "}"
+    //println "common multiples of {x} & {y}:\t{res.join ", "}"
 
     res
 
-def commonFactor(x: int, y: int) []int do
+def commonFactor(x: int, y: int) []int =
     let arr0 = factors x
     let arr1 = factors y
 
-    println "factors of {x}:\t{arr1.join ", "}"
-    println "factors of {y}:\t{arr0.join ", "}"
+    //println "factors of {x}:\t{arr1.join ", "}"
+    //println "factors of {y}:\t{arr0.join ", "}"
 
     let res = arr0.filter arr1.has
 
-    println "common factors of {x} & {y}:\t{res.join ", "}"
+    //println "common factors of {x} & {y}:\t{res.join ", "}"
 
     res
 
-def slice[T](x: []T, sx : int, yx: int) []T do
+def slice[T](x: []T, sx : int, yx: int) []T =
     let s =
         if sx < 0 then (x.length + sx)
         else sx
@@ -54,11 +54,9 @@ def factors(number: int) []int =
 def factorsEx(number: int) []int =
     slice::[int] (factors number), 1, -1
 
-def hcf(x: int, y: int) int do
+def hcf(x: int, y: int) int =
     let i = (commonFactor x, y)
-    let res = i[-1]
-    println "highest common factor of {x} & {y}:\t{res}"
-    res
+    i[-1]
 
 def isMultiple(number: int, multiple: int) bool =
     multiple % number == 0
@@ -80,8 +78,7 @@ def primeFactors(x: int) []int do
 
         (primeFactors x/i) + (primeFactors i)
 
-def findPerfect(x: int) string do
-    println x
+def findPerfect(x: int) string =
     let perfect = [1..30].map (_ ^ 2)
 
 
@@ -91,8 +88,9 @@ def findPerfect(x: int) string do
         i - b
 
     let diff = ([1..perfect.length]).map find
-    println diff
-    println perfect
+
+    //println diff
+    //println perfect
 
     if (not isEven x) then
         if x > 2 then

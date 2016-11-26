@@ -62,7 +62,9 @@ class String(Node):
             replace("<", "&lt").\
             replace(">", "&gt").\
             replace("\\t", "&nbsp"*4).\
-            replace("\n", "")
+            replace("\n", "").\
+            replace("\\{", "{").\
+            replace("\\}", "}")
 
         codegen.append(string)
 

@@ -201,14 +201,16 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         if not dontAdd:
             Scope.addFunc(header, parser, name, Types.FuncPointer(types, returnType, g, do))
 
-    return name, names, types, header, returnType, do
+    return name, names, types, brace, returnType, do
 
-def funcBody(parser, name, names, types, header, returnType, do):
+def funcBody(parser, name, names, types, brace, returnType, do):
     body = Tree.FuncBody(parser)
     body.name = name
     body.returnType = returnType
     body.package = parser.package
     body.do = do
+
+    brace.body = body
 
     parser.currentNode.addNode(body)
     parser.currentNode = body

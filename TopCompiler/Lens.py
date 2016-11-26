@@ -10,7 +10,9 @@ from TopCompiler import ExprParser
 
 def parseLens(parser):
     parser.nextToken()
+    Scope.incrScope(parser)
     lensType = Types.parseType(parser)
+    Scope.decrScope(parser)
 
     place = Tree.PlaceHolder(parser)
 

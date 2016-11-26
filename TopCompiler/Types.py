@@ -118,16 +118,22 @@ def parseGeneric(parser, typ):
 
     parser.nextToken()
 
+    gen = typ.generic
+    genL = list(gen.values())
+
+    count = -1
     while parser.thisToken().token != "]":
+        count += 1
         if parser.thisToken().token == ",":
             parser.nextToken()
             continue
 
-        generic.append(parseType(parser))
-        t = parser.thisToken().token
+        if parser.thisToken().token == "_":
+            generic.append(genL[count].type)
+        else:
+            generic.append(parseType(parser))
         parser.nextToken()
 
-    gen = typ.generic
     if len(gen) > len(generic):
         parseError(parser, "missing "+str(len(gen)-len(generic))+" generic parameters")
     elif len(gen) < len(generic):

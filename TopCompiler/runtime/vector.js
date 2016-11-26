@@ -290,7 +290,7 @@ function newVectorRange(start, end) {
 function newVectorInit(repeat, elem) {
     var arr = EmptyVector;
     for (var i = 0; i < repeat; i++) {
-        arr = arr.append(i);
+        arr = arr.append(elem);
     }
     return arr;
 }

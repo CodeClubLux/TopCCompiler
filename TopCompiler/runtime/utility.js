@@ -128,3 +128,56 @@ function newLens(reader, setter) {
         },
     }
 }
+
+function defer(func) {
+    return function (x) {
+        return function () { func(x) }
+    }
+}
+
+function sleep(time, callback) {
+    setTimeout(callback, time);
+}
+
+function parallel(funcs, next) {
+    var count = 0;
+
+    var length = funcs.length;
+    var array = funcs;
+
+    for (var i = 0; i < funcs.length; i++) {
+        var f = (function (i) {
+            return function (res) {
+                count++;
+                array = array.set(i, res);
+
+                if (count == funcs.length) {
+                    next(array);
+                }
+            }
+        })(i)
+
+        funcs.get(i)(f);
+
+    }
+}
+
+function serial(funcs, next) {
+    var i = 0;
+    var length = funcs.length;
+    var array = EmptyVector;
+
+    function loop() {
+        if (i == funcs.length) {
+            next(array);
+        } else {
+            funcs.get(i)(function (val) {
+                array = array.append(val);
+                i += 1
+                loop()
+            })
+
+        }
+    }
+    loop()
+}

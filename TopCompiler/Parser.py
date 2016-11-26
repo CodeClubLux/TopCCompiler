@@ -279,6 +279,25 @@ class Parser:  # all mutable state
             "set": Types.FuncPointer([A, B], A),
         }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]))
 
+        defer_T = Types.T("T", All, "defer")
+        defer_X = Types.T("X", All, "defer")
+
+        defer = Types.FuncPointer([Types.FuncPointer(
+            [defer_T], defer_X, do= True)], Types.FuncPointer([defer_T], Types.FuncPointer([], defer_X, do= True))
+        , generic= coll.OrderedDict([("defer.T", defer_T), ("defer.X", defer_X)]))
+
+        parallel_T = Types.T("T", All, "parallel_T")
+
+        parallel = Types.FuncPointer([Types.Array(False,
+            Types.FuncPointer([], parallel_T, do=True)
+        )], Types.Array(False, parallel_T), do= True, generic=coll.OrderedDict([("parallel.T", parallel_T)]))
+
+        serial_T = Types.T("T", All, "parallel_T")
+
+        serial = Types.FuncPointer([Types.Array(False,
+            Types.FuncPointer([], serial_T, do=True)
+        )], Types.Array(False, serial_T), do=True, generic=coll.OrderedDict([("serial.T", serial_T)]))
+
         self.scope = {"_global": [{
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
@@ -296,7 +315,11 @@ class Parser:  # all mutable state
             "Atom": Scope.Type(True, Atom),
             "Lens": Scope.Type(True, Lens),
             "All": Scope.Type(True, All),
-            "newAtom": Scope.Type(True, Types.FuncPointer([T], Atom, coll.OrderedDict([("Atom.T", T)])))
+            "newAtom": Scope.Type(True, Types.FuncPointer([T], Atom, coll.OrderedDict([("Atom.T", T)]))),
+            "defer": Scope.Type(True, defer),
+            "sleep": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Null(), do= True)),
+            "parallel": Scope.Type(True, parallel),
+            "serial": Scope.Type(True, serial),
         }]}
 
         self.iter = 0

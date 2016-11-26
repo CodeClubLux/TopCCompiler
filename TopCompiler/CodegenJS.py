@@ -8,6 +8,7 @@ from TopCompiler import Error
 
 import optimization
 import os
+import copy
 
 class CodeGen:
     def __init__(self, filename, tree, externFunctions, main= True):
@@ -26,14 +27,30 @@ class CodeGen:
         self.inAFunction = False
         self.names = [{}]
         self.nameCount = 0
-        self.gen = genNames()
+
+        self.info = Info()
+        self._level = []
+        self._pointer = 0
+
+        self.gen = genNames(self.info)
 
         self.indent = 0
+
+        self.out_scopes = []
+        self.count = 0
 
     def toJSHelp(self, tree= None, isGlobal= True):
         if tree is None:
             tree = self.tree
         out = ""
+
+        tree.res = self.getName()
+        tree._name = self.getName()
+        tree._context = self.getName()
+
+        #tree._next = self.getName()
+
+        tree.val = self.getName()
 
         for i in tree:
             i.compileToJS(self)
@@ -66,7 +83,10 @@ class CodeGen:
         self.out = "".join(self.out_parts)
         self.main = "".join(self.main_parts)
 
-        out = "function "+self.filename+"_Init(){"""+''+self.main+"""}"""+self.out
+        out = "function "+self.filename+"_Init(){var "+self.tree._context+"=0;"+\
+            "return function "+self.tree._name+"("+self.tree.val+"){"+\
+            "while(1){switch ("+self.tree._context+"){case 0:"+self.main+"return;}}}()}"+\
+            self.out
 
         return out
 
@@ -78,9 +98,17 @@ class CodeGen:
 
     def inFunction(self):
         self.inAFunction = True
+        self._level = copy.copy(self.info.array)
+        self._pointer = self.info.pointer
+
+        print("saving")
 
     def outFunction(self):
         self.inAFunction = False
+
+        print("ressetting")
+        self.info.reset(self._level, self._pointer)
+
 
     def compile(self, opt= 0):
         js = self.toJS()
@@ -95,6 +123,13 @@ class CodeGen:
 
 def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
     linked = '"use strict";'
+    import sys
+    runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime.js"
+    file = open(runtimeName, mode="r")
+    runtime = file.read()
+
+    linked += runtime
+
     for i in linkWith:
         try:
             f = open(i, mode="r")
@@ -123,13 +158,6 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
         f = open("lib/"+i.replace("/", ".")+ ".js", mode="r")
         linked += f.read()
         f.close()
-
-    import sys
-    runtimeName = __file__[0:__file__.rfind("/")+1] + "runtime.js"
-    file = open(runtimeName, mode= "r")
-    runtime = file.read()
-
-    linked += runtime
 
     fjs = open("bin/"+ output + ".js", mode="w")
 
@@ -178,32 +206,41 @@ def exec(outputFile):
     args = ["open", "bin/"+outputFile+".html"]
     subprocess.check_call(args, shell=False)
 
-def genNames():
+class Info:
+    def __init__(self):
+        self.pointer = 0
+        self.array = [0]
+        
+    def reset(self, lastArr, pointer):
+        self.array = lastArr
+        self.pointer = pointer
+
+
+def genNames(info):
     import string
 
     def overflow(id):
-        return len(letters) <= array[id]
+        return len(letters) <= info.array[id]
 
     letters = [i for i in string.ascii_letters if not i.lower() in ('a', 'e', 'i', 'o', 'u')]
-    array = [0]
-    pointer = 0
+    info.pointer = 0
     skip = False
 
     while True:
-        if overflow(pointer):
-            array[pointer] = 0
-            if pointer == 0:
-                array = [0] * (len(array) + 1)
-                pointer = len(array)-1
+        if overflow(info.pointer):
+            info.array[info.pointer] = 0
+            if info.pointer == 0:
+                info.array = [0] * (len(info.array) + 1)
+                info.pointer = len(info.array)-1
             else:
-                pointer -= 1
-                array[pointer] += 1
-        elif pointer != len(array)-1:
+                info.pointer -= 1
+                info.array[info.pointer] += 1
+        elif info.pointer != len(info.array)-1:
 
-            yield ("".join((letters[i] for i in array)))
-            pointer += 1
-            array[pointer] += 1
+            yield ("".join((letters[i] for i in info.array)))
+            info.pointer += 1
+            info.array[info.pointer] += 1
         else:
 
-            yield ("".join((letters[i] for i in array)))
-            array[pointer] += 1
+            yield ("".join((letters[i] for i in info.array)))
+            info.array[info.pointer] += 1

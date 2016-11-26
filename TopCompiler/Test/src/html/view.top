@@ -9,6 +9,22 @@ type HtmlElem with
     innerHtml: string
     value: string
 
+type PosAtom[X, T] =
+    a: Atom[X]
+    pos: Lens[X, T]
+
+def PosAtom[X, T].unary_read(self) T do
+    self.pos.query \<-self.a
+
+def PosAtom[X, T].operator_set(self, new: T) do
+    self.a.operator_set self.pos.set \<-self.a, new
+
+def PosAtom[X, T].watch(self, f: |T| do none) do
+    def func(x: X) do
+        f self.pos.query \<-self.a
+
+    self.a.watch func
+
 type Event =
     target: HtmlElem
 
@@ -49,21 +65,21 @@ def mapWithId[T, X](v: |T, int, Atom[X]| -> VNode, arr: []T, a: Atom[X]) VNode =
 
     [0..arr.length].map func
 
-ext watchHack: [T]|Atom[T], |T| do none| -> none = "core_watcher"
+//ext watchHack: [T]|Atom[T], |T| do none| -> none = "core_watcher"
 
 def mapView[T](v: |T, Atom[T]| -> VNode, model: []T, a: Atom[[]T]) VNode =
     def mapper(idx: int) VNode =
-        def update(newValue: T) do
-            a.operator_set(model.set idx, newValue)
-
         let result = model[idx]
-        let newA = newAtom result
 
-        watchHack newA, update
+        let pos = lens []T[idx]
+        let newA: Atom[T] = PosAtom{a, pos }
 
         v result, newA
 
     [0..model.length].map mapper
+
+def viewFromLens[T, X](v: |X, Atom[X]| -> VNode, model: T, pos: Lens[T, X], a: Atom[T]) VNode =
+    v (pos.query model), PosAtom {a, pos}
 
 
 let style: |string| -> Attribute = newAttrib::[string] "style"

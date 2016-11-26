@@ -151,14 +151,20 @@ def infer(parser, tree):
                         Error.beforeError(e, "Function piping to: ")
                     self.type = Types.FuncPointer(a.args, b.returnType, generic= b.generic, do= b.do)
                 elif i.kind == "<-":
-                    try:
-                        meth = i.nodes[0].type.types["unary_read"]
-                    except:
-                        meth = i.nodes[0].type.hasMethod(parser, "unary_read")
+                    if i.unary:
+                        try:
+                            meth = i.nodes[0].type.types["unary_read"]
+                        except:
+                            meth = i.nodes[0].type.hasMethod(parser, "unary_read")
 
-                    if meth:
-                        i.type = meth.returnType
-                        i.opT = i.nodes[0].type
+                        if meth:
+                            i.type = meth.returnType
+                            i.opT = i.nodes[0].type
+                    else:
+                        try:
+                            meth = i.nodes[0].type.types["unary_read"]
+                        except:
+                            meth = i.nodes[0].type.hasMethod(parser, "unary_read")
 
                 elif i.kind == "concat":
                     stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0))})
@@ -407,6 +413,8 @@ def infer(parser, tree):
     loop(tree)
 
 def validate(parser, tree):
+    Tree.transform(tree)
+
     for i in tree:
         if not i.isEnd():
             validate(parser, i)

@@ -108,3 +108,5 @@ newOperator("*", (40, True), 2)
 newOperator("/", (40, True), 2)
 newOperator("%", (40, True), 2)
 newOperator("^", (60, False), 2)
+
+Parser.exprToken["\\"] = lambda parser: parser.nodeBookmark.append(len(parser.currentNode.owner.nodes))

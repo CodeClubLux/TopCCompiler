@@ -158,6 +158,59 @@ function newLens(reader, setter) {
         },
     }
 }
+
+function defer(func) {
+    return function (x) {
+        return function () { func(x) }
+    }
+}
+
+function sleep(time, callback) {
+    setTimeout(callback, time);
+}
+
+function parallel(funcs, next) {
+    var count = 0;
+
+    var length = funcs.length;
+    var array = funcs;
+
+    for (var i = 0; i < funcs.length; i++) {
+        var f = (function (i) {
+            return function (res) {
+                count++;
+                array = array.set(i, res);
+
+                if (count == funcs.length) {
+                    next(array);
+                }
+            }
+        })(i)
+
+        funcs.get(i)(f);
+
+    }
+}
+
+function serial(funcs, next) {
+    var i = 0;
+    var length = funcs.length;
+    var array = EmptyVector;
+
+    function loop() {
+        if (i == funcs.length) {
+            next(array);
+        } else {
+            funcs.get(i)(function (val) {
+                array = array.append(val);
+                i += 1
+                loop()
+            })
+
+        }
+    }
+    loop()
+}
 //linked list
 function List(value, list) {
     this.head = value;
@@ -677,7 +730,7 @@ function newVectorRange(start, end) {
 function newVectorInit(repeat, elem) {
     var arr = EmptyVector;
     for (var i = 0; i < repeat; i++) {
-        arr = arr.append(i);
+        arr = arr.append(elem);
     }
     return arr;
 }
@@ -717,6 +770,9 @@ assertEq(newVector(1,1,2,3).set(0,0), newVector(0,1,2,3))
 
 //add
 assertEq(newVector(1,2,3).operator_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))
+
+//parralel
+parallel(newVector(sleep.bind(null, 0), sleep.bind(null, 0)), function() {});
 function assert(condition) {
     if (!condition) {
         throw new Error("Assertion failed");
