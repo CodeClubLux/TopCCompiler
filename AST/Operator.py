@@ -11,8 +11,10 @@ class Operator(Node):
         self.overload = False
         self.unary = False
         self.curry = False
+        self.partial = False
         self.interface = False
         self.name = False
+
 
     def __str__(self):
         return self.kind
@@ -27,6 +29,14 @@ class Operator(Node):
             self.nodes[0].compileToJS(codegen)
             codegen.append("("+",".join(names)+"))})")
             return
+
+        yilds = Tree.yields(self) and not self.partial and not self.curry
+        if yilds:
+            nextNum = str(codegen.count + 1)
+            codegen.count += 1
+
+            codegen.append(self.body._context + "=" + nextNum)
+            codegen.append(";return ")
 
         if self.overload or self.curry or self.partial:
             if self.interface:
@@ -72,14 +82,26 @@ class Operator(Node):
                 if len(self.nodes) > 1 and not type(self.nodes[-1]) is Tree.Under:
                     self.nodes[-1].compileToJS(codegen)
 
+
                 codegen.append(")")
+
                 return
 
             if len(self.nodes) > 1:
                 codegen.append(",") if not self.interface else 0
                 self.nodes[1].compileToJS(codegen)
 
+            if yilds:
+                codegen.append(("," if len(self.nodes) > 1 else "") + self.body._name)
+
             codegen.append(")")
+
+            if yilds:
+                codegen.append(";")
+                self.outer_scope.case(codegen, nextNum)
+                codegen.append(";")
+
+
             return
 
         codegen.append("(")

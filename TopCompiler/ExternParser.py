@@ -9,5 +9,6 @@ from TopCompiler import VarParser
 def externVar(parser):
     VarParser.createAndAssignParser(parser)
     parser.currentNode.nodes[-1].extern = True
+    parser.currentNode.nodes[-1].nodes[1].extern = True
 
 Parser.stmts["ext"] = externVar

@@ -89,23 +89,59 @@ function jsFuncWrapper(func) {
             args.push(toJS(x[i]));
         }
 
-        return fromJS(func.apply(null, args))
+        return fromJS(func.apply(null, args));
     }
 }
 
-function unary_read() {
-    return this.arg;
+function toAsync(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length-1; i++) {
+            args.push(x[i]);
+        }
+
+        var next = x[x.length-1];
+
+        return next(func.apply(null, args));
+    }
 }
 
-function operator_set(val) {
+var _empty_func = function() {}
+
+function toSync(func) {
+    return function () {
+        console.log("fired event");
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(x[i]);
+        }
+
+        args.push(_empty_func);
+
+        return func.apply(null, args);
+    }
+}
+
+
+function unary_read(next) {
+    next(this.arg);
+}
+
+function operator_set(val, next) {
     this.arg = val;
     for (var i = 0; i < this.events.length; i++ ) {
-        this.events[i](val);
+        this.events[i](val, _empty_func);
     }
+    next()
 }
 
-function atom_watch(func) {
+function atom_watch(func, next) {
     this.events.push(func)
+    next();
 }
 
 function newAtom(arg) {
@@ -131,7 +167,7 @@ function newLens(reader, setter) {
 
 function defer(func) {
     return function (x) {
-        return function () { func(x) }
+        return function (callback) { func(x, callback) }
     }
 }
 

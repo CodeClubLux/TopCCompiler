@@ -25,10 +25,10 @@ function assertEq(value, shouldBe) {
 
 data = {'input': content}
 
-response = requests.post(url, data=data)
+#response = requests.post(url, data=data)
 
 runtime = open("runtime.js", "w")
-runtime.write(response.text)
+runtime.write(content)
 runtime.close()
 
 test = open("runtime/tmp.js", "w")

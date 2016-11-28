@@ -413,8 +413,6 @@ def infer(parser, tree):
     loop(tree)
 
 def validate(parser, tree):
-    Tree.transform(tree)
-
     for i in tree:
         if not i.isEnd():
             validate(parser, i)

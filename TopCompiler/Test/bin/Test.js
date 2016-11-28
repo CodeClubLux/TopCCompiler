@@ -1,4 +1,792 @@
-"use strict";function log(t){console.log(t.toString())}function alert(t){alert(t.toString())}function println(t){stdout.innerHTML+=t.toString()+"<br>"}function print(t){stdout.innerHTML+=t}function operator_add(t,r){return t.operator_add(r)}function operator_sub(t,r){return t.operator_sub(r)}function operator_mul(t,r){return t.operator_mul(r)}function operator_div(t,r){return t.operator_div(r)}function operator_mod(t,r){return t.operator_mod(r)}function operator_eq(t,r){return t.operator_eq(r)}function operator_pow(t,r){return Math.pow(t,r)}function operator_lt(t,r){return t.operator_lt(r)}function operator_gt(t,r){return t.operator_gt(r)}function operator_or(t,r){return t||r}function operator_not(t){return!t}function operator_and(t,r){return t&&r}function unary_add(t){return t}function unary_sub(t){return-t}function toString(t){return t.toString()}function string_toString(t){return t}function int_toString(t){return t.toString()}function float_toString(t){return t.toString()}function array_toString(t){return t.toString()}function float_toInt(t){return 0|t}function int_toInt(t){return t}function float_toFloat(t){return t}function int_toFloat(t){return t}function log(t){console.log(t.toString())}function isOdd(t){return t%2!=0}function isEven(t){return t%2==0}function min(t,r){return r>t?t:r}function max(t,r){return t>r?t:r}function len(t){return t.length}function toFloat(t){return t.toFloat()}function toInt(t){return t.toInt()}function toJS(t){return t instanceof Vector?t.map(toJS).toArray():t instanceof Function?funcWrapper(t):t}function fromJS(t){return t instanceof Array?fromArray(t.map(fromJS)):t instanceof Function?jsFuncWrapper(t):t}function funcWrapper(t){return function(){for(var r=Array.prototype.slice.call(arguments),n=[],e=0;e<r.length;e++)n.push(fromJS(r[e]));return toJS(t.apply(null,n))}}function jsFuncWrapper(t){return function(){for(var r=Array.prototype.slice.call(arguments),n=[],e=0;e<r.length;e++)n.push(toJS(r[e]));return fromJS(t.apply(null,n))}}function unary_read(){return this.arg}function operator_set(t){this.arg=t;for(var r=0;r<this.events.length;r++)this.events[r](t)}function atom_watch(t){this.events.push(t)}function newAtom(t){return{unary_read:unary_read,operator_set:operator_set,arg:t,watch:atom_watch,events:[]}}function newLens(t,r){return{query:function(r){return t(r)},set:function(t,n){return r(t,n)}}}function defer(t){return function(r){return function(){t(r)}}}function sleep(t,r){setTimeout(r,t)}function parallel(t,r){for(var n=0,e=(t.length,t),o=0;o<t.length;o++){var i=function(o){return function(i){n++,e=e.set(o,i),n==t.length&&r(e)}}(o);t.get(o)(i)}}function serial(t,r){function n(){e==t.length?r(o):t.get(e)(function(t){o=o.append(t),e+=1,n()})}var e=0,o=(t.length,EmptyVector);n()}function List(t,r){this.head=t,this.tail=r,null===r?null===t?this.length=0:this.length=1:this.length=r.length+1}function listFromArray(t){for(var r=t.length,n=EmptyList,e=0;r>e;e++)n=n.append(t[e]);return n}function newList(){return listFromArray(Array.prototype.slice.call(arguments))}function newListRange(t,r){for(var n=EmptyList,e=t;r>e;e++)n=n.append(e);return n}function newListInit(t,r){for(var n=EmptyList,e=0;t>e;e++)n=n.append(e);return n}function Vector(t,r,n){this.shift=(n-1)*this.bits,this.root=t,this.length=r,this.depth=n}function getProperIndex(t,r){return 0>r?t.length+r:r}function newVector(){return fromArray(Array.prototype.slice.call(arguments))}function fromArray(t){for(var r=EmptyVector,n=0;n<t.length;n++)r=r.append(t[n]);return r}function newVectorRange(t,r){for(var n=EmptyVector,e=t;r>e;e++)n=n.append(e);return n}function newVectorInit(t,r){for(var n=EmptyVector,e=0;t>e;e++)n=n.append(r);return n}var stdout=document.getElementById("code");Number.prototype.operator_add=function(t){return this+t},Number.prototype.operator_div=function(t){return this/t},Number.prototype.operator_sub=function(t){return this-t},Number.prototype.operator_mul=function(t){return this*t},Number.prototype.operator_eq=function(t){return this==t},Number.prototype.operator_mod=function(t){return this%t},Number.prototype.operator_lt=function(t){return t>this},Number.prototype.operator_gt=function(t){return this>t},Number.prototype.toFloat=function(){return this},Number.prototype.toInt=function(){return 0|this},String.prototype.operator_eq=function(t){return this==t},String.prototype.operator_add=function(t){return this+t};var EmptyList=new List(null,null);List.prototype.append=function(t){return new List(t,this)},List.prototype.toArray=function(){for(var t=[],r=this,n=0;n<this.length;n++)t.push(r.head),r=r.tail;return t.reverse()},List.prototype.getProperIndex=function(t){return 0>t?this.length+t:t},List.prototype.getList=function(t){t=this.getProperIndex(t);for(var r=this.length-t-1,n=this,e=0;r>e;e++)n=n.tail;return n},List.prototype.get=function(t){return this.getList(t).head},List.prototype.toString=function(){return"List("+this.join(", ")+")"},List.prototype.join=function(t){null===t&&(t=",");var r=this;if(0===this.length)return"";for(var n=r.head.toString(),e=1;e<this.length;e++)r=r.tail,n=r.head.toString()+t.toString()+n;return n},List.prototype.insert=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?t.append(e):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t,r)},List.prototype.del=function(t){function r(t,n){if(0>n)throw new Error("");if(1===n){var e=t.tail;return null===e&&(e=EmptyList),e}return r(t.tail,n-1).append(t.head)}return t=this.getProperIndex(t),r(this,this.length-t)},List.prototype.slice=function(t,r){null==t&&(t=0),null==r&&(r=this.length),r=this.getProperIndex(r-1),t=this.getProperIndex(t);var n=this.getList(r),e=new List(n.head,n.tail);return e.length=r-t+1,e},List.prototype.reverse=function(){for(var t=EmptyList,r=this,n=0;n<this.length;n++)t=t.append(r.head),r=r.tail;return t},List.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(r===t)return!0;for(var r=this,n=0;n<this.length;n++){if(!r.head.operator_eq(t.head))return!1;r=r.tail,t=t.tail}return!0},List.prototype.operator_add=function(t){function r(t,n,e){if(0>n)throw new Exception;return 0==n?new List(e.head,e.tail):r(t.tail,n-1,e).append(t.head)}return r(t,t.length,this)},List.prototype.copy=function(){function t(r,n){if(0>n)throw new Exception;return 0==n?r:t(r.tail,n-1).append(r.head)}return t(this,this.length)},List.prototype.set=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?new List(e,t.tail):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t-1,r)},Vector.prototype.bits=5,Vector.prototype.width=1<<Vector.prototype.bits,Vector.prototype.mask=Vector.prototype.width-1;var EmptyVector=new Vector(Array(Vector.prototype.width),0,1);Vector.prototype.get=function(t){if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());for(var r=this.root,n=this.bits,e=this.mask,o=this.shift;o>0;o-=n)r=r[t>>o&e];return r[t&e]},Vector.prototype.append=function(t){function r(i,u,p){if(u>0){var a=p>>u&e;if(i)var s=i.slice();else var s=Array(o);return s[a]=r(s[a],u-n,p),s}var a=p&e;if(null==i)var s=Array(o);else var s=i.slice();return s[a]=t,s}var n=this.bits,e=this.mask,o=Vector.prototype.width;if(Math.pow(o,this.depth)===this.length){var i=Array(o);i[0]=this.root,i[1]=Array(o);var u=r(i,this.depth*this.bits,this.length);return new Vector(u,this.length+1,this.depth+1)}var u=r(this.root,this.shift,this.length);return new Vector(u,this.length+1,this.depth)},Vector.prototype.set=function(t,r){function n(t,u,p){if(u>0){var a=p>>u&o;if(t)var s=t.slice();else var s=Array(i);return s[a]=n(s[a],u-e,p),s}var a=p&o,s=t.slice();return s[a]=r,s}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var e=this.bits,o=this.mask,i=Vector.prototype.width,u=n(this.root,this.shift,t);return new Vector(u,this.length,this.depth)},Vector.prototype.insert=function(t,r){function n(t,r,p,a){if(r>0){var s=p>>r&i;if(t)var h=t.slice();else var h=Array(u);var f=n(h[s],r-o,p,a);h[s]=f[0];var c=null;if(f[1]){c=f[1];for(var l=s+1;u>l;l++){var f=n(h[l],r-o,l<<r,c);h[l]=f[0],c=f[1]}}return[h,c]}var s=p&i;return e(t,s,a)}function e(t,r,n){for(var e=[],o=0;u-1>o;o++)r===o&&e.push(n),e.push(t[o]);return r===o&&e.push(n),[e,t[u-1]]}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var o=this.bits,i=this.mask,u=Vector.prototype.width,p=n(this.root,this.shift,t,r);return p[1]?new Vector(p[0],this.length+1,this.depth).append(p[1]):new Vector(p[0],this.length+1,this.depth)},Vector.prototype.toArray=function(){for(var t=Array(this.length),r=0;r<this.length;r++)t[r]=this.get(r);return t},Vector.prototype.toString=function(){return"["+this.toArray().join(",")+"]"},Vector.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(this===t)return!0;for(var r=0;r<this.length;r++)if(!this.get(r).operator_eq(t.get(r)))return!1;return!0},Vector.prototype.map=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++)r=r.append(t(this.get(e)));return r},Vector.prototype.filter=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++){var o=this.get(e);t(o)&&(r=r.append(o))}return r},Vector.prototype.reduce=function(t){if(1==this.length)return this.get(0);if(0===this.length)throw Error("Cannot reduce empty vector");for(var r=this.length,n=this.get(0),e=1;r>e;e++)n=t(n,this.get(e));return n},Vector.prototype.join=function(t){if(0==t.length)return"";for(var r=this.get(0),n=this.length,e=1;n>e;e++)r+=t+this.get(e);return r},Vector.prototype.has=function(t){for(var r=0;r<this.length;r++)if(this.get(r).operator_eq(t))return!0;return!1},Vector.prototype.operator_add=function(t){for(var r=this,n=0;n<t.length;n++)r=r.append(t.get(n));return r};(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+"use strict";function log(s){
+    console.log(s.toString())
+}
+
+var stdout = document.getElementById("code")
+
+function println(s) {
+    stdout.innerHTML += s.toString()+"<br>"
+}
+
+function print(s) {
+    stdout.innerHTML += s
+}
+
+
+
+
+function operator_add(x,y) {return x.operator_add(y)}
+function operator_sub(x,y) {return x.operator_sub(y)}
+function operator_mul(x,y) {return x.operator_mul(y)}
+function operator_div(x,y) {return x.operator_div(y)}
+function operator_mod(x,y) {return x.operator_mod(y)}
+function operator_eq(x,y) {return x.operator_eq(y)}
+function operator_pow(x,y) {return Math.pow(x,y)}
+function operator_lt(x,y) {return x.operator_lt(y)}
+function operator_gt(x,y) {return x.operator_gt(y)}
+function operator_or(x,y) {return x || y}
+function operator_not(x) {return !x}
+function operator_and(x,y) { return x && y }
+
+
+function unary_add(x) {return x}
+function unary_sub(x) {return -x}
+
+Number.prototype.operator_add = function (other) { return this + other }
+Number.prototype.operator_div = function (other) { return this / other }
+Number.prototype.operator_sub = function (other) { return this - other }
+Number.prototype.operator_mul = function (other) { return this * other }
+Number.prototype.operator_eq = function (other) { return this == other }
+Number.prototype.operator_mod = function (other) { return this % other }
+Number.prototype.operator_lt = function (other) { return this < other }
+Number.prototype.operator_gt = function (other) { return this > other }
+Number.prototype.toFloat = function () { return this }
+Number.prototype.toInt = function () { return this | 0 }
+
+String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_add = function (other) { return this + other }
+function toString(s) {
+    return s.toString()
+}
+
+function string_toString(s) {return s}
+function int_toString(s) { return s.toString() }
+function float_toString(s) { return s.toString() }
+function array_toString(s) { return s.toString() }
+
+function float_toInt(s) { return s | 0 }
+function int_toInt(s) { return s }
+
+function float_toFloat(s) { return s }
+function int_toFloat(s) { return s }
+
+function log(s) { console.log(s.toString()); }
+
+function isOdd(number) {
+    return number % 2 != 0
+}
+
+function isEven(number) {
+    return number % 2 == 0
+}
+
+function min(a,b) {
+    return a < b ? a : b
+}
+
+function max(a,b) {
+    return a > b ? a : b
+}
+
+function len(x) {
+    return x.length
+}
+
+function toFloat(x) {
+    return x.toFloat()
+}
+
+function toInt(x) {
+    return x.toInt()
+}
+
+function toJS(arg) {
+    if (arg instanceof Vector) {
+        return arg.map(toJS).toArray()
+    }
+
+    if (arg instanceof Function) {
+        return funcWrapper(arg);
+    }
+
+    return arg
+}
+
+function fromJS(arg) {
+    if (arg instanceof Array) {
+        return fromArray(arg.map(fromJS));
+    }
+
+    else if (arg instanceof Function) {
+        return jsFuncWrapper(arg);
+    }
+
+    return arg
+}
+
+function funcWrapper(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(fromJS(x[i]));
+        }
+
+        return toJS(func.apply(null, args))
+    }
+}
+
+function jsFuncWrapper(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(toJS(x[i]));
+        }
+
+        return fromJS(func.apply(null, args));
+    }
+}
+
+function toAsync(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length-1; i++) {
+            args.push(x[i]);
+        }
+
+        var next = x[x.length-1];
+
+        return next(func.apply(null, args));
+    }
+}
+
+var _empty_func = function() {}
+
+function toSync(func) {
+    return function () {
+        console.log("fired event");
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(x[i]);
+        }
+
+        args.push(_empty_func);
+
+        return func.apply(null, args);
+    }
+}
+
+
+function unary_read(next) {
+    next(this.arg);
+}
+
+function operator_set(val, next) {
+    this.arg = val;
+    for (var i = 0; i < this.events.length; i++ ) {
+        this.events[i](val, _empty_func);
+    }
+    next()
+}
+
+function atom_watch(func, next) {
+    this.events.push(func)
+    next();
+}
+
+function newAtom(arg) {
+    return {
+        unary_read: unary_read,
+        operator_set: operator_set,
+        arg: arg,
+        watch: atom_watch,
+        events: [],
+    }
+}
+
+function newLens(reader, setter) {
+    return {
+        query: function(item) {
+            return reader(item);
+        },
+        set: function(old, item) {
+            return setter(old, item)
+        },
+    }
+}
+
+function defer(func) {
+    return function (x) {
+        return function (callback) { func(x, callback) }
+    }
+}
+
+function sleep(time, callback) {
+    setTimeout(callback, time);
+}
+
+function parallel(funcs, next) {
+    var count = 0;
+
+    var length = funcs.length;
+    var array = funcs;
+
+    for (var i = 0; i < funcs.length; i++) {
+        var f = (function (i) {
+            return function (res) {
+                count++;
+                array = array.set(i, res);
+
+                if (count == funcs.length) {
+                    next(array);
+                }
+            }
+        })(i)
+
+        funcs.get(i)(f);
+
+    }
+}
+
+function serial(funcs, next) {
+    var i = 0;
+    var length = funcs.length;
+    var array = EmptyVector;
+
+    function loop() {
+        if (i == funcs.length) {
+            next(array);
+        } else {
+            funcs.get(i)(function (val) {
+                array = array.append(val);
+                i += 1
+                loop()
+            })
+
+        }
+    }
+    loop()
+}
+//linked list
+function List(value, list) {
+    this.head = value;
+    this.tail = list;
+
+    if (list === null) {
+        if (value === null) {
+            this.length = 0
+        } else {
+            this.length = 1;
+        }
+    } else {
+        this.length = list.length+1
+    }
+}
+
+var EmptyList = new List(null, null);
+
+List.prototype.append = function (head) {
+    return new List(head, this);
+}
+
+List.prototype.toArray = function () {
+    var v = [];
+    var curr = this;
+    for (var i = 0; i < this.length; i++) {
+        v.push(curr.head);
+        curr = curr.tail
+    }
+    return v.reverse();
+}
+
+List.prototype.getProperIndex = function (index) {
+    if (index < 0) {
+        return (this.length + index);
+    }
+    return index;
+}
+
+List.prototype.getList = function (index) {
+    index = this.getProperIndex(index)
+
+    var getElement = (this.length-index)-1;
+    var curr = this;
+
+    for (var i = 0; i < getElement; i++) {
+        curr = curr.tail;
+    }
+    return curr;
+}
+
+List.prototype.get = function (index) {
+    return this.getList(index).head;
+}
+
+List.prototype.toString = function () {
+    return "List("+this.join(", ")+")"
+}
+
+List.prototype.join = function(sep) {
+    if (sep === null) sep = ",";
+
+    var curr = this;
+
+    if (this.length === 0) return "";
+
+    var str = curr.head.toString();
+
+    for (var i = 1; i< this.length; i++ ) {
+        curr = curr.tail;
+        str = (curr.head.toString() + sep.toString()) + str
+    }
+    return str;
+
+}
+
+List.prototype.insert = function (pos, val) {
+    function insert(self, position, value) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position === 0) {
+            return self.append(value);
+        } else {
+            return insert(self.tail, position - 1, value).append(self.head);
+
+        }
+    }
+
+    pos = this.getProperIndex(pos);
+    return insert(this, this.length - pos, val)
+}
+
+List.prototype.del = function (pos) {
+    function insert(self, position) {
+        if (position < 0) {
+           throw new Error("")
+        } else if (position === 1) {
+            var t = self.tail;
+            if (t === null) {
+                t = EmptyList;
+            }
+            return t;
+        } else {
+            return insert(self.tail, position - 1).append(self.head);
+
+        }
+    }
+
+    pos = this.getProperIndex(pos);
+    return insert(this, this.length - pos)
+}
+
+List.prototype.slice = function (index, indexEnd) {
+    if (index == null ) { index = 0 }
+    if (indexEnd == null ) { indexEnd = this.length }
+    indexEnd = this.getProperIndex(indexEnd-1);
+    index = this.getProperIndex(index);
+
+    var l = this.getList(indexEnd)
+    var e = new List(l.head, l.tail);
+
+    e.length = indexEnd-index+1;
+
+    return e;
+}
+
+List.prototype.reverse = function () {
+    var v = EmptyList;
+    var curr = this;
+    for (var i = 0; i < this.length; i++) {
+        v = v.append(curr.head);
+        curr = curr.tail;
+    }
+    return v;
+}
+
+List.prototype.operator_eq = function (other) {
+    if (this.length !== other.length) return false;
+    if (self === other) return true;
+
+    var self = this;
+
+    for (var i = 0; i < this.length; i++) {
+        if (!self.head.operator_eq(other.head)) {
+            return false;
+        }
+
+        self = self.tail;
+        other = other.tail;
+    }
+    return true;
+}
+
+List.prototype.operator_add = function (other) {
+    function insert(self, position, s) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position == 0) {
+            return new List(s.head, s.tail);
+        } else {
+            return insert(self.tail, position - 1, s).append(self.head);
+
+        }
+    }
+
+    return insert(other, other.length, this)
+}
+
+List.prototype.copy = function () {
+    function insert(self, position) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position == 0) {
+            return self;
+        } else {
+            return insert(self.tail, position - 1).append(self.head);
+        }
+    }
+
+    return insert(this, this.length)
+}
+
+List.prototype.set = function (pos, val) {
+    function insert(self, position, value) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position === 0) {
+            return new List(value, self.tail)
+        } else {
+            return insert(self.tail, position - 1, value).append(self.head);
+
+        }
+    }
+
+    pos = this.getProperIndex(pos);
+    return insert(this, this.length - pos - 1, val)
+}
+
+function listFromArray(arr) {
+    var len = arr.length;
+    var curr = EmptyList;
+
+    for (var i = 0; i < len; i++) {
+        curr = curr.append(arr[i]);
+    }
+    return curr;
+}
+
+function newList() {
+    return listFromArray(Array.prototype.slice.call(arguments));
+}
+
+function newListRange(start, end) {
+    var arr = EmptyList;
+    for (var i = start; i < end; i++) {
+        arr = arr.append(i)
+    }
+    return arr;
+}
+
+function newListInit(repeat, elem) {
+    var arr = EmptyList;
+    for (var i = 0; i < repeat; i++) {
+        arr = arr.append(i);
+    }
+    return arr;
+}
+function Vector(root, len, depth) {
+    this.shift = (depth - 1) * this.bits;
+    this.root = root;
+    this.length = len;
+    this.depth = depth;
+}
+
+Vector.prototype.bits = 5;
+Vector.prototype.width = 1 << Vector.prototype.bits;
+Vector.prototype.mask = Vector.prototype.width - 1;
+
+var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
+
+Vector.prototype.get = function (key) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var node = this.root;
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    for (var level = this.shift; level > 0; level -= bits) {
+          node = node[(key >> level) & mask]
+    }
+    return node[key & mask]
+}
+
+Vector.prototype.append = function (value) {
+    var bits = this.bits;
+    var mask = this.mask;
+
+    function update(node, level, key) {
+        if (level > 0) {
+            var pos = key >> level & mask;
+
+            if (!node) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+
+            newNode[pos] = update(newNode[pos], level - bits, key);
+            return newNode;
+        } else {
+            var pos = key & mask;
+
+            if (node == null) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+            newNode[pos] = value;
+            return newNode
+        }
+    }
+
+    var width = Vector.prototype.width;
+
+    if (Math.pow(width, this.depth) === this.length) {
+        var n = Array(width)
+        n[0] = this.root;
+        n[1] = Array(width)
+
+        var u = update(n, this.depth * this.bits, this.length);
+        return new Vector(u, this.length+1, this.depth+1)
+    } else {
+        var u = update(this.root, this.shift, this.length);
+        return new Vector(u, this.length+1, this.depth)
+    }
+}
+
+Vector.prototype.set = function (key, value) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    function update(node, level, key) {
+        if (level > 0) {
+            var pos = key >> level & mask;
+
+            if (!node) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+
+            newNode[pos] = update(newNode[pos], level - bits, key);
+            return newNode;
+        } else {
+            var pos = key & mask;
+
+            var newNode = node.slice();
+            newNode[pos] = value;
+            return newNode
+        }
+    }
+
+    var width = Vector.prototype.width;
+
+    var u = update(this.root, this.shift, key);
+    return new Vector(u, this.length, this.depth);
+}
+
+Vector.prototype.insert = function (key, val) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    var self = this;
+
+    function insert(node, level, key, value) {
+        if (level > 0) {
+            var pos = key >> level & mask;
+
+            if (!node) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+
+            var u = insert(newNode[pos], level - bits, key, value);
+            newNode[pos] = u[0];
+            var next = null;
+            if (u[1]) {
+                next = u[1];
+                for (var i = pos+1; i < width; i++) {
+                    var u = insert(newNode[i], level - bits, (i << level), next);
+                    newNode[i] = u[0];
+                    next = u[1];
+                }
+            }
+            return [newNode, next];
+        } else {
+            var pos = key & mask;
+            return arrayInsert(node, pos, value)
+        }
+    }
+
+    function arrayInsert(arr, index, val) {
+        var narr = [];
+        for (var i = 0; i < width-1; i++) {
+            if (index === i) {
+                narr.push(val);
+            }
+            narr.push(arr[i]);
+        }
+
+        if (index === i) {
+            narr.push(val);
+        }
+
+        return [narr, arr[width-1]]
+    }
+
+    var width = Vector.prototype.width;
+
+    var u = insert(this.root, this.shift, key, val);
+    if (u[1]) {
+        return new Vector(u[0], this.length+1, this.depth).append(u[1])
+    } else {
+        return new Vector(u[0], this.length+1, this.depth)
+    }
+}
+
+Vector.prototype.toArray = function () {
+    var v = Array(this.length)
+    for (var i = 0; i < this.length; i++) {
+        v[i] = this.get(i);
+    }
+    return v;
+}
+
+Vector.prototype.toString = function () {
+    return "["+this.toArray().join(",")+"]"
+}
+
+Vector.prototype.operator_eq = function (other) {
+    if (this.length !== other.length) return false;
+    if (this === other) return true;
+
+    for (var i = 0; i < this.length; i++) {
+        if (!this.get(i).operator_eq(other.get(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+Vector.prototype.map = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        newArr = newArr.append(func(this.get(i)));
+    }
+    return newArr;
+}
+
+Vector.prototype.filter = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        var el = this.get(i)
+        if (func(el)) {
+            newArr = newArr.append(el);
+        }
+    }
+    return newArr;
+}
+
+Vector.prototype.reduce = function (func) {
+    if (this.length == 1) {
+        return this.get(0)
+    } else if (this.length === 0) {
+        throw Error("Cannot reduce empty vector")
+    }
+
+    var len = this.length;
+    var curr = this.get(0)
+    for (var i = 1; i < len; i++) {
+        curr = func(curr, this.get(i));
+    }
+    return curr;
+}
+
+Vector.prototype.join = function (s) {
+    if (s.length == 0) { return "" }
+    var string = this.get(0);
+    var len = this.length;
+    for (var i = 1; i < len; i++) {
+        string += s + this.get(i);
+    }
+    return string
+}
+
+function getProperIndex(self, index) {
+    if (index < 0) {
+        return (self.length + index);
+    }
+    return index;
+}
+
+Vector.prototype.has = function (s) {
+    for (var i = 0; i < this.length; i++) {
+        if (this.get(i).operator_eq(s)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Vector.prototype.operator_add = function (s) {
+    var newArr = this;
+    for (var i = 0; i < s.length; i++) {
+        newArr = newArr.append(s.get(i));
+    }
+    return newArr;
+}
+
+function newVector() {
+    return fromArray(Array.prototype.slice.call(arguments))
+}
+
+function fromArray(arr) {
+    var v = EmptyVector;
+    for (var i = 0; i < arr.length; i++) {
+        v = v.append(arr[i]);
+    }
+    return v;
+}
+
+function newVectorRange(start, end) {
+    var arr = EmptyVector;
+    for (var i = start; i < end; i++) {
+        arr = arr.append(i)
+    }
+    return arr;
+}
+
+function newVectorInit(repeat, elem) {
+    var arr = EmptyVector;
+    for (var i = 0; i < repeat; i++) {
+        arr = arr.append(elem);
+    }
+    return arr;
+}(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 window.virtualDom = require("virtual-dom");
 
 window.clearElement = function(elem) {
@@ -8,9 +796,16 @@ window.clearElement = function(elem) {
 window.html_h = function (type, attrib, children) {
     var at = {}
     for (var i = 0; i < attrib.length; i++) {
-        at[attrib[i].name] = attrib[i].value;
+        if (typeof attrib[i].value === "function") {
+            at[attrib[i].name] = toSync(attrib[i].value);
+            //toSync(attrib[i].value);
+        } else {
+            at[attrib[i].name] = attrib[i].value;
+        }
     }
-    return virtualDom.h(type, at, children);
+
+    var res = virtualDom.h(type, at, children);
+    return res;
 }
 
 window.core_watcher = function (a, b) {
@@ -45,6 +840,27 @@ function render(previous) {
 window.newThunk = function (fn, arg, key) {
     return new Thunk(fn, arg, key)
 }
+
+window.http_get = function (theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+    xmlHttp.send(null);
+}
+
+window.json_prettify = function (obj, indent) {
+    console.log(obj);
+    return JSON.stringify(JSON.parse(obj), null, indent);
+}
+
+window.html_appendChild = function (a,b) {
+    a.appendChild(b);
+}
+
 },{"virtual-dom":5}],2:[function(require,module,exports){
 var createElement = require("./vdom/create-element.js")
 
@@ -1713,5 +2529,5 @@ function appendPatch(apply, patch) {
 
 },{}]},{},[1]);
 
-function main_Init(){var d=0;return function c(f){while(1){switch (d){case 0:d=2;return main_test(c);case 2:return;}}}()}function main_map(g, h){return h.map(g);}function main_filter(g, h){return h.filter(g);}function main_reduce(g, h){return h.reduce(g);}function main_comp(g, h){return g((h));}function main_zip(g, h){var m;m = newVector();var n;n = 0;
-while((n<g.length)){m = m.append((newVector(g.get(n),h.get(n))));n = ((n+1)|0);}return m;}function main_append(g, h){return h.append(g);}function main_first(g){return g.get(0);}function main_get(g){var k=0;return function j(h){while(1){switch(k){case 0:return g("hello world");}}}()}function main_test(g){var k=0;return function j(h){while(1){switch(k){case 0:k=1;return main_get(j);case 1:println(h);return g();}}}()}
+function html_Init(){var d=0;return function c(b){while(1){switch (d){case 0:html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_h);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = newVector();html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_appendChild = toAsync(html_appendChild);return;}}}()}var html_style;var html_placeHolder;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;var html_appendChild;function html_PosAtom(f,g){this.a=f;this.pos=g;}html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(d,f){var j=0;return function h(g){while(1){switch(j){case 0:j=1;return d.a.unary_read(h);case 1:;return f(d.pos.query(g));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=2;return f.a.unary_read(k);case 2:;l=3;return f.a.operator_set(f.pos.set(j,g),k);case 3:return h(j);}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:function m(n,p){var s=0;return function r(q){while(1){switch(s){case 0:s=4;return f.a.unary_read(r);case 4:;s=5;return g(f.pos.query(q),r);case 5:return p(q);}}}()}l=6;return f.a.watch(m,k);case 6:return h(j);}}}()}function html_Event(h){this.target=h;}function html_Attribute(j,k){this.name=j;this.value=k;}function html_newAttrib(c, d){return new html_Attribute(c,d);}function html_onEvent(c, d, f){function g(h,j){var m=0;return function l(k){while(1){switch(m){case 0:m=7;return f.unary_read(l);case 7:;m=8;return d(k,h,l);case 8:m=9;return f.operator_set(k,l);case 9:return j(k);}}}()}return new html_Attribute(c,g);}function html_async(c, d){function f(g){var k=0;return function j(h){while(1){switch(k){case 0:k=10;return d.unary_read(j);case 10:;k=11;return c(h,j);case 11:k=12;return d.operator_set(h,j);case 12:return g(h);}}}()}return f;}function html_ignoreAct(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=13;return c(f,k);case 13:return h(j);}}}()}return d;}function html_withId(c){function d(f, g, h,j){var n;var m=0;return function l(k){while(1){switch(m){case 0:m=14;return c(g.get(f),h,l);case 14:n = (k);return j(g.set(f,n));}}}()}return d;}function html_mapWithId(c, d, f){function g(h){return c(d.get(h),h,f);}return newVectorRange(0,d.length).map(g);}function html_mapView(c, d, f){function g(h){var j;j = d.get(h);var k;k = newLens(function(l){return l.get(h)}, function(m,l){return m.set(h,l)});var n;n = new html_PosAtom(f,k);return c(j,n);}return newVectorRange(0,d.length).map(g);}function html_viewFromLens(c, d, f, g){return c((f.query(d)),new html_PosAtom(g,f));}function html_render(c,d){var j;var k;var h=0;return function g(f){while(1){switch(h){case 0:j = html_createElement(c);k = html_cssSelector("#code");h=15;return html_clear(k,g);case 15:h=16;return html_appendChild(k,j,g);case 16:return d(j);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:return c();}}}()}function html_app(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:j=17;return d.unary_read(h);case 17:;k = c((g),d);j=18;return html_render(k,h);case 18:l = g;var m;m = g;function n(p,q){var v;var w;var t=0;return function s(r){while(1){switch(t){case 0:v = c(p,d);w = html_diff(k,v);t=19;return html_patch(m,w,s);case 19:m=r;k=v;return q();}}}()}j=20;return d.watch(n,h);case 20:return f(g);}}}()}function main_Init(){var d=0;return function c(b){while(1){switch (d){case 0:html_Init();main_appState = newAtom(newVectorInit(10,0));main_add = html_ignoreAct(main_toEffect(operator_add.bind(null,1)));main_sub = html_ignoreAct(main_toEffect((function(g){return function(f){return operator_sub(f,g);}})(1)));main_addCounter = html_ignoreAct(main_toEffect((main_append.bind(null,0))));d=1;return html_app(main_view,main_appState,c);case 1:return;}}}()}var main_appState;var main_add;var main_sub;var main_addCounter;function main_map(c, d){return d.map(c);}function main_filter(c, d){return d.filter(c);}function main_reduce(c, d){return d.reduce(c);}function main_comp(c, d){return c((d));}function main_zip(c, d){var f;f = newVector();var g;g = 0;
+while((g<c.length)){f=f.append((newVector(c.get(g),d.get(g))));g=((g+1)|0);}return f;}function main_append(c, d){return d.append(c);}function main_first(c){return c.get(0);}function main_toEffect(c){function d(f,g){var k=0;return function j(h){while(1){switch(k){case 0:return g(c(f));}}}()}return d;}function main_counter(c, d){return html_div(html_noAttrib,newVector(html_button(newVector(html_onClick(main_add,d)),"+"),(((("Counter ")+((c)).toString()))+("").toString()),html_button(newVector(html_onClick(main_sub,d)),"-")));}function main_view(c, d){return html_div(html_noAttrib,newVector(html_h1(html_noAttrib,"Dynamic Counter Example"),html_div(html_noAttrib,(html_mapView(main_counter,c,d))),html_button(newVector(html_onClick(main_addCounter,d)),"Add")));}function main_mapF(c){return c(10);}

@@ -67,7 +67,8 @@ def isFactor(number: int, factor: int) bool =
 def isPrime(x: int) bool =
     (factors x).length == 2
 
-def primeFactors(x: int) []int do
+/*
+def primeFactors(x: int) []int =
     if (isPrime x) or x == 1 then [x]
     else
         var i = 2
@@ -77,12 +78,13 @@ def primeFactors(x: int) []int do
             i += 1
 
         (primeFactors x/i) + (primeFactors i)
+*/
 
 def findPerfect(x: int) string =
     let perfect = [1..30].map (_ ^ 2)
 
 
-    def find(index: int) int do
+    def find(index: int) int =
         let i = perfect[index]
         let b = perfect[index-1]
         i - b

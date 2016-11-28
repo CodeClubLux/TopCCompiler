@@ -66,6 +66,7 @@ class Assign(Node):
         Node.__init__(self, parser)
         self.name = name
         self.isGlobal = None
+        self.extern = False
 
     def __str__(self):
         return self.name + "="
@@ -73,15 +74,17 @@ class Assign(Node):
     def compileToJS(self, codegen):
         if self.init:
             name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
+
             codegen.append(name + " = ")
-            if self.owner.extern:
+
+            if self.extern:
                 codegen.append(self.nodes[0].string[1:-1])
             else:
                 self.nodes[0].compileToJS(codegen)
             codegen.append(";")
         else:
             self.nodes[0].compileToJS(codegen)
-            codegen.append(" = ")
+            codegen.append("=")
             self.nodes[1].compileToJS(codegen)
             codegen.append(";")
 
@@ -90,11 +93,9 @@ class Assign(Node):
         package = self.package
 
         if self.init:
-            self.isGlobal = self.owner.nodes[0].isGlobal
-            createTyp = self.owner.nodes[0].varType
-        else:
             self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
-
+            createTyp = self.createTyp
+        else:
             if type(self.nodes[0]) is Tree.ReadVar:
                 if self.nodes[0].imutable:
                     self.nodes[0].error("cannot reassign to immutable variable "+self.nodes[0].name)

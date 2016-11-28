@@ -5,7 +5,6 @@ type Nothing with
 
 type Patches with
 type HtmlElem with
-    appendChild: |Nothing| do none
     innerHtml: string
     value: string
 
@@ -37,7 +36,7 @@ def newAttrib[T](name: string, value: T) Attribute =
 
 def onEvent[T](name: string, x: |T, Event| do T, a: Atom[T]) Attribute =
     def clicked(e: Event) do
-        a.operator_set x \ <-a, e
+        a.operator_set x \<-a, e
 
     Attribute {name, clicked}
 
@@ -55,7 +54,8 @@ def ignoreAct[T](f: |T| do T) |T, Event| do T =
 
 def withId[T](f: |T, Event| do T) |int, []T, Event| do []T =
     def func(id: int, m: []T, e: Event) []T do
-        m.set id, (f m[id], e)
+        let res = (f m[id], e)
+        m.set id, res
 
     func
 
@@ -92,9 +92,9 @@ let onChange = onEvent "onchange"
 ext h: |string, []Attribute, VNode| -> VNode = "fromJS(html_h)"
 ext createElement: |VNode| -> HtmlElem = "virtualDom.create"
 ext diff: |VNode, VNode| -> Patches = "virtualDom.diff"
-ext patch: |HtmlElem, Patches| do HtmlElem = "virtualDom.patch"
+ext patch: |HtmlElem, Patches| do HtmlElem = "toAsync(virtualDom.patch)"
 
-ext clear: |HtmlElem| do none = "clearElement"
+ext clear: |HtmlElem| do none = "toAsync(clearElement)"
 
 //ext diff: |VNode, VNode| do Patches = "require('virtual-dom/diff');"
 //ext patch: |VNode, Patches| do none = "require('virtual-dom/patch');"
@@ -118,20 +118,28 @@ let div = h "div"
 
 let p = h "p"
 
+ext appendChild: |HtmlElem, HtmlElem| do none = "toAsync(html_appendChild)"
+
 def render(newTree: VNode) HtmlElem do
     let rootNode= createElement newTree
     let root = cssSelector "#code"
 
     clear root
 
-    root.appendChild rootNode
+    appendChild root, rootNode
 
     rootNode
+
+def get() do
 
 def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
     var oldV = r (<-appstate), appstate
 
+    get!
+
     var root = render oldV
+
+
 
     def rerender(i: T) do
         let newV = r i, appstate
@@ -141,3 +149,4 @@ def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
         oldV = newV
 
     appstate.watch rerender
+

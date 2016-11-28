@@ -1,13 +1,16 @@
-//import "html"
+
+import "html"
 //import "math"
-/*
+
+
+
 let app-state = newAtom \[10: 0]
 
 //hh
 
 //Counter
-let add = html.ignoreAct 1+
-let sub = html.ignoreAct _ - 1
+let add = html.ignoreAct toEffect 1+
+let sub = html.ignoreAct toEffect _ - 1
 
 def counter(model: int, a: Atom[int]) html.VNode =
     html.div html.noAttrib,
@@ -17,7 +20,7 @@ def counter(model: int, a: Atom[int]) html.VNode =
         ]
 
 //Dynamic Counter
-let add-counter = html.ignoreAct append 0
+let add-counter = html.ignoreAct toEffect (append 0)
 
 def view(model: []int, a: Atom[[]int]) html.VNode =
     html.div html.noAttrib,
@@ -29,23 +32,6 @@ def view(model: []int, a: Atom[[]int]) html.VNode =
 def mapF[X](x: |int| -> X) X =
     x 10
 
+html.app view, app-state
 
-def serial[T](x: []|| do T) []T do
-    var i = 0
-    var arr = []T
-    while (i < x.length) do
-        arr = arr.append x[i]!
-        i += 1
-
-    arr
-*/
-
-def get() string do
-    "hello world"
-
-def test() do
-    println get!
-
-test!
-
-//html.app view, app-state
+//*/

@@ -1,1 +1,789 @@
-function log(t){console.log(t.toString())}function alert(t){alert(t.toString())}function println(t){stdout.innerHTML+=t.toString()+"<br>"}function print(t){stdout.innerHTML+=t}function operator_add(t,r){return t.operator_add(r)}function operator_sub(t,r){return t.operator_sub(r)}function operator_mul(t,r){return t.operator_mul(r)}function operator_div(t,r){return t.operator_div(r)}function operator_mod(t,r){return t.operator_mod(r)}function operator_eq(t,r){return t.operator_eq(r)}function operator_pow(t,r){return Math.pow(t,r)}function operator_lt(t,r){return t.operator_lt(r)}function operator_gt(t,r){return t.operator_gt(r)}function operator_or(t,r){return t||r}function operator_not(t){return!t}function operator_and(t,r){return t&&r}function unary_add(t){return t}function unary_sub(t){return-t}function toString(t){return t.toString()}function string_toString(t){return t}function int_toString(t){return t.toString()}function float_toString(t){return t.toString()}function array_toString(t){return t.toString()}function float_toInt(t){return 0|t}function int_toInt(t){return t}function float_toFloat(t){return t}function int_toFloat(t){return t}function log(t){console.log(t.toString())}function isOdd(t){return t%2!=0}function isEven(t){return t%2==0}function min(t,r){return r>t?t:r}function max(t,r){return t>r?t:r}function len(t){return t.length}function toFloat(t){return t.toFloat()}function toInt(t){return t.toInt()}function toJS(t){return t instanceof Vector?t.map(toJS).toArray():t instanceof Function?funcWrapper(t):t}function fromJS(t){return t instanceof Array?fromArray(t.map(fromJS)):t instanceof Function?jsFuncWrapper(t):t}function funcWrapper(t){return function(){for(var r=Array.prototype.slice.call(arguments),n=[],e=0;e<r.length;e++)n.push(fromJS(r[e]));return toJS(t.apply(null,n))}}function jsFuncWrapper(t){return function(){for(var r=Array.prototype.slice.call(arguments),n=[],e=0;e<r.length;e++)n.push(toJS(r[e]));return fromJS(t.apply(null,n))}}function unary_read(){return this.arg}function operator_set(t){this.arg=t;for(var r=0;r<this.events.length;r++)this.events[r](t)}function atom_watch(t){this.events.push(t)}function newAtom(t){return{unary_read:unary_read,operator_set:operator_set,arg:t,watch:atom_watch,events:[]}}function newLens(t,r){return{query:function(r){return t(r)},set:function(t,n){return r(t,n)}}}function defer(t){return function(r){return function(){t(r)}}}function sleep(t,r){setTimeout(r,t)}function parallel(t,r){for(var n=0,e=(t.length,t),o=0;o<t.length;o++){var i=function(o){return function(i){n++,e=e.set(o,i),n==t.length&&r(e)}}(o);t.get(o)(i)}}function serial(t,r){function n(){e==t.length?r(o):t.get(e)(function(t){o=o.append(t),e+=1,n()})}var e=0,o=(t.length,EmptyVector);n()}function List(t,r){this.head=t,this.tail=r,null===r?null===t?this.length=0:this.length=1:this.length=r.length+1}function listFromArray(t){for(var r=t.length,n=EmptyList,e=0;r>e;e++)n=n.append(t[e]);return n}function newList(){return listFromArray(Array.prototype.slice.call(arguments))}function newListRange(t,r){for(var n=EmptyList,e=t;r>e;e++)n=n.append(e);return n}function newListInit(t,r){for(var n=EmptyList,e=0;t>e;e++)n=n.append(e);return n}function Vector(t,r,n){this.shift=(n-1)*this.bits,this.root=t,this.length=r,this.depth=n}function getProperIndex(t,r){return 0>r?t.length+r:r}function newVector(){return fromArray(Array.prototype.slice.call(arguments))}function fromArray(t){for(var r=EmptyVector,n=0;n<t.length;n++)r=r.append(t[n]);return r}function newVectorRange(t,r){for(var n=EmptyVector,e=t;r>e;e++)n=n.append(e);return n}function newVectorInit(t,r){for(var n=EmptyVector,e=0;t>e;e++)n=n.append(r);return n}var stdout=document.getElementById("code");Number.prototype.operator_add=function(t){return this+t},Number.prototype.operator_div=function(t){return this/t},Number.prototype.operator_sub=function(t){return this-t},Number.prototype.operator_mul=function(t){return this*t},Number.prototype.operator_eq=function(t){return this==t},Number.prototype.operator_mod=function(t){return this%t},Number.prototype.operator_lt=function(t){return t>this},Number.prototype.operator_gt=function(t){return this>t},Number.prototype.toFloat=function(){return this},Number.prototype.toInt=function(){return 0|this},String.prototype.operator_eq=function(t){return this==t},String.prototype.operator_add=function(t){return this+t};var EmptyList=new List(null,null);List.prototype.append=function(t){return new List(t,this)},List.prototype.toArray=function(){for(var t=[],r=this,n=0;n<this.length;n++)t.push(r.head),r=r.tail;return t.reverse()},List.prototype.getProperIndex=function(t){return 0>t?this.length+t:t},List.prototype.getList=function(t){t=this.getProperIndex(t);for(var r=this.length-t-1,n=this,e=0;r>e;e++)n=n.tail;return n},List.prototype.get=function(t){return this.getList(t).head},List.prototype.toString=function(){return"List("+this.join(", ")+")"},List.prototype.join=function(t){null===t&&(t=",");var r=this;if(0===this.length)return"";for(var n=r.head.toString(),e=1;e<this.length;e++)r=r.tail,n=r.head.toString()+t.toString()+n;return n},List.prototype.insert=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?t.append(e):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t,r)},List.prototype.del=function(t){function r(t,n){if(0>n)throw new Error("");if(1===n){var e=t.tail;return null===e&&(e=EmptyList),e}return r(t.tail,n-1).append(t.head)}return t=this.getProperIndex(t),r(this,this.length-t)},List.prototype.slice=function(t,r){null==t&&(t=0),null==r&&(r=this.length),r=this.getProperIndex(r-1),t=this.getProperIndex(t);var n=this.getList(r),e=new List(n.head,n.tail);return e.length=r-t+1,e},List.prototype.reverse=function(){for(var t=EmptyList,r=this,n=0;n<this.length;n++)t=t.append(r.head),r=r.tail;return t},List.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(r===t)return!0;for(var r=this,n=0;n<this.length;n++){if(!r.head.operator_eq(t.head))return!1;r=r.tail,t=t.tail}return!0},List.prototype.operator_add=function(t){function r(t,n,e){if(0>n)throw new Exception;return 0==n?new List(e.head,e.tail):r(t.tail,n-1,e).append(t.head)}return r(t,t.length,this)},List.prototype.copy=function(){function t(r,n){if(0>n)throw new Exception;return 0==n?r:t(r.tail,n-1).append(r.head)}return t(this,this.length)},List.prototype.set=function(t,r){function n(t,r,e){if(0>r)throw new Exception;return 0===r?new List(e,t.tail):n(t.tail,r-1,e).append(t.head)}return t=this.getProperIndex(t),n(this,this.length-t-1,r)},Vector.prototype.bits=5,Vector.prototype.width=1<<Vector.prototype.bits,Vector.prototype.mask=Vector.prototype.width-1;var EmptyVector=new Vector(Array(Vector.prototype.width),0,1);Vector.prototype.get=function(t){if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());for(var r=this.root,n=this.bits,e=this.mask,o=this.shift;o>0;o-=n)r=r[t>>o&e];return r[t&e]},Vector.prototype.append=function(t){function r(i,u,p){if(u>0){var a=p>>u&e;if(i)var s=i.slice();else var s=Array(o);return s[a]=r(s[a],u-n,p),s}var a=p&e;if(null==i)var s=Array(o);else var s=i.slice();return s[a]=t,s}var n=this.bits,e=this.mask,o=Vector.prototype.width;if(Math.pow(o,this.depth)===this.length){var i=Array(o);i[0]=this.root,i[1]=Array(o);var u=r(i,this.depth*this.bits,this.length);return new Vector(u,this.length+1,this.depth+1)}var u=r(this.root,this.shift,this.length);return new Vector(u,this.length+1,this.depth)},Vector.prototype.set=function(t,r){function n(t,u,p){if(u>0){var a=p>>u&o;if(t)var s=t.slice();else var s=Array(i);return s[a]=n(s[a],u-e,p),s}var a=p&o,s=t.slice();return s[a]=r,s}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var e=this.bits,o=this.mask,i=Vector.prototype.width,u=n(this.root,this.shift,t);return new Vector(u,this.length,this.depth)},Vector.prototype.insert=function(t,r){function n(t,r,p,a){if(r>0){var s=p>>r&i;if(t)var h=t.slice();else var h=Array(u);var f=n(h[s],r-o,p,a);h[s]=f[0];var c=null;if(f[1]){c=f[1];for(var l=s+1;u>l;l++){var f=n(h[l],r-o,l<<r,c);h[l]=f[0],c=f[1]}}return[h,c]}var s=p&i;return e(t,s,a)}function e(t,r,n){for(var e=[],o=0;u-1>o;o++)r===o&&e.push(n),e.push(t[o]);return r===o&&e.push(n),[e,t[u-1]]}if(t=getProperIndex(this,t),t>=this.length||0>t)throw new Error("out of bounds: "+t.toString());var o=this.bits,i=this.mask,u=Vector.prototype.width,p=n(this.root,this.shift,t,r);return p[1]?new Vector(p[0],this.length+1,this.depth).append(p[1]):new Vector(p[0],this.length+1,this.depth)},Vector.prototype.toArray=function(){for(var t=Array(this.length),r=0;r<this.length;r++)t[r]=this.get(r);return t},Vector.prototype.toString=function(){return"["+this.toArray().join(",")+"]"},Vector.prototype.operator_eq=function(t){if(this.length!==t.length)return!1;if(this===t)return!0;for(var r=0;r<this.length;r++)if(!this.get(r).operator_eq(t.get(r)))return!1;return!0},Vector.prototype.map=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++)r=r.append(t(this.get(e)));return r},Vector.prototype.filter=function(t){for(var r=EmptyVector,n=this.length,e=0;n>e;e++){var o=this.get(e);t(o)&&(r=r.append(o))}return r},Vector.prototype.reduce=function(t){if(1==this.length)return this.get(0);if(0===this.length)throw Error("Cannot reduce empty vector");for(var r=this.length,n=this.get(0),e=1;r>e;e++)n=t(n,this.get(e));return n},Vector.prototype.join=function(t){if(0==t.length)return"";for(var r=this.get(0),n=this.length,e=1;n>e;e++)r+=t+this.get(e);return r},Vector.prototype.has=function(t){for(var r=0;r<this.length;r++)if(this.get(r).operator_eq(t))return!0;return!1},Vector.prototype.operator_add=function(t){for(var r=this,n=0;n<t.length;n++)r=r.append(t.get(n));return r};
+function log(s){
+    console.log(s.toString())
+}
+
+var stdout = document.getElementById("code")
+
+function println(s) {
+    stdout.innerHTML += s.toString()+"<br>"
+}
+
+function print(s) {
+    stdout.innerHTML += s
+}
+
+
+
+
+function operator_add(x,y) {return x.operator_add(y)}
+function operator_sub(x,y) {return x.operator_sub(y)}
+function operator_mul(x,y) {return x.operator_mul(y)}
+function operator_div(x,y) {return x.operator_div(y)}
+function operator_mod(x,y) {return x.operator_mod(y)}
+function operator_eq(x,y) {return x.operator_eq(y)}
+function operator_pow(x,y) {return Math.pow(x,y)}
+function operator_lt(x,y) {return x.operator_lt(y)}
+function operator_gt(x,y) {return x.operator_gt(y)}
+function operator_or(x,y) {return x || y}
+function operator_not(x) {return !x}
+function operator_and(x,y) { return x && y }
+
+
+function unary_add(x) {return x}
+function unary_sub(x) {return -x}
+
+Number.prototype.operator_add = function (other) { return this + other }
+Number.prototype.operator_div = function (other) { return this / other }
+Number.prototype.operator_sub = function (other) { return this - other }
+Number.prototype.operator_mul = function (other) { return this * other }
+Number.prototype.operator_eq = function (other) { return this == other }
+Number.prototype.operator_mod = function (other) { return this % other }
+Number.prototype.operator_lt = function (other) { return this < other }
+Number.prototype.operator_gt = function (other) { return this > other }
+Number.prototype.toFloat = function () { return this }
+Number.prototype.toInt = function () { return this | 0 }
+
+String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_add = function (other) { return this + other }
+function toString(s) {
+    return s.toString()
+}
+
+function string_toString(s) {return s}
+function int_toString(s) { return s.toString() }
+function float_toString(s) { return s.toString() }
+function array_toString(s) { return s.toString() }
+
+function float_toInt(s) { return s | 0 }
+function int_toInt(s) { return s }
+
+function float_toFloat(s) { return s }
+function int_toFloat(s) { return s }
+
+function log(s) { console.log(s.toString()); }
+
+function isOdd(number) {
+    return number % 2 != 0
+}
+
+function isEven(number) {
+    return number % 2 == 0
+}
+
+function min(a,b) {
+    return a < b ? a : b
+}
+
+function max(a,b) {
+    return a > b ? a : b
+}
+
+function len(x) {
+    return x.length
+}
+
+function toFloat(x) {
+    return x.toFloat()
+}
+
+function toInt(x) {
+    return x.toInt()
+}
+
+function toJS(arg) {
+    if (arg instanceof Vector) {
+        return arg.map(toJS).toArray()
+    }
+
+    if (arg instanceof Function) {
+        return funcWrapper(arg);
+    }
+
+    return arg
+}
+
+function fromJS(arg) {
+    if (arg instanceof Array) {
+        return fromArray(arg.map(fromJS));
+    }
+
+    else if (arg instanceof Function) {
+        return jsFuncWrapper(arg);
+    }
+
+    return arg
+}
+
+function funcWrapper(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(fromJS(x[i]));
+        }
+
+        return toJS(func.apply(null, args))
+    }
+}
+
+function jsFuncWrapper(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(toJS(x[i]));
+        }
+
+        return fromJS(func.apply(null, args));
+    }
+}
+
+function toAsync(func) {
+    return function () {
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length-1; i++) {
+            args.push(x[i]);
+        }
+
+        var next = x[x.length-1];
+
+        return next(func.apply(null, args));
+    }
+}
+
+var _empty_func = function() {}
+
+function toSync(func) {
+    return function () {
+        console.log("fired event");
+        var x = Array.prototype.slice.call(arguments);
+
+        var args = [];
+        for (var i = 0; i < x.length; i++) {
+            args.push(x[i]);
+        }
+
+        args.push(_empty_func);
+
+        return func.apply(null, args);
+    }
+}
+
+
+function unary_read(next) {
+    next(this.arg);
+}
+
+function operator_set(val, next) {
+    this.arg = val;
+    for (var i = 0; i < this.events.length; i++ ) {
+        this.events[i](val, _empty_func);
+    }
+    next()
+}
+
+function atom_watch(func, next) {
+    this.events.push(func)
+    next();
+}
+
+function newAtom(arg) {
+    return {
+        unary_read: unary_read,
+        operator_set: operator_set,
+        arg: arg,
+        watch: atom_watch,
+        events: [],
+    }
+}
+
+function newLens(reader, setter) {
+    return {
+        query: function(item) {
+            return reader(item);
+        },
+        set: function(old, item) {
+            return setter(old, item)
+        },
+    }
+}
+
+function defer(func) {
+    return function (x) {
+        return function (callback) { func(x, callback) }
+    }
+}
+
+function sleep(time, callback) {
+    setTimeout(callback, time);
+}
+
+function parallel(funcs, next) {
+    var count = 0;
+
+    var length = funcs.length;
+    var array = funcs;
+
+    for (var i = 0; i < funcs.length; i++) {
+        var f = (function (i) {
+            return function (res) {
+                count++;
+                array = array.set(i, res);
+
+                if (count == funcs.length) {
+                    next(array);
+                }
+            }
+        })(i)
+
+        funcs.get(i)(f);
+
+    }
+}
+
+function serial(funcs, next) {
+    var i = 0;
+    var length = funcs.length;
+    var array = EmptyVector;
+
+    function loop() {
+        if (i == funcs.length) {
+            next(array);
+        } else {
+            funcs.get(i)(function (val) {
+                array = array.append(val);
+                i += 1
+                loop()
+            })
+
+        }
+    }
+    loop()
+}
+//linked list
+function List(value, list) {
+    this.head = value;
+    this.tail = list;
+
+    if (list === null) {
+        if (value === null) {
+            this.length = 0
+        } else {
+            this.length = 1;
+        }
+    } else {
+        this.length = list.length+1
+    }
+}
+
+var EmptyList = new List(null, null);
+
+List.prototype.append = function (head) {
+    return new List(head, this);
+}
+
+List.prototype.toArray = function () {
+    var v = [];
+    var curr = this;
+    for (var i = 0; i < this.length; i++) {
+        v.push(curr.head);
+        curr = curr.tail
+    }
+    return v.reverse();
+}
+
+List.prototype.getProperIndex = function (index) {
+    if (index < 0) {
+        return (this.length + index);
+    }
+    return index;
+}
+
+List.prototype.getList = function (index) {
+    index = this.getProperIndex(index)
+
+    var getElement = (this.length-index)-1;
+    var curr = this;
+
+    for (var i = 0; i < getElement; i++) {
+        curr = curr.tail;
+    }
+    return curr;
+}
+
+List.prototype.get = function (index) {
+    return this.getList(index).head;
+}
+
+List.prototype.toString = function () {
+    return "List("+this.join(", ")+")"
+}
+
+List.prototype.join = function(sep) {
+    if (sep === null) sep = ",";
+
+    var curr = this;
+
+    if (this.length === 0) return "";
+
+    var str = curr.head.toString();
+
+    for (var i = 1; i< this.length; i++ ) {
+        curr = curr.tail;
+        str = (curr.head.toString() + sep.toString()) + str
+    }
+    return str;
+
+}
+
+List.prototype.insert = function (pos, val) {
+    function insert(self, position, value) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position === 0) {
+            return self.append(value);
+        } else {
+            return insert(self.tail, position - 1, value).append(self.head);
+
+        }
+    }
+
+    pos = this.getProperIndex(pos);
+    return insert(this, this.length - pos, val)
+}
+
+List.prototype.del = function (pos) {
+    function insert(self, position) {
+        if (position < 0) {
+           throw new Error("")
+        } else if (position === 1) {
+            var t = self.tail;
+            if (t === null) {
+                t = EmptyList;
+            }
+            return t;
+        } else {
+            return insert(self.tail, position - 1).append(self.head);
+
+        }
+    }
+
+    pos = this.getProperIndex(pos);
+    return insert(this, this.length - pos)
+}
+
+List.prototype.slice = function (index, indexEnd) {
+    if (index == null ) { index = 0 }
+    if (indexEnd == null ) { indexEnd = this.length }
+    indexEnd = this.getProperIndex(indexEnd-1);
+    index = this.getProperIndex(index);
+
+    var l = this.getList(indexEnd)
+    var e = new List(l.head, l.tail);
+
+    e.length = indexEnd-index+1;
+
+    return e;
+}
+
+List.prototype.reverse = function () {
+    var v = EmptyList;
+    var curr = this;
+    for (var i = 0; i < this.length; i++) {
+        v = v.append(curr.head);
+        curr = curr.tail;
+    }
+    return v;
+}
+
+List.prototype.operator_eq = function (other) {
+    if (this.length !== other.length) return false;
+    if (self === other) return true;
+
+    var self = this;
+
+    for (var i = 0; i < this.length; i++) {
+        if (!self.head.operator_eq(other.head)) {
+            return false;
+        }
+
+        self = self.tail;
+        other = other.tail;
+    }
+    return true;
+}
+
+List.prototype.operator_add = function (other) {
+    function insert(self, position, s) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position == 0) {
+            return new List(s.head, s.tail);
+        } else {
+            return insert(self.tail, position - 1, s).append(self.head);
+
+        }
+    }
+
+    return insert(other, other.length, this)
+}
+
+List.prototype.copy = function () {
+    function insert(self, position) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position == 0) {
+            return self;
+        } else {
+            return insert(self.tail, position - 1).append(self.head);
+        }
+    }
+
+    return insert(this, this.length)
+}
+
+List.prototype.set = function (pos, val) {
+    function insert(self, position, value) {
+        if (position < 0) {
+            throw new Exception();
+        } else if (position === 0) {
+            return new List(value, self.tail)
+        } else {
+            return insert(self.tail, position - 1, value).append(self.head);
+
+        }
+    }
+
+    pos = this.getProperIndex(pos);
+    return insert(this, this.length - pos - 1, val)
+}
+
+function listFromArray(arr) {
+    var len = arr.length;
+    var curr = EmptyList;
+
+    for (var i = 0; i < len; i++) {
+        curr = curr.append(arr[i]);
+    }
+    return curr;
+}
+
+function newList() {
+    return listFromArray(Array.prototype.slice.call(arguments));
+}
+
+function newListRange(start, end) {
+    var arr = EmptyList;
+    for (var i = start; i < end; i++) {
+        arr = arr.append(i)
+    }
+    return arr;
+}
+
+function newListInit(repeat, elem) {
+    var arr = EmptyList;
+    for (var i = 0; i < repeat; i++) {
+        arr = arr.append(i);
+    }
+    return arr;
+}
+function Vector(root, len, depth) {
+    this.shift = (depth - 1) * this.bits;
+    this.root = root;
+    this.length = len;
+    this.depth = depth;
+}
+
+Vector.prototype.bits = 5;
+Vector.prototype.width = 1 << Vector.prototype.bits;
+Vector.prototype.mask = Vector.prototype.width - 1;
+
+var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
+
+Vector.prototype.get = function (key) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var node = this.root;
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    for (var level = this.shift; level > 0; level -= bits) {
+          node = node[(key >> level) & mask]
+    }
+    return node[key & mask]
+}
+
+Vector.prototype.append = function (value) {
+    var bits = this.bits;
+    var mask = this.mask;
+
+    function update(node, level, key) {
+        if (level > 0) {
+            var pos = key >> level & mask;
+
+            if (!node) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+
+            newNode[pos] = update(newNode[pos], level - bits, key);
+            return newNode;
+        } else {
+            var pos = key & mask;
+
+            if (node == null) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+            newNode[pos] = value;
+            return newNode
+        }
+    }
+
+    var width = Vector.prototype.width;
+
+    if (Math.pow(width, this.depth) === this.length) {
+        var n = Array(width)
+        n[0] = this.root;
+        n[1] = Array(width)
+
+        var u = update(n, this.depth * this.bits, this.length);
+        return new Vector(u, this.length+1, this.depth+1)
+    } else {
+        var u = update(this.root, this.shift, this.length);
+        return new Vector(u, this.length+1, this.depth)
+    }
+}
+
+Vector.prototype.set = function (key, value) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    function update(node, level, key) {
+        if (level > 0) {
+            var pos = key >> level & mask;
+
+            if (!node) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+
+            newNode[pos] = update(newNode[pos], level - bits, key);
+            return newNode;
+        } else {
+            var pos = key & mask;
+
+            var newNode = node.slice();
+            newNode[pos] = value;
+            return newNode
+        }
+    }
+
+    var width = Vector.prototype.width;
+
+    var u = update(this.root, this.shift, key);
+    return new Vector(u, this.length, this.depth);
+}
+
+Vector.prototype.insert = function (key, val) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    var self = this;
+
+    function insert(node, level, key, value) {
+        if (level > 0) {
+            var pos = key >> level & mask;
+
+            if (!node) {
+                var newNode = Array(width);
+            } else {
+                var newNode = node.slice();
+            }
+
+            var u = insert(newNode[pos], level - bits, key, value);
+            newNode[pos] = u[0];
+            var next = null;
+            if (u[1]) {
+                next = u[1];
+                for (var i = pos+1; i < width; i++) {
+                    var u = insert(newNode[i], level - bits, (i << level), next);
+                    newNode[i] = u[0];
+                    next = u[1];
+                }
+            }
+            return [newNode, next];
+        } else {
+            var pos = key & mask;
+            return arrayInsert(node, pos, value)
+        }
+    }
+
+    function arrayInsert(arr, index, val) {
+        var narr = [];
+        for (var i = 0; i < width-1; i++) {
+            if (index === i) {
+                narr.push(val);
+            }
+            narr.push(arr[i]);
+        }
+
+        if (index === i) {
+            narr.push(val);
+        }
+
+        return [narr, arr[width-1]]
+    }
+
+    var width = Vector.prototype.width;
+
+    var u = insert(this.root, this.shift, key, val);
+    if (u[1]) {
+        return new Vector(u[0], this.length+1, this.depth).append(u[1])
+    } else {
+        return new Vector(u[0], this.length+1, this.depth)
+    }
+}
+
+Vector.prototype.toArray = function () {
+    var v = Array(this.length)
+    for (var i = 0; i < this.length; i++) {
+        v[i] = this.get(i);
+    }
+    return v;
+}
+
+Vector.prototype.toString = function () {
+    return "["+this.toArray().join(",")+"]"
+}
+
+Vector.prototype.operator_eq = function (other) {
+    if (this.length !== other.length) return false;
+    if (this === other) return true;
+
+    for (var i = 0; i < this.length; i++) {
+        if (!this.get(i).operator_eq(other.get(i))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+Vector.prototype.map = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        newArr = newArr.append(func(this.get(i)));
+    }
+    return newArr;
+}
+
+Vector.prototype.filter = function (func) {
+    var newArr = EmptyVector;
+    var len = this.length;
+    for (var i = 0; i < len; i++) {
+        var el = this.get(i)
+        if (func(el)) {
+            newArr = newArr.append(el);
+        }
+    }
+    return newArr;
+}
+
+Vector.prototype.reduce = function (func) {
+    if (this.length == 1) {
+        return this.get(0)
+    } else if (this.length === 0) {
+        throw Error("Cannot reduce empty vector")
+    }
+
+    var len = this.length;
+    var curr = this.get(0)
+    for (var i = 1; i < len; i++) {
+        curr = func(curr, this.get(i));
+    }
+    return curr;
+}
+
+Vector.prototype.join = function (s) {
+    if (s.length == 0) { return "" }
+    var string = this.get(0);
+    var len = this.length;
+    for (var i = 1; i < len; i++) {
+        string += s + this.get(i);
+    }
+    return string
+}
+
+function getProperIndex(self, index) {
+    if (index < 0) {
+        return (self.length + index);
+    }
+    return index;
+}
+
+Vector.prototype.has = function (s) {
+    for (var i = 0; i < this.length; i++) {
+        if (this.get(i).operator_eq(s)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Vector.prototype.operator_add = function (s) {
+    var newArr = this;
+    for (var i = 0; i < s.length; i++) {
+        newArr = newArr.append(s.get(i));
+    }
+    return newArr;
+}
+
+function newVector() {
+    return fromArray(Array.prototype.slice.call(arguments))
+}
+
+function fromArray(arr) {
+    var v = EmptyVector;
+    for (var i = 0; i < arr.length; i++) {
+        v = v.append(arr[i]);
+    }
+    return v;
+}
+
+function newVectorRange(start, end) {
+    var arr = EmptyVector;
+    for (var i = start; i < end; i++) {
+        arr = arr.append(i)
+    }
+    return arr;
+}
+
+function newVectorInit(repeat, elem) {
+    var arr = EmptyVector;
+    for (var i = 0; i < repeat; i++) {
+        arr = arr.append(elem);
+    }
+    return arr;
+}

@@ -25,3 +25,10 @@ def append[T](x: T, arr: []T) []T =
 
 def first[T](x: []T) T =
     x[0]
+
+def toEffect[T, X](f: |T| -> X) |T| do X =
+    def func(arg: T) X do
+        f arg
+
+    func
+//*/

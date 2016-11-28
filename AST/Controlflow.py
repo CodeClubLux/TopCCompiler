@@ -12,6 +12,8 @@ class If(Node):
         self.returnVar = ""
         self.var = ""
         self.ternary = False
+        self.yielding = False
+
     def __str__(self):
         return "IF"
 
@@ -21,14 +23,34 @@ class If(Node):
             for i in self.nodes:
                 i.compileToJS(codegen)
             codegen.append(")")
-        elif self.type != Types.Null():
+        elif self.type != Types.Null() and not self.yielding:
             codegen.append("(function(){")
             for i in self.nodes:
                 i.compileToJS(codegen)
             codegen.append("})()")
         else:
-            for i in self.nodes:
-                i.compileToJS(codegen)
+            if self.yielding:
+                codegen.count += 1
+                self.ending = str(codegen.count)
+
+                for i in self.nodes:
+                    i.yielding = True
+
+            count = 0
+            _l = len(self.nodes)
+            while count < _l:
+                if self.yielding and count > 1:
+                    codegen.append("/*if*/")
+                    self.outer_scope.case(codegen, self.next)
+                    codegen.append("/*notif*/")
+
+                self.nodes[count].compileToJS(codegen)
+                self.nodes[count+1].compileToJS(codegen)
+
+                count += 2
+
+            self.outer_scope.case(codegen, self.ending)
+
 
     def validate(self, parser):
         if self.type != Types.Null():
@@ -65,12 +87,15 @@ class Else(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.ternary = False
+        self.yielding = False
 
     def __str__(self):
         return "else"
 
     def compileToJS(self, codegen):
-        if self.owner.ternary:
+        if self.yielding:
+            codegen.append("{")
+        elif self.owner.ternary:
             codegen.append(":(")
         else:
             codegen.append("\nelse{")
@@ -163,10 +188,23 @@ class Block(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.noBrackets = False
+        self.yielding = False
 
     def __str__(self):
         return "block"
 
+    def case(self, codegen, number):
+        codegen.append("}")
+
+        num = codegen.count + 1
+
+        codegen.count += 1
+        codegen.append(self.body._context + "=" + str(num) + ";break;")
+        self.owner.next = num
+
+
+        self.outer_scope.case(codegen, number)
+        self.yielding = True
 
     def compileToJS(self, codegen):
         if not self.noBrackets and self.owner.ternary:
@@ -176,13 +214,23 @@ class Block(Node):
         elif self.type != Types.Null():
             for i in self.nodes[:-1]:
                 i.compileToJS(codegen)
-            codegen.append("return ")
-            self.nodes[-1].compileToJS(codegen)
-            codegen.append("}")
+
+            if not self.yielding:
+                codegen.append("return ")
+                self.nodes[-1].compileToJS(codegen)
+                codegen.append(";}")
+            else:
+                if not (type(self.nodes[-1]) is Tree.FuncCall and self.nodes[-1].nodes[0].type.do):
+                    codegen.append(self.body.res+"=")
+                self.nodes[-1].compileToJS(codegen)
         else:
             for i in self.nodes:
                 i.compileToJS(codegen)
-            if not self.noBrackets: codegen.append("}")
+
+            if not self.noBrackets and not self.yielding: codegen.append(";}")
+
+        if self.yielding:
+            codegen.append(self.body._context + "=" + self.owner.ending + ";/*block*/break;")
 
     def validate(self, parser):
         checkUseless(self)

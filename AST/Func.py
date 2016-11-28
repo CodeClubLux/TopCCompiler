@@ -36,12 +36,18 @@ class FuncStart(Node):
             name = self.package+"_"+self.name
 
         codegen.incrScope()
-        codegen.inFunction()
+
+        if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
+            codegen.inFunction()
+
         if self.method:
 
             attachTyp = self.attachTyp
             codegen.append(attachTyp.package+"_"+attachTyp.normalName+".prototype."+self.normalName+"=(function(")
             names = [codegen.getName() for i in self.types]
+            if self.do:
+                names.append(codegen.getName())
+
             codegen.append(",".join(names)+"){return ")
             codegen.append(name+"("+",".join(["this"]+names)+")});")
 
@@ -80,15 +86,24 @@ class FuncBody(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.returnType = "."
+        self.before = []
     def __str__(self):
         return "}"
 
+    def case(self, codegen, number):
+        codegen.append("case "+str(number)+":")
+
     def compileToJS(self, codegen):
-        self.res = codegen.getName()
-        self._name = codegen.getName()
-        self._context = codegen.getName()
+
 
         if self.do:
+            self.res = codegen.getName()
+            self._name = codegen.getName()
+            self._context = codegen.getName()
+
+            for i in self.before:
+                i.compileToJS(codegen)
+
             codegen.append("var "+self._context+"=0;")
             codegen.append("return function "+self._name+"("+self.res+"){")
             codegen.append("while(1){")
@@ -100,10 +115,16 @@ class FuncBody(Node):
 
         did = False
 
+        y = False
+        if len(self.nodes) > 0:
+            y = yields(self.nodes[-1])
+
+
         if self.returnType != Types.Null():
             if self.do:
-                did = True
-                codegen.append("return " + self._next + "(")
+                if not y:
+                    did = True
+                    codegen.append("return " + self._next + "(")
             else:
                 codegen.append("return ")
 
@@ -112,7 +133,10 @@ class FuncBody(Node):
 
         if self.do:
             if not did:
-                codegen.append("return "+self._next + "()")
+                if y:
+                    codegen.append("return " + self._next + "(" + self.res + ")")
+                else:
+                    codegen.append("return "+self._next + "()")
             else:
                 codegen.append(")")
 
@@ -163,6 +187,8 @@ def yields(i):
     if type(i) is Tree.FuncCall and i.nodes[0].type.do:
         if not (type(i.nodes[0]) is Tree.ReadVar and i.nodes[0].name in syncFuncs):
             return True
+    elif type(i) is Tree.Operator and i.kind == "<-":
+        return True
     return False
 
 
@@ -171,10 +197,36 @@ def transform(body):
 
     def loop(node, o_iter):
         iter = -1
+        isOuter = type(node) in [Tree.Block, Tree.FuncBody, Tree.Root]
         for i in node:
             iter += 1
+            delayed_o = 0
+
             if yields(i):
                 i.body = body
+                i.outer_scope = outer_scope[-1]
+
+                i.outer_scope.yielding = True
+
+
+                if type(i.outer_scope) in [Tree.Block]:
+                    i.outer_scope.owner.yielding = True
+
+                if not i.owner == outer_scope[-1]:
+                    outer_scope[-1].nodes.insert(o_iter, i)
+
+                    c = Context(body, i)
+                    c.type = i.type
+                    c.owner = i.owner
+
+                    i.owner.nodes[iter] = c
+
+                    i.owner = outer_scope[-1]
+
+                    delayed_o += 1
+
+            elif type(i) is Tree.If:
+                i.outer_scope = outer_scope[-1]
 
                 if not i.owner == outer_scope[-1]:
                     outer_scope[-1].nodes.insert(o_iter, i)
@@ -189,12 +241,32 @@ def transform(body):
 
                     o_iter += 1
 
+            elif type(i) is Tree.CreateAssign:
+                body.before.append(i.nodes[0])
+                i.nodes[0].owner = body
 
-            if type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
-                continue
+                assign = i.nodes[1]
+                assign.owner = i.owner
 
-            if not i.isEnd():
-                loop(i, o_iter)
+                i.owner.nodes[iter] = assign
+
+            if type(i) is Tree.Block:
+                i.outer_scope = outer_scope[-1]
+                i.body = body
+
+                outer_scope.append(i)
+
+            if not i.isEnd() and not type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
+                loop(i, 0 if type(i) in [Tree.Block] else o_iter )
+
+            if isOuter:
+                o_iter += 1
+
+            o_iter += delayed_o
+
+            if type(i) in [Tree.Block]:
+                outer_scope.pop()
+
 
     loop(body, 0)
 
@@ -283,7 +355,7 @@ class FuncCall(Node):
 
         if yilds:
             codegen.append(";")
-            codegen.append("case "+nextNum+":")
+            self.outer_scope.case(codegen, nextNum)
 
         elif self.type == Types.Null():
             codegen.append(";")

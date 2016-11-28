@@ -206,6 +206,8 @@ class FuncPointer(Type):
 
         if not self.do and other.do:
             mynode.error("Expecting pure function " + str(self) + " and got effectfull function " + str(other))
+        elif self.do and not other.do:
+            mynode.error("Expecting effectfull function " + str(self) + " and got pure function " + str(other))
 
         count = -1
         for (a, i) in zip(self.args, other.args):
@@ -350,7 +352,7 @@ class Interface(Type):
                 if meth:
                     if type(meth) is FuncPointer:
                         try:
-                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType, meth.do), node, mynode, iter)
+                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType, do= meth.do, generic=meth.generic), node, mynode, iter)
                         except EOFError as e:
                             beforeError(e, "Field '"+ field+ "' in " + str(other) +": ")
                     else:

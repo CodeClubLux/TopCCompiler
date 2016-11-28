@@ -112,12 +112,17 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
     parser.currentNode.addNode(n)
     parser.currentNode = n
 
+
+
     createParser(parser, name= name, typ= typ, check= checkIt, imutable= imutable, attachTyp= attachTyp)
 
     if attachTyp:
         assignParser(parser, name=attachTyp.name+"_"+name.token, package= attachTyp.package, init=True)
     else:
         assignParser(parser, name= name.token, init= True)
+
+    n.nodes[1].isGlobal = n.nodes[0].isGlobal
+    n.nodes[1].createTyp = n.nodes[0].varType
 
     parser.currentNode = node
 

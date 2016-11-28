@@ -48,9 +48,11 @@ class CodeGen:
         tree._name = self.getName()
         tree._context = self.getName()
 
-        #tree._next = self.getName()
-
-        tree.val = self.getName()
+        #variable declarations
+        self.inAFunction = True
+        for i in tree.before:
+            i.compileToJS(self)
+        self.inAFunction = False
 
         for i in tree:
             i.compileToJS(self)
@@ -84,7 +86,7 @@ class CodeGen:
         self.main = "".join(self.main_parts)
 
         out = "function "+self.filename+"_Init(){var "+self.tree._context+"=0;"+\
-            "return function "+self.tree._name+"("+self.tree.val+"){"+\
+            "return function "+self.tree._name+"("+self.tree.res+"){"+\
             "while(1){switch ("+self.tree._context+"){case 0:"+self.main+"return;}}}()}"+\
             self.out
 
@@ -101,14 +103,11 @@ class CodeGen:
         self._level = copy.copy(self.info.array)
         self._pointer = self.info.pointer
 
-        print("saving")
+        self.info.reset([0], 0)
 
     def outFunction(self):
         self.inAFunction = False
-
-        print("ressetting")
         self.info.reset(self._level, self._pointer)
-
 
     def compile(self, opt= 0):
         js = self.toJS()

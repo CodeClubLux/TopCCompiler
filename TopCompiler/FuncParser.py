@@ -178,6 +178,8 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         do
     )
 
+    header.do = do
+
     if method:
         Scope.decrScope(parser)
 
@@ -192,14 +194,14 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         if decl:
             MethodParser.addMethod(brace, parser, attachTyp, name, func)
 
-        return attachTyp.normalName+"_"+name, names, types, header, returnType, do
+        return attachTyp.normalName+"_"+name, names, types, brace, returnType, do
 
-    parser.func[parser.package][name] = func
+    #parser.func[parser.package][name] = func
 
-    header.ftype = Types.FuncPointer(types, returnType, g)
+    header.ftype = func
     if decl:
         if not dontAdd:
-            Scope.addFunc(header, parser, name, Types.FuncPointer(types, returnType, g, do))
+            Scope.addFunc(header, parser, name, func)
 
     return name, names, types, brace, returnType, do
 

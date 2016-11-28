@@ -7,9 +7,16 @@ window.clearElement = function(elem) {
 window.html_h = function (type, attrib, children) {
     var at = {}
     for (var i = 0; i < attrib.length; i++) {
-        at[attrib[i].name] = attrib[i].value;
+        if (typeof attrib[i].value === "function") {
+            at[attrib[i].name] = toSync(attrib[i].value);
+            //toSync(attrib[i].value);
+        } else {
+            at[attrib[i].name] = attrib[i].value;
+        }
     }
-    return virtualDom.h(type, at, children);
+
+    var res = virtualDom.h(type, at, children);
+    return res;
 }
 
 window.core_watcher = function (a, b) {
@@ -43,4 +50,24 @@ function render(previous) {
 
 window.newThunk = function (fn, arg, key) {
     return new Thunk(fn, arg, key)
+}
+
+window.http_get = function (theUrl, callback)
+{
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+            callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+    xmlHttp.send(null);
+}
+
+window.json_prettify = function (obj, indent) {
+    console.log(obj);
+    return JSON.stringify(JSON.parse(obj), null, indent);
+}
+
+window.html_appendChild = function (a,b) {
+    a.appendChild(b);
 }

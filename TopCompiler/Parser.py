@@ -266,7 +266,7 @@ class Parser:  # all mutable state
         T = Types.T("T", All, "Atom")
 
         Atom = Types.Interface(False, {
-            "unary_read": FuncPointer([], T, True),
+            "unary_read": FuncPointer([], T, do= True),
             "operator_set": FuncPointer([T], Null(), do= True),
             "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True)
         }, coll.OrderedDict([("Atom.T", T)]))
@@ -376,6 +376,8 @@ class Parser:  # all mutable state
         self.filename = filenames
 
         infer(self, self.currentNode)
+
+        Tree.transform(self.currentNode)
         validate(self, self.currentNode)
 
 

@@ -51,6 +51,11 @@ class Root:
         self.called = 0
         self.perCall = 0
 
+        self.before = []
+
+    def case(self, codegen, number):
+        codegen.append("case "+number+":")
+
     def addNode(self, node):
         node.owner = self
         self.nodes.append(node)
