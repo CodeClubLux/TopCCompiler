@@ -93,6 +93,8 @@ class CodeGen:
         return out
 
     def append(self, value):
+        if value is None:
+            raise Error("expecting type string and got none")
         if self.inAFunction:
             self.out_parts.append(value)
         else:

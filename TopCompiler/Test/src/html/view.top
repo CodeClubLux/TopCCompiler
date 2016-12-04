@@ -81,9 +81,17 @@ def mapView[T](v: |T, Atom[T]| -> VNode, model: []T, a: Atom[[]T]) VNode =
 def viewFromLens[T, X](v: |X, Atom[X]| -> VNode, model: T, pos: Lens[T, X], a: Atom[T]) VNode =
     v (pos.query model), PosAtom {a, pos}
 
-
 let style: |string| -> Attribute = newAttrib::[string] "style"
 let placeHolder: |string| -> Attribute = newAttrib::[string] "placeholder"
+let position = newAttrib::[string] "position"
+let _type = newAttrib::[string] "type"
+let height = newAttrib::[string] "height"
+let width = newAttrib::[string] "width"
+
+let min = newAttrib::[int] "min"
+let max = newAttrib::[int] "max"
+let step = newAttrib::[int] "step"
+let value = newAttrib::[string] "value"
 
 let onClick = onEvent "onclick"
 let onInput = onEvent "oninput"

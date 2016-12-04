@@ -45,6 +45,8 @@ def importParser(parser, decl= False):
 
             sc = shouldCompile(decl, oname, parser)
 
+            p.sc = sc
+
             parser.compiled[name] = None
             parser.externFuncs[name] = []
 

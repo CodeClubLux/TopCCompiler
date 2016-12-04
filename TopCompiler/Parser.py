@@ -258,6 +258,8 @@ class Parser:  # all mutable state
 
         self.bookmark = [0]
 
+        self.sc = True
+
         Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )})
         Lengthable = Types.Interface(False, {"length": Types.I32()})
         Intable = Types.Interface(False, {"toInt": Types.FuncPointer([], Types.I32() )})
@@ -304,8 +306,6 @@ class Parser:  # all mutable state
             "toString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
             "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
-            "min": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
-            "max": Scope.Type(True, Types.FuncPointer([Types.I32(), Types.I32()], Types.I32())),
             "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
             "isOdd": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
             "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32())),
@@ -370,16 +370,18 @@ class Parser:  # all mutable state
         for i in range(len(tokens)):
             PackageParser.packDec(self, filenames[i][0])
             self._parse(tokens[i], filenames[i][1])
-            self.imports = []
+
+            #self.imports = []
 
         self.tokens = tokens
         self.filename = filenames
 
         infer(self, self.currentNode)
 
-        Tree.transform(self.currentNode)
-        validate(self, self.currentNode)
 
+        if self.sc:
+            Tree.transform(self.currentNode)
+            validate(self, self.currentNode)
 
         return self.currentNode
 

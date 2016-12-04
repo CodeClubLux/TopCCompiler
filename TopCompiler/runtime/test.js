@@ -37,3 +37,11 @@ assertEq(newVector(1,2,3).operator_add(newVector(4,5,6)), newVector(1,2,3,4,5,6)
 
 //parralel
 parallel(newVector(sleep.bind(null, 0), sleep.bind(null, 0)), function() {});
+
+//check if Empty Vector was not modified
+assertEq(EmptyVector.toString(), "[]")
+
+var t = newVectorRange(0,33);
+
+assertEq(t, t.map(function (id) { return id; }))
+

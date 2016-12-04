@@ -51,6 +51,8 @@ def assignParser(parser, name= "", init= False, package = ""):
     else:
         node = Tree.Assign(name, parser=parser)
 
+    parser.nodeBookmark.append(0)
+
     node.package = package
     node.init = init
 
@@ -64,8 +66,12 @@ def assignParser(parser, name= "", init= False, package = ""):
         Parser.callToken(parser)
 
 
+    if name == "_random":
+        print()
     ExprParser.endExpr(parser)
+
     parser.currentNode = node.owner
+    parser.nodeBookmark.pop()
 
     self = node
 

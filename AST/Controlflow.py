@@ -49,7 +49,8 @@ class If(Node):
 
                 count += 2
 
-            self.outer_scope.case(codegen, self.ending)
+            if self.yielding:
+                self.outer_scope.case(codegen, self.ending)
 
 
     def validate(self, parser):
@@ -223,6 +224,9 @@ class Block(Node):
                 if not (type(self.nodes[-1]) is Tree.FuncCall and self.nodes[-1].nodes[0].type.do):
                     codegen.append(self.body.res+"=")
                 self.nodes[-1].compileToJS(codegen)
+
+                if self == self.owner.nodes[-1]:
+                    codegen.append(";}")
         else:
             for i in self.nodes:
                 i.compileToJS(codegen)
@@ -230,7 +234,7 @@ class Block(Node):
             if not self.noBrackets and not self.yielding: codegen.append(";}")
 
         if self.yielding:
-            codegen.append(self.body._context + "=" + self.owner.ending + ";/*block*/break;")
+            codegen.append(";"+self.body._context + "=" + self.owner.ending + ";/*block*/break;")
 
     def validate(self, parser):
         checkUseless(self)

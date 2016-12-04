@@ -123,45 +123,44 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
             array.append(Token(val, "comment", line, pos ))
         elif typ in ["str"]:
             val = mo.group(typ)
-            if typ == "str":
-                def notBack(iter):
-                    if iter == 0: return True
-                    if val[iter-1] != "\\": return True
-                    return not notBack(iter-1)
+            def notBack(iter):
+                if iter == 0: return True
+                if val[iter-1] != "\\": return True
+                return not notBack(iter-1)
 
-                start = 0
-                inBrace = False
-                tokens = []
-                val = val[1:-1]
-                bcount = 0
-                shouldBe = 0
-                v = list(val)
-                for iter in range(len(val)):
-                    i = val[iter]
-                    if notBack(iter) and i == "{" and not inBrace:
-                        tokens.append(Token('"'+val[start: iter]+'"', "str", line, pos))
-                        inBrace = True
-                        start = iter+1
-                        shouldBe = bcount
+            start = 0
+            inBrace = False
+            tokens = []
+            val = val[1:-1]
+            bcount = 0
+            shouldBe = 0
+            v = list(val)
+            for iter in range(len(val)):
+                i = val[iter]
+                if notBack(iter) and i == "{" and not inBrace:
+                    tokens.append(Token('"'+val[start: iter]+'"', "str", line, pos))
+                    inBrace = True
+                    start = iter+1
+                    shouldBe = bcount
 
-                    if i == "{":
-                        bcount += 1
-                    elif notBack(iter) and i == "}":
-                        bcount -= 1
-                        if bcount == shouldBe and inBrace:
-                            tokens.append(Token("concat", "operator", line, pos+start))
-                            tokens.append(Token("(", "symbol", line, pos+start))
+                if i == "{":
+                    bcount += 1
+                elif notBack(iter) and i == "}":
+                    bcount -= 1
+                    if bcount == shouldBe and inBrace:
+                        tokens.append(Token("concat", "operator", line, pos+start))
+                        tokens.append(Token("(", "symbol", line, pos+start))
 
-                            tokens += tokenize(val[start: iter], filename, pos+start, line, linePos)
-                            tokens.append(Token(")", "symbol", line, pos+iter))
-                            tokens.append(Token("concat", "operator", line, pos+iter))
-                            start = iter + 1
-                            inBrace = False
-                    elif i == "\n":
-                        line += 1
+                        tokens += tokenize(val[start: iter], filename, pos+start, line, linePos)
+                        tokens.append(Token(")", "symbol", line, pos+iter))
+                        tokens.append(Token("concat", "operator", line, pos+iter))
+                        start = iter + 1
+                        inBrace = False
+                elif i == "\n":
+                    line += 1
 
-                tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
-                array += tokens
+            tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
+            array += tokens
 
         elif typ != 'skip' and not typ in ["comment", "commentLine"]:
             val = mo.group(typ)

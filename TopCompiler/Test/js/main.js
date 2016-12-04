@@ -19,6 +19,23 @@ window.html_h = function (type, attrib, children) {
     return res;
 }
 
+var _svg_h = require('virtual-hyperscript-svg');
+
+window.svg_h = function (type, attrib, children) {
+    var at = {}
+    for (var i = 0; i < attrib.length; i++) {
+        if (typeof attrib[i].value === "function") {
+            at[attrib[i].name] = toSync(attrib[i].value);
+            //toSync(attrib[i].value);
+        } else {
+            at[attrib[i].name] = attrib[i].value;
+        }
+    }
+
+    var res = _svg_h(type, at, children);
+    return res;
+}
+
 window.core_watcher = function (a, b) {
     a.watch(b);
 }
@@ -70,4 +87,37 @@ window.json_prettify = function (obj, indent) {
 
 window.html_appendChild = function (a,b) {
     a.appendChild(b);
+}
+
+window.core_fps = function core_fps(update, maxFPS) {
+    var timestep = 1000 / maxFPS;
+    var delta = 0;
+    var lastFrameTimeMs = 0;
+
+    function _fps(timestamp) {
+        if (timestamp < lastFrameTimeMs + (1000 / maxFPS)) {
+            requestAnimationFrame(_fps);
+            return
+        }
+
+
+
+        // Track the accumulated time that hasn't been simulated yet
+        delta += timestamp - lastFrameTimeMs; // note += here
+        lastFrameTimeMs = timestamp;
+
+
+        // Simulate the total elapsed time in fixed-size chunks
+        function func() {
+            if (delta >= timestep) {
+                update(timestep, func);
+                delta -= timestep;
+            } else {
+                requestAnimationFrame(_fps);
+            }
+        }
+
+        func()
+    }
+    requestAnimationFrame(_fps);
 }

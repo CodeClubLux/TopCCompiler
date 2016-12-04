@@ -100,6 +100,9 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         if parser.thisToken().token != "(":
             Error.parseError(parser, "expecting (")
 
+    if method and not type(parser.currentNode) is Tree.Root and not decl:
+        Error.parseError(parser, "method extension must be in out-most scope")
+
     header = Tree.FuncStart(name, Types.Null(), parser)
     header.package = parser.package
     parser.currentNode.addNode(header)
@@ -113,9 +116,6 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     parser.currentNode = brace
 
     if method:
-        if not type(parser.currentNode.owner) is Tree.Root and not decl:
-            Error.parseError(parser, "method extension must be in out-most scope")
-
         typ = attachTyp
         self = parser.nextToken()
         if self.type != "identifier": Error.parseError(parser, "binding name must be identifier not "+self.type)

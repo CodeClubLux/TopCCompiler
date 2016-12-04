@@ -1,0 +1,31 @@
+import "html"
+
+ext h: |string, []html.Attribute, html.VNode| -> html.VNode = "fromJS(svg_h)"
+
+let _svg = h "svg"
+let rect = h "rect", _, ""
+let circle = h "circle", _, ""
+let image = h "image", _, ""
+
+let width = html.newAttrib::[string] "width"
+let height = html.newAttrib::[string] "height"
+let fill = html.newAttrib::[string] "fill"
+let x = html.newAttrib::[string] "x"
+let y = html.newAttrib::[string] "y"
+let href = html.newAttrib::[string] "xlink:href"
+
+let stroke = html.newAttrib::[string] "stroke"
+
+let cy = html.newAttrib::[string] "cy"
+let cx = html.newAttrib::[string] "cx"
+let r = html.newAttrib::[string] "r"
+
+ext game-loop: | |int| do none, int| -> none = "core_fps"
+
+def fps[T](f: |T, int| do T, a: Atom[T], _fps: int) do
+    def nextFrame(delta: int) do
+        a.operator_set f \<-a, delta
+        sleep 0
+
+    game-loop nextFrame, _fps
+

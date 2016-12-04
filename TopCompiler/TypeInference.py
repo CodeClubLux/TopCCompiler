@@ -10,9 +10,14 @@ from TopCompiler import MethodParser
 
 def infer(parser, tree):
     varTypes = {}
+    sc = parser.sc
     def loop(n, always= copy.deepcopy(tree)):
         count = 0
         for i in n:
+            if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
+                count += 1
+                continue
+
             if type(i) is Tree.FuncStart:
                 if not type(n) is Tree.Root:
                     Scope.addVar(i, parser, i.name, Scope.Type(True, i.ftype))

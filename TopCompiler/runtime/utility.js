@@ -10,6 +10,9 @@ function array_toString(s) { return s.toString() }
 function float_toInt(s) { return s | 0 }
 function int_toInt(s) { return s }
 
+String.prototype.toInt = function () { return Number(this) | 0 }
+String.prototype.toFloat = function () { return Number(this) }
+
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
 
@@ -112,7 +115,6 @@ var _empty_func = function() {}
 
 function toSync(func) {
     return function () {
-        console.log("fired event");
         var x = Array.prototype.slice.call(arguments);
 
         var args = [];

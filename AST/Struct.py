@@ -67,7 +67,7 @@ class Field(Node):
             codegen.append("return Object.assign("+old+",{"+self.field+":"+self.newValue+"})")
         else:
             codegen.append("return Object.assign("+old+", {"+self.field+":"+"(function("+old+"){")
-            self.nodes[0].set(old, codegen)
+            self.owner.set(old, codegen)
             codegen.append("})("+old+"."+self.field+")})")
 
     def validate(self, parser): pass

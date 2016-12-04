@@ -294,7 +294,7 @@ def prepareForHotswap(arg):
             print("side effect function")
             return True
 
-        if type(i) is Tree.Create and not i.imutable:
+        if type(i) is Tree.Create and i.imutable:
             return True
 
         if not i.isEnd():
@@ -311,7 +311,7 @@ def modified(files, outputfile):
     import time
     o = compiled
 
-    return True #delete after testing
+    #return True #delete after testing
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")

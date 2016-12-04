@@ -185,7 +185,7 @@ class Pointer(Type):
 class String(Type):
     def __init__(self, length):
         self.name = "string"
-        self.types = {"toString": FuncPointer([], self)}
+        self.types = {"toString": FuncPointer([], self), "toInt": FuncPointer([], I32()), "toFloat": FuncPointer([], Float())}
 
 
 class FuncPointer(Type):
@@ -303,7 +303,8 @@ class Array(Pointer):
                     Array(False, self.elemT)
                 ),
                 "length": I32(),
-                "join": FuncPointer([String(0)], String(0))
+                "join": FuncPointer([String(0)], String(0)),
+                "shorten": FuncPointer([Types.I32()], self)
             }
         return self.__types
     def duckType(self, parser, other, node, mynode, iter):

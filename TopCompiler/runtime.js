@@ -57,6 +57,9 @@ function array_toString(s) { return s.toString() }
 function float_toInt(s) { return s | 0 }
 function int_toInt(s) { return s }
 
+String.prototype.toInt = function () { return Number(this) | 0 }
+String.prototype.toFloat = function () { return Number(this) }
+
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
 
@@ -159,7 +162,6 @@ var _empty_func = function() {}
 
 function toSync(func) {
     return function () {
-        console.log("fired event");
         var x = Array.prototype.slice.call(arguments);
 
         var args = [];
@@ -521,6 +523,57 @@ Vector.prototype.get = function (key) {
     return node[key & mask]
 }
 
+Vector.prototype.append_m = function (value) {
+    var width = Vector.prototype.width;
+
+    if (Math.pow(width, this.depth) === this.length || this.length == 0) {
+        return this.append(value);
+    }
+
+    var key = this.length;
+    var node = this.root;
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    for (var level = this.shift; level > 0; level -= bits) {
+        var res = (key >> level) & mask
+        var tmp = node[res]
+
+        if (tmp === undefined) {
+
+            tmp = Array(width);
+            node[res] = tmp;
+        }
+        node = tmp;
+    }
+
+
+    node[key & mask] = value;
+
+    this.length++;
+    return this;
+}
+
+Vector.prototype.set_m = function (key, value) {
+    key = getProperIndex(this, key);
+    if (key >= this.length || key < 0) {
+        throw new Error("out of bounds: "+key.toString())
+    }
+
+    var node = this.root;
+
+    var bits = this.bits;
+    var mask = this.mask;
+
+    for (var level = this.shift; level > 0; level -= bits) {
+        node = node[(key >> level) & mask]
+    }
+
+    node[key & mask] = value;
+    return this;
+}
+
 Vector.prototype.append = function (value) {
     var bits = this.bits;
     var mask = this.mask;
@@ -578,11 +631,7 @@ Vector.prototype.set = function (key, value) {
         if (level > 0) {
             var pos = key >> level & mask;
 
-            if (!node) {
-                var newNode = Array(width);
-            } else {
-                var newNode = node.slice();
-            }
+            var newNode = node.slice();
 
             newNode[pos] = update(newNode[pos], level - bits, key);
             return newNode;
@@ -616,7 +665,7 @@ Vector.prototype.insert = function (key, val) {
         if (level > 0) {
             var pos = key >> level & mask;
 
-            if (!node) {
+            if (node) {
                 var newNode = Array(width);
             } else {
                 var newNode = node.slice();
@@ -683,7 +732,7 @@ Vector.prototype.operator_eq = function (other) {
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!this.get(i).operator_eq(other.get(i))) {
+        if (!(this.get(i).operator_eq(other.get(i)))) {
             return false;
         }
     }
@@ -694,7 +743,7 @@ Vector.prototype.map = function (func) {
     var newArr = EmptyVector;
     var len = this.length;
     for (var i = 0; i < len; i++) {
-        newArr = newArr.append(func(this.get(i)));
+        newArr = newArr.append_m(func(this.get(i)));
     }
     return newArr;
 }
@@ -705,7 +754,7 @@ Vector.prototype.filter = function (func) {
     for (var i = 0; i < len; i++) {
         var el = this.get(i)
         if (func(el)) {
-            newArr = newArr.append(el);
+            newArr = newArr.append_m(el);
         }
     }
     return newArr;
@@ -760,6 +809,10 @@ Vector.prototype.operator_add = function (s) {
     return newArr;
 }
 
+Vector.prototype.shorten = function (number) {
+    return new Vector(this.root, this.length-number, this.depth)
+}
+
 function newVector() {
     return fromArray(Array.prototype.slice.call(arguments))
 }
@@ -767,7 +820,7 @@ function newVector() {
 function fromArray(arr) {
     var v = EmptyVector;
     for (var i = 0; i < arr.length; i++) {
-        v = v.append(arr[i]);
+        v = v.append_m(arr[i]);
     }
     return v;
 }
@@ -775,7 +828,7 @@ function fromArray(arr) {
 function newVectorRange(start, end) {
     var arr = EmptyVector;
     for (var i = start; i < end; i++) {
-        arr = arr.append(i)
+        arr = arr.append_m(i);
     }
     return arr;
 }
@@ -783,7 +836,7 @@ function newVectorRange(start, end) {
 function newVectorInit(repeat, elem) {
     var arr = EmptyVector;
     for (var i = 0; i < repeat; i++) {
-        arr = arr.append(elem);
+        arr = arr.append_m(elem);
     }
     return arr;
 }

@@ -1,6 +1,7 @@
 __author__ = 'antonellacalvia'
 
 from .node import *
+import AST as Tree
 from TopCompiler import Scope
 
 class InitArg(Node):
@@ -116,8 +117,8 @@ class FuncBody(Node):
         did = False
 
         y = False
-        if len(self.nodes) > 0:
-            y = yields(self.nodes[-1])
+        if len(self.nodes) > 0 and self.do:
+            y = yields(self.nodes[-1]) or (type(self.nodes[-1]) is Tree.If and self.nodes[-1].yielding)
 
 
         if self.returnType != Types.Null():
@@ -147,7 +148,6 @@ class FuncBody(Node):
         if self.do:
             codegen.append("}}()}")
 
-        import AST as Tree
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.outFunction()
 
@@ -200,7 +200,19 @@ def transform(body):
         isOuter = type(node) in [Tree.Block, Tree.FuncBody, Tree.Root]
         for i in node:
             iter += 1
-            delayed_o = 0
+
+            if type(i) is Tree.Block:
+                i.outer_scope = outer_scope[-1]
+                i.body = body
+
+                outer_scope.append(i)
+
+            if not i.isEnd() and not type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
+                x = loop(i, 0 if type(i) in [Tree.Block] else o_iter )
+                if not type(i) in [Tree.Block]:
+                    if isOuter:
+                        iter += x - o_iter
+                    o_iter = x
 
             if yields(i):
                 i.body = body
@@ -223,9 +235,10 @@ def transform(body):
 
                     i.owner = outer_scope[-1]
 
-                    delayed_o += 1
+                    o_iter += 1
 
-            elif type(i) is Tree.If:
+
+            if type(i) is Tree.If and i.yielding:
                 i.outer_scope = outer_scope[-1]
 
                 if not i.owner == outer_scope[-1]:
@@ -250,22 +263,13 @@ def transform(body):
 
                 i.owner.nodes[iter] = assign
 
-            if type(i) is Tree.Block:
-                i.outer_scope = outer_scope[-1]
-                i.body = body
-
-                outer_scope.append(i)
-
-            if not i.isEnd() and not type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
-                loop(i, 0 if type(i) in [Tree.Block] else o_iter )
-
             if isOuter:
                 o_iter += 1
 
-            o_iter += delayed_o
-
             if type(i) in [Tree.Block]:
                 outer_scope.pop()
+
+        return o_iter
 
 
     loop(body, 0)

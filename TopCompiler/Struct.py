@@ -157,12 +157,16 @@ def initStruct(parser, package= ""):
     parser.nextToken()
 
     while parser.thisToken().token != "}":
+
         if parser.thisToken().token == ",":
             ExprParser.endExpr(parser)
         else: Parser.callToken(parser)
-        parser.nextToken()
+
         t = parser.thisToken().token
-        continue
+
+        if t == "}":
+            break
+        parser.nextToken()
 
     ExprParser.endExpr(parser)
 

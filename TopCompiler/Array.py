@@ -100,6 +100,7 @@ def arrayRead(parser):
         arr = parser.currentNode.nodes[-1]
     except IndexError:
         print(parser.tokens[parser.iter-2])
+        Error.parseError(parser, "unexpected array read")
 
     del parser.currentNode.nodes[-1]
 

@@ -1,37 +1,194 @@
-
+import "svg"
 import "html"
-//import "math"
+
+type Particle =
+    x: float
+    y: float
+    limit-x: float
+    limit-y: float
+    vel-x: float
+    vel-y: float
+
+type Game =
+    particles: []Particle
+    speed: int
+
+ext random: || do float = "toAsync(Math.random)"
+ext cos: |float| -> float = "Math.cos"
+ext sin: |float| -> float = "Math.sin"
+ext sqrt: |float| -> float = "Math.sqrt"
+ext atan2: |float, float| -> float = "Math.atan2"
+ext pi: float = "Math.PI"
+ext abs: |float| -> float = "Math.abs"
+
+let app-state = newAtom Game{ (serial \[0..100].map defer generate), 10 }
+
+def generate(id: int) Particle do
+    let vel-x = (random!)/2.0
+
+    Particle { 800.0 * random!, 500.0 * random!, 800.0, 500.0, vel-x, 0.5 - vel-x }
 
 
 
-let app-state = newAtom \[10: 0]
 
-//hh
+def Particle.toString(self) string =
+    "Particle({self.x}, {self.y}, {self.limit-x}, {self.limit-y}, {self.vel-x}, {self.vel-y})"
 
-//Counter
-let add = html.ignoreAct toEffect 1+
-let sub = html.ignoreAct toEffect _ - 1
+def particle(box: Particle, delta: int) Particle =
+    if box.x > box.limit-x - 20.0 then
+        Particle {box.limit-x - 21.0 , box.y, box.limit-x, box.limit-y, -box.vel-x, box.vel-y}
+    elif box.x < 0.0 then
+        Particle {4.0, box.y, box.limit-x, box.limit-y, -box.vel-x, box.vel-y}
+    elif box.y > box.limit-y - 20.0 then
+        Particle {box.x, box.limit-y - 21.0, box.limit-x, box.limit-y, box.vel-x, -box.vel-y + 0.2}
+    elif box.y < 0.0 then
+        Particle {box.x, 4.0, box.limit-x, box.limit-y, box.vel-x, -box.vel-y + 0.2}
+    else
+        Particle {box.x + (toFloat delta) * box.vel-x, box.y + (toFloat delta) * box.vel-y, box.limit-x, box.limit-y, box.vel-x, box.vel-y}
 
-def counter(model: int, a: Atom[int]) html.VNode =
-    html.div html.noAttrib,
-        [ html.button \[html.on-click add, a], "+"
-        , "Counter {model}"
-        , html.button \[html.on-click sub, a], "-"
-        ]
+def setX(p: Particle, x: float) Particle =
+    Particle {p.x, p.y, p.limit-x, p.limit-y, x, p.vel-y}
 
-//Dynamic Counter
-let add-counter = html.ignoreAct toEffect (append 0)
+def setY(p: Particle, x: float) Particle =
+    Particle {p.x, p.y, p.limit-x, p.limit-y, p.vel-x, x}
 
-def view(model: []int, a: Atom[[]int]) html.VNode =
-    html.div html.noAttrib,
-        [ html.h1 html.noAttrib, "Dynamic Counter Example"
-        , html.div html.noAttrib, (html.mapView counter, model, a) //hello
-        , html.button \[html.onClick add-counter, a], "Add"
-        ]
+def collision(p: []Particle) []Particle =
+    var particles = p
+    var maxBalls = p.length
+    var x = 0
 
-def mapF[X](x: |int| -> X) X =
-    x 10
+    while x < maxBalls do
+        var y = x+1
+        while y < maxBalls do
+            let a = particles[x]
+            let b = particles[y]
 
-html.app view, app-state
+            let distance_x = abs a.x - b.x
+            let distance_y = abs a.y - b.y
+            let distance = sqrt distance_x*distance_x+distance_y*distance_y
 
-//*/
+
+
+            if distance < 30.0 then
+                let res = manage-bounce a, b
+
+                particles = particles.set x, res[0]
+                particles = particles.set y, res[1]
+
+            y += 1
+        x += 1
+
+    particles
+
+def game-loop(g: Game, delta: int) Game do
+    var particles = (g.particles.map particle _, delta)
+
+    Game { (collision particles), g.speed }
+
+/*
+
+    svg.circle \[
+        svg.cx "{box.x}"
+        , svg.cy "{box.y}"
+        , svg.r "15"
+    ]
+*/
+
+def render(box: Particle) html.VNode =
+    svg.image \[
+        svg.href "http://vignette2.wikia.nocookie.net/chemistry/images/d/d1/500px-Water_molecule.svg.png/revision/latest?cb=200100320204351"
+        , svg.width "20"
+        , svg.height "20"
+        , svg.x box.x.toString!
+        , svg.y box.y.toString!
+    ]
+
+
+
+def manage-bounce(ball: Particle, ball2: Particle) []Particle =
+    let dx = ball.x - ball2.x
+    let dy = ball.y - ball2.y
+    let collisionision_angle = (atan2 dy, dx)
+    let magnitude_1 = (sqrt ball.vel-x*ball.vel-x+ball.vel-y*ball.vel-y)
+    let magnitude_2 = (sqrt ball2.vel-x*ball2.vel-x+ball2.vel-y*ball2.vel-y)
+    let direction_1 = (atan2 ball.vel-y, ball.vel-x)
+    let direction_2 = (atan2 ball2.vel-y, ball2.vel-x)
+    let new_vel-x_1 = magnitude_1*(cos direction_1 - collisionision_angle)
+    let new_vel-y_1 = magnitude_1*(sin direction_1 - collisionision_angle)
+    let new_vel-x_2 = magnitude_2*(cos direction_2 - collisionision_angle)
+    let new_vel-y_2 = magnitude_2*(sin direction_2 - collisionision_angle)
+
+    let final_vel-x_1 = ((1.0 - 1.0)*new_vel-x_1+(1.0+1.0)*new_vel-x_2)/(1.0+1.0)
+    let final_vel-x_2 = ((1.0+1.0)*new_vel-x_1+(1.0-1.0)*new_vel-x_2)/(1.0+1.0)
+    let final_vel-y_1 = new_vel-y_1
+    let final_vel-y_2 = new_vel-y_2
+
+    let ball_vel-x = (cos collisionision_angle)*final_vel-x_1+(cos collisionision_angle+pi/2.0)*final_vel-y_1
+    let ball_vel-y = (sin collisionision_angle)*final_vel-x_1+(sin collisionision_angle+pi/2.0)*final_vel-y_1
+    let ball2_vel-x = (cos collisionision_angle)*final_vel-x_2+(cos collisionision_angle+pi/2.0)*final_vel-y_2
+    let ball2_vel-y = (sin collisionision_angle)*final_vel-x_2+(sin collisionision_angle+pi/2.0)*final_vel-y_2
+
+
+    let new_y = if ball.y > 0.0 and ball.y < ball2.y then ball.y - 0.2 else ball.y
+    let new_y_2 = if ball2.y > 0.0 and ball.y > ball2.y then ball2.y - 0.2 else ball2.y
+
+
+    [
+        Particle {ball.x, new_y, ball.limit-x, ball.limit-y, ball_vel-x, ball_vel-y}
+        Particle {ball2.x, new_y_2, ball2.limit-x, ball2.limit-y, ball2_vel-x, ball2_vel-y}
+    ]
+
+def changeNumber(g: Game, e: html.Event) Game do
+    let newVal = toInt e.target.value
+    let length = g.particles.length
+
+    let final-speed = 1.0/(toFloat 11 - newVal)
+
+    def gen(i: int) Particle do
+        let p = generate i
+
+        adjust final-speed, p
+
+    if newVal > length then
+        Game { g.particles + (serial \[0..newVal - length].map defer gen), g.speed }
+    else
+        Game { (g.particles.shorten length - newVal), g.speed }
+
+
+def adjust(r: float, p: Particle) Particle =
+    let x = p.vel-x * r
+    let y = p.vel-y * r
+
+    setY (setX p, x), y
+
+def changeSpeed(g: Game, e: html.Event) Game do
+    let speed = toInt e.target.value
+
+    let a = 1.0/(toFloat 11 - speed )
+    let b = 1.0/(toFloat 11 - g.speed )
+    let final-speed = a / b
+
+    Game {
+        g.particles.map adjust final-speed
+        speed
+    }
+
+
+def game(g: Game, a: Atom[Game]) html.VNode =
+    html.div html.noAttrib, [
+        html.h3 html.noAttrib, "{g.particles.length} Particles"
+        html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.min 0), (html.max 200), html.onInput changeNumber, a], ""
+
+        html.h3 html.noAttrib, "{g.speed} Speed"
+        html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.min 1), (html.max 10), (html.value "{g.speed}"), html.onInput changeSpeed, a], ""
+
+        svg._svg \[(svg.width "100%"), svg.height "100%"], [
+            svg.rect \[(svg.width "800"), (svg.height "500"), (svg.fill "rgba(0,0,0,0.0)"), svg.stroke "black"]
+            g.particles.map render
+        ],
+    ]
+
+html.app game, app-state
+
+
+svg.fps game-loop, app-state, 120
