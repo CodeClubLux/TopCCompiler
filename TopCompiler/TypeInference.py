@@ -11,7 +11,7 @@ from TopCompiler import MethodParser
 def infer(parser, tree):
     varTypes = {}
     sc = parser.sc
-    def loop(n, always= copy.deepcopy(tree)):
+    def loop(n):
         count = 0
         for i in n:
             if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:

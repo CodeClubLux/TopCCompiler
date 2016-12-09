@@ -311,7 +311,7 @@ def modified(files, outputfile):
     import time
     o = compiled
 
-    #return True #delete after testing
+    return True #delete after testing
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")

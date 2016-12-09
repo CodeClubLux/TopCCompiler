@@ -59,8 +59,10 @@ class Field(Node):
         return "."+self.field
 
     def compileToJS(self, codegen):
+        if not self.indexPackage:
+            codegen.append("(")
         self.nodes[0].compileToJS(codegen)
-        codegen.append(("" if self.indexPackage else ".") +self.field)
+        codegen.append(("" if self.indexPackage else ").") +self.field)
 
     def set(self, old, codegen):
         if self.newValue:

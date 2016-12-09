@@ -1,6 +1,6 @@
 
     {
-        "name": "Test",
+        "name": "Simulation",
         "version": 0.0,
         "link": ["js/bundle.js"]
     }

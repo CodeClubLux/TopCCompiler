@@ -89,7 +89,10 @@ from .TypeInference import *
 def isEnd(parser):
     token = parser.thisToken()
 
-    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket:
+    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
+        if token.token == "!" and len(parser.currentNode.nodes) > 1:
+            return False
+
         return maybeEnd(parser)
     return False
 
@@ -161,12 +164,14 @@ def addBookmark(parser):
     parser.indent.append(parser.indentLevel)
     parser.parenBookmark.append(parser.paren)
     parser.bracketBookmark.append(parser.bracket)
+    parser.curlyBookmark.append(parser.curly)
 
 def returnBookmark(parser):
     parser.bookmark.pop()
     parser.indent.pop()
     parser.parenBookmark.pop()
     parser.bracketBookmark.pop()
+    parser.curlyBookmark.pop()
 
 def selectExpr(parser, token):
     addBookmark(parser)
@@ -225,6 +230,11 @@ class Parser:  # all mutable state
             parser.iter -= 1
             if parser.paren > 1:
                 Error.parseError(parser, "unmatched (")
+            if parser.bracket > 0:
+                Error.parseError(parser, "unmatched [")
+            if parser.curly > 0:
+                print(parser.curly)
+                Error.parseError(parser, "unmatched {")
             Error.parseError(parser, "EOF")
 
     def lookBehind(parser):
@@ -244,8 +254,10 @@ class Parser:  # all mutable state
     def __init__(self, tokens, filename):
         self.paren = 1  # must be atleast 1, otherwise multiplication = 0
         self.bracket = 0
-        self.parenBookmark = [[]]
+        self.curly = 0
+        self.parenBookmark = [0]
         self.bracketBookmark = [0]
+        self.curlyBookmark = [0]
         self.indentLevel = 0
 
         self.lineNumber = 1

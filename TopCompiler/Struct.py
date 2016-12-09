@@ -114,8 +114,11 @@ def typeParser(parser, decl= False):
     Scope.decrScope(parser)
 
 def initStruct(parser, package= ""):
+    numB = parser.curly
     if ExprParser.isUnary(parser, parser.lookBehind()):
         Error.parseError(parser, "unexpected {")
+
+    parser.curly += 1
 
     if package == "": package = parser.package
 
@@ -164,13 +167,20 @@ def initStruct(parser, package= ""):
 
         t = parser.thisToken().token
 
-        if t == "}":
+        if t == "}" and parser.curly <= numB:
             break
         parser.nextToken()
+    else:
+        closeCurly(parser)
 
     ExprParser.endExpr(parser)
 
     parser.currentNode = init.owner
+
+def closeCurly(parser):
+    parser.curly -= 1
+    if parser.curly < 0:
+        Tree.PlaceHolder(parser).error("unexpected }")
 
 def index(parser):
     if len(parser.currentNode.nodes) == 0:
@@ -202,3 +212,4 @@ def offsetsToList(offsets):
     return array
 
 Parser.exprToken["{"] = initStruct
+Parser.exprToken["}"] = closeCurly

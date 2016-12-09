@@ -21,15 +21,19 @@ ext atan2: |float, float| -> float = "Math.atan2"
 ext pi: float = "Math.PI"
 ext abs: |float| -> float = "Math.abs"
 
+//log 10.toString! + "hello world"
+
 let app-state = newAtom Game{ (serial \[0..100].map defer generate), 10 }
+
+def returnId(id: int) int =
+    id
+
+//Game{ []Particle, returnId 0 }
 
 def generate(id: int) Particle do
     let vel-x = (random!)/2.0
 
     Particle { 800.0 * random!, 500.0 * random!, 800.0, 500.0, vel-x, 0.5 - vel-x }
-
-
-
 
 def Particle.toString(self) string =
     "Particle({self.x}, {self.y}, {self.limit-x}, {self.limit-y}, {self.vel-x}, {self.vel-y})"
@@ -67,8 +71,6 @@ def collision(p: []Particle) []Particle =
             let distance_y = abs a.y - b.y
             let distance = sqrt distance_x*distance_x+distance_y*distance_y
 
-
-
             if distance < 30.0 then
                 let res = manage-bounce a, b
 
@@ -85,25 +87,14 @@ def game-loop(g: Game, delta: int) Game do
 
     Game { (collision particles), g.speed }
 
-/*
-
-    svg.circle \[
-        svg.cx "{box.x}"
-        , svg.cy "{box.y}"
-        , svg.r "15"
-    ]
-*/
-
 def render(box: Particle) html.VNode =
     svg.image \[
         svg.href "http://vignette2.wikia.nocookie.net/chemistry/images/d/d1/500px-Water_molecule.svg.png/revision/latest?cb=200100320204351"
-        , svg.width "20"
-        , svg.height "20"
-        , svg.x box.x.toString!
-        , svg.y box.y.toString!
+        svg.width "20"
+        svg.height "20"
+        svg.x box.x.toString!
+        svg.y box.y.toString!
     ]
-
-
 
 def manage-bounce(ball: Particle, ball2: Particle) []Particle =
     let dx = ball.x - ball2.x
@@ -129,8 +120,8 @@ def manage-bounce(ball: Particle, ball2: Particle) []Particle =
     let ball2_vel-y = (sin collisionision_angle)*final_vel-x_2+(sin collisionision_angle+pi/2.0)*final_vel-y_2
 
 
-    let new_y = if ball.y > 0.0 and ball.y < ball2.y then ball.y - 0.2 else ball.y
-    let new_y_2 = if ball2.y > 0.0 and ball.y > ball2.y then ball2.y - 0.2 else ball2.y
+    let new_y = if ball.y > 0.0 and ball.y < ball2.y then ball.y - 0.25 else ball.y
+    let new_y_2 = if ball2.y > 0.0 and ball.y > ball2.y then ball2.y - 0.25 else ball2.y
 
 
     [
@@ -176,19 +167,21 @@ def changeSpeed(g: Game, e: html.Event) Game do
 
 def game(g: Game, a: Atom[Game]) html.VNode =
     html.div html.noAttrib, [
+        html.h1 html.noAttrib, "States of matter simulations, by Lucas Goetz"
         html.h3 html.noAttrib, "{g.particles.length} Particles"
         html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.min 0), (html.max 200), html.onInput changeNumber, a], ""
 
-        html.h3 html.noAttrib, "{g.speed} Speed"
+        html.h3 html.noAttrib, "{g.speed * 10 + 4} Degrees Celsius"
         html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.min 1), (html.max 10), (html.value "{g.speed}"), html.onInput changeSpeed, a], ""
 
         svg._svg \[(svg.width "100%"), svg.height "100%"], [
             svg.rect \[(svg.width "800"), (svg.height "500"), (svg.fill "rgba(0,0,0,0.0)"), svg.stroke "black"]
             g.particles.map render
-        ],
+        ]
     ]
 
 html.app game, app-state
 
+svg.fps game-loop, app-state, 60
 
-svg.fps game-loop, app-state, 120
+//*/

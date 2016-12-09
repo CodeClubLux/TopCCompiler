@@ -27,7 +27,7 @@ def arrayLiteral(parser):
     rang = False
     init = False
 
-    while parser.thisToken().token != "]" :
+    while parser.thisToken().token != "]":
         t = parser.thisToken()
         if parser.thisToken().token == ",":
             endExpr(parser)
@@ -94,6 +94,7 @@ from .Scope import *
 from .VarParser import *
 
 def arrayRead(parser):
+    numB = parser.bracket - 1
     parser.nextToken()
     parser.nodeBookmark.append(1)
     try:
@@ -113,7 +114,7 @@ def arrayRead(parser):
     while parser.thisToken().token != "]":
         Parser.callToken(parser)
 
-        if parser.thisToken().token == "]":
+        if parser.thisToken().token == "]" and parser.bracket <= numB:
             break
 
         parser.nextToken()
@@ -130,7 +131,6 @@ def closeBracket(parser):
 
     if parser.bracket < 0:
         Error.parseError(parser, "unexpected ], found no matching [")
-
 
 Parser.exprToken["["] = arrayLiteral
 Parser.exprToken["]"] = closeBracket
