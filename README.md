@@ -1,7 +1,5 @@
-![Image of Logo]
-(https://github.com/CodeClubLux/TopCompiler/blob/master/new_logo.jpg)
+# TopCompiler <img src="https://github.com/CodeClubLux/TopCompiler/blob/master/arrow.png" width="40" height="40">
 
-# TopCompiler
 Transpiler from the Top programming language to javascript, written in python3.5.
 
 The Top programming language, also known as Toplang is a functional, staticly-typed and procedural programming language. The language depends on hindley milner type inference to infer most types. Top is aimed at enabling reactive, reusable, reliable web apps running in the browser and the server using the same language.
