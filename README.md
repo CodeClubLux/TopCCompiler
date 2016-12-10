@@ -1,4 +1,4 @@
-# <img src="https://github.com/CodeClubLux/TopCompiler/blob/master/arrow.ico" width="40" height="40"> Top Compiler
+# Top Compiler <img src="https://github.com/CodeClubLux/TopCompiler/blob/master/arrow.ico" width="40" height="40"> 
 
 Transpiler from the Top programming language to javascript, written in python3.5.
 
