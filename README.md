@@ -1,3 +1,6 @@
+![Image of Logo]
+(https://github.com/CodeClubLux/TopCompiler/blob/master/logo.jpg)
+
 # TopCompiler
 Transpiler from the Top programming language to javascript, written in python3.5.
 
