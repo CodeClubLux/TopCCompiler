@@ -1,5 +1,5 @@
 ![Image of Logo]
-(https://github.com/CodeClubLux/TopCompiler/blob/master/logo.jpg)
+(https://github.com/CodeClubLux/TopCompiler/blob/master/new_logo.jpg)
 
 # TopCompiler
 Transpiler from the Top programming language to javascript, written in python3.5.
