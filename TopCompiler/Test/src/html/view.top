@@ -147,8 +147,6 @@ def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
 
     var root = render oldV
 
-
-
     def rerender(i: T) do
         let newV = r i, appstate
         let patches = diff oldV, newV

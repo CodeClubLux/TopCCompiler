@@ -1,3 +1,4 @@
+///*
 import "svg"
 import "html"
 
@@ -164,7 +165,6 @@ def changeSpeed(g: Game, e: html.Event) Game do
         speed
     }
 
-
 def game(g: Game, a: Atom[Game]) html.VNode =
     html.div html.noAttrib, [
         html.h1 html.noAttrib, "States of matter simulations, by Lucas Goetz"
@@ -180,8 +180,28 @@ def game(g: Game, a: Atom[Game]) html.VNode =
         ]
     ]
 
-html.app game, app-state
+//html.app game, app-state
 
-svg.fps game-loop, app-state, 60
+def filterWithLast[T](f: |T, T| -> bool, arr: []T) []T =
+    var c_i = 1
+    var narr = []T
+    while (c_i < arr.length) do
+        if (f arr[c_i-1], arr[c_i]) then
+            narr = narr.append arr[c_i]
+        c_i += 1
+    narr
+
+def trans(arr: []int) (int,int) =
+    let incr = filterWithLast (<)::[int], arr
+    let decr = filterWithLast (>)::[int], arr
+
+    (incr.length, decr.length)
+
+[( "hello ")]
+
+let i = trans \[5,8]
+println "({i.0}, {i.1})"
+
+//svg.fps game-loop, app-state, 60
 
 //*/

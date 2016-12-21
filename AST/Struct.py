@@ -53,6 +53,7 @@ class Field(Node):
         self.sType = sType
         self.indexPackage = False
         self.newValue = False
+        self.number = False
 
 
     def __str__(self):
@@ -62,7 +63,11 @@ class Field(Node):
         if not self.indexPackage:
             codegen.append("(")
         self.nodes[0].compileToJS(codegen)
-        codegen.append(("" if self.indexPackage else ").") +self.field)
+
+        if not self.number:
+            codegen.append(("" if self.indexPackage else ").") +self.field)
+        else:
+            codegen.append(")["+self.field+"]")
 
     def set(self, old, codegen):
         if self.newValue:

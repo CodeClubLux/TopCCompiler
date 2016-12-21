@@ -57,6 +57,24 @@ class CodeGen:
         for i in tree:
             i.compileToJS(self)
 
+    def toEvalHelp(self):
+        tree = self.tree
+
+        for i in tree.nodes[:-1]:
+            i.compileToJS(self)
+
+        from TopCompiler import Types
+
+
+        if not type(tree.nodes[-1].type) is Types.Null:
+            self.append("(")
+            tree.nodes[-1].compileToJS(self)
+            self.append(").toString()")
+        else:
+            tree.nodes[-1].compileToJS(self)
+            self.append(";")
+            self.append("undefined")
+
     def getName(self):
         return next(self.gen)
 
@@ -92,6 +110,19 @@ class CodeGen:
 
         return out
 
+    def toEval(self):
+        main = "main"
+
+        self.toEvalHelp()
+
+        self.out = "".join(self.out_parts)
+        self.main = "".join(self.main_parts)
+
+        if self.out == "":
+            return self.main
+        return self.out + ";" + self.main
+
+
     def append(self, value):
         if value is None:
             raise Error("expecting type string and got none")
@@ -122,12 +153,20 @@ class CodeGen:
         except:
             Error.error("Compilation failed")
 
+def getRuntime():
+    runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime.js"
+    file = open(runtimeName, mode="r")
+    return file.read()
+
+def getRuntimeNode():
+    runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime_node.js"
+    file = open(runtimeName, mode="r")
+    return file.read()
+
 def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
     linked = '"use strict";'
     import sys
-    runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime.js"
-    file = open(runtimeName, mode="r")
-    runtime = file.read()
+    runtime = getRuntime()
 
     linked += runtime
 
@@ -172,14 +211,13 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
     html = """<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><HEAD><meta charset="UTF-8"><TITLE>""" + output + """</TITLE></HEAD><script>""" + linked + """</script></HTML>"""
 
     if opt == 0:
-        file.close()
-
         html = """
 <!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <HTML>
     <HEAD>
         <meta charset="UTF-8">
         <TITLE>""" + output + """</TITLE>
+        <link rel="shortcut icon" href="/Users/luke/Desktop/arrow.ico" />
         """+css+"""
     </HEAD>
     <body>

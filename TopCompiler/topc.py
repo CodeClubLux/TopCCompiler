@@ -219,7 +219,16 @@ def start(run= False, dev= False, init= False, hotswap= False):
         """
 
         lexed = Lexer.lex(sources, filenames)
-        #print("lexed")
+
+        global filenames_sources
+        filenames_sources = {}
+        for package in sources:
+            filenames_sources[package] = {}
+
+            for i, c in enumerate(filenames[package]):
+                filenames_sources[package][c[1]] = sources[package][i]
+
+
 
         declarations = Parser.Parser(lexed, filenames)
         declarations.files = files
@@ -228,6 +237,7 @@ def start(run= False, dev= False, init= False, hotswap= False):
         declarations.opt = opt
         declarations.compiled = {}
         declarations.externFuncs = {"main": []}
+        declarations.filenames_sources = filenames_sources
 
         ResolveSymbols.resolve(declarations)
 

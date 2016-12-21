@@ -27,9 +27,12 @@ def errorAst(message, package, filename, token):
     html += "<p>"+("File \"" + os.path.abspath("src/"+package + "/" + filename + ".top") + "\", line " + str(
         token.line + 1) + "</p><p style=\"text-indent: 50px;\">"+message[0].capitalize() + message[1:])+"\n"+"</p><br>"
 
-    f = open(os.path.abspath("src/"+ package + "/" + filename + ".top"))  # change to use already read version
+    """f = open(os.path.abspath("src/"+ package + "/" + filename + ".top"))  # change to use already read version
     s = f.read()
-    f.close()
+    f.close()""
+    """
+
+    s = topc.filenames_sources[package][filename]
 
     divided = s.split("\n")
     line = ("\n\t" + divided[token.line])

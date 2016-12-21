@@ -139,22 +139,17 @@ def infer(parser, tree):
                     a = self.nodes[0].type
                     b = self.nodes[1].type
 
-                    if not type(a) is Types.FuncPointer:
-                        self.nodes[0].error("function chain operator works on functions only")
                     if not type(b) is Types.FuncPointer:
-                        self.nodes[1].error("function chain operator works on functions only")
-
-                    if len(b.args) == 0:
-                        self.nodes[1].error("function must take atleast one argument")
+                        self.nodes[1].error("left argument must be a function")
 
                     if len(b.args) != 1:
                         self.nodes[1].error("expecting one function argument that matches return type of piped function")
 
                     try:
-                        b.args[0].duckType(parser, a.returnType, self.nodes[0], self.nodes[1], 1)
+                        b.args[0].duckType(parser, a, self.nodes[0], self.nodes[1], 1)
                     except EOFError as e:
                         Error.beforeError(e, "Function piping to: ")
-                    self.type = Types.FuncPointer(a.args, b.returnType, generic= b.generic, do= b.do)
+                    self.type = b.returnType
                 elif i.kind == "<-":
                     if i.unary:
                         try:
@@ -186,10 +181,15 @@ def infer(parser, tree):
                             gen = []
                         else:
                             T = Types.T("T", Types.All, "Operator")
-                            gen = [("T", Types.All)]
+                            gen = [("Operator.T", Types.All)]
+
+                        returnT = T
+
+                        if i.kind in ["==", "!=", "not", "and", "or", "<", ">", "<=", ">="]:
+                            returnT = Types.Bool()
 
                         i.opT = T
-                        i.type = Types.FuncPointer([T,T], T, coll.OrderedDict(gen))
+                        i.type = Types.FuncPointer([T,T], returnT, coll.OrderedDict(gen))
 
                         if i.kind != "not":
                             i.unary = False
@@ -317,7 +317,10 @@ def infer(parser, tree):
             elif type(i) is Tree.Tuple:
                 if len(i.nodes) == 0:
                     i.error("unexpected )")
-                i.type = i.nodes[0].type
+                elif len(i.nodes) > 1:
+                    i.type = Types.Tuple([c.type for c in i])
+                else:
+                    i.type = i.nodes[0].type
             elif type(i) is Tree.Array:
                 arr = i
 
@@ -396,10 +399,10 @@ def infer(parser, tree):
                 replace = {v[index]: c for index, c in enumerate(i.generic)}
 
                 for index, c in enumerate(gen):
-                    gen[c].type.duckType(parser, i.generic[index], i.nodes[0], i, 0)
+                    g = gen[c].type if type(gen[c]) is Types.T else gen[c]
+                    g.duckType(parser, i.generic[index], i.nodes[0], i, 0)
 
                 i.type = Types.replaceT(i.nodes[0].type, replace)
-
 
                 #i.nodes[0].type.duckType(parser, i.type, i, i.nodes[0])
             elif type(i) is Tree.Lens:

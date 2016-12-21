@@ -120,7 +120,6 @@ class FuncBody(Node):
         if len(self.nodes) > 0 and self.do:
             y = yields(self.nodes[-1]) or (type(self.nodes[-1]) is Tree.If and self.nodes[-1].yielding)
 
-
         if self.returnType != Types.Null():
             if self.do:
                 if not y:

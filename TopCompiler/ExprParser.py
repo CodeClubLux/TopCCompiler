@@ -22,7 +22,16 @@ def operatorPop(parser, op, takesIn, unary= False):
     #print(parser.currentNode.nodes[parser.nodeBookmark[-1]:])
     #print("=====")
 
-    for i in parser.currentNode.nodes[parser.nodeBookmark[-1]:][min:-1]:
+    nb = parser.nodeBookmark[-1]
+
+    if len(parser.bookmark) > 1 and len(parser.stack) > parser.bookmark[-2]+1:
+        last = parser.stack[-2].pos
+    else:
+        last = 0
+
+    use = last if nb < last else nb
+
+    for i in parser.currentNode.nodes[use:][min:-1]:
         parser.currentNode.nodes[-1].addNode(i)
         count += 1
 
@@ -33,7 +42,6 @@ def operatorPop(parser, op, takesIn, unary= False):
     #parser.nodeBookmark.pop()
     pass
    # checkOperator(parser, parser.currentNode.nodes[-1], unary)
-
 
 def newOperator(kind, precidence, takesIn, func=None, unary= False):
     def f(parser):
@@ -49,13 +57,14 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False):
 
     if func == None: func = f
     Parser.precidences[kind] = precidence
-    Parser.exprToken[kind] = func
+    Parser.exprToken[kind] = lambda parser: Error.parseError(parser, "unexpected operator") if parser.lookBehind().type == "xoperator" else func(parser)
 
 def endExpr(parser, layer= -1):
     for i in reversed(parser.stack[parser.bookmark[layer]:]):
         i.func()
+        parser.stack.pop()
 
-    parser.stack = parser.stack[:parser.bookmark[layer]]
+    #parser.stack = parser.stack[:parser.bookmark[layer]]
     return
 
 def isUnary(parser, lastToken):

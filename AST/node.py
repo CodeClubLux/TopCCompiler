@@ -85,8 +85,13 @@ class Root:
             isUseless(i)
 
 def isUseless(i):
-    if type(i) is Tree.ReadVar:
-        i.error("useless variable read")
+    if i.repl:
+        return
+
+    if type(i) in [Tree.ReadVar, Tree.ArrRead]:
+        i.error("useless read")
+    elif type(i) in [Tree.Int, Tree.Array, Tree.ArrRead, Tree.String, Tree.Bool, Tree.Float]:
+        i.error("useless literal")
     elif type(i) is Tree.FuncCall and not i.nodes[0].type.do:
         if i.type != Types.Null():
             i.error("not using return of function")
@@ -116,6 +121,7 @@ class Node(Root):  # partially immutable data structure
 
         self.filename = parser.filename
         self.curry = False
+        self.repl = parser.repl
 
     def error(self, message):
         Error.errorAst(message, self.selfpackage, self.filename, self.token)

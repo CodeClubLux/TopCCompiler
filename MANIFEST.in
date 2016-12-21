@@ -1,2 +1,3 @@
 include TopCompiler/runtime.js
+include TopCompiler/runtime_node.js
 include TopCompiler/jquery.js

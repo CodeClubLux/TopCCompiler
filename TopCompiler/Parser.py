@@ -22,7 +22,10 @@ def parenOpen(parser):
 
         while not parser.paren < paren:
             parser.nextToken()
-            callToken(parser)
+            if parser.thisToken().token == ",":
+                endExpr(parser)
+            else:
+                callToken(parser)
 
         parser.nodeBookmark.pop()
         parser.currentNode = t0.owner
@@ -93,6 +96,12 @@ def isEnd(parser):
         if token.token == "!" and len(parser.currentNode.nodes) > 1:
             return False
 
+        if token.token == "|>" and type(parser.currentNode) in [Tree.Assign, Tree.CreateAssign, Tree.Block, Tree.FuncBody, Tree.Root]:
+            return False
+
+        elif token.token == "|>":
+            ExprParser.endExpr(parser, -2)
+
         return maybeEnd(parser)
     return False
 
@@ -146,7 +155,8 @@ class Opcode:
                     greater = parser.stack[-1].precidence > self.precidence
 
                     if greater or same:
-                        parser.stack.pop().func()
+                        parser.stack[-1].func()
+                        parser.stack.pop()
                         tryIt()
 
         try:
@@ -154,8 +164,8 @@ class Opcode:
         except:
             Error.parseError(parser, "Unexpected " + opcode)
 
+        self.pos = len(parser.currentNode.nodes)
         parser.stack.append(self)
-
         return
 
 
@@ -202,9 +212,8 @@ def callToken(self):
         s1(self)
         returnBookmark(self)
     else:
-        if (b.token in ["!", "_", "(", "\\", "!>"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
-            if b.token == "!>":
-                print("weird symbol thing")
+        if (b.token in ["!", "_", "(", "\\", "$"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+            if b.token == "$":
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
             FuncParser.callFunc(self, False)
@@ -271,6 +280,7 @@ class Parser:  # all mutable state
         self.bookmark = [0]
 
         self.sc = True
+        self.repl = False
 
         Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )})
         Lengthable = Types.Interface(False, {"length": Types.I32()})
@@ -403,7 +413,10 @@ class Parser:  # all mutable state
 
         self.iter = 0
         while self.iter < len(tokens) - 1:
+            t = self.thisToken()
             callToken(self)
             self.nextToken()
+
+        ExprParser.endExpr(self)
 
         return self.currentNode

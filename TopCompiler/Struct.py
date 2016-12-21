@@ -188,11 +188,13 @@ def index(parser):
 
     field = parser.nextToken()
 
-    if field.type != "identifier":
+    if not field.type in ["identifier", "i32"]:
         Error.parseError(parser, "field name must be an identifer")
-    field = field.token
 
     acess = Tree.Field(0, Types.Null(), parser)
+    acess.number = field.type == "i32"
+
+    field = field.token
 
     acess.addNode(parser.currentNode.nodes[-1])
     acess.owner = parser.currentNode

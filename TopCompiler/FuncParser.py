@@ -260,6 +260,9 @@ def funcCallBody(parser, paren):
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             continue
 
+        if t.token == "|>":
+            break
+
         Parser.callToken(parser)
 
     ExprParser.endExpr(parser)

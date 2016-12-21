@@ -42,7 +42,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         "lens",
     ]
 
-    special = ["bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
+    special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
 
     token_specification = [
         ("comment", r"/\*([\s\S]*?)\*/"),
@@ -53,6 +53,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('closeB', '}'),
         ('openC', '\('),
         ('closeC', '\)'),
+        ('hex', r'0[xX][0-9a-fA-F]+'),
         ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f)'),
         ('i32', r'\d*[\d_]*(\d+)'),
         ('arrow', r'->'),
@@ -79,6 +80,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('tab', '\t'),
         ('comma', ','),
         ('bang', '!'),
+        ('dollar', '\$'),
     ]
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
     get_token = re.compile(tok_regex).match
@@ -173,6 +175,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     typ = "keyword"
             elif typ == "f32":
                 val = val[:-1]+".0" if val[-1] == "f" else val
+            elif typ == "hex":
+                typ = "i32"
 
             if typ == "i32" or typ == "f32":
                 val = val.replace("_", "")

@@ -19,6 +19,20 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
         return I32()
     elif token == "bool":
         return Bool()
+    elif token == "(":
+        args = []
+        parser.nextToken()
+        while parser.thisToken().token != ")":
+            if parser.thisToken().token == ",":
+                if parser.lookBehind().token == ",":
+                    parseError(parser, "unexpected ,")
+                parser.nextToken()
+                continue
+            args.append(parseType(parser))
+
+            parser.nextToken()
+
+        return Tuple(args)
     elif token == "[":
         incrScope(parser)
         if parser.lookInfront().token != "]":
@@ -260,6 +274,28 @@ class Struct(Type):
             except EOFError as e:
                 beforeError(e, "Generic argument "+key+": ")
 
+class Tuple(Type):
+    def __init__(self, types):
+        self.types = dict([(str(index), i) for (index, i) in enumerate(types)])
+
+    def __str__(self):
+        array = list(range(0,len(self.types)))
+        for i in self.types:
+            array[int(i)] = str(self.types[i])
+        return "("+",".join(array)+")"
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if not type(other) is Tuple:
+            node.error("expecting type "+str(self)+", not "+str(other))
+        for key in self.types:
+            i = self.types[key]
+            othk = other.types[key]
+
+            try:
+                i.duckType(parser, othk, node, mynode, iter)
+            except EOFError as e:
+                beforeError(e, "Tuple element #" + key + ": ")
+
 class Array(Pointer):
     def __init__(self, mutable, elemT):
         self.name = ("mut " if mutable else "") + "[]"+elemT.name
@@ -292,7 +328,7 @@ class Array(Pointer):
                 ),
                 "reduce": FuncPointer(
                     [FuncPointer([self.elemT, self.elemT], self.elemT)],
-                    self.elemT
+                    self.elemT,
                 ),
                 "has": FuncPointer(
                     [self.elemT],

@@ -12,7 +12,7 @@ class Tuple(Node):
 
     def validate(self, parser): pass
     def compileToJS(self, codegen):
-        if not self.tuple:
+        if len(self.nodes) == 1:
             codegen.append("(")
             self.nodes[0].compileToJS(codegen)
             codegen.append(")")

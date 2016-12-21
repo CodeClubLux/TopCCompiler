@@ -1,4 +1,5 @@
 window.virtualDom = require("virtual-dom");
+require("./three_wrapper");
 
 window.clearElement = function(elem) {
     elem.innerHTML = ""

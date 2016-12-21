@@ -8,6 +8,8 @@ files = ["dom.js", "number.js", "utility.js", "list.js", "vector.js"]
 
 filesC = [open("runtime/"+i, "r").read() for i in files]
 
+contentNode = "\n".join(filesC[1:])
+
 content = "\n".join(filesC)
 contentTest = "\n".join(filesC[1:])+"\n"+open("runtime/test.js", "r" ).read()+"""
 function assert(condition) {
@@ -33,6 +35,10 @@ runtime.close()
 
 test = open("runtime/tmp.js", "w")
 test.write(contentTest)
+test.close()
+
+test = open("runtime_node.js", "w")
+test.write(contentNode)
 test.close()
 
 import subprocess

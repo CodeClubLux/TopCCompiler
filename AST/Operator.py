@@ -21,13 +21,10 @@ class Operator(Node):
 
     def compileToJS(self, codegen):
         if self.kind == "|>":
-            names = [codegen.getName() for i in self.nodes[0].type.args]
-
-            codegen.append("(function("+",".join(names)+"){return ")
             self.nodes[1].compileToJS(codegen)
             codegen.append("(")
             self.nodes[0].compileToJS(codegen)
-            codegen.append("("+",".join(names)+"))})")
+            codegen.append(")")
             return
 
         yilds = Tree.yields(self) and not self.partial and not self.curry
