@@ -1,4 +1,5 @@
-# TopCompiler
+# Top Compiler <img src="https://github.com/CodeClubLux/TopCompiler/blob/master/arrow.png" width="40" height="40"> 
+
 Transpiler from the Top programming language to javascript, written in python3.5.
 
 The Top programming language, also known as Toplang is a functional, staticly-typed and procedural programming language. The language depends on hindley milner type inference to infer most types. Top is aimed at enabling reactive, reusable, reliable web apps running in the browser and the server using the same language.
@@ -26,12 +27,21 @@ Function must called without parenthesis, the function call will then end follow
 func 10, 5
 ```
 
+While in javascript, this is perfectly normal
+```js
+func(10,5) + 89
+```
+In top you should instead write, because otherwise you would be passing the tuple (10,5) plus 89 to func
+```scala
+(func 10, 5) + 80
+```
+
 ## Compiling
 Once the topdev server is running all you have to do recompile, is save the file. The web page you have open immediately update, however if the compiler catches a compile error a blue box with the error message will be shown below.
 
 ## Literals
 ### Integers
-Integers are javascript like long's in languages like java, however they may contain underscores to make them more readable.
+Integers are the same as in javascript, however they may contain underscores to make them more readable.
 ```scala
 1_000_000
 ```
@@ -75,13 +85,17 @@ The syntax for defining functions is the `def` keyword followed by the function 
 Functions defined with `=` must be pure and cannot perform any side effects.
 
 ```scala
-def add(arg0: int, arg1: int) int =
-  arg0 + arg1
+def add(a: int, b: int) int =
+  a + b
 ```
 
-Functions defined with `do` can perform side effects.  
+Functions defined with `do` can perform side effects and are compiled into state machines, which won't block on async operations simmilar to async in C#. This means it is unneccesarry to use callback style for asynchronous operations. 
 ```scala
-def printHello() =
-  println "hello world" //logs hello world to console
+import "http"
+
+def getFile(name: string) string do
+  http.get name //won't block main thread
 ```
+
+
   
