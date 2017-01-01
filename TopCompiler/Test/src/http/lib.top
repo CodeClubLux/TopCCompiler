@@ -11,6 +11,6 @@ type NodeHTTP =
     createServer: ||Request, Response| -> none| -> Server
 
 ext http-node: NodeHTTP = "require('http')"
-ext end-response: |Response, string| do none = "function (res, value, next) \{ res.writeHead(200, \{'Content-Type': 'html'\}); next(res.end(value)); \}"
+ext end-response: |Response, string| do none = "function (res, value, next) \{ next(res.end(value)); \}"
 
 ext server: ||Request, Response| do none| -> Server = "function (func) \{ return http_httpNode.createServer(toSync(func)); \}"

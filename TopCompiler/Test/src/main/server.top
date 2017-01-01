@@ -17,7 +17,7 @@ type Maybe[T] either
 ext fs: FS = "require('fs')"
 ext read: |string| do string = "function(f,next)\{main_fs.readFile(f,'utf8',function(e,res)\{next(res)\})\}"
 
-let htmlFile = read "bin/Simulation.html"
+let htmlFile = read "Simulation.html"
 
 def requestHandler(req: http.Request, res: http.Response) do
     log "server request, "+req.url

@@ -262,8 +262,8 @@ def exec(outputFile):
     subprocess.check_call(args, shell=False)
 
 def execNode(outputFile):
-    args = ["node", "bin/" + outputFile + "-node.js"]
-    subprocess.call(args, shell=False)
+    args = ["node", outputFile + "-node.js"]
+    subprocess.call(args, shell=False, cwd="bin/")
 
 class Info:
     def __init__(self):
