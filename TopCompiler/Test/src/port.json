@@ -1,6 +1,7 @@
 
     {
         "name": "Simulation",
-        "version": 0.0,
-        "link": ["js/bundle.js"]
+        "target": "full",
+        "version": 0,
+        "linkWith-client": ["js/bundle.js"]
     }

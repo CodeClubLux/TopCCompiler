@@ -1,4 +1,4 @@
-//<List>
+/*//<List>
 
 //reverse
 assertEq(newList(0,1,2).reverse(), newList(2,1,0));
@@ -24,6 +24,7 @@ assertEq(newList(10,20,30).del(1), newList(10,30));
 
 //set
 assertEq(newList(20,20).set(1, 10).set(0, 10), newList(10, 10));
+*/
 
 //<Vector>
 //insert

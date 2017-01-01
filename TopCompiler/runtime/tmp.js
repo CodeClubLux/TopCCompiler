@@ -50,8 +50,6 @@ String.prototype.toFloat = function () { return Number(this) }
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
 
-function log(s) { console.log(s.toString()); }
-
 function isOdd(number) {
     return number % 2 != 0
 }
@@ -253,7 +251,12 @@ function serial(funcs, next) {
     }
     loop()
 }
+
+function core_assign(construct, obj) {
+    return Object.assign(new construct.constructor(), construct, obj);
+}
 //linked list
+/*
 function List(value, list) {
     this.head = value;
     this.tail = list;
@@ -480,6 +483,7 @@ function newListInit(repeat, elem) {
     }
     return arr;
 }
+*/
 function Vector(root, len, depth) {
     this.shift = (depth - 1) * this.bits;
     this.root = root;
@@ -730,7 +734,7 @@ Vector.prototype.map = function (func) {
     var newArr = EmptyVector;
     var len = this.length;
     for (var i = 0; i < len; i++) {
-        newArr = newArr.append_m(func(this.get(i)));
+        newArr = newArr.append_m(func(this.get(i), i));
     }
     return newArr;
 }
@@ -827,7 +831,7 @@ function newVectorInit(repeat, elem) {
     }
     return arr;
 }
-//<List>
+/*//<List>
 
 //reverse
 assertEq(newList(0,1,2).reverse(), newList(2,1,0));
@@ -853,6 +857,7 @@ assertEq(newList(10,20,30).del(1), newList(10,30));
 
 //set
 assertEq(newList(20,20).set(1, 10).set(0, 10), newList(10, 10));
+*/
 
 //<Vector>
 //insert

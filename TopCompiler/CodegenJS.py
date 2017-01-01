@@ -95,7 +95,7 @@ class CodeGen:
     def decrScope(self):
         self.names.pop()
 
-    def toJS(self):
+    def toJS(self, target):
         main = self.filename == "main"
 
         self.toJSHelp()
@@ -103,7 +103,7 @@ class CodeGen:
         self.out = "".join(self.out_parts)
         self.main = "".join(self.main_parts)
 
-        out = "function "+self.filename+"_Init(){var "+self.tree._context+"=0;"+\
+        out = "function "+self.filename+"_"+target+"Init(){var "+self.tree._context+"=0;"+\
             "return function "+self.tree._name+"("+self.tree.res+"){"+\
             "while(1){switch ("+self.tree._context+"){case 0:"+self.main+"return;}}}()}"+\
             self.out
@@ -125,7 +125,7 @@ class CodeGen:
 
     def append(self, value):
         if value is None:
-            raise Error("expecting type string and got none")
+            raise Error.error("expecting type string and got none, internal error")
         if self.inAFunction:
             self.out_parts.append(value)
         else:
@@ -142,12 +142,11 @@ class CodeGen:
         self.inAFunction = False
         self.info.reset(self._level, self._pointer)
 
-    def compile(self, opt= 0):
-        js = self.toJS()
+    def compile(self, opt= 0, target="browser"):
+        js = self.toJS(target)
 
         try:
-
-            f = open("lib/"+self.filename.replace("/", ".") + ".js", mode="w")
+            f = open("lib/"+self.filename.replace("/", ".") + "-" + target + ".js", mode="w")
             f.write(js)
             f.close()
         except:
@@ -163,14 +162,18 @@ def getRuntimeNode():
     file = open(runtimeName, mode="r")
     return file.read()
 
-def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
+def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
     linked = '"use strict";'
     import sys
-    runtime = getRuntime()
+    runtime = getRuntime() if target == "browser" else getRuntimeNode()
 
+    if target == "full":
+        runtime = ""
     linked += runtime
 
-    for i in linkWith:
+
+    #print("====", target)
+    for i in linkWith + (["bin/"+output+"-full.js"] if target != "full" else []):
         try:
             f = open(i, mode="r")
         except:
@@ -195,16 +198,29 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
     linked += "\n"
 
     for i in filenames:
-        f = open("lib/"+i.replace("/", ".")+ ".js", mode="r")
+        f = open("lib/"+i.replace("/", ".") +  "-" + target + ".js", mode="r")
         linked += f.read()
         f.close()
 
-    fjs = open("bin/"+ output + ".js", mode="w")
+    fjs = open("bin/"+ output + "-" + target + ".js", mode="w")
 
     preCall = linked
-    linked += "main_Init();"
+    linked += "main_" + target + "Init();"
 
-    if opt == 0: pass
+    if target == "node":
+        fjs.write(linked)
+        fjs.close()
+
+        if dev:
+            return preCall
+        if run:
+            execNode(output)
+        return
+
+    if target == "full":
+        fjs.write(linked)
+        fjs.close()
+        return linked
 
     f = open("bin/" + output + ".html", mode="w")
 
@@ -244,6 +260,10 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS):
 def exec(outputFile):
     args = ["open", "bin/"+outputFile+".html"]
     subprocess.check_call(args, shell=False)
+
+def execNode(outputFile):
+    args = ["node", "bin/" + outputFile + "-node.js"]
+    subprocess.call(args, shell=False)
 
 class Info:
     def __init__(self):

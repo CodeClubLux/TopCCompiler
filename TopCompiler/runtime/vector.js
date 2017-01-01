@@ -248,7 +248,7 @@ Vector.prototype.map = function (func) {
     var newArr = EmptyVector;
     var len = this.length;
     for (var i = 0; i < len; i++) {
-        newArr = newArr.append_m(func(this.get(i)));
+        newArr = newArr.append_m(func(this.get(i), i));
     }
     return newArr;
 }

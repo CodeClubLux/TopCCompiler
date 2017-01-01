@@ -72,13 +72,16 @@ class Assign(Node):
         return self.name + "="
 
     def compileToJS(self, codegen):
+        if type(self.owner) is Tree.InitStruct:
+            self.nodes[1].compileToJS(codegen)
+            return
         if self.init:
             name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
 
             codegen.append(name + " = ")
 
             if self.extern:
-                codegen.append(self.nodes[0].string[1:-1])
+                codegen.append(self.nodes[0].toString()[1:-1])
             else:
                 self.nodes[0].compileToJS(codegen)
             codegen.append(";")
@@ -91,6 +94,9 @@ class Assign(Node):
     def validate(self, parser):
         node = self
         package = self.package
+
+        if type(self.owner) is Tree.InitStruct:
+            return
 
         if self.init:
             self.isGlobal = Scope.isGlobal(parser, self.package, self.name)

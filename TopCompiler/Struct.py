@@ -11,6 +11,7 @@ from TopCompiler import PackageParser
 from TopCompiler import MethodParser
 from TopCompiler import Interface
 from TopCompiler import FuncParser
+from TopCompiler import Enum
 
 class Struct:
     def __init__(self, name, fieldType, actualfields, gen):
@@ -39,6 +40,9 @@ class Struct:
             self.methods[package][name] = method
         else:
             self.methods[package] = {name: method}
+
+    def __str__(self):
+        return "'type "+self.package+"."+self.name+"'"
 
     def hasMethod(self, parser, name):
         packages = []
@@ -75,11 +79,14 @@ def typeParser(parser, decl= False):
         gen = FuncParser.generics(parser, name)
 
     if parser.thisToken().token != "=":
-        if parser.thisToken().token == "with":
+        if parser.thisToken().token in ["with", "either"]:
             tmp = parser.currentNode
-            parser.currentNode = Tree.PlaceHolder(parser)
-            Interface.traitParser(parser, name, decl, gen)
-            parser.currentNode = tmp
+            if parser.thisToken().token == "either":
+                Enum.enumParser(parser, name, decl, gen)
+            else:
+                parser.currentNode = Tree.PlaceHolder(parser)
+                Interface.traitParser(parser, name, decl, gen)
+                parser.currentNode = tmp
             return
 
         Error.parseError(parser, "expecting =")
@@ -111,6 +118,11 @@ def typeParser(parser, decl= False):
         parser.structs[parser.package][name].methods = meth
         parser.structs[parser.package][name].package = parser.package
 
+
+        Scope.changeType(parser, name, parser.structs[parser.package][name] )
+
+    typ.struct = parser.structs[parser.package][name]
+
     Scope.decrScope(parser)
 
 def initStruct(parser, package= ""):
@@ -134,24 +146,18 @@ def initStruct(parser, package= ""):
     init = Tree.InitStruct(parser)
 
     if not readVar:
-        package = parser.currentNode.nodes[-1].nodes[0].name
-        t = (parser.currentNode.nodes[-1].nodes[0])
-        if not package in parser.imports:
-            t.error("no package called " + package)
-        elif not type(t) is Tree.ReadVar:
-            init.error("unexpected {")
+        if type(parser.currentNode.nodes[-1].nodes[0]) is Tree.ReadVar:
+            package = parser.currentNode.nodes[-1].nodes[0].name
+            t = (parser.currentNode.nodes[-1].nodes[0])
+            if not package in parser.imports:
+                t.error("no package called " + package)
 
     init.package = package
+    init.constructor = parser.currentNode.nodes[-1]
 
+    init.addNode(parser.currentNode.nodes[-1])
     del parser.currentNode.nodes[-1]
 
-    try:
-        s = parser.structs[package][name]
-    except KeyError:
-        init.error("no struct called "+package+"."+name)
-
-    init.paramNames = offsetsToList(parser.structs[package][name].offsets)
-    init.s = s
     init.mutable = False
 
     parser.currentNode.addNode(init)

@@ -1,3 +1,5 @@
 {
-    "files": ["other", "threeD"]
+    "files": ["other"],
+    "node-files": ["server"],
+    "client-files": ["main"]
 }

@@ -318,9 +318,12 @@ def genericT(parser):
 def under(parser):
     parser.currentNode.addNode(Tree.Under(parser))
 
+def comma(parser):
+    parser.fired = True
+
 Parser.stmts["def"] = func
 Parser.exprToken["none"] = lambda parser: Error.parseError(parser, "unexpected type none")
-Parser.exprToken[","] = lambda  parser: Error.parseError(parser, "unexpected ,")
+Parser.exprToken[","] = comma
 Parser.exprToken["_"] = under
 Parser.exprToken["::"] = genericT
 Parser.exprToken["!"] = lambda parser: 0

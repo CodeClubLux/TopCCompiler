@@ -7,6 +7,7 @@ from TopCompiler import ElseExpr
 from TopCompiler import Types
 import copy
 from TopCompiler import MethodParser
+from TopCompiler import Struct
 
 def infer(parser, tree):
     varTypes = {}
@@ -62,17 +63,18 @@ def infer(parser, tree):
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
             elif type(i) is Tree.ReadVar:
-                if i.name in parser.imports:
-                    if not type(i.owner) is Tree.Field:
-                        i.error("expecting .")
-                elif type(i.type) is Tree.Type:
-                    i.error("unexpected type "+str(i.type))
+                if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct):
+                    if i.name in parser.imports:
+                        if not type(i.owner) is Tree.Field:
+                            i.error("expecting .")
+                    elif type(i.type) is Tree.Type:
+                        i.error("unexpected type "+str(i.type))
 
-                i.type = Scope.typeOfVar(i, parser, i.package, i.name)
-                self = i
-                self.imutable = not Scope.isMutable(parser, self.package, self.name)
-                self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
-                self.package = Scope.packageOfVar(parser, parser.package, self.name)
+                    i.type = Scope.typeOfVar(i, parser, i.package, i.name)
+                    self = i
+                    self.imutable = not Scope.isMutable(parser, self.package, self.name)
+                    self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
+                    self.package = Scope.packageOfVar(parser, parser.package, self.name)
             elif type(i) is Tree.Field:
                 def bind():
                     if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i: return
@@ -261,7 +263,7 @@ def infer(parser, tree):
 
                 if len(args) < len(i.nodes)-1:
                     c = str(len(i.nodes) - 1 - len(args))
-                    i.nodes[-1].error(("1 argument" if c == "1" else c+" arguments")+" too many, expecting "+str(len(args))+" arguments")
+                    i.error(("1 argument" if c == "1" else c+" arguments")+" too many, expecting "+str(len(args))+" arguments")
 
                 generics = {}
                 for iter in range(len(i.nodes[1:])):
@@ -303,7 +305,9 @@ def infer(parser, tree):
             elif type(i) is Tree.Block:
                 i.type = i.nodes[-1].type if len(i.nodes) > 0 else Types.Null()
             elif type(i) is Tree.Assign:
-                if not (type(i.owner) is Tree.CreateAssign and i.owner.nodes[0].varType is None):
+                if type(i.owner) is Tree.InitStruct:
+                    pass
+                elif not (type(i.owner) is Tree.CreateAssign and i.owner.nodes[0].varType is None):
                     if type(i.owner) is Tree.CreateAssign and i.owner.extern:
                         if not type(i.nodes[0].type) is Types.String:
                             i.error("expecting String")
@@ -355,18 +359,56 @@ def infer(parser, tree):
             elif type(i) is Tree.InitPack:
                 parser.imports.append(i.package)
             elif type(i) is Tree.InitStruct:
-                s = i.s
+                typ = i.constructor.type
+                i.typ = typ
+
+                assign = True
+                if type(typ) is Struct.Struct:
+                    s = typ
+                    assign = False
+                    i.paramNames = Struct.offsetsToList(s.offsets)
+                elif type(typ) is Types.Struct:
+                    assign = True
+                    s = typ
+                else:
+                    i.constructor.error(parser, "type "+str(typ)+" can not be used as a constructor")
+
+                i.s = s
+
                 name = s.name
-                args = s.fieldType
 
-                if len(args) < len(i.nodes):
-                    c = str(len(i.nodes) - 1 - len(args))
+                if len(s.types) < len(i.nodes)-1:
+                    c = str(len(i.nodes) - 1 - len(s.types))
                     i.nodes[-1].error(("1 argument" if c == "1" else c+" arguments")+" too many")
-
+                elif not assign and len(s.types) < len(i.nodes)-1:
+                    c = str(len(s.types) - len(i.nodes)-1)
+                    i.nodes[-1].error(("1 argument" if c == "1" else c + " arguments") + " too many")
                 gen = {}
-                for iter in range(len(i.nodes)):
-                    normalTyp = args[iter]
-                    myNode = i.nodes[iter]
+                randomOrder = False
+                order = {}
+
+                for iter in range(1, len(i.nodes)):
+                    if type(i.nodes[iter]) is Tree.Assign:
+                        randomOrder = True
+                    elif assign:
+                        i.nodes[iter].error("expecting =")
+
+                    if not randomOrder:
+                        order[i.paramNames[iter-1]] = i.nodes[iter]
+                        myNode = i.nodes[iter]
+                        normalTyp = s.fieldType[iter-1]
+                    else:
+                        if not type(i.nodes[iter]) is Tree.Assign:
+                            i.nodes[iter].error("positional argument follows keyword argument")
+                        order[i.nodes[iter].nodes[0].name] = i.nodes[iter]
+                        myNode = i.nodes[iter].nodes[1]
+                        xname = i.nodes[iter].nodes[0].name
+
+                        try:
+                            normalTyp = s.types[xname]
+                        except KeyError:
+                            i.nodes[iter].nodes[0].error("type "+str(s)+" does not have the field "+ xname)
+
                     normalNode = i
 
                     if Types.isGeneric(normalTyp):
@@ -374,7 +416,15 @@ def infer(parser, tree):
 
                     normalTyp.duckType(parser, myNode.type, i, myNode, iter)
 
-                i.type = Types.Struct(i.mutable, name, s.types, i.package, gen)
+                if not assign:
+                    for c in order:
+                        i.nodes[s.offsets[c]] = order[c]
+                i.assign = assign
+
+                if i.assign:
+                    i.type = typ
+                else:
+                    i.type = Types.Struct(i.mutable, name, s.types, i.package, gen)
 
             elif type(i) is Tree.ArrRead:
                 if not type(i.nodes[0].type) is Types.Array:
@@ -456,6 +506,26 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
         resolveGen(shouldBeTyp.returnType, normalTyp.returnType, generics, parser)
 
         return Types.replaceT(shouldBeTyp, generics)
+    elif type(shouldBeTyp) in [Types.Struct, Types.Enum]:
+        if not type(normalTyp) is Types.Struct:
+            return shouldBeTyp
+        self = shouldBeTyp
+        other = normalTyp
+        if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
+            return shouldBeTyp
+
+        types = {}
+        shouldGeneric = shouldBeTyp.gen
+        normalGeneric = normalTyp.gen
+
+        for i in shouldGeneric:
+            generics[i] = resolveGen(shouldGeneric[i], normalGeneric[i], generics, parser)
+
+        if type(shouldBeTyp) is Types.Enum:
+            return Types.Enum(self.package, self.normalName, self.const, generics)
+        else:
+            return Types.Struct(False, self.normalName, self.types, self.package, generics)
+
     elif type(shouldBeTyp) is Types.Interface:
         types = {}
         for i in shouldBeTyp.types:
@@ -464,7 +534,12 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
             except KeyError:
                 try:
                     meth = normalTyp.hasMethod(parser, i)
-                    types[i] = resolveGen(shouldBeTyp.types[i], Types.FuncPointer(meth.args[1:], meth.returnType, generic= meth.generic, do= meth.do), generics, parser)
+                    if type(meth) is Types.FuncPointer:
+                        types[i] = resolveGen(shouldBeTyp.types[i], Types.FuncPointer(meth.args[1:], meth.returnType, generic= meth.generic, do= meth.do), generics, parser)
+                    elif meth:
+                        types[i] = meth
+                    else:
+                        types[i] = shouldBeTyp.types[i]
                 except AttributeError:
                     types[i] = shouldBeTyp.types[i]
         return Types.Interface(False, types, generics)

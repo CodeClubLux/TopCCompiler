@@ -81,6 +81,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('comma', ','),
         ('bang', '!'),
         ('dollar', '\$'),
+        ('set', '=>'),
     ]
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
     get_token = re.compile(tok_regex).match

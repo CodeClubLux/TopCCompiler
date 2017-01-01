@@ -88,11 +88,16 @@ from .Array import *
 from .MethodParser import *
 from .Struct import *
 from .TypeInference import *
+from .Enum import *
 
 def isEnd(parser):
     token = parser.thisToken()
 
-    if token.token in ["!", "\n", ";"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
+    if parser.fired:
+        parser.fired = False
+        return True
+
+    if token.token in ["!", "\n"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
         if token.token == "!" and len(parser.currentNode.nodes) > 1:
             return False
 
@@ -269,6 +274,8 @@ class Parser:  # all mutable state
         self.curlyBookmark = [0]
         self.indentLevel = 0
 
+        self.fired = False
+
         self.lineNumber = 1
         self.stack = []
 
@@ -282,12 +289,16 @@ class Parser:  # all mutable state
         self.sc = True
         self.repl = False
 
+        All = Types.All
+
         Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )})
+        self.Stringable = Stringable
+
         Lengthable = Types.Interface(False, {"length": Types.I32()})
         Intable = Types.Interface(False, {"toInt": Types.FuncPointer([], Types.I32() )})
         Floatable = Types.Interface(False, {"toFloat": Types.FuncPointer([], Types.Float())})
 
-        T = Types.T("T", All, "Atom")
+        T = Types.T("T", Types.All, "Atom")
 
         Atom = Types.Interface(False, {
             "unary_read": FuncPointer([], T, do= True),
@@ -326,8 +337,7 @@ class Parser:  # all mutable state
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "toString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
-            "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
-            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
+
             "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
             "isOdd": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
             "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32())),
@@ -378,7 +388,7 @@ class Parser:  # all mutable state
                 "Stringable": Stringable,
                 "Atom": Atom,
                 "Lens": Lens,
-                "All": All,
+                "Any": All,
             }
         }
 
@@ -386,6 +396,8 @@ class Parser:  # all mutable state
         self.tokens = tokens
 
     def parse(self):
+        #print(self.global_target)
+
         tokens = self.tokens
         filenames = self.filename
 
@@ -399,7 +411,6 @@ class Parser:  # all mutable state
         self.filename = filenames
 
         infer(self, self.currentNode)
-
 
         if self.sc:
             Tree.transform(self.currentNode)

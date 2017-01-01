@@ -20,8 +20,6 @@ String.prototype.toFloat = function () { return Number(this) }
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
 
-function log(s) { console.log(s.toString()); }
-
 function isOdd(number) {
     return number % 2 != 0
 }
@@ -222,4 +220,8 @@ function serial(funcs, next) {
         }
     }
     loop()
+}
+
+function core_assign(construct, obj) {
+    return Object.assign(new construct.constructor(), construct, obj);
 }

@@ -1,4 +1,5 @@
 //linked list
+/*
 function List(value, list) {
     this.head = value;
     this.tail = list;
@@ -225,3 +226,4 @@ function newListInit(repeat, elem) {
     }
     return arr;
 }
+*/

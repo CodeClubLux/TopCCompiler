@@ -103,7 +103,7 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
             else:
                 parser.nextToken()
                 gen = parseGeneric(parser, parser.interfaces[package][token])
-                return replaceT(Interface(False, parser.interfaces[package][token].types), gen)
+                return replaceT(parser.interfaces[package][token], gen)
 
         return Interface(False, parser.interfaces[package][token].types)
 
@@ -181,6 +181,9 @@ class StructInit(Type):
         self.name= name+" type"
         self.types= {}
 
+    def __str__(self):
+        return self.name
+
 def newType(n):
     class BasicType(Type):
         name=n
@@ -199,8 +202,10 @@ class Pointer(Type):
 class String(Type):
     def __init__(self, length):
         self.name = "string"
-        self.types = {"toString": FuncPointer([], self), "toInt": FuncPointer([], I32()), "toFloat": FuncPointer([], Float())}
-
+        self.types = {"toString": FuncPointer([], self), "toInt": FuncPointer([], I32()), "toFloat": FuncPointer([], Float()),
+            "slice": FuncPointer([I32(), I32()], self),
+            "length": I32(),
+        }
 
 class FuncPointer(Type):
     def __init__(self, argtypes, returnType, generic= coll.OrderedDict(), do= False):
@@ -251,8 +256,12 @@ class Struct(Type):
 
         gen = self.remainingGen
 
+        #print(self.gen)
+
         genericS = "[" + ",".join([i + ": " + str(gen[i].type) for i in gen]) + "]" if len(gen) > 0 else ""
+
         self.name = package + "." + name + genericS
+        #print(self.name)
 
     def hasMethod(self, parser, field):
         m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
@@ -265,7 +274,7 @@ class Struct(Type):
         if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
             node.error("expecting type "+str(self)+", not "+str(other))
 
-        for key in self.remainingGen:
+        for key in other.remainingGen:
             i = self.gen[key]
             othk = other.gen[key]
 
@@ -276,6 +285,7 @@ class Struct(Type):
 
 class Tuple(Type):
     def __init__(self, types):
+        self.list = types
         self.types = dict([(str(index), i) for (index, i) in enumerate(types)])
 
     def __str__(self):
@@ -378,25 +388,23 @@ class Interface(Type):
             mynode.error("expecting type "+str(self)+" not "+str(other))
 
         i = 0
-        for field in self.types:
-            if field in isStruct.types:
-                try:
+        try:
+            for field in self.types:
+                if field in isStruct.types:
                     self.types[field].duckType(parser, isStruct.types[field], node, mynode, iter)
-                except EOFError as e:
-                    beforeError(e, "Field '"+ field+ "' in " + str(other) +": ")
-            else:
-                meth = isStruct.hasMethod(parser, field)
-                if meth:
-                    if type(meth) is FuncPointer:
-                        try:
-                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType, do= meth.do, generic=meth.generic), node, mynode, iter)
-                        except EOFError as e:
-                            beforeError(e, "Field '"+ field+ "' in " + str(other) +": ")
-                    else:
-                        mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
                 else:
-                    mynode.error("type "+str(other)+" missing field "+field+" to be upcasted to "+str(self))
-            i += 1
+                    meth = isStruct.hasMethod(parser, field)
+                    if meth:
+                        if type(meth) is FuncPointer:
+                            self.types[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType, do= meth.do, generic=meth.generic), node, mynode, iter)
+                        else:
+                            self.types[field].duckType(parser, meth, node, mynode, iter)
+                            #mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
+                    else:
+                        mynode.error("type "+str(other)+" missing field "+field+" to be upcasted to "+str(self))
+                i += 1
+        except EOFError as e:
+            beforeError(e, "Field '" + field + "' in " + str(other) + ": ")
 
 class T(Type):
     def __init__(self, name, typ, owner):
@@ -411,6 +419,29 @@ class T(Type):
 
     def hasMethod(self, parser, name):
         self.type.hasMethod(parser, name)
+
+class Enum(Type):
+    def __init__(self, package, name, const, generic):
+        self.generic = generic
+        self.const = const
+        self.types = {}
+        self.name = "'enum "+package+"."+name
+        self.package = package
+        self.normalName = name
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if self.name != other.name:
+            Error.parseError(parser, "expecting type "+self.name+", not "+str(other))
+
+        for name in self.generic:
+            a = self.generic[name]
+            b = other.generic[name]
+            try:
+                a.duckType(parser, b, node, mynode, iter)
+            except EOFError as e:
+                Error.beforeError(e, "For generic parameter "+name+": ")
+
+
 All = Interface(False, {})
 
 def isGeneric(t):
@@ -422,6 +453,7 @@ def isGeneric(t):
     elif type(t) is Array and isGeneric(t.elemT): return True
     elif type(t) is T: return True
     elif type(t) is Interface: return True
+    elif type(t) is Struct: return True
     return False
 
 
@@ -513,6 +545,8 @@ def replaceT(typ, gen):
         types = {i: replaceT(types[i], gen) for i in types}
 
         return Interface(False, types)
+    elif type(typ) is Enum:
+        return Enum(typ.package, typ.normalName, typ.const, gen)
     elif isGeneric(typ):
         if type(typ) is Array:
             return Array(False, replaceT(typ.elemT, gen))

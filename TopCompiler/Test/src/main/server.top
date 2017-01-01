@@ -1,0 +1,34 @@
+import "http"
+
+def fib(n: int) int =
+    if n < 2 then n
+    else (fib n-2) + (fib n-1)
+
+def println(s: string) do
+    log s
+
+type FS =
+    open: |string, string| -> string
+
+type Maybe[T] either
+    Some(T)
+    None
+
+ext fs: FS = "require('fs')"
+ext read: |string| do string = "function(f,next)\{main_fs.readFile(f,'utf8',function(e,res)\{next(res)\})\}"
+
+let htmlFile = read "bin/Simulation.html"
+
+def requestHandler(req: http.Request, res: http.Response) do
+    log "server request, "+req.url
+    http.end-response res, if req.url == "/" then htmlFile else ""
+
+ext port: int = "process.env.PORT || 3000"
+
+let server = http.server requestHandler
+server.listen port
+
+log "started web server on port {port}"
+
+
+

@@ -13,12 +13,15 @@ class Type :
 def incrScope(parser):
     parser.scope[parser.package].append({})
 
-def addVar(node, parser, name, type):
+def addVar(node, parser, name, type, _global=False):
 
     if varExists(parser, parser.package, name):
         node.error( "variable "+name+" already exists")
 
-    parser.scope[parser.package][-1][name] = type
+    if _global:
+        parser.scope[parser.package][0][name] = type
+    else:
+        parser.scope[parser.package][-1][name] = type
 
 def addFunc(node, parser, name, typ, imutable= True):
     if varExists(parser, parser.package, name):
@@ -88,10 +91,11 @@ def isGlobal(parser, package, name):
     return name in parser.scope[package][0]
 
 def addPackage(parser, name):
-    parser.scope[name] = [{}]
-    parser.func[name] = {}
-    parser.structs[name] = {}
-    parser.interfaces[name] = {}
+    if not name in parser.scope:
+        parser.scope[name] = [{}]
+        parser.func[name] = {}
+        parser.structs[name] = {}
+        parser.interfaces[name] = {}
 
 
 

@@ -14,6 +14,7 @@ from .InitPackage import *
 from .Arrays import *
 from .Tuple import *
 from .Lens import *
+from .Enum import *
 
 
 

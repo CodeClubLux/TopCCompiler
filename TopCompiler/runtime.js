@@ -67,8 +67,6 @@ String.prototype.toFloat = function () { return Number(this) }
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
 
-function log(s) { console.log(s.toString()); }
-
 function isOdd(number) {
     return number % 2 != 0
 }
@@ -270,7 +268,12 @@ function serial(funcs, next) {
     }
     loop()
 }
+
+function core_assign(construct, obj) {
+    return Object.assign(new construct.constructor(), construct, obj);
+}
 //linked list
+/*
 function List(value, list) {
     this.head = value;
     this.tail = list;
@@ -497,6 +500,7 @@ function newListInit(repeat, elem) {
     }
     return arr;
 }
+*/
 function Vector(root, len, depth) {
     this.shift = (depth - 1) * this.bits;
     this.root = root;
@@ -747,7 +751,7 @@ Vector.prototype.map = function (func) {
     var newArr = EmptyVector;
     var len = this.length;
     for (var i = 0; i < len; i++) {
-        newArr = newArr.append_m(func(this.get(i)));
+        newArr = newArr.append_m(func(this.get(i), i));
     }
     return newArr;
 }

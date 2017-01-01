@@ -57,15 +57,15 @@ class String(Node):
     def __str__(self):
         return self.string
 
-    def compileToJS(self, codegen):
-        string = self.string.\
-            replace("<", "&lt").\
-            replace(">", "&gt").\
-            replace("\\t", "&nbsp"*4).\
-            replace("\n", "").\
-            replace("\\{", "{").\
+    def toString(self):
+        return self.string.replace("<", "&lt"). \
+            replace(">", "&gt"). \
+            replace("\\t", "&nbsp" * 4). \
+            replace("\n", ""). \
+            replace("\\{", "{"). \
             replace("\\}", "}")
 
-        codegen.append(string)
+    def compileToJS(self, codegen):
+        codegen.append(self.toString())
 
     def validate(self, parser): pass
