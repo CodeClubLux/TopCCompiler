@@ -1,0 +1,26 @@
+{
+  "name": "top-lang",
+  "version": "0.0.0",
+  "description": "First test",
+  "keywords": [
+    "example",
+    "heroku"
+  ],
+  "author": "luke-getz",
+  "license": "MIT",
+  "engines": {
+    "node": "4.5.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node Simulation-node.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodeClubLux/TopCompiler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CodeClubLux/TopCompiler/issues"
+  },
+  "homepage": "https://github.com/CodeClubLux/TopCompiler#readme"
+}
