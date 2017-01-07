@@ -1,5 +1,5 @@
 {
     "files": ["other"],
     "node-files": ["server"],
-    "client-files": ["main"]
+    "client-files": ["top"]
 }

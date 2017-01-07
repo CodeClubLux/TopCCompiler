@@ -1,0 +1,15 @@
+type Request =
+    url: string
+
+type Response =
+    status: int
+    content-type: string
+    body: string
+    encoding: string
+
+def toUrl[T,U](expects: ||T| -> Response| -> U) string =
+    toJSON enum, expects end-response
+
+def query[T: enum,U](expects: ||T| -> Response| -> U) T =
+    toUrl expects
+

@@ -88,16 +88,24 @@ let _type = newAttrib::[string] "type"
 let height = newAttrib::[string] "height"
 let width = newAttrib::[string] "width"
 
+let id = newAttrib::[string] "id"
+
 let min = newAttrib::[int] "min"
 let max = newAttrib::[int] "max"
 let step = newAttrib::[int] "step"
 let value = newAttrib::[string] "value"
+let href = newAttrib::[string] "href"
+let src = newAttrib::[string] "src"
+
+let _float = newAttrib::[string] "float"
+
+let class = newAttrib::[string] "className"
 
 let onClick = onEvent "onclick"
 let onInput = onEvent "oninput"
 let onChange = onEvent "onchange"
 
-ext h: |string, []Attribute, VNode| -> VNode = "fromJS(html_h)"
+ext h: |string, []Attribute, VNode| -> VNode = "fromJS(html_hyper)"
 ext createElement: |VNode| -> HtmlElem = "virtualDom.create"
 ext diff: |VNode, VNode| -> Patches = "virtualDom.diff"
 ext patch: |HtmlElem, Patches| do HtmlElem = "toAsync(virtualDom.patch)"
@@ -117,16 +125,23 @@ let h4 = h "h4"
 let h5 = h "h5"
 let h6 = h "h6"
 
+let hr = h "hr"
+
 let button = h "button"
 let input = h "input"
 
-let noAttrib = []Attribute
+let noAttrib: []Attribute = []
 
 let div = h "div"
 
 let p = h "p"
+let ul = h "ul"
+let li = h "li"
+let a = h "a"
 
-ext appendChild: |HtmlElem, HtmlElem| do none = "toAsync(html_appendChild)"
+let image = h "img"
+
+ext _appendChild: |HtmlElem, HtmlElem| do none = "toAsync(html_appendChild)"
 
 def render(newTree: VNode) HtmlElem do
     let rootNode= createElement newTree
@@ -134,11 +149,13 @@ def render(newTree: VNode) HtmlElem do
 
     clear root
 
-    appendChild root, rootNode
+    _appendChild root, rootNode
 
     rootNode
 
 def get() do
+
+ext _handle: || -> none = "html_handle"
 
 def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
     var oldV = r (<-appstate), appstate
@@ -152,7 +169,11 @@ def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
         let patches = diff oldV, newV
         root = patch root, patches
 
+        _handle!
+
         oldV = newV
 
     appstate.watch rerender
+
+ext animateOnVisible: |HtmlElem, string| do none = "html_addClassOnVisible"
 

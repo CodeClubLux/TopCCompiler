@@ -52,8 +52,6 @@ def ifBody(parser):
         if (next.token == "else" or next.token == "elif") and isEnd:
             break
 
-
-
     ExprParser.endExpr(parser)
 
     cond.type = Types.Bool()

@@ -1,4 +1,4 @@
-"use strict";function operator_add(x,y) {return x.operator_add(y)}
+function operator_add(x,y) {return x.operator_add(y)}
 function operator_sub(x,y) {return x.operator_sub(y)}
 function operator_mul(x,y) {return x.operator_mul(y)}
 function operator_div(x,y) {return x.operator_div(y)}
@@ -203,6 +203,14 @@ function defer(func) {
     return function (x) {
         return function (callback) { func(x, callback) }
     }
+}
+
+function Some(x) {
+    return [0, x];
+}
+
+function None() {
+    return [0];
 }
 
 function sleep(time, callback) {
@@ -830,9 +838,28 @@ function newVectorInit(repeat, elem) {
         arr = arr.append_m(elem);
     }
     return arr;
-}"use strict";
-function main_fullInit(){var d=0;return function c(b){while(1){switch (d){case 0:return;}}}()}function main_map(c, d){return (d).map(c);}function main_filter(c, d){return (d).filter(c);}function main_reduce(c, d){return (d).reduce(c);}function main_comp(c, d){return c((d));}function main_zip(c, d){var f;f = newVector();var g;g = 0;
+}var main_fs = require("fs");
+var http = require("http");
+
+function server_readFile(f,next) {
+    main_fs.readFile(f,function(e,res){
+        if(e){
+            next([1])
+        } else {
+            next([0,res])
+        }
+    })
+}
+
+function server_createServer(func) {
+    return http.createServer(function (req, res) {
+        func(req, function (_res) {
+            res.writeHead(_res.status, {'Content-Type': _res.contentType});
+            res.end(_res.body, _res.encoding);
+        })
+    })
+};
+function main_fullInit(){var d=0;return function c(b){while(1){switch (d){case 0:return;}}}()}function main_map(c, d){return (d).map(c);}function main_filter(c, d){return (d).filter(c);}function main_reduce(c, d){return (d).reduce(c);}function main_comp(c, d){return c(d);}function main_zip(c, d){var f;f = newVector();var g;g = 0;
 while((g<(c).length)){f=(f).append((newVector(c.get(g),d.get(g))));g=((g+1)|0);}return f;}function main_append(c, d){return (d).append(c);}function main_first(c){return c.get(0);}function main_toEffect(c){function d(f,g){var k=0;return function j(h){while(1){switch(k){case 0:return g(c(f));}}}()}return d;}main_fullInit();
-function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_nodeInit();function main_Some(g){return [1,g]}function main_None(){return [2,]}main_fs = require('fs');main_read = function(f,next){main_fs.readFile(f,'utf8',function(e,res){next(res)})};d=1;return main_read("Simulation.html",c);case 1:main_htmlFile = b;main_port = process.env.PORT || 3000;main_server = http_server(main_requestHandler);d=3;return (main_server).listen(main_port,c);case 3:log((((("started web server on port ")+((main_port)).toString()))+("").toString()));return;}}}()}var main_fs;var main_read;var main_htmlFile;var main_port;var main_server;function main_fib(c){return (function(){if((c<2)){return c;}
-else{return (((main_fib(((c-2)|0)))+(main_fib(((c-1)|0))))|0);}})();}function main_println(c,d){var h=0;return function g(f){while(1){switch(h){case 0:log(c);return d();}}}()}function main_FS(f){this.open=f;}main_FS.fields=newVector("open");function main_requestHandler(c, d,f){var j=0;return function h(g){while(1){switch(j){case 0:log(("server request, "+(c).url));j=2;return http_endResponse(d,(function(){if(((c).url==="/")){return main_htmlFile;}
-else{return "";}})(),h);case 2:return f(g);}}}()}function http_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_httpNode = require('http');http_endResponse = function (res, value, next) { next(res.end(value)); };http_server = function (func) { return http_httpNode.createServer(toSync(func)); };return;}}}()}var http_httpNode;var http_endResponse;var http_server;function http_Request(f){this.url=f;}http_Request.fields=newVector("url");function http_Response(){}http_Response.fields=newVector();function http_Server(g){this.listen=g;}http_Server.fields=newVector("listen");function http_NodeHTTP(h){this.createServer=h;}http_NodeHTTP.fields=newVector("createServer");main_nodeInit();
+function http_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","utf-8","utf-8");http_server = server_createServer;return;}}}()}var http_response;var http_server;function http_Server(f){this.listen=f;}http_Server.fields=newVector("listen");function http_NodeHTTP(g){this.createServer=g;}http_NodeHTTP.fields=newVector("createServer");function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_nodeInit();main__read = server_readFile;main_quit = process.exit;d=2;return main_read("Simulation.html",c);case 2:main_htmlFile = b;d=3;return main_read("images/variation.png",c);case 3:main_logo = b;d=4;return main_read("images/async.png",c);case 4:main_async = b;d=5;return main_read("images/tools.png",c);case 5:main_tools = b;d=6;return main_read("images/arrow.ico",c);case 6:main_favicon = b;d=7;return main_read("images/error.png",c);case 7:main_error = b;main_port = process.env.PORT || 3000;main_server = http_server(main_requestHandler);d=8;return (main_server).listen(main_port,c);case 8:log((((("started web server on port ")+((main_port)).toString()))+("").toString()));main_i = function(){var f="string"; if (f=="string"){return "ok";} if (f==null){return "err";}}();return;}}}()}var main__read;var main_quit;var main_htmlFile;var main_logo;var main_async;var main_tools;var main_favicon;var main_error;var main_port;var main_server;var main_i;function main_read(c,d){var h=0;return function g(f){while(1){switch(h){case 0:h=1;return main__read(c,g);case 1:return d(function(){var j=f; if (j[0]==0){var k=j[1];return k;} if (j[0]==1){log(("cannot find file, "+c));return main_quit(1);}}());}}}()}function main_requestHandler(c,d){var h=0;return function g(f){while(1){switch(h){case 0:log(("request, "+(c).url));return d((function(){if(((c).url==="/")){return core_assign(http_response,{body:main_htmlFile,contentType:"text/html"});}else if(((c).url==="/arrow.png")){return core_assign(http_response,{body:main_logo,contentType:"image/png"});}else if(((c).url==="/async.png")){return core_assign(http_response,{body:main_async,contentType:"image/png"});}else if(((c).url==="/tools.png")){return core_assign(http_response,{body:main_tools,contentType:"image/png"});}else if(((c).url==="/favicon.ico")){return core_assign(http_response,{body:main_favicon,contentType:"image/x-icon"});}else if(((c).url==="/error.png")){return core_assign(http_response,{body:main_error,contentType:"image/png"});}
+else{return core_assign(http_response,{status:404,body:"File not found"});}})());}}}()}main_nodeInit();

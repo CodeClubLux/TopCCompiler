@@ -1,3 +1,5 @@
+
+
 def map[T, X](func: |T| -> X, x: []T) []X =
     x.map func
 
@@ -8,9 +10,10 @@ def reduce[T](func: |T,T| -> T, x: []T) T =
     x.reduce func
 
 def comp[T,X](func: |T| -> X, x: T) X =
-    func(x)
+    func x
+
 def zip[T](x: []T, y: []T) [][]T =
-    var newArr = [][]T
+    var newArr: [][]T = []
 
     var i = 0
     while i < x.length do

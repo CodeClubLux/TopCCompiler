@@ -8,6 +8,7 @@ from TopCompiler import Types
 import copy
 from TopCompiler import MethodParser
 from TopCompiler import Struct
+from TopCompiler import Enum
 
 def infer(parser, tree):
     varTypes = {}
@@ -24,13 +25,38 @@ def infer(parser, tree):
                     Scope.addVar(i, parser, i.name, Scope.Type(True, i.ftype))
                 Scope.incrScope(parser)
 
-            elif type(i) in [Tree.If, Tree.While]:
+            elif type(i) in [Tree.Block, Tree.While]:
                 Scope.incrScope(parser)
 
-            if not i.isEnd():
+            if not (i.isEnd() or type(i) is Tree.MatchCase or (type(i) is Tree.Block and type(i.owner) is Tree.Match)):
                 loop(i)
 
-            if type(i) is Tree.CreateAssign:
+            if type(i) is Tree.Match:
+                typ = i.nodes[0].type
+                first = False
+                for c in range(1,len(i.nodes),2):
+                    body = i.nodes[c+1]
+
+                    Scope.incrScope(parser)
+                    Enum.checkCase(parser, i.nodes[c].nodes[0], typ, True)
+                    loop(body)
+                    body.type = body.nodes[-1].type if len(body.nodes) > 0 else Types.Null()
+                    Scope.decrScope(parser)
+                    if first:
+                        if body.type != first:
+                            (body.nodes[-1] if len(body.nodes) > 0 else body).error(
+                                "type mismatch in arms of match, " + str(body.type) + " and " + str(first))
+
+                    else:
+                        if len(i.nodes[2].nodes) > 0:
+                            first = i.nodes[2].nodes[-1].type
+                        else:
+                            first = Types.Null()
+                        i.nodes[2].type = first
+
+                i.type = first if first else Types.Null()
+
+            elif type(i) is Tree.CreateAssign:
                 if i.nodes[0].varType is None and i.nodes[0].name != "_":
                     if i.extern:
                         i.error("expecting type declaration, for external variable declaration")
@@ -63,7 +89,7 @@ def infer(parser, tree):
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
             elif type(i) is Tree.ReadVar:
-                if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct):
+                if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct and i.owner.nodes[0] == i):
                     if i.name in parser.imports:
                         if not type(i.owner) is Tree.Field:
                             i.error("expecting .")
@@ -132,7 +158,7 @@ def infer(parser, tree):
                         else: bind()
 
             elif type(i) is Tree.Operator:
-                if i.kind == "|>":
+                if i.kind == "|>" or i.kind == ">>":
                     self = i
 
                     if len(self.nodes) != 2:
@@ -140,6 +166,11 @@ def infer(parser, tree):
 
                     a = self.nodes[0].type
                     b = self.nodes[1].type
+
+                    if i.kind == ">>":
+                        if not type(a) is Types.FuncPointer:
+                            self.nodes[1].error("right argument must be a function")
+                        a = a.returnType
 
                     if not type(b) is Types.FuncPointer:
                         self.nodes[1].error("left argument must be a function")
@@ -150,8 +181,16 @@ def infer(parser, tree):
                     try:
                         b.args[0].duckType(parser, a, self.nodes[0], self.nodes[1], 1)
                     except EOFError as e:
-                        Error.beforeError(e, "Function piping to: ")
-                    self.type = b.returnType
+                        if i.kind == ">>":
+                            Error.beforeError(e, "Function combining with: ")
+                        else:
+                            Error.beforeError(e, "Function piping to: ")
+
+                    if i.kind == ">>":
+                        a = self.nodes[0].type
+                        self.type = Types.FuncPointer(a.args, b.returnType, do= a.do or b.do, generic=a.generic)
+                    else:
+                        self.type = b.returnType
                 elif i.kind == "<-":
                     if i.unary:
                         try:
@@ -171,7 +210,7 @@ def infer(parser, tree):
                 elif i.kind == "concat":
                     stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0))})
                     for c in i:
-                        stringable.duckType(parser,c.type,Tree.PlaceHolder(c),c,0)
+                        stringable.duckType(parser,c.type,i,i,0)
                     i.type = Types.String(0)
                     i.partial = False
                     i.curry = False
@@ -379,10 +418,10 @@ def infer(parser, tree):
 
                 if len(s.types) < len(i.nodes)-1:
                     c = str(len(i.nodes) - 1 - len(s.types))
-                    i.nodes[-1].error(("1 argument" if c == "1" else c+" arguments")+" too many")
-                elif not assign and len(s.types) < len(i.nodes)-1:
-                    c = str(len(s.types) - len(i.nodes)-1)
-                    i.nodes[-1].error(("1 argument" if c == "1" else c + " arguments") + " too many")
+                    i.error(("1 argument" if c == "1" else c+" arguments")+" too many")
+                elif not assign and len(s.types) > len(i.nodes)-1:
+                    c = str(len(s.types) + 1 - len(i.nodes))
+                    i.error(("1 argument" if c == "1" else c + " arguments") + " too few")
                 gen = {}
                 randomOrder = False
                 order = {}
@@ -427,13 +466,16 @@ def infer(parser, tree):
                     i.type = Types.Struct(i.mutable, name, s.types, i.package, gen)
 
             elif type(i) is Tree.ArrRead:
-                if not type(i.nodes[0].type) is Types.Array:
-                    i.nodes[0].error("Type "+str(i.nodes[0].type)+"is not indexable")
-                arrRead = i
-                if len(arrRead.nodes) != 2 or not arrRead.nodes[1].type == Types.I32():
-                    i.nodes[1].error("expecting single integer index")
+                if not len(i.nodes) == 1:
+                    if not type(i.nodes[0].type) is Types.Array:
+                        i.nodes[0].error("Type "+str(i.nodes[0].type)+"is not indexable")
+                    arrRead = i
+                    if len(arrRead.nodes) != 2 or not arrRead.nodes[1].type == Types.I32():
+                        i.nodes[1].error("expecting single integer index")
 
-                arrRead.type = arrRead.nodes[0].type.elemT
+                    arrRead.type = arrRead.nodes[0].type.elemT
+                else:
+                    i.error("expecting integer expression")
             elif type(i) is Tree.Generic:
                 if not Types.isGeneric(i.nodes[0].type):
                     i.nodes[0].error("expecting generic type")
@@ -462,9 +504,11 @@ def infer(parser, tree):
                 })
 
                 i.type = lensType
+            elif type(i) is Tree.Block:
+                if len(i.nodes) > 0:
+                    i.type = i.nodes[-1].type
 
-
-            if type(i) in [Tree.If, Tree.While]:
+            if type(i) in [Tree.Block, Tree.While]:
                 Scope.decrScope(parser)
 
             count += 1

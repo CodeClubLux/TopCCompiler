@@ -80,9 +80,7 @@ def arrayLiteral(parser):
 
     if len(arr.nodes) < 1 :
         #emtpy array
-        parser.nextToken()
-        typ = parseType(parser)
-        arr.type = Array(False, typ)
+        arr.type = Array(False, Types.Null(), empty= True)
 
     if arr.range:
         if len(arr.nodes) != 2:

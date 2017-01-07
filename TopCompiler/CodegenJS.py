@@ -163,7 +163,9 @@ def getRuntimeNode():
     return file.read()
 
 def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
-    linked = '"use strict";'
+    linked = '';
+    if opt == 3 and target != "full":
+        linked += "(function () {"
     import sys
     runtime = getRuntime() if target == "browser" else getRuntimeNode()
 
@@ -171,7 +173,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
         runtime = ""
     linked += runtime
 
-
+    array = []
     #print("====", target)
     for i in linkWith + (["bin/"+output+"-full.js"] if target != "full" else []):
         try:
@@ -180,9 +182,10 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
             f.close()
 
             Error.error("cannot find file "+i+" to link")
-        linked += f.read()
+        array.append(f.read())
         f.close()
 
+    linked += ";".join(array)
     css = ""
 
     for i in linkWithCSS:
@@ -207,10 +210,19 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
     preCall = linked
     linked += "main_" + target + "Init();"
 
-    if target == "node":
-        fjs.write(linked)
-        fjs.close()
+    if opt == 3 and target != "full":
+        linked += "})()"
 
+    fjs.write(linked)
+    fjs.close()
+
+    if opt == 3 and target != "full":
+        args = ["uglifyjs", "--compress", "--output", "bin/"+output+".min-"+target+".js", "--mangle", "--", "bin/"+output+"-"+target+".js"]
+        subprocess.call(args, shell=False)
+        output += ".min"
+        linked = open("bin/"+output+"-"+target+".js", "r").read()
+
+    if target == "node":
         if dev:
             return preCall
         if run:
@@ -218,22 +230,22 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
         return
 
     if target == "full":
-        fjs.write(linked)
-        fjs.close()
         return linked
+
+    if opt == 3:
+        output = output[:-len(".min")]
 
     f = open("bin/" + output + ".html", mode="w")
 
     html = """<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><HEAD><meta charset="UTF-8"><TITLE>""" + output + """</TITLE></HEAD><script>""" + linked + """</script></HTML>"""
 
-    if opt == 0:
-        html = """
+    html = """
 <!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <HTML>
     <HEAD>
         <meta charset="UTF-8">
         <TITLE>""" + output + """</TITLE>
-        <link rel="shortcut icon" href="/Users/luke/Desktop/arrow.ico" />
+        <link rel="icon" href="favicon.ico" type="image/x-icon" />
         """+css+"""
     </HEAD>
     <body>
@@ -247,7 +259,6 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
 </HTML>"""
 
     f.write(html)
-    fjs.write(preCall)
 
     f.close()
     fjs.close()

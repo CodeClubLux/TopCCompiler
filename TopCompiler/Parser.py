@@ -97,15 +97,22 @@ def isEnd(parser):
         parser.fired = False
         return True
 
-    if token.token in ["!", "\n"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
+    if token.token in ["!", "->", "\n", "with"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
         if token.token == "!" and len(parser.currentNode.nodes) > 1:
             return False
 
+        #"""
         if token.token == "|>" and type(parser.currentNode) in [Tree.Assign, Tree.CreateAssign, Tree.Block, Tree.FuncBody, Tree.Root]:
             return False
+        #"""
 
+        if token.token in ["with"] and type(parser.currentNode) in [Tree.IfCondition, Tree.Match, Tree.PlaceHolder]:
+            return False
+
+        #"""
         elif token.token == "|>":
             ExprParser.endExpr(parser, -2)
+        #"""
 
         return maybeEnd(parser)
     return False
@@ -321,17 +328,21 @@ class Parser:  # all mutable state
             [defer_T], defer_X, do= True)], Types.FuncPointer([defer_T], Types.FuncPointer([], defer_X, do= True))
         , generic= coll.OrderedDict([("defer.T", defer_T), ("defer.X", defer_X)]))
 
-        parallel_T = Types.T("T", All, "parallel_T")
+        parallel_T = Types.T("T", All, "parallel")
 
         parallel = Types.FuncPointer([Types.Array(False,
             Types.FuncPointer([], parallel_T, do=True)
         )], Types.Array(False, parallel_T), do= True, generic=coll.OrderedDict([("parallel.T", parallel_T)]))
 
-        serial_T = Types.T("T", All, "parallel_T")
+        serial_T = Types.T("T", All, "serial")
 
         serial = Types.FuncPointer([Types.Array(False,
             Types.FuncPointer([], serial_T, do=True)
         )], Types.Array(False, serial_T), do=True, generic=coll.OrderedDict([("serial.T", serial_T)]))
+        Maybe_T = Types.T("T", All, "Maybe")
+        Maybe_gen = coll.OrderedDict([("Maybe.T", Maybe_T)])
+
+        Maybe = Types.Enum("_global", "Maybe", coll.OrderedDict([("Some", [Maybe_T]), ("None", [])]), generic=Maybe_gen)
 
         self.scope = {"_global": [{
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
@@ -352,6 +363,8 @@ class Parser:  # all mutable state
             "sleep": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Null(), do= True)),
             "parallel": Scope.Type(True, parallel),
             "serial": Scope.Type(True, serial),
+            "Some": Scope.Type(True, FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
+            "None": Scope.Type(True, Maybe),
         }]}
 
         self.iter = 0
@@ -389,6 +402,7 @@ class Parser:  # all mutable state
                 "Atom": Atom,
                 "Lens": Lens,
                 "Any": All,
+                "Maybe": Maybe,
             }
         }
 
@@ -396,13 +410,15 @@ class Parser:  # all mutable state
         self.tokens = tokens
 
     def parse(self):
-        #print(self.global_target)
-
         tokens = self.tokens
         filenames = self.filename
 
         for i in range(len(tokens)):
             PackageParser.packDec(self, filenames[i][0])
+            print("=======")
+            print(self.package)
+            print(self.global_target)
+
             self._parse(tokens[i], filenames[i][1])
 
             #self.imports = []

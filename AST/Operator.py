@@ -26,6 +26,18 @@ class Operator(Node):
             self.nodes[0].compileToJS(codegen)
             codegen.append(")")
             return
+        elif self.kind == ">>":
+            codegen.append("function(")
+            names = ",".join([codegen.getName() for i in self.nodes[0].type.args])
+            codegen.append(names)
+            codegen.append("){return ")
+            self.nodes[1].compileToJS(codegen)
+            codegen.append("(")
+            self.nodes[0].compileToJS(codegen)
+            codegen.append("("+names+"))}")
+            return
+
+            #todo: implement do function
 
         yilds = Tree.yields(self) and not self.partial and not self.curry
         if yilds:
@@ -172,7 +184,7 @@ class Operator(Node):
             ">="
         ]
 
-        if i.kind in ["|>", "concat"] : return
+        if i.kind in ["|>", ">>", "concat"] : return
 
         if not i.opT.name in operators or i.curry or i.partial:
             if unary:

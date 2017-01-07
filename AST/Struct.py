@@ -53,6 +53,7 @@ class Type(Node):
         return ""
 
     def compileToJS(self, codegen):
+        #print("compiling struct " + self.package + "." + self.name)
         names = [codegen.getName() for i in self.fields]
         codegen.out_parts.append("function "+self.package+"_"+self.normalName+"("+",".join(names)+"){")
         for i in range(len(self.fields)):

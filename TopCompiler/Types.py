@@ -33,6 +33,8 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
             parser.nextToken()
 
         return Tuple(args)
+    elif token == "enum":
+        return EnumT()
     elif token == "[":
         incrScope(parser)
         if parser.lookInfront().token != "]":
@@ -176,6 +178,16 @@ class Type:
 
     def hasMethod(self, parser, field): pass
 
+
+class EnumT:
+    def __init__(self):
+        self.name = "enumT"
+        self.types = {}
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if not type(other) is Types.Enum:
+            self.error("type "+str(self)+" is not a enum")
+
 class StructInit(Type):
     def __init__(self, name):
         self.name= name+" type"
@@ -307,7 +319,7 @@ class Tuple(Type):
                 beforeError(e, "Tuple element #" + key + ": ")
 
 class Array(Pointer):
-    def __init__(self, mutable, elemT):
+    def __init__(self, mutable, elemT, empty=False):
         self.name = ("mut " if mutable else "") + "[]"+elemT.name
 
         self.elemT = elemT
@@ -317,6 +329,7 @@ class Array(Pointer):
 
         self.mutable = mutable
         self.__types = None
+        self.empty = empty
 
     @property
     def types(self):
@@ -357,6 +370,10 @@ class Array(Pointer):
         if not type(other) is Array:
             mynode.error("expecting array type "+str(self)+" not "+str(other))
 
+        if other.empty:
+            return
+
+
         try:
             self.elemT.duckType(parser, other.elemT, node, mynode, iter)
         except EOFError as e:
@@ -387,6 +404,8 @@ class Interface(Type):
         except:
             mynode.error("expecting type "+str(self)+" not "+str(other))
 
+        notInField = False
+
         i = 0
         try:
             for field in self.types:
@@ -401,10 +420,15 @@ class Interface(Type):
                             self.types[field].duckType(parser, meth, node, mynode, iter)
                             #mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
                     else:
+                        notInField = True
                         mynode.error("type "+str(other)+" missing field "+field+" to be upcasted to "+str(self))
+
                 i += 1
         except EOFError as e:
-            beforeError(e, "Field '" + field + "' in " + str(other) + ": ")
+            if notInField:
+                beforeError(e, "")
+            else:
+                beforeError(e, "Field '" + field + "' in " + str(other) + ": ")
 
 class T(Type):
     def __init__(self, name, typ, owner):
@@ -546,7 +570,11 @@ def replaceT(typ, gen):
 
         return Interface(False, types)
     elif type(typ) is Enum:
-        return Enum(typ.package, typ.normalName, typ.const, gen)
+        const = coll.OrderedDict()
+
+        for name in typ.const:
+            const[name] = [replaceT(i, gen) for i in typ.const[name]]
+        return Enum(typ.package, typ.normalName, const, gen)
     elif isGeneric(typ):
         if type(typ) is Array:
             return Array(False, replaceT(typ.elemT, gen))

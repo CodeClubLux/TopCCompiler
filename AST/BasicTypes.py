@@ -53,17 +53,23 @@ class String(Node):
 
         self.string = string
         self.type = Types.String(len(string))
+        self.target = parser.global_target
 
     def __str__(self):
         return self.string
 
     def toString(self):
-        return self.string.replace("<", "&lt"). \
-            replace(">", "&gt"). \
-            replace("\\t", "&nbsp" * 4). \
-            replace("\n", ""). \
-            replace("\\{", "{"). \
-            replace("\\}", "}")
+        if self.target == "node":
+            return self.string.\
+                replace("\\{", "{"). \
+                replace("\\}", "}")
+        else:
+            return self.string.replace("<", "&lt"). \
+                replace(">", "&gt"). \
+                replace("\\t", "&nbsp" * 4). \
+                replace("\n", ""). \
+                replace("\\{", "{"). \
+                replace("\\}", "}")
 
     def compileToJS(self, codegen):
         codegen.append(self.toString())

@@ -1,34 +1,49 @@
 import "http"
 
-def fib(n: int) int =
-    if n < 2 then n
-    else (fib n-2) + (fib n-1)
+ext _read: |string| do Maybe[string] = "server_readFile"
+ext quit: |int| -> string = "process.exit"
 
-def println(s: string) do
-    log s
-
-type FS =
-    open: |string, string| -> string
-
-type Maybe[T] either
-    Some(T)
-    None
-
-ext fs: FS = "require('fs')"
-ext read: |string| do string = "function(f,next)\{main_fs.readFile(f,'utf8',function(e,res)\{next(res)\})\}"
+def read(path: string) string do
+    match _read path with
+        Some x ->
+            x
+        None ->
+            log "cannot find file, "+path
+            quit 1
 
 let htmlFile = read "Simulation.html"
+let logo = read "images/variation.png"
+let async = read "images/async.png"
+let tools = read "images/tools.png"
+let favicon = read "images/arrow.ico"
+let error = read "images/error.png"
 
-def requestHandler(req: http.Request, res: http.Response) do
-    log "server request, "+req.url
-    http.end-response res, if req.url == "/" then htmlFile else ""
+def requestHandler(req: http.Request) http.Response do
+    log "request, "+req.url
+
+    if req.url == "/" then
+        http.response {body = htmlFile, content-type = "text/html"}
+    elif req.url == "/arrow.png" then
+        http.response {body = logo, content-type = "image/png"}
+    elif req.url == "/async.png" then
+        http.response {body = async, content-type = "image/png"}
+    elif req.url == "/tools.png" then
+        http.response {body = tools, content-type = "image/png"}
+    elif req.url == "/favicon.ico" then
+        http.response {body = favicon, content-type = "image/x-icon"}
+    elif req.url == "/error.png" then
+        http.response {body = error, content-type = "image/png"}
+    else
+        http.response {status= 404, body = "File not found"}
 
 ext port: int = "process.env.PORT || 3000"
 
 let server = http.server requestHandler
+
 server.listen port
 
 log "started web server on port {port}"
 
-
-
+let i = match "string" with
+    "string" -> "ok"
+    _ -> "err"

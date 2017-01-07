@@ -281,10 +281,12 @@ def start(run= False, dev= False, init= False, hotswap= False):
                 import AST as Tree
                 allCode = Tree.Root()
 
+                """
                 if opt > 0:
                     for d in parser.compiled:
                         allCode.addNode(parser.compiled[d][1][0])
                     optimize(allCode, opt)
+                """
 
                 #print("parsing")
 
@@ -307,6 +309,12 @@ def start(run= False, dev= False, init= False, hotswap= False):
             elif dev:
                 return (False, "")
 
+        def iterate(_target):
+            fil = filenames[_target]
+            sour = sources[_target]
+
+            compile(_target, sour, fil, decl)
+
         if target == "full":
             fil = filenames["full"]
             sour = sources["full"]
@@ -317,15 +325,10 @@ def start(run= False, dev= False, init= False, hotswap= False):
             decl = decl[2]
             #print(decl)
 
-        for _target in filenames:
-            if _target == "full" or (target != "full" and _target != target):
-                continue
-
-
-            fil = filenames[_target]
-            sour = sources[_target]
-
-            compile(_target, sour, fil, decl)
+            iterate("client")
+            iterate("node")
+        else:
+            iterate(target)
 
     except EOFError as e:
         if dev:

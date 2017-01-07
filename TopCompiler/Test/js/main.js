@@ -5,7 +5,7 @@ window.clearElement = function(elem) {
     elem.innerHTML = ""
 }
 
-window.html_h = function (type, attrib, children) {
+window.html_hyper = function (type, attrib, children) {
     var at = {}
     for (var i = 0; i < attrib.length; i++) {
         if (typeof attrib[i].value === "function") {
@@ -122,3 +122,78 @@ window.core_fps = function core_fps(update, maxFPS) {
     }
     requestAnimationFrame(_fps);
 }
+
+function isElementInViewport (el) {
+
+    //special bonus for those using jQuery
+    if (typeof jQuery === "function" && el instanceof jQuery) {
+        el = el[0];
+    }
+
+    var rect = el.getBoundingClientRect();
+
+    return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) && /*or $(window).height() */
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
+    );
+}
+
+function isElementInViewport (el) {
+    var rect = el.getBoundingClientRect();
+
+    return (
+        rect.bottom - 100 < (window.innerHeight || document.documentElement.clientHeight)
+    )
+
+    /*or $(window).height() */
+        //rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
+    //);
+}
+
+function onVisibilityChange(el, callback) {
+    var old_visible = false;
+    return function () {
+        if (!old_visible) {
+            if (isElementInViewport(el)) {
+                old_visible = true;
+                callback();
+            }
+        }
+    }
+}
+
+var handlers = [];
+
+var handler = function () {
+    var l = handlers.length;
+    for (var i = 0; i < l; i++) {
+        console.log(i);
+        handlers[i]();
+    }
+}
+
+window.html_handle = handler;
+
+window.html_addClassOnVisible = function html_addClassOnVisible(el, className, next) {
+    handlers.push(onVisibilityChange(el, function() {
+        el.className += " "+className;
+    }))
+    next();
+};
+
+if (window.addEventListener) {
+    addEventListener('DOMContentLoaded', handler, false);
+    addEventListener('load', handler, false);
+    addEventListener('scroll', handler, false);
+    addEventListener('resize', handler, false);
+} else if (window.attachEvent)  {
+    attachEvent('onDOMContentLoaded', handler); // IE9+ :(
+    attachEvent('onload', handler);
+    attachEvent('onscroll', handler);
+    attachEvent('onresize', handler);
+}
+
+
+

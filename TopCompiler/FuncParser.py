@@ -42,7 +42,12 @@ def generics(parser, fname):
 
         if parser.thisToken().token == ":":
             parser.nextToken()
-            typ = Types.T(name, Types.parseType(parser), parser.package+"."+fname)
+            interface = Types.parseType(parser)
+
+            if not type(interface) in [Types.Interface, Types.EnumT]:
+                Error.parseError(parser, "Type variable "+name+", must either be a interface or enumT, not "+str(interface))
+
+            typ = Types.T(name, interface, parser.package+"."+fname)
 
             if parser.lookInfront().token != "]":
                 parser.nextToken()
@@ -259,9 +264,6 @@ def funcCallBody(parser, paren):
             ExprParser.endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             continue
-
-        if t.token == "|>":
-            break
 
         Parser.callToken(parser)
 

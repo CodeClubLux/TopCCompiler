@@ -205,6 +205,14 @@ function defer(func) {
     }
 }
 
+function Some(x) {
+    return [0, x];
+}
+
+function None() {
+    return [0];
+}
+
 function sleep(time, callback) {
     setTimeout(callback, time);
 }

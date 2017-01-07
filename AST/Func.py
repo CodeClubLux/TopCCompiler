@@ -183,13 +183,12 @@ syncFuncs = [
 ]
 
 def yields(i):
-    if type(i) is Tree.FuncCall and i.nodes[0].type.do:
+    if type(i) is Tree.FuncCall and i.nodes[0].type.do and not (i.curry or i.partial):
         if not (type(i.nodes[0]) is Tree.ReadVar and i.nodes[0].name in syncFuncs):
             return True
     elif type(i) is Tree.Operator and i.kind == "<-":
         return True
     return False
-
 
 def transform(body):
     outer_scope = [body]
@@ -328,7 +327,9 @@ class FuncCall(Node):
                     missing.append(names[i])
                 else:
                     partial.append(names[i])
-
+            if self.nodes[0].type.do:
+                names.append(codegen.getName())
+                missing.append(names[-1])
             codegen.append("(function("+",".join(partial)+"){return function("+",".join(missing)+"){")
             codegen.append("return ")
             self.nodes[0].compileToJS(codegen)
