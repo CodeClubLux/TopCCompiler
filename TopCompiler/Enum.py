@@ -4,6 +4,7 @@ from TopCompiler import Types
 from TopCompiler import Scope
 from TopCompiler import Struct
 from TopCompiler import FuncParser
+from TopCompiler import ExprParser
 import AST as Tree
 import collections as coll
 
@@ -66,6 +67,8 @@ def checkCase(parser, case, typ, first=False):
         if not (type(typ) is Types.Enum or case.nodes[0].name in typ.const):
             case.nodes[0].error("unknown pattern")
 
+        if not case.nodes[0].name in typ.const:
+            case.nodes[0].error("no such variable "+case.nodes[0].name)
         pattern = typ.const[case.nodes[0].name]
 
         for iter in range(1, len(case.nodes)):
@@ -78,6 +81,13 @@ def checkCase(parser, case, typ, first=False):
         if not (type(typ) is Types.Enum or case.nodes[0].name in typ.const):
             case.nodes[0].error("unknown pattern")
         case.type = typ
+    elif type(case) is Tree.Operator and case.kind == "or" and not case.curry and not case.partial:
+        typT = case.nodes[0].type
+        if typT != case.nodes[1].type:
+            case.nodes[1].error("expecting type to be "+str(typ)+" and not "+str(case.nodes[1]))
+
+        if typT != typ:
+            case.error("expecting result of or, to be of type "+str(typ))
     elif type(case) in [Tree.String, Tree.Int, Tree.Float]:
         if case.type != typ:
             case.error("expecting type "+str(case.type)+", not "+str(typ))
@@ -102,6 +112,8 @@ def match(parser):
     while not Parser.isEnd(parser):
         t = parser.nextToken()
         if t.token == "->":
+            ExprParser.endExpr(parser)
+
             #print("entered ->")
             if len(self.nodes) == 0:
                 Error.parseError(parser, "unexpected ->")

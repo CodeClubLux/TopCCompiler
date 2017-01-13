@@ -2,7 +2,7 @@ window.virtualDom = require("virtual-dom");
 //require("./three_wrapper");
 
 window.clearElement = function(elem) {
-    elem.innerHTML = ""
+    elem.innerHTML = "";
 }
 
 window.html_hyper = function (type, attrib, children) {
@@ -18,6 +18,18 @@ window.html_hyper = function (type, attrib, children) {
 
     var res = virtualDom.h(type, at, children);
     return res;
+}
+
+window._html_onUrlChange = function _html_onUrlChange(func, next) {
+    window.addEventListener('hashchange', function(){
+        func(window.location.hash.slice(1), function(){})
+    })
+    next();
+}
+
+window._nextTick = function(func, next) {
+    requestAnimationFrame(func.bind(null, function(){}));
+    next();
 }
 
 var _svg_h = require('virtual-hyperscript-svg');
@@ -37,6 +49,21 @@ window.svg_h = function (type, attrib, children) {
     return res;
 }
 
+window._http_get = function _http_get(url, next) {
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4) {
+            next({
+                body: xmlHttp.responseText,
+                status: xmlHttp.status,
+                contentType: xmlHttp.contentType,
+            })
+        }
+    }
+    xmlHttp.open("GET", url, true); // true for asynchronous
+    xmlHttp.send(null);
+}
+
 window.core_watcher = function (a, b) {
     a.watch(b);
 }
@@ -52,14 +79,6 @@ Thunk.prototype.render = render;
 
 function render(previous) {
     if (!previous || previous.arg !== this.arg || previous.key !== this.key) {
-        if (previous) {
-            console.log("---------")
-            console.log(previous.key);
-            console.log(this.key);
-            console.log("=========")
-            console.log(previous.arg);
-            console.log(this.arg);
-        }
         return this.fn(this.arg, this.key);
     } else {
         return previous.vnode;
@@ -82,7 +101,6 @@ window.http_get = function (theUrl, callback)
 }
 
 window.json_prettify = function (obj, indent) {
-    console.log(obj);
     return JSON.stringify(JSON.parse(obj), null, indent);
 }
 
@@ -169,7 +187,6 @@ var handlers = [];
 var handler = function () {
     var l = handlers.length;
     for (var i = 0; i < l; i++) {
-        console.log(i);
         handlers[i]();
     }
 }

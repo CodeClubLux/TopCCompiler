@@ -45,6 +45,7 @@ class Root:
         self.nodes = []
         self.type = Types.Null()
         self.names = []
+        self.global_target = "full"
 
         self.name = ""
         self.inline = False
@@ -122,6 +123,8 @@ class Node(Root):  # partially immutable data structure
         self.filename = parser.filename
         self.curry = False
         self.repl = parser.repl
+
+        self.global_target = parser.global_target
 
     def error(self, message):
         Error.errorAst(message, self.selfpackage, self.filename, self.token)

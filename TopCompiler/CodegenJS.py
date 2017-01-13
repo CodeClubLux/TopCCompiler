@@ -11,7 +11,7 @@ import os
 import copy
 
 class CodeGen:
-    def __init__(self, filename, tree, externFunctions, main= True):
+    def __init__(self, filename, tree, externFunctions, target, main= True):
         self.tree = tree
         self.filename = filename
 
@@ -19,6 +19,15 @@ class CodeGen:
 
         self.out_parts = []
         self.main_parts = []
+
+        self.global_target = target
+        self.target = target
+
+        self.client_out_parts = []
+        self.client_main_parts = []
+
+        self.node_out_parts = []
+        self.node_main_parts = []
 
         self.main = ""
 
@@ -51,10 +60,12 @@ class CodeGen:
         #variable declarations
         self.inAFunction = True
         for i in tree.before:
+            self.target = i.global_target
             i.compileToJS(self)
         self.inAFunction = False
 
         for i in tree:
+            self.target = i.global_target
             i.compileToJS(self)
 
     def toEvalHelp(self):
@@ -95,20 +106,34 @@ class CodeGen:
     def decrScope(self):
         self.names.pop()
 
-    def toJS(self, target):
-        main = self.filename == "main"
+    def toJS(self, _target):
+        def _compile(out, main, target):
+            return "function " + str(self.filename) + "_" + target + "Init(){var " + self.tree._context + "=0;" + \
+                  "return function " + self.tree._name + "(" + self.tree.res + "){" + \
+                  "while(1){switch (" + self.tree._context + "){case 0:" + main + "return;}}}()}" + \
+                  out
 
-        self.toJSHelp()
+        if _target == "full":
+            main = self.filename == "main"
 
-        self.out = "".join(self.out_parts)
-        self.main = "".join(self.main_parts)
+            self.toJSHelp()
 
-        out = "function "+self.filename+"_"+target+"Init(){var "+self.tree._context+"=0;"+\
-            "return function "+self.tree._name+"("+self.tree.res+"){"+\
-            "while(1){switch ("+self.tree._context+"){case 0:"+self.main+"return;}}}()}"+\
-            self.out
+            self.node_out = "".join(self.node_out_parts)
+            self.node_main = "".join(self.node_main_parts)
 
-        return out
+            self.client_out = "".join(self.client_out_parts)
+            self.client_main = "".join(self.client_main_parts)
+
+            return (_compile(self.node_out, self.node_main, "node"), _compile(self.client_out, self.client_main, "client"))
+        else:
+            main = self.filename == "main"
+
+            self.toJSHelp()
+
+            self.out = "".join(self.out_parts)
+            self.main = "".join(self.main_parts)
+
+            return _compile(self.out, self.main, self.global_target)
 
     def toEval(self):
         main = "main"
@@ -122,14 +147,33 @@ class CodeGen:
             return self.main
         return self.out + ";" + self.main
 
-
     def append(self, value):
         if value is None:
             raise Error.error("expecting type string and got none, internal error")
-        if self.inAFunction:
-            self.out_parts.append(value)
-        else:
-            self.main_parts.append(value)
+
+        if self.target == self.global_target:
+            if self.global_target == "full":
+                if self.inAFunction:
+                    self.client_out_parts.append(value)
+                    self.node_out_parts.append(value)
+                else:
+                    self.client_main_parts.append(value)
+                    self.node_main_parts.append(value)
+            else:
+                if self.inAFunction:
+                    self.out_parts.append(value)
+                else:
+                    self.main_parts.append(value)
+        elif self.target == "client":
+            if self.inAFunction:
+                self.client_out_parts.append(value)
+            else:
+                self.client_main_parts.append(value)
+        elif self.target == "node":
+            if self.inAFunction:
+                self.node_out_parts.append(value)
+            else:
+                self.node_main_parts.append(value)
 
     def inFunction(self):
         self.inAFunction = True
@@ -142,15 +186,34 @@ class CodeGen:
         self.inAFunction = False
         self.info.reset(self._level, self._pointer)
 
-    def compile(self, opt= 0, target="browser"):
-        js = self.toJS(target)
+    def compile(self, opt= 0):
+        target = self.global_target
 
-        try:
-            f = open("lib/"+self.filename.replace("/", ".") + "-" + target + ".js", mode="w")
-            f.write(js)
-            f.close()
-        except:
-            Error.error("Compilation failed")
+        if target == "full":
+            (node, client) = self.toJS(target)
+
+            try:
+                f = open("lib/"+self.filename.replace("/", ".") + "-node.js", mode="w")
+                f.write(node)
+                f.close()
+            except:
+                Error.error("Compilation failed")
+
+            try:
+                f = open("lib/"+self.filename.replace("/", ".") + "-client.js", mode="w")
+                f.write(client)
+                f.close()
+            except:
+                Error.error("Compilation failed")
+        else:
+            js = self.toJS(target)
+
+            try:
+                f = open("lib/"+self.filename.replace("/", ".") + "-node.js", mode="w")
+                f.write(js)
+                f.close()
+            except:
+                Error.error("Compilation failed")
 
 def getRuntime():
     runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime.js"
@@ -164,18 +227,16 @@ def getRuntimeNode():
 
 def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
     linked = '';
-    if opt == 3 and target != "full":
+    if opt == 3:
         linked += "(function () {"
     import sys
-    runtime = getRuntime() if target == "browser" else getRuntimeNode()
+    runtime = getRuntime() if target == "client" else getRuntimeNode()
 
-    if target == "full":
-        runtime = ""
     linked += runtime
 
     array = []
     #print("====", target)
-    for i in linkWith + (["bin/"+output+"-full.js"] if target != "full" else []):
+    for i in linkWith:
         try:
             f = open(i, mode="r")
         except:

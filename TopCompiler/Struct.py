@@ -14,7 +14,7 @@ from TopCompiler import FuncParser
 from TopCompiler import Enum
 
 class Struct:
-    def __init__(self, name, fieldType, actualfields, gen):
+    def __init__(self, name, fieldType, actualfields, gen, node):
         self.fieldType = fieldType
 
         self.offsets = {}
@@ -24,6 +24,8 @@ class Struct:
 
         self.name = name
         self.normalName = name
+
+        self.node = node
 
         for i in range(len(actualfields)):
             self.offsets[actualfields[i].name] = i
@@ -52,10 +54,12 @@ class Struct:
             if name in self.methods[i]:
                 b = self.methods[i][name]
                 b.package = i
-                packages.append(i)
+
+                if not i in packages:
+                    packages.append(i)
 
         if len(packages) > 1:
-            Error.parseError(parser, "ambiguous, multiple definitions of the method "+self.name+"."+name+" in packages: "+", ".join(packages[:-1])+" and "+packages[-1])
+            self.node.error("ambiguous, multiple definitions of the method "+self.name+"."+name+" in packages: "+", ".join(packages[:-1])+" and "+packages[-1])
 
         return b
 
@@ -114,7 +118,8 @@ def typeParser(parser, decl= False):
 
     if decl:
         meth = parser.structs[parser.package][name].methods
-        parser.structs[parser.package][name] = Struct(name, args, fields, gen)
+
+        parser.structs[parser.package][name] = Struct(name, args, fields, gen, typ)
         parser.structs[parser.package][name].methods = meth
         parser.structs[parser.package][name].package = parser.package
 

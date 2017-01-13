@@ -12,5 +12,16 @@ function print(s) {
     stdout.innerHTML += s
 }
 
+function println_unop(s, next) {
+    stdout.innerHTML += s.toString()+"<br>"
+    next();
+}
+
+function print_unop(s, next) {
+    stdout.innerHTML += s
+    next();
+}
+
+
 
 

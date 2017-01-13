@@ -11,6 +11,10 @@ function server_readFile(f,next) {
     })
 }
 
+function _http_get(url, next) {
+    http.get({path: url}, next);
+}
+
 function server_createServer(func) {
     return http.createServer(function (req, res) {
         func(req, function (_res) {
@@ -18,4 +22,22 @@ function server_createServer(func) {
             res.end(_res.body, _res.encoding);
         })
     })
+}
+
+function server_handleQuery(url, func, next) {
+        var req = url.slice(url.indexOf("/", 2)+1);
+        req = JSON.parse(req);
+        req[req.length-1] = function (res) {
+            return {
+                body: JSON.stringify(res),
+                status: 200,
+                contentType: "text",
+            }
+        };
+
+        func(req, next);
+}
+
+function server_isQuery(url) {
+    return url.slice(1, url.indexOf("/", 2)) === "query"
 }

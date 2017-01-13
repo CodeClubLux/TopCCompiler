@@ -89,6 +89,7 @@ from .MethodParser import *
 from .Struct import *
 from .TypeInference import *
 from .Enum import *
+from .ParseJson import *
 
 def isEnd(parser):
     token = parser.thisToken()
@@ -360,11 +361,14 @@ class Parser:  # all mutable state
             "All": Scope.Type(True, All),
             "newAtom": Scope.Type(True, Types.FuncPointer([T], Atom, coll.OrderedDict([("Atom.T", T)]))),
             "defer": Scope.Type(True, defer),
-            "sleep": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Null(), do= True)),
+            "sleep": Scope.Type(True, Types.FuncPointer([Types.Float()], Types.Null(), do= True)),
             "parallel": Scope.Type(True, parallel),
             "serial": Scope.Type(True, serial),
             "Some": Scope.Type(True, FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
             "None": Scope.Type(True, Maybe),
+            "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
+            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
+            "jsonStringify": Scope.Type(True, Types.FuncPointer([All], Types.String(0))),
         }]}
 
         self.iter = 0
@@ -415,10 +419,6 @@ class Parser:  # all mutable state
 
         for i in range(len(tokens)):
             PackageParser.packDec(self, filenames[i][0])
-            print("=======")
-            print(self.package)
-            print(self.global_target)
-
             self._parse(tokens[i], filenames[i][1])
 
             #self.imports = []

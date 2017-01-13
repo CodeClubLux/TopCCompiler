@@ -73,7 +73,7 @@ class IfCondition(Node):
             self.nodes[0].compileToJS(codegen)
             codegen.append("?")
         else:
-            codegen.append(""+("else " if self.owner.nodes[0] != self else "")+"if(")
+            codegen.append(""+("else " if self.owner.nodes[0] != self and not self.owner.yielding else "")+"if(")
             self.nodes[0].compileToJS(codegen)
             codegen.append("){")
 
@@ -185,6 +185,14 @@ class WhileBlock(Node):
     def validate(self, parser):
         checkUseless(self)
 
+import AST
+
+def actuallyYields(node):
+    for i in node:
+        if AST.yields(i):
+            return True
+    return False
+
 class Block(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
@@ -197,7 +205,10 @@ class Block(Node):
     def case(self, codegen, number):
         codegen.append("}")
 
-        num = codegen.count + 1
+        if len(self.owner.nodes) > 2:
+            num = codegen.count + 1
+        else:
+            num = self.owner.ending
 
         codegen.count += 1
         codegen.append(self.body._context + "=" + str(num) + ";break;")
@@ -223,10 +234,8 @@ class Block(Node):
             else:
                 if not (type(self.nodes[-1]) is Tree.FuncCall and self.nodes[-1].nodes[0].type.do):
                     codegen.append(self.body.res+"=")
-                self.nodes[-1].compileToJS(codegen)
 
-                if self == self.owner.nodes[-1]:
-                    codegen.append(";}")
+                self.nodes[-1].compileToJS(codegen)
         else:
             for i in self.nodes:
                 i.compileToJS(codegen)
@@ -235,6 +244,12 @@ class Block(Node):
 
         if self.yielding:
             codegen.append(";"+self.body._context + "=" + self.owner.ending + ";/*block*/break;")
+
+            if len(self.nodes) == 0:
+                codegen.append("}")
+
+            if not actuallyYields(self):
+                codegen.append("}")
 
     def validate(self, parser):
         checkUseless(self)

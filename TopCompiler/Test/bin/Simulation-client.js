@@ -1,3 +1,31 @@
+function log(s){
+    console.log(s.toString())
+}
+
+var stdout = document.getElementById("code")
+
+function println(s) {
+    stdout.innerHTML += s.toString()+"<br>"
+}
+
+function print(s) {
+    stdout.innerHTML += s
+}
+
+function println_unop(s, next) {
+    stdout.innerHTML += s.toString()+"<br>"
+    next();
+}
+
+function print_unop(s, next) {
+    stdout.innerHTML += s
+    next();
+}
+
+
+
+
+
 function operator_add(x,y) {return x.operator_add(y)}
 function operator_sub(x,y) {return x.operator_sub(y)}
 function operator_mul(x,y) {return x.operator_mul(y)}
@@ -10,7 +38,7 @@ function operator_gt(x,y) {return x.operator_gt(y)}
 function operator_or(x,y) {return x || y}
 function operator_not(x) {return !x}
 function operator_and(x,y) { return x && y }
-
+function operator_ne(x,y) { return x.operator_ne(y) }
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
@@ -23,10 +51,13 @@ Number.prototype.operator_eq = function (other) { return this == other }
 Number.prototype.operator_mod = function (other) { return this % other }
 Number.prototype.operator_lt = function (other) { return this < other }
 Number.prototype.operator_gt = function (other) { return this > other }
+Number.prototype.operator_ne = function (other) { return this != other }
+
 Number.prototype.toFloat = function () { return this }
 Number.prototype.toInt = function () { return this | 0 }
 
 String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_ne = function (other) { return this != other }
 String.prototype.operator_add = function (other) { return this + other }
 function toString(s) {
     return s.toString()
@@ -64,6 +95,11 @@ function min(a,b) {
 
 function max(a,b) {
     return a > b ? a : b
+}
+
+function log_unop(v, next) {
+    console.log(v);
+    return next()
 }
 
 function len(x) {
@@ -262,6 +298,60 @@ function serial(funcs, next) {
 
 function core_assign(construct, obj) {
     return Object.assign(new construct.constructor(), construct, obj);
+}
+
+function core_json_int(obj) {
+    return obj | 0;
+}
+
+function core_json_float(obj) {
+    return Number(obj);
+}
+
+function core_json_bool(obj) {
+    return !!obj;
+}
+
+function core_json_string(obj) {
+    return ""+obj;
+}
+
+function core_json_struct(constr, array) {
+    return function(realObj) {
+        var len = array.length;
+        var obj = new constr();
+        for (var i = 0; i < len; i++) {
+            var arr = array[i];
+            obj[arr[0]] = arr[1](realObj[arr[0]]);
+        }
+        return obj;
+    }
+}
+
+function core_json_interface(array) {
+    return function (realObj) {
+        var obj = {};
+        for (var i = 0; i < len; i++) {
+            var arr = array[i];
+            obj[arr[0]] = arr[1](realObj[arr[0]]);
+        }
+        return obj;
+    }
+}
+
+function core_json_vector(decoder) {
+    return function (realObj) {
+        return fromArray(realObj.map(decoder));
+    }
+}
+
+function core_parseJSON(str, decoder) {
+    var obj = JSON.parse(str);
+    return decoder(obj);
+}
+
+function jsonStringify(i) {
+    return JSON.stringify(i);
 }
 //linked list
 /*
@@ -520,6 +610,10 @@ Vector.prototype.get = function (key) {
           node = node[(key >> level) & mask]
     }
     return node[key & mask]
+}
+
+Vector.prototype.toJSON = function() {
+    return this.toArray();
 }
 
 Vector.prototype.append_m = function (value) {
@@ -843,7 +937,7 @@ window.virtualDom = require("virtual-dom");
 //require("./three_wrapper");
 
 window.clearElement = function(elem) {
-    elem.innerHTML = ""
+    elem.innerHTML = "";
 }
 
 window.html_hyper = function (type, attrib, children) {
@@ -859,6 +953,18 @@ window.html_hyper = function (type, attrib, children) {
 
     var res = virtualDom.h(type, at, children);
     return res;
+}
+
+window._html_onUrlChange = function _html_onUrlChange(func, next) {
+    window.addEventListener('hashchange', function(){
+        func(window.location.hash.slice(1), function(){})
+    })
+    next();
+}
+
+window._nextTick = function(func, next) {
+    requestAnimationFrame(func.bind(null, function(){}));
+    next();
 }
 
 var _svg_h = require('virtual-hyperscript-svg');
@@ -878,6 +984,21 @@ window.svg_h = function (type, attrib, children) {
     return res;
 }
 
+window._http_get = function _http_get(url, next) {
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (xmlHttp.readyState == 4) {
+            next({
+                body: xmlHttp.responseText,
+                status: xmlHttp.status,
+                contentType: xmlHttp.contentType,
+            })
+        }
+    }
+    xmlHttp.open("GET", url, true); // true for asynchronous
+    xmlHttp.send(null);
+}
+
 window.core_watcher = function (a, b) {
     a.watch(b);
 }
@@ -893,14 +1014,6 @@ Thunk.prototype.render = render;
 
 function render(previous) {
     if (!previous || previous.arg !== this.arg || previous.key !== this.key) {
-        if (previous) {
-            console.log("---------")
-            console.log(previous.key);
-            console.log(this.key);
-            console.log("=========")
-            console.log(previous.arg);
-            console.log(this.arg);
-        }
         return this.fn(this.arg, this.key);
     } else {
         return previous.vnode;
@@ -923,7 +1036,6 @@ window.http_get = function (theUrl, callback)
 }
 
 window.json_prettify = function (obj, indent) {
-    console.log(obj);
     return JSON.stringify(JSON.parse(obj), null, indent);
 }
 
@@ -1010,7 +1122,6 @@ var handlers = [];
 var handler = function () {
     var l = handlers.length;
     for (var i = 0; i < l; i++) {
-        console.log(i);
         handlers[i]();
     }
 }
@@ -3230,7 +3341,6 @@ function extend() {
 },{}],45:[function(require,module,exports){
 
 },{}]},{},[1]);
-;
-function main_fullInit(){var d=0;return function c(b){while(1){switch (d){case 0:return;}}}()}function main_map(c, d){return (d).map(c);}function main_filter(c, d){return (d).filter(c);}function main_reduce(c, d){return (d).reduce(c);}function main_comp(c, d){return c(d);}function main_zip(c, d){var f;f = newVector();var g;g = 0;
-while((g<(c).length)){f=(f).append((newVector(c.get(g),d.get(g))));g=((g+1)|0);}return f;}function main_append(c, d){return (d).append(c);}function main_first(c){return c.get(0);}function main_toEffect(c){function d(f,g){var k=0;return function j(h){while(1){switch(k){case 0:return g(c(f));}}}()}return d;}main_fullInit();
-function html_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_hyper);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_hr = html_h.bind(null,"hr");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = newVector();html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_ul = html_h.bind(null,"ul");html_li = html_h.bind(null,"li");html_a = html_h.bind(null,"a");html_image = html_h.bind(null,"img");html__appendChild = toAsync(html_appendChild);html__handle = html_handle;html_animateOnVisible = html_addClassOnVisible;return;}}}()}var html_style;var html_placeHolder;var html_position;var html__type;var html_height;var html_width;var html_id;var html_min;var html_max;var html_step;var html_value;var html_href;var html_src;var html__float;var html_class;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_hr;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;var html_ul;var html_li;var html_a;var html_image;var html__appendChild;var html__handle;var html_animateOnVisible;function html_PosAtom(f,g){this.a=f;this.pos=g;}html_PosAtom.fields=newVector("a","pos");html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(d,f){var j=0;return function h(g){while(1){switch(j){case 0:j=1;return (d).a.unary_read(h);case 1:;return f(((d).pos).query(g));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=2;return (f).a.unary_read(k);case 2:;l=3;return ((f).a).operator_set(((f).pos).set(j,g),k);case 3:return h(j);}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:function m(n,p){var s=0;return function r(q){while(1){switch(s){case 0:s=4;return (f).a.unary_read(r);case 4:;s=5;return g(((f).pos).query(q),r);case 5:return p(q);}}}()}l=6;return ((f).a).watch(m,k);case 6:return h(j);}}}()}function html_Event(h){this.target=h;}html_Event.fields=newVector("target");function html_Attribute(j,k){this.name=j;this.value=k;}html_Attribute.fields=newVector("name","value");function html_newAttrib(c, d){return new html_Attribute(c,d,d);}function html_onEvent(c, d, f){function g(h,j){var m=0;return function l(k){while(1){switch(m){case 0:m=7;return f.unary_read(l);case 7:;m=8;return d(k,h,l);case 8:m=9;return (f).operator_set(k,l);case 9:return j(k);}}}()}return new html_Attribute(c,g,g);}function html_async(c, d){function f(g){var k=0;return function j(h){while(1){switch(k){case 0:k=10;return d.unary_read(j);case 10:;k=11;return c(h,j);case 11:k=12;return (d).operator_set(h,j);case 12:return g(h);}}}()}return f;}function html_ignoreAct(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=13;return c(f,k);case 13:return h(j);}}}()}return d;}function html_withId(c){function d(f, g, h,j){var n;var m=0;return function l(k){while(1){switch(m){case 0:m=14;return c(g.get(f),h,l);case 14:n = (k);return j((g).set(f,n));}}}()}return d;}function html_mapWithId(c, d, f){function g(h){return c(d.get(h),h,f);}return (newVectorRange(0,(d).length)).map(g);}function html_mapView(c, d, f){function g(h){var j;j = d.get(h);var k;k = newLens(function(l){return l.get(h)}, function(m,l){return m.set(h,l)});var n;n = new html_PosAtom(f,k,k);return c(j,n);}return (newVectorRange(0,(d).length)).map(g);}function html_viewFromLens(c, d, f, g){return c(((f).query(d)),new html_PosAtom(g,f,f));}function html_render(c,d){var j;var k;var h=0;return function g(f){while(1){switch(h){case 0:j = html_createElement(c);k = html_cssSelector("#code");h=15;return html_clear(k,g);case 15:h=16;return html__appendChild(k,j,g);case 16:return d(j);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:return c();}}}()}function html_app(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:j=17;return d.unary_read(h);case 17:;k = c((g),d);j=18;return html_get(h);case 18:j=19;return html_render(k,h);case 19:l = g;function m(n,p){var t;var v;var s=0;return function r(q){while(1){switch(s){case 0:t = c(n,d);v = html_diff(k,t);s=20;return html_patch(l,v,r);case 20:l=q;html__handle();k=t;return p();}}}()}j=21;return (d).watch(m,h);case 21:return f(g);}}}()}function main_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html_clientInit();main_appState = newAtom(new main_App(newVector("EXAMPLES","DOCS","COMMUNITY","BLOG"),newVector(new main_Feature("fet0","A Simple Asynchronous Model","Top allows synchronous looking code to behave asynchronously under the hood.            Have the performance of callbacks without the pyramid of doom. Use the builtin high performance concurrent datastructes making concurrency a breeze","async.png","async.png"),new main_Feature("fet1","Batteries Included","The Top Compiler comes with great and simple to use tools, from automatically bundles and minifiying all javascript and css, to testing and benchmarking.            No need to setup complicated compilation pipelines, just use the builtin tools.            Even an easy to use live hot replacement tool is already included.","tools.png","tools.png"),new main_Feature("fet2","Safety","Thanks to top's functional nature and it's static type system runtime exceptions are rare.            Instead the compiler catches errors at compile time and helps the programmer locate them.            Furthermore, as Top is a full-stack language even requests to the server can be typed, eliminating pain stacking hours of incorrect queries.","error.png","error.png")),"All code for this site is written in Top, including the server - Lucas Goetz","All code for this site is written in Top, including the server - Lucas Goetz"));main_logo = "arrow.png";d=1;return html_app(main_render,main_appState,c);case 1:d=2;return main_appState.unary_read(c);case 2:;main_fets = ((b)).features;main_getId = newLens(function(n){return (n).id}, function(p,n){return Object.assign(new p.constructor(), p,{id:n})});main_elements = (main_fets).map((function(q){return html_cssSelector(function(r){return (operator_add.bind(null,"#"))((main_getId).query(r))}(q))}));d=3;return serial((main_elements).map(defer((function(t){return function(s,v){return html_animateOnVisible(s,t,v);}})("fade-in"))),c);case 3:return;}}}()}var main_appState;var main_logo;var main_fets;var main_getId;var main_elements;function main_Feature(f,g,h,j){this.id=f;this.name=g;this.description=h;this.image=j;}main_Feature.fields=newVector("id","name","description","image");function main_App(k,l,m){this.headers=k;this.features=l;this.footer=m;}main_App.fields=newVector("headers","features","footer");function main_navBar(c){function d(f){return html_li(newVector(html_class("nav-bar")),html_a(newVector(html_class("nav-bar")),f));}return html_ul(newVector(html_class("nav-bar")),newVector(html_li(html_noAttrib,html_image(newVector(html_src(main_logo),html_style("width:50px;height:50px;float:left;padding:10px;")),""))).operator_add((c).map(d)));}function main_features(c){function d(f){return html_li(newVector(html_class("container")),html_div(newVector((html_class("cleared")),(html_style("clear:both")),html_id((f).id)),newVector(html_h2(newVector(html_style("margin-left: 10%; margin-bottom: 2em;")),(f).name),html_div(newVector(),newVector(html_image(newVector(html_src((f).image),html_style("width: 50%; height: auto; float: right; padding-right: 10%; margin-left: 5%")),""),html_p(newVector(html_style("line-height: 150%; padding-left: 10%;")),(f).description))))));}return html_ul(newVector(html_class("feature")),(c).map(d));}function main_footer(c){return html_div(newVector(),newVector(html_hr(newVector(),""),html_h4(newVector(html_style("line-height: 5em; width: 100%; text-align: center; opacity: 0.4;")),c)));}function main_render(c, d){return html_div(html_noAttrib,newVector(html_div(newVector(html_class("background")),newVector(main_navBar((c).headers),html_h1(newVector(html_class("header")),"Top"),html_h3(newVector(html_class("header")),"A Language designed for full-stack development"))),html_h1(newVector(html_class("sub-header")),"Why Top?"),main_features((c).features),main_footer((c).footer)));}main_clientInit();
+
+function main_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_clientInit();main_headers = newVector("HOME","EXAMPLES","DOCS","COMMUNITY","BLOG");main_footer_text = "All code for this site is written in Top, including the server - Lucas Goetz";html_clientInit();main_gitbook = "https://lucasgoetz.gitbooks.io/top-lang/content/";main_code = html_cssSelector("#code");d=18;return main_main(html_pageLoadUrl,c);case 18:main_appState = newAtom(b);main_logoUrl = "arrow.png";d=20;return html_onUrlChange(main_onUrlChange,main_appState,c);case 20:d=21;return html_app(main_render,main_appState,c);case 21:return;}}}()}function main_Feature(c,d,f,g){this.id=c;this.name=d;this.description=f;this.image=g;}main_Feature.fields=["id","name","description","image"];main_Feature.prototype.toString=(function(){return main_Feature_toString(this)});function main_Feature_toString(c){return (((((((((((("Feature(")+(((c).id)).toString()))+(",").toString()))+(((c).name)).toString()))+(",").toString()))+(((c).image)).toString()))+(")").toString());}function main_PageHome(f){return [0,f]}function main_PageDocs(g){return [1,g]}var main_PageNotFound=[2,];var main_PageGetStarted=[3,];function main_Home(c,d,f){this.features=c;this.headers=d;this.footer=f;}main_Home.fields=["features","headers","footer"];function main_Docs(c,d,f,g,h){this.overview=c;this.learn=d;this.packages=f;this.headers=g;this.footer=h;}main_Docs.fields=["overview","learn","packages","headers","footer"];function main_QueryDocs(h){return [0,h]}function main_map(c, d){return (d).map(c);}function main_filter(c, d){return (d).filter(c);}function main_reduce(c, d){return (d).reduce(c);}function main_comp(c, d){return c(d);}function main_zip(c, d){var f;f = newVector();var g;g = 0;
+while((g<(c).length)){f=(f).append((newVector(c.get(g),d.get(g))));g=((g+1)|0);}return f;}function main_append(c, d){return (d).append(c);}function main_first(c){return c.get(0);}function main_toEffect(c){function d(f,g){var k=0;return function j(h){while(1){switch(k){case 0:return g(c(f));}}}()}return d;}function main_query(c,d){var h=0;return function g(f){while(1){switch(h){case 0:return d(function(){var j=c; if (j[0]==0){var k=j[1];return k(new main_Docs(newVector("Get Started","Examples","How to structure your program"),newVector("An Introduction to Top","FAQ","Syntax","Style Guide","The Zen of Top","Writing Documentation"),newVector("All Packages","Core","HTML"),main_headers,main_footer_text,main_footer_text));}}());}}}()}function main_App(c,d,f){this.headers=c;this.page=d;this.footer=f;}main_App.fields=["headers","page","footer"];function main_home(c, d){return html_div(newVector(),newVector(html_div(newVector((html_style("height: 100%;")),html_class("background")),newVector(main_navBar(((c).headers).filter((operator_ne.bind(null,"HOME")))),html_h1(newVector((html_class("header")),html_style("width: 100%; top: 25%;")),"Top"),html_h3(newVector(html_class("header")),"A Language designed for full-stack development"))),html_h1(newVector(html_class("sub-header")),"Why Top?"),main_features((c).features),main_footer((c).footer)));}function main_docs(c, d){function f(g){return html_li(newVector(),html_span(newVector(html_style("position: relative; left: -10px;")),html_a(newVector(html_href(((main_gitbook+(((g).replace(" ","-"))).toLowerCase())+".html")),html_class("link")),g)));}return html_div(newVector(),newVector(html_div(newVector((html_class("background")),html_style("height: 35%")),newVector(main_navBar(((c).headers).filter((operator_ne.bind(null,"DOCS")))),html_div(newVector(),""),html_h1(newVector((html_class("header")),html_style("top: 10%; font-size: 60px;")),"Documentation"))),html_div(newVector(html_class("fade")),newVector(html_h2(newVector(html_style("margin-left: 60px;")),"Quick Overview"),html_div(newVector(html_style("margin-left: 100px;")),((c).overview).map(f)),html_h2(newVector(html_style("margin-left: 60px;")),"Learn Top"),html_div(newVector(html_style("margin-left: 100px;")),((c).learn).map(f)),html_h2(newVector(html_style("margin-left: 60px;")),"Packages"),html_div(newVector(html_style("margin-left: 100px;")),((c).packages).map(f))))));}function main_main(c,d){var j;var k;var l;var m;var h=0;return function g(f){while(1){switch(h){case 0:if(((c==="HOME")||(c===""))){j = new main_Home(newVector(new main_Feature("fet0","A Simple Asynchronous Model","Top allows synchronous looking code to behave asynchronously under the hood.                        Have the performance of callbacks without the pyramid of doom. Use the builtin high performance concurrent datastructes making concurrency a breeze","async.png","async.png"),new main_Feature("fet1","Batteries Included","The Top Compiler comes with great and simple to use tools, from automatically bundles and minifiying all javascript and css, to testing and benchmarking.                        No need to setup complicated compilation pipelines, just use the builtin tools.                        Even an easy to use live hot replacement tool is already included.","tools.png","tools.png"),new main_Feature("fet2","Safety","Thanks to top's functional nature and it's static type system runtime exceptions are rare.                        Instead the compiler catches errors at compile time and helps the programmer locate them.                        Furthermore, as Top is a full-stack language even requests to the server can be typed, eliminating pain stacking hours of incorrect queries.","error.png","error.png")),main_headers,main_footer_text,main_footer_text);k = (j).features;l = newLens(function(n){return (n).id}, function(p,n){return Object.assign(new p.constructor(), p,{id:n})});function q(r){var w;var v=0;return function t(s){while(1){switch(v){case 0:w = (k).map((function(x){return html_cssSelector(function(y){return (operator_add.bind(null,"#"))((l).query(y))}(x))}));v=13;return serial((w).map(defer((function(B){return function(z,C){return html_animateOnVisible(z,B,C);}})("fade-in"))),t);case 13:return r(s);}}}()}h=14;return html_nextTick(q,g);}h=15;break;case 14:f=main_PageHome(j);h=12;/*block*/break;/*if*/case 15:/*notif*/if((c==="DOCS")){h=16;return http_query(((function(D){return core_parseJSON(D,core_json_struct(main_Docs,[['headers',core_json_vector(core_json_string)],['learn',core_json_vector(core_json_string)],['packages',core_json_vector(core_json_string)],['overview',core_json_vector(core_json_string)],['footer',core_json_string],]))})),main_QueryDocs,g);}h=17;break;case 16:f=main_PageDocs(f);h=12;/*block*/break;/*if*/case 17:/*notif*/{f=main_PageNotFound;h=12;/*block*/break;}case 12:m = f;return d(new main_App(main_headers,m,main_footer_text,main_footer_text));}}}()}function main_navBar(c){function d(f){return html_li(newVector(html_class("nav-bar")),html_a(newVector((html_class("nav-bar")),html_href(("#"+f))),f));}return html_ul(newVector(html_class("nav-bar")),newVector(html_li(html_noAttrib,html_image(newVector(html_src(main_logoUrl),html_style("width:50px;height:50px;float:left;padding:10px;")),""))).operator_add((c).map(d)));}function main_features(c){function d(f){return html_li(newVector(html_class("container")),html_div(newVector((html_class("cleared")),(html_style("clear:both")),html_id((f).id)),newVector(html_h2(newVector(html_style("margin-left: 10%; margin-bottom: 2em;")),(f).name),html_div(newVector(),newVector(html_image(newVector(html_src((f).image),html_style("width: 50%; height: auto; float: right; padding-right: 10%; margin-left: 5%")),""),html_p(newVector(html_style("line-height: 150%; padding-left: 10%; padding-right: 60%")),(f).description))))));}return html_ul(newVector(html_class("feature")),(c).map(d));}function main_footer(c){return html_div(newVector(),newVector(html_hr(newVector(),""),html_h4(newVector(html_style("line-height: 5em; width: 100%; text-align: center; opacity: 0.4;")),c)));}function main_render(c, d){var f;f = newLens(function(g){return (g).page}, function(h,g){return Object.assign(new h.constructor(), h,{page:g})});return function(){var j=(c).page; if (j[0]==0){var k=j[1];return main_home(k,new html_PosAtom(d,f,f));} if (j[0]==1){var l=j[1];return main_docs(l,new html_PosAtom(d,f,f));} if (j[0]==2){return html_h1(newVector(),"Page not found!");}}();}function main_onUrlChange(c, d,f){var j=0;return function h(g){while(1){switch(j){case 0:j=19;return main_main(d,h);case 19:return f(g);}}}()}function http_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","");http_get = _http_get;return;}}}()}function http_Server(c){this.listen=c;}http_Server.fields=["listen"];function http_NodeHTTP(c){this.createServer=c;}http_NodeHTTP.fields=["createServer"];function http_Request(c){this.url=c;}http_Request.fields=["url"];function http_Response(c,d,f){this.status=c;this.contentType=d;this.body=f;}http_Response.fields=["status","contentType","body"];function http_endResponse(c){return core_assign(http_response,{body:jsonStringify(c)});}function http_toUrl(c){return ("query/"+jsonStringify(c(http_endResponse)));}function http_query(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:k = http_toUrl(d);j=1;return http_get(k,h);case 1:l = ((g)).body;return f(c(l));}}}()}function html_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html__onUrlChange = _html_onUrlChange;html_pageLoadUrl = window.location.hash.slice(1);html_nextTick = _nextTick;html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_hyper);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_hr = html_h.bind(null,"hr");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = newVector();html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_ul = html_h.bind(null,"ul");html_li = html_h.bind(null,"li");html_a = html_h.bind(null,"a");html_image = html_h.bind(null,"img");html_span = html_h.bind(null,"span");html__appendChild = toAsync(html_appendChild);html__handle = html_handle;html_animateOnVisible = html_addClassOnVisible;return;}}}()}function html_PosAtom(c,d){this.a=c;this.pos=d;}html_PosAtom.fields=["a","pos"];html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(d,f){var j=0;return function h(g){while(1){switch(j){case 0:j=1;return (d).a.unary_read(h);case 1:;return f(((d).pos).query(g));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=2;return (f).a.unary_read(k);case 2:;l=3;return ((f).a).operator_set(((f).pos).set(j,g),k);case 3:return h(j);}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:function m(n,p){var s=0;return function r(q){while(1){switch(s){case 0:s=4;return (f).a.unary_read(r);case 4:;s=5;return g(((f).pos).query(q),r);case 5:return p(q);}}}()}l=6;return ((f).a).watch(m,k);case 6:return h(j);}}}()}function html_Event(c){this.target=c;}html_Event.fields=["target"];function html_Attribute(c,d){this.name=c;this.value=d;}html_Attribute.fields=["name","value"];function html_newAttrib(c, d){return new html_Attribute(c,d,d);}function html_onEvent(c, d, f){function g(h,j){var m=0;return function l(k){while(1){switch(m){case 0:m=7;return f.unary_read(l);case 7:;m=8;return d(k,h,l);case 8:m=9;return (f).operator_set(k,l);case 9:return j(k);}}}()}return new html_Attribute(c,g,g);}function html_onUrlChange(c, d,f){var j=0;return function h(g){while(1){switch(j){case 0:function k(l,m){var q=0;return function p(n){while(1){switch(q){case 0:q=10;return d.unary_read(p);case 10:;q=11;return c(n,l,p);case 11:q=12;return (d).operator_set(n,p);case 12:return m(n);}}}()}j=13;return html__onUrlChange(k,h);case 13:return f(g);}}}()}function html_async(c, d){function f(g){var k=0;return function j(h){while(1){switch(k){case 0:k=14;return d.unary_read(j);case 14:;k=15;return c(h,j);case 15:k=16;return (d).operator_set(h,j);case 16:return g(h);}}}()}return f;}function html_ignoreAct(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=17;return c(f,k);case 17:return h(j);}}}()}return d;}function html_withId(c){function d(f, g, h,j){var n;var m=0;return function l(k){while(1){switch(m){case 0:m=18;return c(g.get(f),h,l);case 18:n = (k);return j((g).set(f,n));}}}()}return d;}function html_mapWithId(c, d, f){function g(h){return c(d.get(h),h,f);}return (newVectorRange(0,(d).length)).map(g);}function html_mapView(c, d, f){function g(h){var j;j = d.get(h);var k;k = newLens(function(l){return l.get(h)}, function(m,l){return m.set(h,l)});var n;n = new html_PosAtom(f,k,k);return c(j,n);}return (newVectorRange(0,(d).length)).map(g);}function html_viewFromLens(c, d, f, g){return c(((f).query(d)),new html_PosAtom(g,f,f));}function html_render(c,d){var j;var k;var h=0;return function g(f){while(1){switch(h){case 0:j = html_createElement(c);k = html_cssSelector("#code");h=19;return html__appendChild(k,j,g);case 19:return d(j);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:return c();}}}()}function html_app(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:j=20;return d.unary_read(h);case 20:;k = c((g),d);j=21;return html_get(h);case 21:j=22;return html_render(k,h);case 22:l = g;function m(n,p){var t;var v;var s=0;return function r(q){while(1){switch(s){case 0:t = c(n,d);v = html_diff(k,t);s=23;return html_patch(l,v,r);case 23:l=q;html__handle();k=t;return p();}}}()}j=24;return (d).watch(m,h);case 24:return f(g);}}}()}main_clientInit();

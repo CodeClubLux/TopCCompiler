@@ -1,62 +1,120 @@
 import "html"
 
-type Feature =
-    id: string
-    name: string
-    description: string
-    image: string
-
 type App =
     headers: []string
-    features: []Feature
+    page: Page
     footer: string
 
-
-let app-state = newAtom App {
-    headers = ["EXAMPLES", "DOCS", "COMMUNITY", "BLOG"]
-    features = [
-        Feature {
-            "fet0"
-            "A Simple Asynchronous Model",
-            "Top allows synchronous looking code to behave asynchronously under the hood.
-            Have the performance of callbacks without the pyramid of doom. Use the builtin high performance concurrent datastructes making concurrency a breeze",
-            "async.png"
-        }
-
-        Feature {
-            "fet1"
-            "Batteries Included"
-            "The Top Compiler comes with great and simple to use tools, from automatically bundles and minifiying all javascript and css, to testing and benchmarking.
-            No need to setup complicated compilation pipelines, just use the builtin tools.
-            Even an easy to use live hot replacement tool is already included."
-            "tools.png"
-        }
-
-        Feature {
-            "fet2"
-            "Safety"
-            "Thanks to top's functional nature and it's static type system runtime exceptions are rare.
-            Instead the compiler catches errors at compile time and helps the programmer locate them.
-            Furthermore, as Top is a full-stack language even requests to the server can be typed, eliminating pain stacking hours of incorrect queries."
-            "error.png"
-        }
+def home(app: Home, a: Atom[Page]) html.VNode =
+    html.div \[], [
+        html.div \[(html.style "height: 100%;"), html.class "background"], [
+            nav-bar app.headers.filter (!="HOME")
+            html.h1 \[(html.class "header"), html.style "width: 100%; top: 25%;"], "Top"
+            html.h3 \[html.class "header"], "A Language designed for full-stack development"
+        ]
+        html.h1 \[html.class "sub-header"], "Why Top?"
+        features app.features
+        footer app.footer
     ]
-    footer = "All code for this site is written in Top, including the server - Lucas Goetz"
-}
 
-let logo = "arrow.png"
 
-def nav-bar(headers: []string) html.VNode =
+let gitbook = "https://lucasgoetz.gitbooks.io/top-lang/content/"
+def docs(app: Docs, a: Atom[Page]) html.VNode =
+    def item(s: string) html.VNode =
+        html.li \[], html.span \[html.style "position: relative; left: -10px;"],
+            html.a \[
+                html.href gitbook+(s.replace " ", "-").toLowerCase!+".html"
+                html.class "link"
+            ], s
+
+    html.div \[], [
+        html.div \[(html.class "background"), html.style "height: 35%"], [
+            nav-bar app.headers.filter (!="DOCS")
+            html.div \[], "" //trigger rerender and animation
+            html.h1 \[(html.class "header"), html.style "top: 10%; font-size: 60px;"], "Documentation"
+        ]
+        html.div \[html.class "fade"], [
+            html.h2 \[html.style "margin-left: 60px;"], "Quick Overview"
+            html.div \[html.style "margin-left: 100px;"],
+                app.overview.map item
+            html.h2 \[html.style "margin-left: 60px;"], "Learn Top"
+            html.div \[html.style "margin-left: 100px;"]
+                app.learn.map item
+            html.h2 \[html.style "margin-left: 60px;"], "Packages"
+            html.div \[html.style "margin-left: 100px;"]
+                app.packages.map item
+        ]
+    ]
+
+let code = html.cssSelector "#code"
+
+def main(url: string) App do
+    let page =
+        if url == "HOME" or url == "" then
+            let _home = Home { [
+                    Feature {
+                        "fet0"
+                        "A Simple Asynchronous Model",
+                        "Top allows synchronous looking code to behave asynchronously under the hood.
+                        Have the performance of callbacks without the pyramid of doom. Use the builtin high performance concurrent datastructes making concurrency a breeze",
+                        "async.png"
+                    }
+
+                    Feature {
+                        "fet1"
+                        "Batteries Included"
+                        "The Top Compiler comes with great and simple to use tools, from automatically bundles and minifiying all javascript and css, to testing and benchmarking.
+                        No need to setup complicated compilation pipelines, just use the builtin tools.
+                        Even an easy to use live hot replacement tool is already included."
+                        "tools.png"
+                    }
+
+                    Feature {
+                        "fet2"
+                        "Safety"
+                        "Thanks to top's functional nature and it's static type system runtime exceptions are rare.
+                        Instead the compiler catches errors at compile time and helps the programmer locate them.
+                        Furthermore, as Top is a full-stack language even requests to the server can be typed, eliminating pain stacking hours of incorrect queries."
+                        "error.png"
+                    }
+                ], headers, footer_text}
+
+            let fets = _home.features
+            let getId = lens Feature.id
+
+            def animate() do
+                let elements = fets.map (getId.query >> ("#"+) >> html.cssSelector)
+                serial elements.map defer html.animateOnVisible _, "fade-in"
+
+            html.nextTick animate
+            Page-home _home
+        elif url == "DOCS" then
+            Page-docs http.query (parse-json Docs), Query-Docs
+        else
+            Page-not-found
+
+
+    App {
+        headers = headers
+        page = page
+        footer = footer_text
+    }
+
+let app-state = newAtom main html.page-load-url
+
+let logo-url = "arrow.png"
+
+def nav-bar(_headers: []string) html.VNode =
     def element(header: string) html.VNode =
-        html.li \[html.class "nav-bar"], html.a \[html.class "nav-bar"], header
+        html.li \[html.class "nav-bar"], html.a \[(html.class "nav-bar"), html.href "#"+ header], header
 
     html.ul \[html.class "nav-bar"],
         [html.li html.noAttrib,
             html.image \[
-                html.src logo
+                html.src logo-url
                 html.style "width:50px;height:50px;float:left;padding:10px;"
             ], ""
-        ] + headers.map element
+        ] + _headers.map element
 
 def features(fet: []Feature) html.VNode =
     def feature(f: Feature) html.VNode =
@@ -68,7 +126,7 @@ def features(fet: []Feature) html.VNode =
                     html.src f.image,
                     html.style "width: 50%; height: auto; float: right; padding-right: 10%; margin-left: 5%"
                 ], ""
-                html.p \[html.style "line-height: 150%; padding-left: 10%;"],
+                html.p \[html.style "line-height: 150%; padding-left: 10%; padding-right: 60%"],
                     f.description
             ]
         ]
@@ -82,24 +140,22 @@ def footer(f: string) html.VNode =
     ]
 
 def render(app: App, a: Atom[App]) html.VNode =
-    html.div html.noAttrib, [
-        html.div \[html.class "background"], [
-            nav-bar app.headers
-            html.h1 \[html.class "header"], "Top"
-            html.h3 \[html.class "header"], "A Language designed for full-stack development"
-        ]
-        html.h1 \[html.class "sub-header"], "Why Top?"
-        features app.features
-        footer app.footer
-    ]
+    let l = lens App.page
+
+    match app.page with
+        Page-home p ->
+            home p, html.PosAtom {a, l }
+        Page-docs p ->
+            docs p, html.PosAtom {a, l }
+        Page-not-found ->
+            html.h1 \[], "Page not found!"
+
+def on-url-change(app: App, url: string) App do
+    main url
+
+html.onUrlChange onUrlChange, app-state
 
 html.app render, app-state
-
-let fets = (<-app-state).features
-let getId = lens Feature.id
-
-let elements = fets.map (getId.query >> ("#"+) >> html.cssSelector)
-serial elements.map defer html.animateOnVisible _, "fade-in"
 
 /*
 let pictures = newAtom string
@@ -121,16 +177,3 @@ def getDataFromServer() do
 go getDataFromServer!
 pictures.watch log
 */
-
-
-
-
-
-
-
-
-
-
-
-
-

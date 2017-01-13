@@ -108,8 +108,11 @@ def getCompilationFiles(target):
             try:
                 j = json.loads(port.read())
                 files.append((target, j["files"]))
-            except:
+            except KeyError:
                 pass
+            except json.decoder.JSONDecodeError as e:
+                Error.error("In file port.json, in directory "+package+", "+str(e))
+
 
             if "client-files" in j and (target in ["full", "client"]):
                 files.append(("client", j["client-files"]))
@@ -295,12 +298,23 @@ def start(run= False, dev= False, init= False, hotswap= False):
                         if hotswap:
                             print("hotswap")
                             prepareForHotswap(parser.compiled[i][1][0])
-                        CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1]).compile(opt=opt, target=target)
+                        CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1], target).compile(opt=opt)
 
-                _linkCSSWithFiles = [] if target != "client" else linkCSSWithFiles
-                _linkWithFiles = linkWithFiles + nodeLinkWithFiles if target == "node" else linkWithFiles + clientLinkWithFiles if target == "client" else []
-                l = CodeGen.link(parser.compiled, outputFile, run= (run and not (globalTarget == "full" and target != "node")), opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= _linkWithFiles, target=target)
 
+                if target == "full":
+                    _linkCSSWithFiles = linkCSSWithFiles
+                    client_linkWithFiles = linkWithFiles + clientLinkWithFiles
+                    node_linkWithFiles = linkWithFiles + nodeLinkWithFiles
+
+                    a = CodeGen.link(parser.compiled, outputFile, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
+                    l = CodeGen.link(parser.compiled, outputFile, run= True, opt= opt, dev=dev, linkWithCSS=[], linkWith= node_linkWithFiles, target = "node")
+                else:
+                    _linkCSSWithFiles = [] if target != "client" else linkCSSWithFiles
+                    _linkWithFiles = linkWithFiles + nodeLinkWithFiles if target == "node" else linkWithFiles + clientLinkWithFiles if target == "client" else []
+
+                    l = CodeGen.link(parser.compiled, outputFile,
+                                     run=run, opt=opt, dev=dev,
+                                     linkWithCSS=_linkCSSWithFiles, linkWith=_linkWithFiles, target=target)
                 return (True, l, parser)
             elif run:
                 CodeGen.exec(outputFile)
@@ -315,6 +329,7 @@ def start(run= False, dev= False, init= False, hotswap= False):
 
             compile(_target, sour, fil, decl)
 
+        """
         if target == "full":
             fil = filenames["full"]
             sour = sources["full"]
@@ -328,7 +343,12 @@ def start(run= False, dev= False, init= False, hotswap= False):
             iterate("client")
             iterate("node")
         else:
-            iterate(target)
+        """
+
+        fil = filenames["full"]
+        sour = sources["full"]
+
+        compile("full", sour, fil)
 
     except EOFError as e:
         if dev:
@@ -361,7 +381,6 @@ def prepareForHotswap(arg):
         count += 1
 
     return False
-
 
 import datetime
 def modified(files, outputfile):

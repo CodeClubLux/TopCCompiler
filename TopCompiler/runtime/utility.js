@@ -36,6 +36,11 @@ function max(a,b) {
     return a > b ? a : b
 }
 
+function log_unop(v, next) {
+    console.log(v);
+    return next()
+}
+
 function len(x) {
     return x.length
 }
@@ -232,4 +237,58 @@ function serial(funcs, next) {
 
 function core_assign(construct, obj) {
     return Object.assign(new construct.constructor(), construct, obj);
+}
+
+function core_json_int(obj) {
+    return obj | 0;
+}
+
+function core_json_float(obj) {
+    return Number(obj);
+}
+
+function core_json_bool(obj) {
+    return !!obj;
+}
+
+function core_json_string(obj) {
+    return ""+obj;
+}
+
+function core_json_struct(constr, array) {
+    return function(realObj) {
+        var len = array.length;
+        var obj = new constr();
+        for (var i = 0; i < len; i++) {
+            var arr = array[i];
+            obj[arr[0]] = arr[1](realObj[arr[0]]);
+        }
+        return obj;
+    }
+}
+
+function core_json_interface(array) {
+    return function (realObj) {
+        var obj = {};
+        for (var i = 0; i < len; i++) {
+            var arr = array[i];
+            obj[arr[0]] = arr[1](realObj[arr[0]]);
+        }
+        return obj;
+    }
+}
+
+function core_json_vector(decoder) {
+    return function (realObj) {
+        return fromArray(realObj.map(decoder));
+    }
+}
+
+function core_parseJSON(str, decoder) {
+    var obj = JSON.parse(str);
+    return decoder(obj);
+}
+
+function jsonStringify(i) {
+    return JSON.stringify(i);
 }

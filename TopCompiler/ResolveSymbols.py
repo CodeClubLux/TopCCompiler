@@ -19,15 +19,6 @@ def funcHead(parser):
     Scope.decrScope(parser)
 
 def resolve(self):
-    if self.global_target == "client":
-        self.scope["_global"][0]["println"] = Scope.Type(True, Types.FuncPointer([self.Stringable], Types.Null(), do=True))
-        self.scope["_global"][0]["print"] = Scope.Type(True, Types.FuncPointer([self.Stringable], Types.Null(), do=True))
-    else:
-        if "println" in self.scope["_global"][0]:
-            #print("actually removing")
-            del self.scope["_global"][0]["println"]
-            del self.scope["_global"][0]["print"]
-
     tokens = self.tokens
     filenames = self.filename
 
@@ -90,8 +81,10 @@ def _resolve(self, tokens, filename, passN= 0 ):
             if b == "type":
                 Scope.addVar(Tree.Node(self), self, self.nextToken().token, Scope.Type(True, Types.StructInit(self.thisToken().token)))
 
-                self.structs[self.package][self.thisToken().token] = Struct.Struct(self.thisToken().token, [],[], {})
+                #"""
+                self.structs[self.package][self.thisToken().token] = Struct.Struct(self.thisToken().token, [],[], {}, self)
                 self.structs[self.package][self.thisToken().token].methods = {}
+                #"""
 
         if b == "\n":
             Parser.addBookmark(self)

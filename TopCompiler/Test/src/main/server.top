@@ -1,7 +1,7 @@
 import "http"
 
-ext _read: |string| do Maybe[string] = "server_readFile"
-ext quit: |int| -> string = "process.exit"
+ext node _read: |string| do Maybe[string] = "server_readFile"
+ext node quit: |int| -> string = "process.exit"
 
 def read(path: string) string do
     match _read path with
@@ -18,10 +18,25 @@ let tools = read "images/tools.png"
 let favicon = read "images/arrow.ico"
 let error = read "images/error.png"
 
+def query(q: Routes) http.Response do
+    match q with
+        Query-Docs end ->
+            //replace static information with database query
+            end Docs {
+                overview = ["Get Started", "Examples", "How to structure your program"]
+                learn = ["An Introduction to Top", "FAQ", "Syntax", "Style Guide",
+                    "The Zen of Top", "Writing Documentation"]
+                packages = ["All Packages", "Core", "HTML"]
+                headers = headers
+                footer = footer_text
+            }
+
 def requestHandler(req: http.Request) http.Response do
     log "request, "+req.url
 
-    if req.url == "/" then
+    if (http.isQuery req.url) then
+        http.handleQuery req.url, query
+    elif req.url == "/" then
         http.response {body = htmlFile, content-type = "text/html"}
     elif req.url == "/arrow.png" then
         http.response {body = logo, content-type = "image/png"}
@@ -34,16 +49,12 @@ def requestHandler(req: http.Request) http.Response do
     elif req.url == "/error.png" then
         http.response {body = error, content-type = "image/png"}
     else
-        http.response {status= 404, body = "File not found"}
+        http.response {status= 404, body = "404 Page not found"}
 
-ext port: int = "process.env.PORT || 3000"
+ext node port: int = "process.env.PORT || 3000"
 
 let server = http.server requestHandler
 
 server.listen port
 
 log "started web server on port {port}"
-
-let i = match "string" with
-    "string" -> "ok"
-    _ -> "err"

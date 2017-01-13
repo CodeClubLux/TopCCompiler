@@ -6,9 +6,10 @@ from TopCompiler import Error
 from TopCompiler import Types
 
 class Type :
-    def __init__(self, imutable, type):
+    def __init__(self, imutable, type, target= "full"):
         self.imutable = imutable
         self.type = type
+        self.target = target
 
 def incrScope(parser):
     parser.scope[parser.package].append({})
@@ -50,6 +51,12 @@ def changeType(parser, name, newType):
             i[name].type = newType
         except: pass
 
+def changeTarget(parser, name, target):
+    for i in parser.scope[parser.package]:
+        try:
+            i[name].target = target
+        except: pass
+
 def isMutable(parser, package, name):
     if name in parser.imports: return False
     if package == parser.package:
@@ -72,6 +79,20 @@ def typeOfVar(node, parser, package, name):
     for i in parser.scope[package]:
         try:
             return i[name].type
+        except: pass
+    node.error("variable "+name+" does not exist")
+
+
+def targetOfVar(node, parser, package, name):
+    if name in parser.imports: return parser.global_target
+    if package == parser.package:
+        for i in parser.scope["_global"]:
+            if name in i:
+                return i[name].target
+
+    for i in parser.scope[package]:
+        try:
+            return i[name].target
         except: pass
     node.error("variable "+name+" does not exist")
 

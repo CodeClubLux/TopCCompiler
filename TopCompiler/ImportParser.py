@@ -39,7 +39,6 @@ def importParser(parser, decl= False):
         parser.externFuncs[parser.package] = []
 
         if shouldParse(decl, oname, parser):
-            print("compiling", name, parser.global_target)
             p = Parser.Parser(parser.lexed[oname], parser.filenames[oname])
 
             ResolveSymbols.insert(parser, p)
@@ -61,8 +60,6 @@ def importParser(parser, decl= False):
 
             parser.currentNode.addNode(Tree.InitPack(name, parser))
         else:
-            print("not compiling")
-            print(name)
             if not name in parser.compiled:
                 parser.compiled[name] = None
 

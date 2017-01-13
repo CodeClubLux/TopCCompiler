@@ -40,6 +40,15 @@ def onEvent[T](name: string, x: |T, Event| do T, a: Atom[T]) Attribute =
 
     Attribute {name, clicked}
 
+ext client _onUrlChange: ||string| do none| do none = "_html_onUrlChange"
+ext client page-load-url: string = "window.location.hash.slice(1)"
+
+def onUrlChange[T](func: |T, string| do T, a: Atom[T]) do
+    def fired(url: string) do
+        a.operator_set func \<-a, url
+
+    _onUrlChange fired
+
 def async[T](x: |T| do T, a: Atom[T]) || do none =
     def fired() do
         a.operator_set x \ <-a
@@ -51,6 +60,8 @@ def ignoreAct[T](f: |T| do T) |T, Event| do T =
         f x
 
     func
+
+ext client nextTick: ||| do none| do none = "_nextTick"
 
 def withId[T](f: |T, Event| do T) |int, []T, Event| do []T =
     def func(id: int, m: []T, e: Event) []T do
@@ -105,18 +116,18 @@ let onClick = onEvent "onclick"
 let onInput = onEvent "oninput"
 let onChange = onEvent "onchange"
 
-ext h: |string, []Attribute, VNode| -> VNode = "fromJS(html_hyper)"
-ext createElement: |VNode| -> HtmlElem = "virtualDom.create"
-ext diff: |VNode, VNode| -> Patches = "virtualDom.diff"
-ext patch: |HtmlElem, Patches| do HtmlElem = "toAsync(virtualDom.patch)"
+ext client h: |string, []Attribute, VNode| -> VNode = "fromJS(html_hyper)"
+ext client createElement: |VNode| -> HtmlElem = "virtualDom.create"
+ext client diff: |VNode, VNode| -> Patches = "virtualDom.diff"
+ext client patch: |HtmlElem, Patches| do HtmlElem = "toAsync(virtualDom.patch)"
 
-ext clear: |HtmlElem| do none = "toAsync(clearElement)"
+ext client clear: |HtmlElem| do none = "toAsync(clearElement)"
 
 //ext diff: |VNode, VNode| do Patches = "require('virtual-dom/diff');"
 //ext patch: |VNode, Patches| do none = "require('virtual-dom/patch');"
 
 
-ext cssSelector: |string| -> HtmlElem = "document.querySelector.bind(document)"
+ext client cssSelector: |string| -> HtmlElem = "document.querySelector.bind(document)"
 
 let h1 = h "h1"
 let h2 = h "h2"
@@ -140,14 +151,13 @@ let li = h "li"
 let a = h "a"
 
 let image = h "img"
+let span = h "span"
 
-ext _appendChild: |HtmlElem, HtmlElem| do none = "toAsync(html_appendChild)"
+ext client _appendChild: |HtmlElem, HtmlElem| do none = "toAsync(html_appendChild)"
 
 def render(newTree: VNode) HtmlElem do
     let rootNode= createElement newTree
     let root = cssSelector "#code"
-
-    clear root
 
     _appendChild root, rootNode
 
@@ -155,7 +165,7 @@ def render(newTree: VNode) HtmlElem do
 
 def get() do
 
-ext _handle: || -> none = "html_handle"
+ext client _handle: || -> none = "html_handle"
 
 def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
     var oldV = r (<-appstate), appstate
@@ -166,6 +176,7 @@ def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
 
     def rerender(i: T) do
         let newV = r i, appstate
+
         let patches = diff oldV, newV
         root = patch root, patches
 
@@ -175,5 +186,5 @@ def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
 
     appstate.watch rerender
 
-ext animateOnVisible: |HtmlElem, string| do none = "html_addClassOnVisible"
+ext client animateOnVisible: |HtmlElem, string| do none = "html_addClassOnVisible"
 

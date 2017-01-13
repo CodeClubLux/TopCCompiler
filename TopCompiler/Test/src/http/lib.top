@@ -1,14 +1,25 @@
-let response = Response {
-    status = 200
-    content-type = "text/plain"
-    body = ""
-    encoding = "utf-8"
-}
-
 type Server =
     listen: |int| do none
 
 type NodeHTTP =
     createServer: ||Request, Response| -> none| -> Server
 
-ext server: ||Request| do Response| -> Server = "server_createServer"
+type Request =
+    url: string
+
+type Response =
+    status: int
+    content-type: string
+    body: string
+
+let response = Response {
+    status = 200
+    content-type = "text/plain"
+    body = ""
+}
+
+ext client get: |string| do Response = "_http_get"
+
+ext node server: ||Request| do Response| -> Server = "server_createServer"
+ext node handleQuery: [T: enum]|string, |T| do Response| do Response = "server_handleQuery"
+ext node isQuery: |string| -> bool = "server_isQuery"

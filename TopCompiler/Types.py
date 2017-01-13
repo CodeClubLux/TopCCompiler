@@ -107,7 +107,7 @@ def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
                 gen = parseGeneric(parser, parser.interfaces[package][token])
                 return replaceT(parser.interfaces[package][token], gen)
 
-        return Interface(False, parser.interfaces[package][token].types)
+        return parser.interfaces[package][token]
 
     elif token in parser.structs[package]:
         gen = coll.OrderedDict()
@@ -217,6 +217,9 @@ class String(Type):
         self.types = {"toString": FuncPointer([], self), "toInt": FuncPointer([], I32()), "toFloat": FuncPointer([], Float()),
             "slice": FuncPointer([I32(), I32()], self),
             "length": I32(),
+            "indexOf": FuncPointer([self], I32()),
+            "replace": FuncPointer([self, self], self),
+            "toLowerCase": FuncPointer([], self),
         }
 
 class FuncPointer(Type):
@@ -449,7 +452,7 @@ class Enum(Type):
         self.generic = generic
         self.const = const
         self.types = {}
-        self.name = "'enum "+package+"."+name
+        self.name = "enum "+package+"."+name
         self.package = package
         self.normalName = name
 

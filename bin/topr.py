@@ -14,6 +14,7 @@ def main():
     tokens = [[]]
     parser = Parser.Parser(tokens, [("main", "anonymous")])
     parser.compiled = {}
+    parser.global_target = "node"
     parser.opt = 0
     parser.externFuncs = {"main": []}
     parser.repl = True
@@ -49,7 +50,7 @@ def main():
 
             compiled = (parsed, {"main": []})
 
-            code = CodeGen.CodeGen("main", parsed, {"main": []}).toEval()
+            code = CodeGen.CodeGen("main", parsed, {"main": []}, "node").toEval()
             #print(code)
             print(parsed.nodes[-1].type, ":", js.eval(code))
             tokens[0] = []
@@ -57,5 +58,5 @@ def main():
 
         except EOFError as e:
             print(e)
-            parser.iter += 1
+
 main()

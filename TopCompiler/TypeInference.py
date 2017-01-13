@@ -13,9 +13,12 @@ from TopCompiler import Enum
 def infer(parser, tree):
     varTypes = {}
     sc = parser.sc
-    def loop(n):
+    def loop(n, o_iter):
         count = 0
         for i in n:
+            if type(n) is Tree.Root:
+                o_iter += 1
+
             if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
                 count += 1
                 continue
@@ -29,7 +32,7 @@ def infer(parser, tree):
                 Scope.incrScope(parser)
 
             if not (i.isEnd() or type(i) is Tree.MatchCase or (type(i) is Tree.Block and type(i.owner) is Tree.Match)):
-                loop(i)
+                loop(i, o_iter)
 
             if type(i) is Tree.Match:
                 typ = i.nodes[0].type
@@ -39,14 +42,13 @@ def infer(parser, tree):
 
                     Scope.incrScope(parser)
                     Enum.checkCase(parser, i.nodes[c].nodes[0], typ, True)
-                    loop(body)
+                    loop(body, o_iter)
                     body.type = body.nodes[-1].type if len(body.nodes) > 0 else Types.Null()
                     Scope.decrScope(parser)
                     if first:
                         if body.type != first:
                             (body.nodes[-1] if len(body.nodes) > 0 else body).error(
                                 "type mismatch in arms of match, " + str(body.type) + " and " + str(first))
-
                     else:
                         if len(i.nodes[2].nodes) > 0:
                             first = i.nodes[2].nodes[-1].type
@@ -66,8 +68,12 @@ def infer(parser, tree):
                         MethodParser.addMethod(i, parser, i.nodes[0].attachTyp, i.nodes[0].name, i.nodes[1].nodes[0].type)
                         i.nodes[0].isGlobal = True
                     else:
-                        Scope.addVar(i, parser, i.nodes[0].name, Scope.Type(i.nodes[0].imutable, i.nodes[1].nodes[0].type))
+                        Scope.addVar(i, parser, i.nodes[0].name, Scope.Type(i.nodes[0].imutable, i.nodes[1].nodes[0].type, i.global_target))
                         i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
+                if i.global_target != parser.global_target:
+                    #print(i.nodes[0].name)
+                    Scope.changeTarget(parser, i.nodes[0].name, i.global_target)
+                    #print("this variable can only be used in a specific target", i.global_target)
             elif type(i) is Tree.FuncBody:
                 Scope.decrScope(parser)
                 def check(n, _i):
@@ -82,10 +88,14 @@ def infer(parser, tree):
                         elif not c.isEnd():
                             check(c, _i)
                 check(i, i)
+                if i.global_target != parser.global_target:
+                    #print(i.name)
+                    Scope.changeTarget(parser, i.name, i.global_target)
+                    #print("this function can only be used in a specific target", i.global_target)
 
             elif type(i) is Tree.Create:
                 if not i.varType is None:
-                    Scope.addVar(i, parser, i.name, Scope.Type(i.imutable, i.varType))
+                    Scope.addVar(i, parser, i.name, Scope.Type(i.imutable, i.varType, i.owner.global_target))
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
             elif type(i) is Tree.ReadVar:
@@ -101,6 +111,22 @@ def infer(parser, tree):
                     self.imutable = not Scope.isMutable(parser, self.package, self.name)
                     self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
                     self.package = Scope.packageOfVar(parser, parser.package, self.name)
+
+                    target = Scope.targetOfVar(i, parser, parser.package, self.name)
+
+                    if target != parser.global_target:
+                        root = tree.nodes[o_iter]
+
+                        if type(root) is Tree.FuncBody:
+                            tree.nodes[o_iter-1].global_target = target
+                            tree.nodes[o_iter-2].global_target = target
+
+                        root.global_target = target
+
+                    elif tree.nodes[o_iter].global_target != target and target != "full":
+                        realT = tree.nodes[o_iter].global_target
+                        i.error("variable "+i.name+" is bound to target "+realT+" however, this variable is from target "+target)
+
             elif type(i) is Tree.Field:
                 def bind():
                     if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i: return
@@ -123,6 +149,17 @@ def infer(parser, tree):
                 if type(typ) is Types.Package:
                     i.indexPackage = True
                     i.type = Scope.typeOfVar(i, parser, i.nodes[0].name, i.field)
+
+                    target = Scope.targetOfVar(i, parser, i.nodes[0].name, i.field)
+
+                    if target != parser.global_target:
+                        root = tree.nodes[o_iter]
+
+                        if type(root) is Tree.FuncBody:
+                            tree.nodes[o_iter-1].global_target = target
+                            tree.nodes[o_iter-2].global_target = target
+
+                        root.global_target = target
 
                     i.nodes[0].package = i.nodes[0].name
                     i.nodes[0].name = ""
@@ -512,7 +549,7 @@ def infer(parser, tree):
                 Scope.decrScope(parser)
 
             count += 1
-    loop(tree)
+    loop(tree, -1)
 
 def validate(parser, tree):
     for i in tree:

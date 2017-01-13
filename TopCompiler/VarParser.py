@@ -65,7 +65,6 @@ def assignParser(parser, name= "", init= False, package = ""):
         parser.nextToken()
         Parser.callToken(parser)
 
-
     if name == "_random":
         print()
     ExprParser.endExpr(parser)
@@ -111,7 +110,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
         parser.nextToken()
     elif parser.thisToken().token != "=":
-        Error.parseError(parser, "expecting =, not"+parser.thisToken().token)
+        Error.parseError(parser, "expecting =, not "+parser.thisToken().token)
 
     n = Tree.CreateAssign(parser)
 

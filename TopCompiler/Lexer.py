@@ -42,6 +42,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         "lens",
         "match",
         "with",
+        "parseJson",
     ]
 
     special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
@@ -169,6 +170,13 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
 
         elif typ != 'skip' and not typ in ["comment", "commentLine"]:
             val = mo.group(typ)
+            if typ == "identifier":
+                def my_replace(match):
+                    match = match.group()
+                    return match[1].upper()
+
+                val = re.sub(r'\-[A-Za-z]', my_replace, val)
+
             if typ == 'identifier' and val in keywords:
                 if val in ["true", "false"]:
                     typ = "bool"
@@ -183,12 +191,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
 
             if typ == "i32" or typ == "f32":
                 val = val.replace("_", "")
-            if typ == "identifier":
-                def my_replace(match):
-                    match = match.group()
-                    return match[1].upper()
 
-                val = re.sub(r'\-[A-Za-z]', my_replace, val)
             elif typ in special:
                 typ = "symbol"
             elif typ == "equal" or typ == "mut" or typ == "ne":

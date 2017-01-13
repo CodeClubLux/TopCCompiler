@@ -1,4 +1,37 @@
+import "http"
 
+type Feature =
+    id: string
+    name: string
+    description: string
+    image: string
+
+def Feature.toString(self) string =
+    "Feature({self.id},{self.name},{self.image})"
+
+type Page either
+    Page-home(Home)
+    Page-docs(Docs)
+    Page-not-found()
+    Page-Get-Started()
+
+type Home =
+    features: []Feature
+    headers: []string
+    footer: string
+
+type Docs =
+    overview: []string
+    learn: []string
+    packages: []string
+    headers: []string
+    footer: string
+
+let headers = ["HOME", "EXAMPLES", "DOCS", "COMMUNITY", "BLOG"]
+let footer_text = "All code for this site is written in Top, including the server - Lucas Goetz"
+
+type Routes either
+    Query-docs(|Docs| -> http.Response)
 
 def map[T, X](func: |T| -> X, x: []T) []X =
     x.map func

@@ -1,4 +1,3 @@
 {
-    "files": ["router"],
-    "node-files": ["lib"]
+    "files": ["lib", "router"]
 }

@@ -53,15 +53,19 @@ class Type(Node):
         return ""
 
     def compileToJS(self, codegen):
+        codegen.inFunction()
         #print("compiling struct " + self.package + "." + self.name)
         names = [codegen.getName() for i in self.fields]
-        codegen.out_parts.append("function "+self.package+"_"+self.normalName+"("+",".join(names)+"){")
+        codegen.append("function "+self.package+"_"+self.normalName+"("+",".join(names)+"){")
         for i in range(len(self.fields)):
-            codegen.out_parts.append("this."+self.fields[i]+"="+names[i]+";")
-        codegen.out_parts.append("}")
-        codegen.out_parts.append(self.package+"_"+self.normalName+".fields=newVector(")
-        codegen.out_parts.append(",".join('"'+i+'"' for i in self.fields))
-        codegen.out_parts.append(");")
+            codegen.append("this."+self.fields[i]+"="+names[i]+";")
+        codegen.append("}")
+        codegen.append(self.package+"_"+self.normalName+".fields=[")
+        codegen.append(",".join('"'+i+'"' for i in self.fields))
+        codegen.append("];")
+        codegen.outFunction()
+
+
     def validate(self, parser): pass
 
 class Field(Node):

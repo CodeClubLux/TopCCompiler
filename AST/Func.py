@@ -223,6 +223,7 @@ def transform(body):
                     i.outer_scope.owner.yielding = True
 
                 if not i.owner == outer_scope[-1]:
+                    i.global_target = outer_scope[-1].nodes[o_iter].global_target
                     outer_scope[-1].nodes.insert(o_iter, i)
 
                     c = Context(body, i)
@@ -254,9 +255,11 @@ def transform(body):
 
             elif type(i) is Tree.CreateAssign:
                 body.before.append(i.nodes[0])
+                i.nodes[0].global_target = i.global_target
                 i.nodes[0].owner = body
 
                 assign = i.nodes[1]
+                assign.global_target = i.global_target
                 assign.owner = i.owner
 
                 i.owner.nodes[iter] = assign
@@ -265,6 +268,8 @@ def transform(body):
                 o_iter += 1
 
             if type(i) in [Tree.Block]:
+                if i.yielding:
+                    i.owner.yielding = True
                 outer_scope.pop()
 
         return o_iter
@@ -394,10 +399,25 @@ class ArrBind(Node):
         self.nodes[0].compileToJS(codegen)
         codegen.append(")")
 
+class Func(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def __str__(self):
+        return "func"
+
+    def validate(self, parser): pass
+
+    def compileToJS(self, codegen):
+        for i in self:
+            i.compileToJS(codegen)
 
 class Under(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
+
+    def __str__(self):
+        return "under"
 
     def validate(self, parser): pass
 
@@ -407,6 +427,9 @@ class Under(Node):
 class Generic(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
+
+    def __str__(self):
+        return "::[]"
 
     def validate(self, parser): pass
 

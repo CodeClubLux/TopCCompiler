@@ -10,7 +10,7 @@ function operator_gt(x,y) {return x.operator_gt(y)}
 function operator_or(x,y) {return x || y}
 function operator_not(x) {return !x}
 function operator_and(x,y) { return x && y }
-
+function operator_ne(x,y) { return x.operator_ne(y) }
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
@@ -23,8 +23,11 @@ Number.prototype.operator_eq = function (other) { return this == other }
 Number.prototype.operator_mod = function (other) { return this % other }
 Number.prototype.operator_lt = function (other) { return this < other }
 Number.prototype.operator_gt = function (other) { return this > other }
+Number.prototype.operator_ne = function (other) { return this != other }
+
 Number.prototype.toFloat = function () { return this }
 Number.prototype.toInt = function () { return this | 0 }
 
 String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_ne = function (other) { return this != other }
 String.prototype.operator_add = function (other) { return this + other }

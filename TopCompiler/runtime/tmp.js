@@ -10,7 +10,7 @@ function operator_gt(x,y) {return x.operator_gt(y)}
 function operator_or(x,y) {return x || y}
 function operator_not(x) {return !x}
 function operator_and(x,y) { return x && y }
-
+function operator_ne(x,y) { return x.operator_ne(y) }
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
@@ -23,10 +23,13 @@ Number.prototype.operator_eq = function (other) { return this == other }
 Number.prototype.operator_mod = function (other) { return this % other }
 Number.prototype.operator_lt = function (other) { return this < other }
 Number.prototype.operator_gt = function (other) { return this > other }
+Number.prototype.operator_ne = function (other) { return this != other }
+
 Number.prototype.toFloat = function () { return this }
 Number.prototype.toInt = function () { return this | 0 }
 
 String.prototype.operator_eq = function (other) { return this == other }
+String.prototype.operator_ne = function (other) { return this != other }
 String.prototype.operator_add = function (other) { return this + other }
 function toString(s) {
     return s.toString()
@@ -64,6 +67,11 @@ function min(a,b) {
 
 function max(a,b) {
     return a > b ? a : b
+}
+
+function log_unop(v, next) {
+    console.log(v);
+    return next()
 }
 
 function len(x) {
@@ -262,6 +270,60 @@ function serial(funcs, next) {
 
 function core_assign(construct, obj) {
     return Object.assign(new construct.constructor(), construct, obj);
+}
+
+function core_json_int(obj) {
+    return obj | 0;
+}
+
+function core_json_float(obj) {
+    return Number(obj);
+}
+
+function core_json_bool(obj) {
+    return !!obj;
+}
+
+function core_json_string(obj) {
+    return ""+obj;
+}
+
+function core_json_struct(constr, array) {
+    return function(realObj) {
+        var len = array.length;
+        var obj = new constr();
+        for (var i = 0; i < len; i++) {
+            var arr = array[i];
+            obj[arr[0]] = arr[1](realObj[arr[0]]);
+        }
+        return obj;
+    }
+}
+
+function core_json_interface(array) {
+    return function (realObj) {
+        var obj = {};
+        for (var i = 0; i < len; i++) {
+            var arr = array[i];
+            obj[arr[0]] = arr[1](realObj[arr[0]]);
+        }
+        return obj;
+    }
+}
+
+function core_json_vector(decoder) {
+    return function (realObj) {
+        return fromArray(realObj.map(decoder));
+    }
+}
+
+function core_parseJSON(str, decoder) {
+    var obj = JSON.parse(str);
+    return decoder(obj);
+}
+
+function jsonStringify(i) {
+    return JSON.stringify(i);
 }
 //linked list
 /*
@@ -520,6 +582,10 @@ Vector.prototype.get = function (key) {
           node = node[(key >> level) & mask]
     }
     return node[key & mask]
+}
+
+Vector.prototype.toJSON = function() {
+    return this.toArray();
 }
 
 Vector.prototype.append_m = function (value) {

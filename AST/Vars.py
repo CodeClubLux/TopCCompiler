@@ -139,6 +139,12 @@ class ReadVar(Node):
     def compileToJS(self, codegen):
         if type(self.owner) is Tree.Field:
             pass #print(self.name)
+
+        if not (type(self.owner) is Tree.FuncCall and self.owner.nodes[0] == self) and self.name in ["log", "println", "print"]:
+            print("unop")
+            codegen.append(self.name+"_unop")
+            return
+
         codegen.append(codegen.readName(
             self.package + "_" + self.name) if not self.isGlobal else
             (self.package+"_"+self.name if self.package != "" else self.name

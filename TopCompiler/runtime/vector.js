@@ -28,6 +28,10 @@ Vector.prototype.get = function (key) {
     return node[key & mask]
 }
 
+Vector.prototype.toJSON = function() {
+    return this.toArray();
+}
+
 Vector.prototype.append_m = function (value) {
     var width = Vector.prototype.width;
 

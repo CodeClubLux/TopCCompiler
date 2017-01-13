@@ -55,6 +55,7 @@ class MatchCase(Node):
         if type(self.nodes[0]) is Tree.FuncCall:
             node = self.nodes[0]
             count = list(node.type.const.keys()).index(node.nodes[0].name)
+
             codegen.append(tmp+"[0]=="+str(count))
 
             for (index, i) in enumerate(node.nodes[1:]):
@@ -78,7 +79,8 @@ class MatchCase(Node):
             count = list(node.type.const.keys()).index(node.name)
             codegen.append(tmp + "[0]==" + str(count))
             codegen.append("){")
-
+        elif type(self.nodes[0]) is Tree.Under:
+            codegen.append("1){")
         else:
             node = self.nodes[0]
             codegen.append(tmp+"==")
