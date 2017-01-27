@@ -133,6 +133,9 @@ def declareOnly(self, noVar=False):
 
     tok = self.thisToken().token
 
+    if tok == "var":
+        print("var")
+
     if self.thisToken().type == "indent":
         pass
     elif s1 != None:
@@ -225,7 +228,7 @@ def callToken(self):
         s1(self)
         returnBookmark(self)
     else:
-        if (b.token in ["!", "_", "(", "\\", "$"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if (b.token in ["!", "_", "(", "\\", "$", "decoder"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
             if b.token == "$":
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
@@ -345,7 +348,12 @@ class Parser:  # all mutable state
 
         Maybe = Types.Enum("_global", "Maybe", coll.OrderedDict([("Some", [Maybe_T]), ("None", [])]), generic=Maybe_gen)
 
+        assign_T = Types.T("T", All, "assign")
+
+        parseT = Types.T("T", All, "parseJson")
+
         self.scope = {"_global": [{
+            "assign": Scope.Type(True, Types.FuncPointer([assign_T, Types.Assign(assign_T)], assign_T, generic= coll.OrderedDict([("assign.T", assign_T)]))),
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "toString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
@@ -369,6 +377,7 @@ class Parser:  # all mutable state
             "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
             "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
             "jsonStringify": Scope.Type(True, Types.FuncPointer([All], Types.String(0))),
+            "parseJson": Scope.Type(True, Types.FuncPointer([Types.FuncPointer([All], parseT), Types.String(0)], parseT))
         }]}
 
         self.iter = 0

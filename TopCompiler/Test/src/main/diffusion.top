@@ -2,6 +2,10 @@
 import "svg"
 import "html"
 
+type Kind either
+    Water
+    Coloring
+
 type Particle =
     x: float
     y: float
@@ -9,10 +13,14 @@ type Particle =
     limit-y: float
     vel-x: float
     vel-y: float
+    mass: float
+    kind: Kind
 
 type Game =
     particles: []Particle
     speed: int
+    water: int
+    color: int
 
 ext full random: || do float = "toAsync(Math.random)"
 ext full cos: |float| -> float = "Math.cos"
@@ -24,38 +32,49 @@ ext full abs: |float| -> float = "Math.abs"
 
 //log 10.toString! + "hello world"
 
-let app-state = newAtom Game{ (serial \[0..100].map defer generate), 10 }
+let app-state = newAtom Game{ (serial \[0..100].map defer generate_water), 10, 100, 0 }
 
 def returnId(id: int) int =
     id
 
 //Game{ []Particle, returnId 0 }
 
-def generate(id: int) Particle do
-    let vel-x = (random!)/2.0
+def generate_water(id: int) Particle do
+    let vel-x = 0.3
 
-    Particle { 800.0 * random!, 500.0 * random!, 800.0, 500.0, vel-x, 0.5 - vel-x }
+    Particle { 100.0+ 7.0 * (toFloat id), 10.0, 800.0, 500.0, 0.0, vel-x, 1.0, Water}
+
+def generate_coloring(id: int) Particle do
+    let vel-x = 0.3
+
+    Particle { 100.0+ 7.0 * (toFloat id), 10.0, 800.0, 500.0, 0.0, vel-x, 1.0, Coloring}
 
 def Particle.toString(self) string =
-    "Particle({self.x}, {self.y}, {self.limit-x}, {self.limit-y}, {self.vel-x}, {self.vel-y})"
+    let kind = match self.kind with
+        Water -> "water"
+        Coloring -> "coloring"
+
+    "Particle({self.x}, {self.y}, {self.limit-x}, {self.limit-y}, {self.vel-x}, {self.vel-y}, {kind}"
 
 def particle(box: Particle, delta: int) Particle =
+    let gravity = 0.13
+
     if box.x > box.limit-x - 20.0 then
-        Particle {box.limit-x - 22.0 , box.y, box.limit-x, box.limit-y, -box.vel-x, box.vel-y}
+        box {x = box.limit-x - 24.0 , vel-x = -box.vel-x}
     elif box.x < 0.0 then
-        Particle {4.0, box.y, box.limit-x, box.limit-y, -box.vel-x, box.vel-y}
+        box {x = 5.0, vel-x = -box.vel-x}
     elif box.y > box.limit-y - 20.0 then
-        Particle {box.x, box.limit-y - 22.0, box.limit-x, box.limit-y, box.vel-x, -box.vel-y + 0.2}
+        box {y = box.limit-y - 24.0, vel-y = -box.vel-y + gravity}
     elif box.y < 0.0 then
-        Particle {box.x, 4.0, box.limit-x, box.limit-y, box.vel-x, -box.vel-y + 0.2}
+        box {y = 5.0, vel-y = -box.vel-y + gravity}
     else
-        Particle {box.x + (toFloat delta) * box.vel-x, box.y + (toFloat delta) * box.vel-y, box.limit-x, box.limit-y, box.vel-x, box.vel-y}
+        box {x = box.x + (toFloat delta) * box.vel-x, y = box.y + (toFloat delta) * box.vel-y}
 
 def setX(p: Particle, x: float) Particle =
-    Particle {p.x, p.y, p.limit-x, p.limit-y, x, p.vel-y}
+    Particle {p.x, p.y, p.limit-x, p.limit-y, x, p.vel-y, p.mass, p.kind}
 
 def setY(p: Particle, x: float) Particle =
-    Particle {p.x, p.y, p.limit-x, p.limit-y, p.vel-x, x}
+    Particle {p.x, p.y, p.limit-x, p.limit-y, p.vel-x, x, p.mass, p.kind}
 
 def collision(p: []Particle) []Particle =
     var particles = p
@@ -86,11 +105,15 @@ def collision(p: []Particle) []Particle =
 def game-loop(g: Game, delta: int) Game do
     var particles = (g.particles.map particle _, delta)
 
-    Game { (collision particles), g.speed }
+    Game { (collision particles), g.speed, g.water, g.color}
 
 def render(box: Particle) html.VNode =
+    let url = match box.kind with
+        Water -> "http://vignette2.wikia.nocookie.net/chemistry/images/d/d1/500px-Water_molecule.svg.png/revision/latest?cb=200100320204351"
+        Coloring -> "http://kevinlhanlon.com/images/Blue%20Ball/blue-ball.png"
+
     svg.image \[
-        svg.href "http://vignette2.wikia.nocookie.net/chemistry/images/d/d1/500px-Water_molecule.svg.png/revision/latest?cb=200100320204351"
+        svg.href url
         svg.width "20"
         svg.height "20"
         svg.x box.x.toString!
@@ -126,26 +149,51 @@ def manage-bounce(ball: Particle, ball2: Particle) []Particle =
 
 
     [
-        Particle {ball.x, new_y, ball.limit-x, ball.limit-y, ball_vel-x, ball_vel-y}
-        Particle {ball2.x, new_y_2, ball2.limit-x, ball2.limit-y, ball2_vel-x, ball2_vel-y}
+        Particle {ball.x, new_y, ball.limit-x, ball.limit-y, ball_vel-x, ball_vel-y, ball.mass, ball.kind}
+        Particle {ball2.x, new_y_2, ball2.limit-x, ball2.limit-y, ball2_vel-x, ball2_vel-y, ball2.mass, ball2.kind}
     ]
 
-def changeNumber(g: Game, e: html.Event) Game do
+def changeNumber(kind: Kind, g: Game, e: html.Event) Game do
     let newVal = toInt e.target.value
     let length = g.particles.length
 
     let final-speed = 1.0/(toFloat 11 - newVal)
 
     def gen(i: int) Particle do
-        let p = generate i
+        match kind with
+            Water ->
+                let p = generate_water i
+                adjust final-speed, p
 
-        adjust final-speed, p
+            Coloring ->
+                let p = generate_coloring i
+                log p
+                adjust final-speed, p
 
-    if newVal > length then
-        Game { g.particles + (serial \[0..newVal - length].map defer gen), g.speed }
-    else
-        Game { (g.particles.shorten length - newVal), g.speed }
 
+    let res = match kind with
+        Water ->
+            if newVal > g.water then
+                Game { (g.particles.slice 0, g.water) + (serial \[0..newVal - g.water].map defer gen) + (g.particles.slice g.water, 0), g.speed, newVal, g.color }
+            elif newVal == 0 then
+                Game { (g.particles.slice g.water, 0), g.speed, newVal, g.color }
+            else
+                Game { (g.particles.slice 0, newVal) + (g.particles.slice g.water, 0), g.speed, newVal, g.color }
+        Coloring ->
+            if newVal > g.color then
+                Game { g.particles + (serial \[0..newVal - g.color].map defer gen), g.speed, g.water, newVal }
+            elif newVal == 0 then
+                Game { (g.particles.shorten length - g.water), g.speed, g.water, newVal,  }
+            else
+                Game { (g.particles.shorten g.color - newVal), g.speed, g.water, newVal }
+
+    log "====== should be"
+    log "water {res.water}"
+    log "color {res.color}"
+    log res.water + res.color
+    log res.particles.length
+
+    res
 
 def adjust(r: float, p: Particle) Particle =
     let x = p.vel-x * r
@@ -163,13 +211,18 @@ def changeSpeed(g: Game, e: html.Event) Game do
     Game {
         g.particles.map adjust final-speed
         speed
+        g.water
+        g.color
     }
 
 def game(g: Game, a: Atom[Game]) html.VNode =
     html.div html.noAttrib, [
-        html.h1 html.noAttrib, "States of matter simulations, by Lucas Goetz"
-        html.h3 html.noAttrib, "{g.particles.length} Particles"
-        html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.min 0), (html.max 200), html.onInput changeNumber, a], ""
+        html.h1 \[], "States of matter simulations, by Lucas Goetz"
+        html.h3 \[html.style "display:inline; margin: 2px;"], "{g.water} Water Particles"
+        html.h3 \[html.style "display:inline; margin: 2px;"], "{g.color} Food Coloring Particles"
+        html.br \[], ""
+        html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.value toString g.water), (html.min 0), (html.max 200), html.onInput (changeNumber Water), a], ""
+        html.input \[(html.style "margin-left: 40px;"), (html._type "range"), (html.height "10"), (html.width "100"), (html.value toString g.color), (html.min 0), (html.max 200), html.onInput (changeNumber Coloring), a], ""
 
         html.h3 html.noAttrib, "{g.speed * 10 + 4} Degrees Celsius"
         html.input \[(html._type "range"), (html.height "10"), (html.width "100"), (html.min 1), (html.max 10), (html.value "{g.speed}"), html.onInput changeSpeed, a], ""

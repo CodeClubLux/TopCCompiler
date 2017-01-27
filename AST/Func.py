@@ -95,8 +95,6 @@ class FuncBody(Node):
         codegen.append("case "+str(number)+":")
 
     def compileToJS(self, codegen):
-
-
         if self.do:
             self.res = codegen.getName()
             self._name = codegen.getName()
@@ -118,7 +116,7 @@ class FuncBody(Node):
 
         y = False
         if len(self.nodes) > 0 and self.do:
-            y = yields(self.nodes[-1]) or (type(self.nodes[-1]) is Tree.If and self.nodes[-1].yielding)
+            y = yields(self.nodes[-1]) or (type(self.nodes[-1]) in [Tree.If, Tree.Match] and self.nodes[-1].yielding)
 
         if self.returnType != Types.Null():
             if self.do:
@@ -188,25 +186,27 @@ def yields(i):
             return True
     elif type(i) is Tree.Operator and i.kind == "<-":
         return True
+    elif type(i) in [Tree.If, Tree.Match] and i.yielding:
+        return True
     return False
 
 def transform(body):
     outer_scope = [body]
 
-    def loop(node, o_iter):
+    def loop(node, o_iter, match= False):
         iter = -1
         isOuter = type(node) in [Tree.Block, Tree.FuncBody, Tree.Root]
         for i in node:
             iter += 1
 
-            if type(i) is Tree.Block:
+            if type(i) == Tree.Block:
                 i.outer_scope = outer_scope[-1]
                 i.body = body
 
                 outer_scope.append(i)
 
             if not i.isEnd() and not type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
-                x = loop(i, 0 if type(i) in [Tree.Block] else o_iter )
+                x = loop(i, 0 if type(i) in [Tree.Block] else o_iter, True if type(i) is Tree.MatchCase else match)
                 if not type(i) in [Tree.Block]:
                     if isOuter:
                         iter += x - o_iter
@@ -217,7 +217,6 @@ def transform(body):
                 i.outer_scope = outer_scope[-1]
 
                 i.outer_scope.yielding = True
-
 
                 if type(i.outer_scope) in [Tree.Block]:
                     i.outer_scope.owner.yielding = True
@@ -237,7 +236,7 @@ def transform(body):
                     o_iter += 1
 
 
-            if type(i) is Tree.If and i.yielding:
+            if type(i) in [Tree.If, Tree.Match] and i.yielding:
                 i.outer_scope = outer_scope[-1]
 
                 if not i.owner == outer_scope[-1]:
@@ -263,6 +262,14 @@ def transform(body):
                 assign.owner = i.owner
 
                 i.owner.nodes[iter] = assign
+
+            elif type(i) is Tree.ReadVar and match:
+                r = Tree.Create(i.name, i.type, i)
+                r.package = i.package
+                r.owner = body
+                r.global_target = i.global_target
+
+                body.before.append(r)
 
             if isOuter:
                 o_iter += 1

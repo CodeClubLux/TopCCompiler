@@ -1,6 +1,6 @@
 import "html"
 
-ext h: |string, []html.Attribute, html.VNode| -> html.VNode = "fromJS(svg_h)"
+ext client h: |string, []html.Attribute, html.VNode| -> html.VNode = "fromJS(svg_h)"
 
 let _svg = h "svg"
 let rect = h "rect", _, ""
@@ -20,12 +20,12 @@ let cy = html.newAttrib::[string] "cy"
 let cx = html.newAttrib::[string] "cx"
 let r = html.newAttrib::[string] "r"
 
-ext game-loop: | |int| do none, int| -> none = "core_fps"
+ext client game-loop: | |int| do none, int| -> none = "core_fps"
 
 def fps[T](f: |T, int| do T, a: Atom[T], _fps: int) do
     def nextFrame(delta: int) do
         a.operator_set f \<-a, delta
-        sleep 0
+        sleep 0.0
 
     game-loop nextFrame, _fps
 

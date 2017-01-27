@@ -14,6 +14,9 @@ class Array(Node):
         return "[]"
 
     def compileToJS(self, codegen):
+        if len(self.nodes) == 0:
+            codegen.append("EmptyVector");
+            return
         if self.range:
             codegen.append("newVectorRange(")
             self.nodes[0].compileToJS(codegen)

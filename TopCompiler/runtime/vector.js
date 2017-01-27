@@ -1,8 +1,9 @@
-function Vector(root, len, depth) {
+function Vector(root, len, depth, start) {
     this.shift = (depth - 1) * this.bits;
     this.root = root;
     this.length = len;
     this.depth = depth;
+    this.start= start || 0;
 }
 
 Vector.prototype.bits = 5;
@@ -13,7 +14,7 @@ var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
 
 Vector.prototype.get = function (key) {
     key = getProperIndex(this, key);
-    if (key >= this.length || key < 0) {
+    if (key >= this.length+this.start || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -129,7 +130,7 @@ Vector.prototype.append = function (value) {
 
 Vector.prototype.set = function (key, value) {
     key = getProperIndex(this, key);
-    if (key >= this.length || key < 0) {
+    if (key >= this.length+this.start || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -161,7 +162,7 @@ Vector.prototype.set = function (key, value) {
 
 Vector.prototype.insert = function (key, val) {
     key = getProperIndex(this, key);
-    if (key >= this.length || key < 0) {
+    if (key >= this.length+this.start || key < 0) {
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -175,7 +176,7 @@ Vector.prototype.insert = function (key, val) {
             var pos = key >> level & mask;
 
             if (node) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -225,7 +226,7 @@ Vector.prototype.insert = function (key, val) {
 }
 
 Vector.prototype.toArray = function () {
-    var v = Array(this.length)
+    var v = [];
     for (var i = 0; i < this.length; i++) {
         v[i] = this.get(i);
     }
@@ -294,7 +295,19 @@ Vector.prototype.join = function (s) {
     return string
 }
 
+Vector.prototype.slice = function (start,end) {
+    start = getProperIndex(this, start);
+    if (!end) {
+        end = this.length;
+    } else {
+        end = getProperIndex(this, end);
+    }
+
+    return new Vector(this.root, end-start, this.depth, start);
+}
+
 function getProperIndex(self, index) {
+    index += self.start;
     if (index < 0) {
         return (self.length + index);
     }
@@ -319,7 +332,7 @@ Vector.prototype.operator_add = function (s) {
 }
 
 Vector.prototype.shorten = function (number) {
-    return new Vector(this.root, this.length-number, this.depth)
+    return new Vector(this.root, this.length-number, this.depth);
 }
 
 function newVector() {

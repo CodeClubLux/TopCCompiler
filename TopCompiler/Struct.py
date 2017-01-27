@@ -131,21 +131,25 @@ def typeParser(parser, decl= False):
 
 def initStruct(parser, package= ""):
     numB = parser.curly
+    unary = False
     if ExprParser.isUnary(parser, parser.lookBehind()):
-        Error.parseError(parser, "unexpected {")
+        unary = True
 
     parser.curly += 1
 
-    if package == "": package = parser.package
+    readVar = True
 
-    if len(parser.currentNode.nodes) == 0:
-        Error.parseError(parser, "unexpected {")
-    if not type(parser.currentNode.nodes[-1]) in [Tree.ReadVar, Tree.Field]:
-        Error.parseError(parser, "unexpected {")
+    if not unary:
+        if package == "": package = parser.package
 
-    readVar = type(parser.currentNode.nodes[-1]) is Tree.ReadVar
+        if len(parser.currentNode.nodes) == 0:
+            Error.parseError(parser, "unexpected {")
+        if not type(parser.currentNode.nodes[-1]) in [Tree.ReadVar, Tree.Field]:
+            Error.parseError(parser, "unexpected {")
 
-    name = parser.currentNode.nodes[-1].name if readVar else parser.currentNode.nodes[-1].field
+        readVar = type(parser.currentNode.nodes[-1]) is Tree.ReadVar
+
+        name = parser.currentNode.nodes[-1].name if readVar else parser.currentNode.nodes[-1].field
 
     init = Tree.InitStruct(parser)
 
@@ -157,12 +161,15 @@ def initStruct(parser, package= ""):
                 t.error("no package called " + package)
 
     init.package = package
-    init.constructor = parser.currentNode.nodes[-1]
 
-    init.addNode(parser.currentNode.nodes[-1])
-    del parser.currentNode.nodes[-1]
+    if not unary:
+        init.constructor = parser.currentNode.nodes[-1]
+        init.addNode(parser.currentNode.nodes[-1])
+
+        del parser.currentNode.nodes[-1]
 
     init.mutable = False
+    init.unary = unary
 
     parser.currentNode.addNode(init)
     parser.currentNode = init

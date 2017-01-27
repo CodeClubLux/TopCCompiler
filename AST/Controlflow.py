@@ -33,15 +33,22 @@ class If(Node):
                 codegen.count += 1
                 self.ending = str(codegen.count)
 
-                for i in self.nodes:
+                for i in self.nodes[1:]:
                     i.yielding = True
+
+            next = ""
 
             count = 0
             _l = len(self.nodes)
             while count < _l:
                 if self.yielding and count > 1:
                     codegen.append("/*if*/")
-                    self.outer_scope.case(codegen, self.next)
+                    if self.next == next:
+                        codegen.count += 1
+                        self.next = codegen.count
+
+                    codegen.append("case " + str(self.next) + ":")
+                    next = self.next
                     codegen.append("/*notif*/")
 
                 self.nodes[count].compileToJS(codegen)
@@ -50,8 +57,7 @@ class If(Node):
                 count += 2
 
             if self.yielding:
-                self.outer_scope.case(codegen, self.ending)
-
+                 codegen.append("case " + str(self.ending) + ":")
 
     def validate(self, parser):
         if self.type != Types.Null():
@@ -203,19 +209,25 @@ class Block(Node):
         return "block"
 
     def case(self, codegen, number):
-        codegen.append("}")
+        codegen.append("}/*case*/")
 
-        if len(self.owner.nodes) > 2:
+        if len(self.owner.nodes) > (2 if type(self.owner) is If else 3):
             num = codegen.count + 1
         else:
             num = self.owner.ending
 
         codegen.count += 1
-        codegen.append(self.body._context + "=" + str(num) + ";break;")
+        codegen.append(self.body._context + "=" + str(num) + ";break;/*case*/")
+
         self.owner.next = num
 
+        if type(self.outer_scope) is Tree.Block and actuallyYields(self) and self.outer_scope.first:
+            self.outer_scope.first = False
+            self.outer_scope.case(codegen, number)
+        else:
+            codegen.append("case " + str(number) + ":")
 
-        self.outer_scope.case(codegen, number)
+            #codegen.append("case " + str(number) + ":")
         self.yielding = True
 
     def compileToJS(self, codegen):
@@ -232,7 +244,7 @@ class Block(Node):
                 self.nodes[-1].compileToJS(codegen)
                 codegen.append(";}")
             else:
-                if not (type(self.nodes[-1]) is Tree.FuncCall and self.nodes[-1].nodes[0].type.do):
+                if not AST.yields(self.nodes[-1]): #type(self.nodes[-1]) is Tree.FuncCall and self.nodes[-1].nodes[0].type.do):
                     codegen.append(self.body.res+"=")
 
                 self.nodes[-1].compileToJS(codegen)

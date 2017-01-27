@@ -78,7 +78,7 @@ class String(Node):
 
     def validate(self, parser): pass
 
-class ParseJson(Node):
+class Decoder(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
 
@@ -86,17 +86,6 @@ class ParseJson(Node):
 
     def compileToJS(self, codegen):
         typ = self.shouldBeTyp
-
-        if len(self.nodes) == 0:
-            codegen.append("(function(")
-            tmp = codegen.getName()
-            codegen.append(tmp+"){")
-            codegen.append("return core_parseJSON("+tmp)
-        else:
-            codegen.append("core_parseJSON(")
-            self.nodes[0].compileToJS(codegen)
-
-        codegen.append(",")
 
         def loop(typ):
             if type(typ) in [Types.I32, Types.Float, Types.Bool, Types.String]:
@@ -126,6 +115,3 @@ class ParseJson(Node):
                 loop(typ.elemT)
                 codegen.append(")")
         loop(typ)
-        codegen.append(")")
-        if len(self.nodes) == 0:
-            codegen.append("})")

@@ -6,7 +6,7 @@ from TopCompiler import Types
 import AST as Tree
 
 def parseJson(parser):
-    parse = Tree.ParseJson(parser)
+    parse = Tree.Decoder(parser)
     parser.currentNode.addNode(parse)
     parser.currentNode = parse
 
@@ -14,22 +14,9 @@ def parseJson(parser):
 
     typ = Types.parseType(parser)
 
-    if parser.lookInfront().token == ",":
-        parser.nextToken()
-        while not Parser.isEnd(parser):
-            parser.nextToken()
-            Parser.callToken(parser)
-
-    if len(parse.nodes) > 1:
-        Error.parseError(parser, "expecting only 1 node")
-
+    parse.type = Types.FuncPointer([Types.All], typ)
     parse.shouldBeTyp = typ
-
-    if len(parse.nodes) == 0:
-        parse.type = Types.FuncPointer([Types.String(0)], typ)
-    else:
-        parse.type = typ
 
     parser.currentNode = parse.owner
 
-Parser.exprToken["parseJson"] = parseJson
+Parser.exprToken["decoder"] = parseJson

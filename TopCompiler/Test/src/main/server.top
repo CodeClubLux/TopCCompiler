@@ -1,4 +1,5 @@
 import "http"
+import "db"
 
 ext node _read: |string| do Maybe[string] = "server_readFile"
 ext node quit: |int| -> string = "process.exit"
@@ -17,6 +18,10 @@ let async = read "images/async.png"
 let tools = read "images/tools.png"
 let favicon = read "images/arrow.ico"
 let error = read "images/error.png"
+let enigma = read "images/enigma.png"
+
+let monk = db.connect "mongodb://127.0.0.1:27017/enigma"
+let coll = db.document monk, "parts", decoder Part
 
 def query(q: Routes) http.Response do
     match q with
@@ -31,25 +36,50 @@ def query(q: Routes) http.Response do
                 footer = footer_text
             }
 
+        Query-Parts name, keywords, end ->
+            log "handling"
+
+            if keywords == "" then
+                end (db.find coll, {kind = name})
+            else
+                end (db.search coll, {kind = name}, keywords)
+
+        Query-Part name, end ->
+            end (db.find coll, {name = name})[0]
+
+            //end (db.find coll, {name = name, $text: {$search: "dogs"} }, {score: {$meta: "toextScore"}}).sort({score:{$meta:"textScore"}})})[0]
+
 def requestHandler(req: http.Request) http.Response do
     log "request, "+req.url
 
     if (http.isQuery req.url) then
         http.handleQuery req.url, query
-    elif req.url == "/" then
-        http.response {body = htmlFile, content-type = "text/html"}
-    elif req.url == "/arrow.png" then
-        http.response {body = logo, content-type = "image/png"}
-    elif req.url == "/async.png" then
-        http.response {body = async, content-type = "image/png"}
-    elif req.url == "/tools.png" then
-        http.response {body = tools, content-type = "image/png"}
-    elif req.url == "/favicon.ico" then
-        http.response {body = favicon, content-type = "image/x-icon"}
-    elif req.url == "/error.png" then
-        http.response {body = error, content-type = "image/png"}
-    else
-        http.response {status= 404, body = "404 Page not found"}
+    else match req.url with
+        "/parts/{name}" ->
+            match _read "images/parts/"+name+".jpg" with
+                Some content ->
+                    log "found something"
+                    http.response {body = content, content-type = "image/jpg"}
+
+                None ->
+                    log "didn't find {name+".jpg"}"
+                    http.response{status = 404}
+        "/" ->
+            http.response {body = htmlFile, content-type = "text/html"}
+        "/arrow.png" ->
+            http.response {body = logo, content-type = "image/png"}
+        "/async.png" ->
+            http.response {body = async, content-type = "image/png"}
+        "/tools.png" ->
+            http.response {body = tools, content-type = "image/png"}
+        "/favicon.ico" ->
+            http.response {body = favicon, content-type = "image/x-icon"}
+        "/error.png" ->
+            http.response {body = error, content-type = "image/png"}
+        "/enigma.png" ->
+            http.response {body = enigma, content-type = "image/png"}
+        _ ->
+            http.response {status= 404, body = "404 Page not found"}
 
 ext node port: int = "process.env.PORT || 3000"
 
@@ -58,3 +88,15 @@ let server = http.server requestHandler
 server.listen port
 
 log "started web server on port {port}"
+
+type Part =
+    kind: string
+    name: string
+    rating: int
+    price: float
+
+def Part.toString(self) string =
+    " Part({self.kind}, {self.name}, {self.rating} stars, ${self.price})"
+
+
+//db.insert coll, {x = 10, y = 20}

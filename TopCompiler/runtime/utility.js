@@ -49,6 +49,29 @@ function toFloat(x) {
     return x.toFloat()
 }
 
+function assign(obj, other) {
+    if (obj instanceof Array) {
+        var arr = [];
+        for (var i = 0; i < other.length; i++) {
+            var c = other[i];
+            if (c) {
+                arr.push(c);
+            } else {
+                arr.push(obj[i]);
+            }
+        }
+        for (var i = other.length; i < obj.length; i++) {
+            arr.push(obj[i]);
+        }
+        return arr;
+    }
+    else if (typeof obj == "object") {
+        return Object.assign(new obj.constructor(), obj, other);
+    } else {
+        return other
+    }
+}
+
 function toInt(x) {
     return x.toInt()
 }
@@ -284,7 +307,7 @@ function core_json_vector(decoder) {
     }
 }
 
-function core_parseJSON(str, decoder) {
+function parseJson(decoder, str) {
     var obj = JSON.parse(str);
     return decoder(obj);
 }

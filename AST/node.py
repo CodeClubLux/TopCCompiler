@@ -123,6 +123,7 @@ class Node(Root):  # partially immutable data structure
         self.filename = parser.filename
         self.curry = False
         self.repl = parser.repl
+        self.first = True
 
         self.global_target = parser.global_target
 

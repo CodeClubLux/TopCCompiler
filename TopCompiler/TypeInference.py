@@ -56,6 +56,7 @@ def infer(parser, tree):
                             first = Types.Null()
                         i.nodes[2].type = first
 
+                Enum.missingPattern(typ, i)
                 i.type = first if first else Types.Null()
 
             elif type(i) is Tree.CreateAssign:
@@ -435,35 +436,40 @@ def infer(parser, tree):
             elif type(i) is Tree.InitPack:
                 parser.imports.append(i.package)
             elif type(i) is Tree.InitStruct:
-                typ = i.constructor.type
-                i.typ = typ
+                unary = i.unary
+                if not unary:
+                    typ = i.constructor.type
+                    i.typ = typ
 
-                assign = True
-                if type(typ) is Struct.Struct:
-                    s = typ
-                    assign = False
-                    i.paramNames = Struct.offsetsToList(s.offsets)
-                elif type(typ) is Types.Struct:
                     assign = True
-                    s = typ
+                    if type(typ) is Struct.Struct:
+                        s = typ
+                        assign = False
+                        i.paramNames = Struct.offsetsToList(s.offsets)
+                    elif type(typ) is Types.Struct:
+                        assign = True
+                        s = typ
+                    else:
+                        i.constructor.error("type "+str(typ)+" can not be used as a constructor")
+
+                    i.s = s
+                    name = s.name
+
+                    if len(s.types) < len(i.nodes) - 1:
+                        c = str(len(i.nodes) - 1 - len(s.types))
+                        i.error(("1 argument" if c == "1" else c + " arguments") + " too many")
+                    elif not assign and len(s.types) > len(i.nodes) - 1:
+                        c = str(len(s.types) + 1 - len(i.nodes))
+                        i.error(("1 argument" if c == "1" else c + " arguments") + " too few")
                 else:
-                    i.constructor.error(parser, "type "+str(typ)+" can not be used as a constructor")
+                    assign = True
 
-                i.s = s
 
-                name = s.name
-
-                if len(s.types) < len(i.nodes)-1:
-                    c = str(len(i.nodes) - 1 - len(s.types))
-                    i.error(("1 argument" if c == "1" else c+" arguments")+" too many")
-                elif not assign and len(s.types) > len(i.nodes)-1:
-                    c = str(len(s.types) + 1 - len(i.nodes))
-                    i.error(("1 argument" if c == "1" else c + " arguments") + " too few")
                 gen = {}
                 randomOrder = False
                 order = {}
 
-                for iter in range(1, len(i.nodes)):
+                for iter in range(0 if unary else 1, len(i.nodes)):
                     if type(i.nodes[iter]) is Tree.Assign:
                         randomOrder = True
                     elif assign:
@@ -476,21 +482,25 @@ def infer(parser, tree):
                     else:
                         if not type(i.nodes[iter]) is Tree.Assign:
                             i.nodes[iter].error("positional argument follows keyword argument")
+                        if i.nodes[iter].nodes[0].name in order:
+                            i.nodes[iter].nodes[0].error("duplicate parameter")
                         order[i.nodes[iter].nodes[0].name] = i.nodes[iter]
                         myNode = i.nodes[iter].nodes[1]
                         xname = i.nodes[iter].nodes[0].name
 
-                        try:
-                            normalTyp = s.types[xname]
-                        except KeyError:
-                            i.nodes[iter].nodes[0].error("type "+str(s)+" does not have the field "+ xname)
+                        if not unary:
+                            try:
+                                normalTyp = s.types[xname]
+                            except KeyError:
+                                i.nodes[iter].nodes[0].error("type "+str(s)+" does not have the field "+ xname)
 
                     normalNode = i
 
-                    if Types.isGeneric(normalTyp):
-                        normalTyp = resolveGen(normalTyp, myNode.type, gen, parser)
+                    if not unary:
+                        if Types.isGeneric(normalTyp):
+                            normalTyp = resolveGen(normalTyp, myNode.type, gen, parser)
 
-                    normalTyp.duckType(parser, myNode.type, i, myNode, iter)
+                        normalTyp.duckType(parser, myNode.type, i, myNode, iter)
 
                 if not assign:
                     for c in order:
@@ -498,7 +508,11 @@ def infer(parser, tree):
                 i.assign = assign
 
                 if i.assign:
-                    i.type = typ
+                    if unary:
+                        types = {c: order[c].nodes[1].type for c in order}
+                        i.type = Types.Interface(False, types)
+                    else:
+                        i.type = typ
                 else:
                     i.type = Types.Struct(i.mutable, name, s.types, i.package, gen)
 
@@ -596,7 +610,7 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
             return shouldBeTyp
 
         types = {}
-        shouldGeneric = shouldBeTyp.gen
+        shouldGeneric = shouldBeTyp.remainingGen
         normalGeneric = normalTyp.gen
 
         for i in shouldGeneric:
@@ -607,6 +621,9 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
         else:
             return Types.Struct(False, self.normalName, self.types, self.package, generics)
 
+    elif type(shouldBeTyp) is Types.Assign:
+        const = shouldBeTyp.const
+        return Types.Assign(Types.replaceT(const, generics))
     elif type(shouldBeTyp) is Types.Interface:
         types = {}
         for i in shouldBeTyp.types:

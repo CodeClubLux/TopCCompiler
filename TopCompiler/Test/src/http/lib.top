@@ -12,6 +12,9 @@ type Response =
     content-type: string
     body: string
 
+def Response.toString(self) string =
+    "Response({self.status}, {self.content-type}, {self.body})"
+
 let response = Response {
     status = 200
     content-type = "text/plain"

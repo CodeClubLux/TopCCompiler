@@ -42,7 +42,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         "lens",
         "match",
         "with",
-        "parseJson",
+        "decoder",
     ]
 
     special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']

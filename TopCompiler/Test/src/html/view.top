@@ -135,6 +135,7 @@ let h3 = h "h3"
 let h4 = h "h4"
 let h5 = h "h5"
 let h6 = h "h6"
+let br = h "br"
 
 let hr = h "hr"
 

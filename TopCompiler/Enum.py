@@ -64,23 +64,44 @@ from TopCompiler import ElseExpr
 
 def checkCase(parser, case, typ, first=False):
     if type(case) is Tree.FuncCall:
-        if not (type(typ) is Types.Enum or case.nodes[0].name in typ.const):
+        if not (type(typ) is Types.Enum and case.nodes[0].name in typ.const):
             case.nodes[0].error("unknown pattern")
 
         if not case.nodes[0].name in typ.const:
             case.nodes[0].error("no such variable "+case.nodes[0].name)
         pattern = typ.const[case.nodes[0].name]
 
+        if len(pattern) < (len(case.nodes) - 1):
+            case.nodes[-1].error(str((len(case.nodes) - 1) - len(pattern)) + " to many arguments")
+
         for iter in range(1, len(case.nodes)):
             checkCase(parser, case.nodes[iter], pattern[iter-1])
         case.nodes[0].type = Types.FuncPointer([], Types.Null(), do=False)
+
+        if case.curry:
+            case.nodes[-1].error("missing "+str(len(pattern) - (len(case.nodes)-1))+" arguments")
+
         case.type = typ
     elif type(case) is Tree.ReadVar and not first:
         Scope.addVar(case, parser, case.name, Scope.Type(True, typ))
     elif type(case) is Tree.ReadVar and first:
-        if not (type(typ) is Types.Enum or case.nodes[0].name in typ.const):
-            case.nodes[0].error("unknown pattern")
+        if not (type(typ) is Types.Enum and case.name in typ.const):
+            case.error("unknown pattern")
+
         case.type = typ
+    elif type(case) is Tree.Operator and case.kind == "concat" and not case.curry and not case.partial:
+        if not type(typ) is Types.String:
+            case.nodes[0].error("unexpected string")
+        if type(case.nodes[1]) is Tree.Tuple:
+            Scope.addVar(case.nodes[1].nodes[0], parser, case.nodes[1].nodes[0].name, Scope.Type(True, typ))
+        else:
+            checkCase(parser, case.nodes[0], typ)
+            checkCase(parser, case.nodes[1], typ)
+
+        case.type = typ
+        case.nodes[0].type = typ
+        case.nodes[1].type = typ
+
     elif type(case) is Tree.Operator and case.kind == "or" and not case.curry and not case.partial:
         typT = case.nodes[0].type
         if typT != case.nodes[1].type:
@@ -88,11 +109,41 @@ def checkCase(parser, case, typ, first=False):
 
         if typT != typ:
             case.error("expecting result of or, to be of type "+str(typ))
+        case.type = Types.Bool()
+        case.opT = Types.Bool()
     elif type(case) in [Tree.String, Tree.Int, Tree.Float]:
         if case.type != typ:
             case.error("expecting type "+str(case.type)+", not "+str(typ))
     elif not type(case) is Tree.Under:
         case.error("unknown pattern")
+
+def missingPattern(typ, match):
+    under = False
+    const = []
+    for iter in range(1, len(match.nodes), 2):
+        m = match.nodes[iter].nodes[0]
+        
+        if type(m) is Tree.Under:
+            under = True
+
+            if iter != len(match.nodes)-2:
+                m.error("_ must be the last pattern")
+            return
+        elif type(m) in [Tree.FuncCall, Tree.ReadVar]:
+            if type(m) is Tree.FuncCall:
+                name = m.nodes[0].name
+            else:
+                name = m.name
+
+            if name in const:
+                m.error("Duplicate pattern")
+
+            const.append(name)
+
+    if not type(typ) in [Types.Enum] and not under:
+        match.error("missing _ case to match all possibilities")
+    elif len(const) < len(typ.const):
+        match.error("missing pattern "+", ".join([i for i in typ.const if not i in const]))
 
 def match(parser):
     t = parser.thisToken()
@@ -159,6 +210,8 @@ def match(parser):
             parser.iter -= 1
 
     parser.currentNode = self.owner
+
+
 
 Parser.exprToken["match"] = match
 Parser.exprToken["with"] = lambda parser: \

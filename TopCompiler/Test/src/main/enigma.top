@@ -1,0 +1,180 @@
+import "html"
+
+let names = ["HOME", "PARTS", "ABOUT"]
+
+def main(url: string) Page do
+    match url with
+        "" or "HOME" ->
+            Page-Home Home {
+                features = []
+                headers = names
+                footer = "The Enigma-computers team wishes you the best"
+            }
+
+        "PARTS" ->
+            Page-Kinds \{
+                headers =  names
+                kinds = ["CPU", "CPU COOLER", "MOTHERBOARD"]
+            }
+
+        "PARTS/CPU/{name}" ->
+            let parse = parse-json decoder Part
+
+            Page-Part \{
+                headers = names
+                p = http.query parse, Query-Part name
+            }
+
+        "KIND/{x}" ->
+            log "routing {x}"
+
+            let dec = decoder []Part
+            let parse: |string| -> []Part = parse-json dec
+
+            let data = http.query parse, Query-Parts x, ""
+
+            Page-Parts Parts-page {
+                headers = names
+                parts = data
+                kind = x
+            }
+
+        _ -> Page-not-found
+
+def on-new-url(page: Page, url: string) Page do
+    main url
+
+let app-state = newAtom main html.page-load-url
+
+def nav-bar(_headers: []string, page: string) html.VNode =
+    let style = "border-style: solid; border-radius: 6px;
+     border-width: 1px; border-color: #0081D5;
+     margin: 10px;
+     width: 130px;
+     "
+
+    def element(header: string) html.VNode =
+        let _style =
+            if header == page then
+                style + "background-color: #0081D5;"
+            else
+                style
+
+        html.li \[
+            html.class "nav-bar-enigma"
+            html.style _style
+        ], html.a \[
+            html.class "nav-bar-enigma"
+            html.style "font-size: 12px; padding: 10px;"
+            html.href "#"+ header
+        ], header
+
+    html.ul \[html.class "nav-bar-enigma"],
+        _headers.map element
+
+def home(app: Home, a: Atom[Page]) html.VNode =
+    html.div \[], [
+        html.div \[(html.style "height: 100%;"), html.class "enigma-background"], [
+            nav-bar app.headers, "HOME"
+            html.image \[
+                html.src "enigma.png"
+                html.style "height: 70%; width: auto; display: block; margin-left: auto; margin-right: auto"
+            ], ""
+            html.h2 \[html.style "width: 100%; text-align: center; color: white;"], "Building the best custom pc's for you"
+        ]
+    ]
+
+
+def kinds(app: {headers: []string, kinds: []string}, a: Atom[Page]) html.VNode =
+    def part(s: string) html.VNode =
+        html.li \[html.style "margin-left: 20%; list-style-type: circle; color: white;"],
+            html.a \[
+                html.style "color: white;"
+                html.href "#KIND/"+s
+                html.class "link"
+            ], s+"S"
+
+    html.div \[], [
+        html.div \[(html.style "height: 100%;"), html.class "enigma-background"], [
+            nav-bar app.headers, "PARTS"
+            html.h1 \[html.style "color: white; width: 100%; margin-left: 15%; font-size: 40px;"], "Individual Parts"
+            html.ul \[], app.kinds.map part
+        ]
+    ]
+
+def rating(r: int) html.VNode =
+    html.div \[html.style "color: gold; font-size: 20px; float: right; display: inline; margin-left: 10px;"], [r: "★"]
+
+def search(page: Page, ev: html.Event) Page do
+    match page with
+        Page-Parts p ->
+            let text = ev.target.value
+
+            log text
+
+            let dec = decoder []Part
+            let parse: |string| -> []Part = parse-json dec
+
+            let data = http.query parse, Query-Parts p.kind, text
+
+            Page-Parts Parts-page {
+                headers = p.headers
+                parts = data
+                kind = p.kind
+            }
+
+        _ -> page
+
+def parts(app: PartsPage, a: Atom[Page]) html.VNode =
+    def part(p: Part) html.VNode =
+        html.li \[html.class "part"],
+            html.a \[
+                html.href "#PARTS/"+app.kind+"/"+p.name
+                html.style "text-decoration: none;"
+            ], [
+                html.span \[html.class "link"], p.name
+                html.span \[
+                    html.class "link"
+                    html.style "text-decoration: none; margin-left: 30px;"
+                ], "€"+toString p.price
+                rating p.rating
+            ]
+
+    html.div \[], [
+        html.div \[(html.style "height: 100%;"), html.class "enigma-background"], [
+            nav-bar app.headers, "PARTS"
+            html.h1 \[html.style "color: white; width: 100%; text-align: center; font-size: 40px;"], app.kind
+            html.input \[
+                html.style "width: 80%; margin-left: 10%; margin-right: 10%; font-size: 25px; margin-bottom: 20px;"
+                html.on-input search, a
+            ], ""
+            html.ul \[html.class "parts"], app.parts.map part
+        ]
+    ]
+
+def single-part(app: {headers: []string, p: Part}, a: Atom[Page]) html.VNode =
+    let p = app.p
+    html.div \[], [
+        html.div \[(html.style "100%"), html.class "enigma-background"], [
+            nav-bar app.headers, "PARTS"
+            html.span \[], ""
+            html.span \[], ""
+            html.h1 \[html.style "color: white; font-size: 40px; margin-left: 10%;"], p.name
+            html.div \[html.style "color: gold; width: 100%; font-size: 40px; margin-left: 10%;"], [p.rating: "★"]
+            html.image \[
+                html.src "parts/"+p.name
+                html.style "width: auto; height: 50%; margin-top: 5%; margin-left: 10%;"
+            ], ""
+        ]
+    ]
+
+def render(app: Page, a: Atom[Page]) html.VNode =
+    match app with
+        Page-Home h -> home h, a
+        Page-Kinds k -> kinds k, a
+        Page-Parts p -> parts p, a
+        Page-Part p -> single-part p, a
+        _ -> html.h1 \[], "Page not found!"
+
+html.on-url-change on-new-url, app-state
+html.app render, app-state

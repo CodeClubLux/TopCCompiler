@@ -17,7 +17,6 @@ def home(app: Home, a: Atom[Page]) html.VNode =
         footer app.footer
     ]
 
-
 let gitbook = "https://lucasgoetz.gitbooks.io/top-lang/content/"
 def docs(app: Docs, a: Atom[Page]) html.VNode =
     def item(s: string) html.VNode =
@@ -156,6 +155,15 @@ def on-url-change(app: App, url: string) App do
 html.onUrlChange onUrlChange, app-state
 
 html.app render, app-state
+
+let data = db.connect::[App] "http://127.0.0.1:8080/"
+
+(data.query lens.parts)
+    .find {name = "core"}
+    .query lens.value
+    .read!
+
+/*
 
 /*
 let pictures = newAtom string

@@ -76,10 +76,10 @@ def assignParser(parser, name= "", init= False, package = ""):
 
     if self.init:
         if len(node.nodes) > 1 or len(node.nodes) == 0:
-            self.error("expecting single expression")
+            self.error("expecting single expression, not "+str(len(node.nodes)))
     else:
         if len(node.nodes) > 2 or len(node.nodes) == 1:
-            self.error("expecting single expression")
+            self.error("expecting single expression, not "+str(len(node.nodes)-1))
 
 def createAndAssignParser(parser, imutable= True): # let i assignment
     node = parser.currentNode
@@ -102,6 +102,8 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
     typ = None
 
+    create = False
+
     if parser.nextToken().token == ":":
         checkIt = True
 
@@ -109,27 +111,33 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         typ = Types.parseType(parser)
 
         parser.nextToken()
+
+        if parser.thisToken().token != "=":
+            create = True
     elif parser.thisToken().token != "=":
         Error.parseError(parser, "expecting =, not "+parser.thisToken().token)
 
-    n = Tree.CreateAssign(parser)
-
-    parser.currentNode.addNode(n)
-    parser.currentNode = n
 
 
+    if not create:
 
-    createParser(parser, name= name, typ= typ, check= checkIt, imutable= imutable, attachTyp= attachTyp)
+        n = Tree.CreateAssign(parser)
+        parser.currentNode.addNode(n)
+        parser.currentNode = n
 
-    if attachTyp:
-        assignParser(parser, name=attachTyp.name+"_"+name.token, package= attachTyp.package, init=True)
+        createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
+
+        if attachTyp:
+            assignParser(parser, name=attachTyp.name+"_"+name.token, package= attachTyp.package, init=True)
+        else:
+            assignParser(parser, name= name.token, init= True)
+
+        n.nodes[1].isGlobal = n.nodes[0].isGlobal
+        n.nodes[1].createTyp = n.nodes[0].varType
+
+        parser.currentNode = node
     else:
-        assignParser(parser, name= name.token, init= True)
-
-    n.nodes[1].isGlobal = n.nodes[0].isGlobal
-    n.nodes[1].createTyp = n.nodes[0].varType
-
-    parser.currentNode = node
+        createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
 
 Parser.stmts["let"] = createAndAssignParser
 Parser.stmts["var"] = lambda parser: createAndAssignParser(parser, imutable= False)

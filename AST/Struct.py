@@ -15,17 +15,28 @@ class InitStruct(Node):
         return "Struct Init"
 
     def compileAssign(self, codegen):
-        codegen.append("core_assign(")
-        self.nodes[0].compileToJS(codegen)
-        codegen.append(",{")
-        for i in range(1, len(self.nodes)):
-            codegen.append(self.nodes[i].nodes[0].name)
-            codegen.append(":")
-            self.nodes[i].compileToJS(codegen)
+        if self.unary:
+            codegen.append("{")
+            for i in range(len(self.nodes)):
+                codegen.append(self.nodes[i].nodes[0].name)
+                codegen.append(":")
+                self.nodes[i].compileToJS(codegen)
 
-            if i != len(self.nodes) - 1:
-                codegen.append(",")
-        codegen.append("})")
+                if i != len(self.nodes) - 1:
+                    codegen.append(",")
+            codegen.append("}")
+        else:
+            codegen.append("core_assign(")
+            self.nodes[0].compileToJS(codegen)
+            codegen.append(",{")
+            for i in range(1, len(self.nodes)):
+                codegen.append(self.nodes[i].nodes[0].name)
+                codegen.append(":")
+                self.nodes[i].compileToJS(codegen)
+
+                if i != len(self.nodes) - 1:
+                    codegen.append(",")
+            codegen.append("})")
 
     def compileToJS(self, codegen):
         if not self.assign:

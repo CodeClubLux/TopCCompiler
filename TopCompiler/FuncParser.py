@@ -72,7 +72,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         parser.nextToken()
 
         try:
-            attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package, {})
+            attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package)
         except KeyError:
             Error.parseError(parser, "no attachable data structure found, called "+name)
         return funcHead(parser, decl, dontAdd, True, attachTyp)

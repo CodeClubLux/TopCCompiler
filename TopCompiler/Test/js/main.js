@@ -113,13 +113,26 @@ window.core_fps = function core_fps(update, maxFPS) {
     var delta = 0;
     var lastFrameTimeMs = 0;
 
+    var stats;
+
+    (function(){
+    var script=document.createElement('script');
+    script.onload=function(){
+        stats=new Stats();
+        var div = document.createElement('div');
+        div.appendChild(stats.dom);
+        stats.dom.style = "position: fixed; top: 0px; right: 0px; cursor: pointer; opacity: 0.9; z-index: 10000;"
+        document.body.appendChild(div)
+    }
+    script.src='//rawgit.com/mrdoob/stats.js/master/build/stats.min.js'
+    document.head.appendChild(script);
+    })()
+
     function _fps(timestamp) {
         if (timestamp < lastFrameTimeMs + (1000 / maxFPS)) {
             requestAnimationFrame(_fps);
             return
         }
-
-
 
         // Track the accumulated time that hasn't been simulated yet
         delta += timestamp - lastFrameTimeMs; // note += here
@@ -129,13 +142,15 @@ window.core_fps = function core_fps(update, maxFPS) {
         // Simulate the total elapsed time in fixed-size chunks
         function func() {
             if (delta >= timestep) {
+                if (stats) {
+                    stats.update();
+                }
                 update(timestep, func);
                 delta -= timestep;
             } else {
                 requestAnimationFrame(_fps);
             }
         }
-
         func()
     }
     requestAnimationFrame(_fps);

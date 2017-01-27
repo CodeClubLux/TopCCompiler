@@ -307,6 +307,10 @@ def start(run= False, dev= False, init= False, hotswap= False):
                     node_linkWithFiles = linkWithFiles + nodeLinkWithFiles
 
                     a = CodeGen.link(parser.compiled, outputFile, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
+
+                    import webbrowser
+                    webbrowser.open("http://127.0.0.1:3000/")
+
                     l = CodeGen.link(parser.compiled, outputFile, run= True, opt= opt, dev=dev, linkWithCSS=[], linkWith= node_linkWithFiles, target = "node")
                 else:
                     _linkCSSWithFiles = [] if target != "client" else linkCSSWithFiles
@@ -323,32 +327,10 @@ def start(run= False, dev= False, init= False, hotswap= False):
             elif dev:
                 return (False, "")
 
-        def iterate(_target):
-            fil = filenames[_target]
-            sour = sources[_target]
+        fil = filenames[target]
+        sour = sources[target]
 
-            compile(_target, sour, fil, decl)
-
-        """
-        if target == "full":
-            fil = filenames["full"]
-            sour = sources["full"]
-            decl = compile("full", sour, fil)
-            decl[2].jsCode = decl[1]
-
-            import copy
-            decl = decl[2]
-            #print(decl)
-
-            iterate("client")
-            iterate("node")
-        else:
-        """
-
-        fil = filenames["full"]
-        sour = sources["full"]
-
-        compile("full", sour, fil)
+        compile(target, sour, fil)
 
     except EOFError as e:
         if dev:

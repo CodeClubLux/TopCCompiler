@@ -46,3 +46,10 @@ var t = newVectorRange(0,33);
 
 assertEq(t, t.map(function (id) { return id; }))
 
+assertEq(assign({x: 10, y: 20}, {x: 30}).x, ({x: 30, y: 20}).x)
+
+assertEq(assign([10,20], [30]).toString(), [30,20].toString())
+
+assertEq(newVector(0,1,2,3,4,5).slice(1,3), newVector(1,2) )
+assertEq(newVector(0,1,2,3).slice(1,0), newVector(1,2,3))
+

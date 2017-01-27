@@ -57,8 +57,6 @@ def arrayLiteral(parser):
                 parseError(parser, "unexpected :")
             if lastSize != 0:
                 parseError(parser, "unexpected ..")
-            if len(arr.nodes) != 1 or arr.nodes[0].type != Types.I32():
-                parseError(parser, "expecting single integer size")
             init = True
             arr.init = True
             parser.nextToken()

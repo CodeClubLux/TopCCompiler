@@ -9,11 +9,10 @@ type Feature =
 def Feature.toString(self) string =
     "Feature({self.id},{self.name},{self.image})"
 
-type Page either
-    Page-home(Home)
-    Page-docs(Docs)
-    Page-not-found()
-    Page-Get-Started()
+type PartsPage =
+    parts: []Part
+    headers: []string
+    kind: string
 
 type Home =
     features: []Feature
@@ -27,11 +26,23 @@ type Docs =
     headers: []string
     footer: string
 
+type Page either
+    Page-home(Home)
+    Page-docs(Docs)
+    Page-kinds({headers: []string, kinds: []string})
+    Page-parts(PartsPage)
+    Page-part({headers: []string, p: Part})
+    Page-not-found()
+    Page-Get-Started()
+
+
 let headers = ["HOME", "EXAMPLES", "DOCS", "COMMUNITY", "BLOG"]
 let footer_text = "All code for this site is written in Top, including the server - Lucas Goetz"
 
 type Routes either
     Query-docs(|Docs| -> http.Response)
+    Query-parts(string, string, |[]Part| -> http.Response)
+    Query-part(string, |Part| -> http.Response)
 
 def map[T, X](func: |T| -> X, x: []T) []X =
     x.map func

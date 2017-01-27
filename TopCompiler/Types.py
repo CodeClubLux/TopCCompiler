@@ -6,128 +6,171 @@ from .Scope import *
 from .Error import *
 import collections as coll
 
-def parseType(parser, package= "", mutable= False, attachTyp= False, gen= {}):
-    if package == "": package = parser.package
-    token = parser.thisToken().token
-    if token == "i32":
-        return I32()
-    elif token == "float":
-        return Float()
-    elif token == "string":
-        return String(0)
-    elif token == "int":
-        return I32()
-    elif token == "bool":
-        return Bool()
-    elif token == "(":
-        args = []
-        parser.nextToken()
-        while parser.thisToken().token != ")":
-            if parser.thisToken().token == ",":
-                if parser.lookBehind().token == ",":
-                    parseError(parser, "unexpected ,")
-                parser.nextToken()
-                continue
-            args.append(parseType(parser))
+def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}):
 
-            parser.nextToken()
-
-        return Tuple(args)
-    elif token == "enum":
-        return EnumT()
-    elif token == "[":
-        incrScope(parser)
-        if parser.lookInfront().token != "]":
-            from TopCompiler import FuncParser
-            gen = FuncParser.generics(parser, "anonymous")
-            if parser.thisToken().token != "|":
-                parseError(parser, "expecting |")
-
-            res = parseType(parser, package, mutable, attachTyp, gen)
-
-            decrScope(parser)
-
-            return res
+    def before():
+        if _package == "":
+            package = parser.package
         else:
-            parser.nextToken()
-            parser.nextToken()
-            decrScope(parser)
-            return Array(False, parseType(parser, package))
-    elif token == "|":
-        parser.nextToken()
+            package = _package
 
-        args = []
-        while not (parser.thisToken().token == "|" and parser.lookInfront().token in ["->", "do"]):
-            if parser.thisToken().token == ",":
-                if parser.lookBehind().token == ",":
-                    parseError(parser, "unexpected ,")
+        gen = _gen
+        attachTyp = _attachTyp
+        mutable = _mutable
+
+        token = parser.thisToken().token
+        if token == "i32":
+            return I32()
+        elif token == "float":
+            return Float()
+        elif token == "string":
+            return String(0)
+        elif token == "int":
+            return I32()
+        elif token == "bool":
+            return Bool()
+        elif token == "(":
+            args = []
+            parser.nextToken()
+            while parser.thisToken().token != ")":
+                if parser.thisToken().token == ",":
+                    if parser.lookBehind().token == ",":
+                        parseError(parser, "unexpected ,")
+                    parser.nextToken()
+                    continue
+                args.append(parseType(parser))
+
                 parser.nextToken()
-                continue
-            args.append(parseType(parser))
 
-            parser.nextToken()
+            return Tuple(args)
+        elif token == "enum":
+            return EnumT()
+        elif token == "[":
+            incrScope(parser)
+            if parser.lookInfront().token != "]":
+                from TopCompiler import FuncParser
+                gen = FuncParser.generics(parser, "anonymous")
+                if parser.thisToken().token != "|":
+                    parseError(parser, "expecting |")
 
-        ret = Null()
+                res = parseType(parser, package, mutable, attachTyp, gen)
 
-        do = False
+                decrScope(parser)
 
-        if parser.lookInfront().token == "->":
-            parser.nextToken()
-            parser.nextToken()
-
-            ret = parseType(parser, package)
-
-        if parser.lookInfront().token == "do":
-            parser.nextToken()
-            parser.nextToken()
-
-            ret = parseType(parser, package)
-            do = True
-
-        return FuncPointer(args, ret, gen, do)
-    elif token == "none":
-        return Null()
-    elif token in parser.imports:
-        if parser.lookInfront().token == ".":
-            parser.nextToken()
-            parser.nextToken()
-            return parseType(parser, token)
-        else:
-            parseError(parser, "expecting .")
-    elif (token in parser.interfaces[package]) or (token in parser.interfaces["_global"] and parser.package == package):
-        if token in parser.interfaces["_global"]:
-            package = "_global"
-
-        if parser.interfaces[package][token].generic != coll.OrderedDict():
-            if parser.lookInfront().token != "[":
-                #parseError(parser, "must specify generic parameters for generic type")
-                pass
+                return res
             else:
                 parser.nextToken()
-                gen = parseGeneric(parser, parser.interfaces[package][token])
-                return replaceT(parser.interfaces[package][token], gen)
+                parser.nextToken()
+                decrScope(parser)
+                return Array(False, parseType(parser, package))
+        elif token == "|":
+            parser.nextToken()
 
-        return parser.interfaces[package][token]
+            args = []
+            while not (parser.thisToken().token == "|" and parser.lookInfront().token in ["->", "do"]):
+                if parser.thisToken().token == ",":
+                    if parser.lookBehind().token == ",":
+                        parseError(parser, "unexpected ,")
+                    parser.nextToken()
+                    continue
+                args.append(parseType(parser))
 
-    elif token in parser.structs[package]:
-        gen = coll.OrderedDict()
-        if attachTyp:
-            return parser.structs[package][token]
-        if parser.structs[package][token].generic != {}:
-            if parser.nextToken().token != "[":
-                parseError(parser, "must specify generic parameters for generic type")
-            gen = parseGeneric(parser, parser.structs[package][token])
-        return Struct(mutable, token, parser.structs[package][token].types, package, gen)
+                parser.nextToken()
 
-    elif varExists(parser, package, token):
-        t = typeOfVar(Tree.PlaceHolder(parser), parser, package, token)
-        if type(t) is T:
-            return t
-        parseError(parser, "unkown type "+token)
-    elif token == "_":
-        return Underscore()
+            ret = Null()
+
+            do = False
+
+            if parser.lookInfront().token == "->":
+                parser.nextToken()
+                parser.nextToken()
+
+                ret = parseType(parser, package)
+
+            if parser.lookInfront().token == "do":
+                parser.nextToken()
+                parser.nextToken()
+
+                ret = parseType(parser, package)
+                do = True
+
+            return FuncPointer(args, ret, gen, do)
+        elif token == "none":
+            return Null()
+        elif token in parser.imports:
+            if parser.lookInfront().token == ".":
+                parser.nextToken()
+                parser.nextToken()
+                return parseType(parser, token)
+            else:
+                parseError(parser, "expecting .")
+
+        elif token == "{":
+            args = {}
+            parser.nextToken()
+            while parser.thisToken().token != "}":
+                if parser.thisToken().token == ",":
+                    pass
+                else:
+                    name = parser.thisToken().token
+                    if parser.thisToken().type != "identifier":
+                        Error.parseError(parser, "expecting identifier")
+                    if parser.nextToken().token != ":":
+                        Error.parseError(parser, "expecting :")
+
+                    parser.nextToken()
+                    typ = parseType(parser)
+                    args[name] = typ
+
+
+                parser.nextToken()
+
+            return Interface(False, args)
+
+        elif (token in parser.interfaces[package]) or (token in parser.interfaces["_global"] and parser.package == package):
+            if token in parser.interfaces["_global"]:
+                package = "_global"
+
+            if parser.interfaces[package][token].generic != coll.OrderedDict():
+                if parser.lookInfront().token != "[":
+                    #parseError(parser, "must specify generic parameters for generic type")
+                    pass
+                else:
+                    parser.nextToken()
+                    gen = parseGeneric(parser, parser.interfaces[package][token])
+                    return replaceT(parser.interfaces[package][token], gen)
+
+            return parser.interfaces[package][token]
+
+        elif token in parser.structs[package]:
+            gen = coll.OrderedDict()
+            if attachTyp:
+                return parser.structs[package][token]
+            if parser.structs[package][token].generic != {}:
+                if parser.nextToken().token != "[":
+                    parseError(parser, "must specify generic parameters for generic type")
+                gen = parseGeneric(parser, parser.structs[package][token])
+            return Struct(mutable, token, parser.structs[package][token].types, package, gen)
+
+        elif varExists(parser, package, token):
+            t = typeOfVar(Tree.PlaceHolder(parser), parser, package, token)
+            if type(t) is T:
+                return t
+            parseError(parser, "unkown type "+token)
+        elif token == "_":
+            return Underscore()
+        else:
+            parseError(parser, "unknown type "+token)
+
+    res = before()
+
+    if parser.lookInfront().token == "{":
+        parser.nextToken()
+        if parser.nextToken().token != "}":
+            Error.parseError(parser, "expecting }")
+        return Assign(res)
     else:
-        parseError(parser, "unknown type "+token)
+        return res
 
 def parseGeneric(parser, typ):
     generic = []
@@ -185,8 +228,25 @@ class EnumT:
         self.types = {}
 
     def duckType(self, parser, other, node, mynode, iter):
-        if not type(other) is Types.Enum:
+        if not type(other) is Enum:
             self.error("type "+str(self)+" is not a enum")
+
+class Assign(Type):
+    def __init__(self, const):
+        self.const = const
+        self.name = str(self.const) + "{}"
+        self.types = {}
+
+    def duckType(self, parser, other, node, mynode, iter):
+        const = self.const.types
+        typ = other.types
+
+        for i in typ:
+            if not i in const:
+                node.error("type "+str(other)+" has the field "+i+" to much to be casted into "+str(self))
+            else:
+                if not type(typ[i]) is Null:
+                    const[i].duckType(parser, typ[i], node, mynode, iter)
 
 class StructInit(Type):
     def __init__(self, name):
@@ -256,7 +316,7 @@ class FuncPointer(Type):
         except EOFError as e:
             beforeError(e, "Function type return type: ")
 class Struct(Type):
-    def __init__(self, mutable, name, types, package, gen):
+    def __init__(self, mutable, name, types, package, gen=coll.OrderedDict()):
         self.types = types
 
         self.types = {i: replaceT(types[i], gen) for i in types}
@@ -273,7 +333,7 @@ class Struct(Type):
 
         #print(self.gen)
 
-        genericS = "[" + ",".join([i + ": " + str(gen[i].type) for i in gen]) + "]" if len(gen) > 0 else ""
+        genericS = "[" + ",".join([i + ": " + str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
 
         self.name = package + "." + name + genericS
         #print(self.name)
@@ -366,7 +426,8 @@ class Array(Pointer):
                 ),
                 "length": I32(),
                 "join": FuncPointer([String(0)], String(0)),
-                "shorten": FuncPointer([Types.I32()], self)
+                "shorten": FuncPointer([Types.I32()], self),
+                "slice": FuncPointer([Types.I32(), Types.I32()], self)
             }
         return self.__types
     def duckType(self, parser, other, node, mynode, iter):
@@ -439,6 +500,7 @@ class T(Type):
         self.normalName = owner+"."+name
         self.name = owner+"."+name
         self.types = self.type.types
+        self.owner = owner
 
     """def duckType(self, parser, other, node, mynode, iter):
         self.type.duckType(parser, other, node, mynode, iter)
@@ -458,7 +520,7 @@ class Enum(Type):
 
     def duckType(self, parser, other, node, mynode, iter):
         if self.name != other.name:
-            Error.parseError(parser, "expecting type "+self.name+", not "+str(other))
+            node.error("expecting type "+self.name+", not "+str(other))
 
         for name in self.generic:
             a = self.generic[name]
@@ -481,6 +543,8 @@ def isGeneric(t):
     elif type(t) is T: return True
     elif type(t) is Interface: return True
     elif type(t) is Struct: return True
+    elif type(t) is Assign: return True
+
     return False
 
 
@@ -499,8 +563,11 @@ def remainingT(s):
         for i in s.types:
             args.update(remainingT(s.types[i]))
     elif type(s) is Struct:
-        for i in s.types:
-            args.update(remainingT(s.types[i]))
+        gen = s.gen
+        for i in gen:
+            if ".".join(i.split(".")[:-1]) == s.package+"."+s.normalName:
+                args[i] = gen[i]
+
     elif type(s) is T:
         args[s.name] = s
 
@@ -566,7 +633,12 @@ def replaceT(typ, gen):
         else:
             return typ
     elif type(typ) is Struct:
-        return Struct(False, typ.normalName, typ.types, typ.package, gen)
+        rem = {}
+        for i in typ.remainingGen:
+            rem[i] = replaceT(typ.remainingGen[i], gen)
+        return Struct(False, typ.normalName, typ.types, typ.package, rem)
+    elif type(typ) is Assign:
+        return Assign(replaceT(typ.const, gen))
     elif type(typ) is Interface:
         types = typ.types
         types = {i: replaceT(types[i], gen) for i in types}
