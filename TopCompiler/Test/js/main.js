@@ -135,23 +135,12 @@ window.core_fps = function core_fps(update, maxFPS) {
         }
 
         // Track the accumulated time that hasn't been simulated yet
-        delta += timestamp - lastFrameTimeMs; // note += here
+        delta = timestamp - lastFrameTimeMs; // note += here
         lastFrameTimeMs = timestamp;
 
 
         // Simulate the total elapsed time in fixed-size chunks
-        function func() {
-            if (delta >= timestep) {
-                if (stats) {
-                    stats.update();
-                }
-                update(timestep, func);
-                delta -= timestep;
-            } else {
-                requestAnimationFrame(_fps);
-            }
-        }
-        func()
+        update(delta, function() { if (stats) { stats.update()}; requestAnimationFrame(_fps); });
     }
     requestAnimationFrame(_fps);
 }
