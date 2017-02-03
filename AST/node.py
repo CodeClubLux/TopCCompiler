@@ -133,6 +133,9 @@ class Node(Root):  # partially immutable data structure
     def __str__(self):
         "root"
 
+    def __len__(self):
+        return len(self.nodes)
+
     def thisToken(self):
         return self.token
 

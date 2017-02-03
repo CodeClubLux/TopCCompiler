@@ -664,6 +664,108 @@ def replaceT(typ, gen):
     else:
         return typ
 
+def Lambda(func, vars, typ= False, do= False):
+    if not typ:
+        typ = Unknown(-1, func)
+    f = FuncPointer(vars, typ, do= do)
+    f.already = False
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if not type(other) is FuncPointer:
+            mynode.error("expecting function type " + str(self) + " and got type " + str(other))
+
+        if len(other.args) != len(self.args):
+            mynode.error("expecting function type " + str(self) + " and got type " + str(other))
+
+        if not self.do and other.do:
+            mynode.error("Expecting pure function " + str(self) + " and got effectfull function " + str(other))
+        elif self.do and not other.do:
+            mynode.error("Expecting effectfull function " + str(self) + " and got pure function " + str(other))
+
+        count = -1
+        for (a, i) in zip(self.args, other.args):
+            count += 1
+            try:
+                if type(a) is Unknown:
+                    self.args[count] = i
+                else:
+                    i.duckType(parser, a, mynode, node, iter)
+            except EOFError as e:
+                beforeError(e, "Function type argument " + str(count) + ": ")
+
+        try:
+            self.returnType.duckType(parser, other.returnType, node, mynode, iter)
+        except EOFError as e:
+            beforeError(e, "Function type return type: ")
+
+    def check(self, parser):
+        if self.already:
+            return
+        name = ("do " if do else "") + "|" + ", ".join([i.name for i in self.args]) + "| -> " + self.returnType.name
+
+        self.already = True
+        for i in self.args:
+            if type(i) is Unknown:
+                self.name = name
+                return
+
+        from TopCompiler import TypeInference
+        from TopCompiler import Scope
+
+        Scope.incrScope(parser)
+
+        for (a,b) in zip(func.nodes[0], func.type.args):
+            a.varType = b
+
+        if type(self.returnType) is Unknown:
+            TypeInference.infer(parser, func.nodes[0])
+            TypeInference.infer(parser, func.nodes[1])
+
+            Scope.decrScope(parser)
+
+            if len(func.nodes[1]) == 0:
+                typ = Types.Null()
+            else:
+                typ = func.nodes[1].nodes[-1].type
+            self.returnType = typ
+            func.nodes[1].returnType = typ
+        else:
+            TypeInference.infer(parser, func)
+
+        name = ("do " if do else "") + "|" + ", ".join([i.name for i in self.args]) + "| -> " + self.returnType.name
+        self.name = name
+
+
+    import types
+
+    f.duckType = types.MethodType(duckType, f)
+    f.check = types.MethodType(check, f)
+
+    return f
+
+
+class Unknown(Type):
+    def __init__(self, index, func):
+        Type.__init__(self)
+
+        self.name = "Unkown type"
+        self.types = {}
+        self.index = index
+        self.func = func
+
+    def __eq__(self, other):
+
+        self.func.check()
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if self.index == -1:
+            self.func.type.returnType = other
+        else:
+            self.func.type.args[self.index] = other
+        self.func.type.check(parser)
+
+
+
 
 
 

@@ -19,6 +19,21 @@ class InitArg(Node):
     def validate(self, parser):
         pass
 
+class Lambda(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def __str__(self):
+        return "lambda"
+
+    def validate(self, parser): pass
+
+    def compileToJS(self, codegen):
+        codegen.append("(function(")
+        self.nodes[0].compileToJS(codegen)
+        self.nodes[1].compileToJS(codegen)
+        codegen.append(")")
+
 class FuncStart(Node):
     def __init__(self, name, returnType, parser):
         Node.__init__(self, parser)

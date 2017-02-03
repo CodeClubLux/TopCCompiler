@@ -22,7 +22,10 @@ def addVar(node, parser, name, type, _global=False):
     if _global:
         parser.scope[parser.package][0][name] = type
     else:
-        parser.scope[parser.package][-1][name] = type
+        if len(parser.scope[parser.package]) == 0:
+            print("error")
+        else:
+            parser.scope[parser.package][-1][name] = type
 
 def addFunc(node, parser, name, typ, imutable= True):
     if varExists(parser, parser.package, name):

@@ -90,6 +90,7 @@ from .Struct import *
 from .TypeInference import *
 from .Enum import *
 from .ParseJson import *
+from .Lambda import *
 
 def isEnd(parser):
     token = parser.thisToken()
@@ -217,7 +218,7 @@ def selectStmt(parser, token):
         return stmts[token.token]
 
 
-def callToken(self):
+def callToken(self, lam= False):
     s1 = selectStmt(self, self.thisToken())
 
     b = self.thisToken()
@@ -228,7 +229,7 @@ def callToken(self):
         s1(self)
         returnBookmark(self)
     else:
-        if (b.token in ["!", "_", "(", "\\", "$", "decoder"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if not lam and (b.token in ["!", "_", "(", "\\", "$", "decoder", "|"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
             if b.token == "$":
                 ExprParser.endExpr(self, -2)
             addBookmark(self)

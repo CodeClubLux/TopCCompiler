@@ -80,7 +80,7 @@ def home(app: Home, a: Atom[Page]) html.VNode =
                 html.src "enigma.png"
                 html.style "height: 70%; width: auto; display: block; margin-left: auto; margin-right: auto"
             ], ""
-            html.h2 \[html.style "width: 100%; text-align: center; color: white;"], "Building the best custom pc's for you"
+            html.h2 \[html.style "width: 100%; text-align: center; color: white;"], "Building the best custom PC's for you"
         ]
     ]
 
@@ -159,12 +159,20 @@ def single-part(app: {headers: []string, p: Part}, a: Atom[Page]) html.VNode =
             nav-bar app.headers, "PARTS"
             html.span \[], ""
             html.span \[], ""
-            html.h1 \[html.style "color: white; font-size: 40px; margin-left: 10%;"], p.name
-            html.div \[html.style "color: gold; width: 100%; font-size: 40px; margin-left: 10%;"], [p.rating: "★"]
-            html.image \[
-                html.src "parts/"+p.name
-                html.style "width: auto; height: 50%; margin-top: 5%; margin-left: 10%;"
-            ], ""
+            html.div \[html.style "margin-left: 10%;"], [
+                html.span \[
+                    html.class "unchecked"
+                    html.style "width: 40px; height: 40px;"
+                ], ""
+                html.h1 \[html.style "color: white; font-size: 40px; margin-left: 10px; display: inline;"], p.name
+                html.br \[], ""
+                html.div \[html.style "color: gold; font-size: 40px; text-align: left; margin-left: 10px; display: inline;"], [p.rating: "★"]
+                html.span \[html.style "margin-left: 20px; color: white; font-size: 40px;"], toString "€{p.price}"
+                html.image \[
+                    html.src "parts/"+p.name
+                    html.style "width: auto; height: 50%; margin-top: 5%; margin-left: 10%;"
+                ], ""
+            ]
         ]
     ]
 
@@ -175,6 +183,9 @@ def render(app: Page, a: Atom[Page]) html.VNode =
         Page-Parts p -> parts p, a
         Page-Part p -> single-part p, a
         _ -> html.h1 \[], "Page not found!"
+
+let add = [0..9].map |i| i + 1
+log add
 
 html.on-url-change on-new-url, app-state
 html.app render, app-state

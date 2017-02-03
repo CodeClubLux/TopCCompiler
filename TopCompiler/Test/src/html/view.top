@@ -108,6 +108,8 @@ let value = newAttrib::[string] "value"
 let href = newAttrib::[string] "href"
 let src = newAttrib::[string] "src"
 
+let kind = newAttrib::[string] "type"
+
 let _float = newAttrib::[string] "float"
 
 let class = newAttrib::[string] "className"

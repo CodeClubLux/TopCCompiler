@@ -32,7 +32,8 @@ def infer(parser, tree):
                 Scope.incrScope(parser)
 
             if not (i.isEnd() or type(i) is Tree.MatchCase or (type(i) is Tree.Block and type(i.owner) is Tree.Match)):
-                loop(i, o_iter)
+                if not type(i) is Tree.Lambda:
+                    loop(i, o_iter)
 
             if type(i) is Tree.Match:
                 typ = i.nodes[0].type
@@ -567,6 +568,8 @@ def infer(parser, tree):
 
 def validate(parser, tree):
     for i in tree:
+        if type(i) is Tree.Lambda:
+            Scope.incrScope(parser)
         if not i.isEnd():
             validate(parser, i)
         i.validate(parser)
