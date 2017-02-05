@@ -101,6 +101,13 @@ def infer(parser, tree):
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
             elif type(i) is Tree.ReadVar:
+                if i.name == "newAtom":
+                    if not (type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i and not i.owner.curry and not i.owner.partial):
+                        i.error("expecting function call, with no currying or partial application")
+
+                    if parser.atoms > 0:
+                        i.error("can only have one atom per application")
+
                 if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct and i.owner.nodes[0] == i):
                     if i.name in parser.imports:
                         if not type(i.owner) is Tree.Field:
@@ -327,6 +334,27 @@ def infer(parser, tree):
 
 
             elif type(i) is Tree.FuncCall:
+                c = i
+                if i.nodes[0].name == "newAtom":
+                    i = i.nodes[0]
+                    if parser.hotswap:
+                        parser.atomTyp.duckType(parser, i.owner.nodes[1].type, i.owner.nodes[1], i, 0)
+
+                        f = Tree.Field(0, i.owner.nodes[1].type, i)
+                        f.field = "arg"
+                        f.type = parser.atomTyp
+                        r = Tree.ReadVar("previousState", True, i)
+                        r.package = ""
+                        f.addNode(r)
+
+                        i.owner.nodes[1] = f
+                        f.owner = i.owner
+
+                    parser.atomTyp = i.owner.nodes[1].type
+                    parser.atoms += 1
+
+                i = c
+
                 partial = False
 
 

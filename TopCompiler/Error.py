@@ -49,7 +49,7 @@ def errorAst(message, package, filename, token):
 def error(message):
     from TopCompiler import topc
 
-    topc.error = ('<div class="error"><p>' +message[:-2] +'</p></div>').replace("\n", "<br>").replace("\"", "\\\"")
+    #topc.error = ('<div class="error"><p>' +message[:-2] +'</p></div>').replace("\n", "<br>").replace("\"", "\\\"")
 
     raise EOFError(message)
 

@@ -136,7 +136,11 @@ compiled = []
 
 error = ""
 
-def start(run= False, dev= False, init= False, hotswap= False):
+
+
+def start(run= False, dev= False, init= False, hotswap= False, cache= False):
+    global outputFile
+
     try:
         opt = 0
         skip = 0
@@ -220,7 +224,6 @@ def start(run= False, dev= False, init= False, hotswap= False):
         if outputFile == "":
             outputFile = (jsonLoad["name"])
 
-
         global filenames_sources
 
         filenames_sources = {i: {} for i in sources["full"]}
@@ -243,10 +246,28 @@ def start(run= False, dev= False, init= False, hotswap= False):
 
         globalTarget = target
 
+        class T:
+            pass
+
+        x = T()
+        x.didCompile = False
+
         def compile(target, sources, filenames, former = None):
             lexed = Lexer.lex(sources, filenames)
 
             declarations = Parser.Parser(lexed, filenames)
+            declarations.hotswap = False
+            declarations.shouldCompile = {}
+            declarations.atoms = 0
+            declarations.atomTyp = False
+
+            if cache:
+                declarations.scope = cache.scope
+                declarations.interfaces = cache.interfaces
+                declarations.structs = cache.structs
+                declarations.hotswap = hotswap
+                declarations.allImports = cache.allImports
+                declarations.atomTyp = cache.atomTyp
 
             if former:
                 #print("inserting", target)
@@ -266,7 +287,10 @@ def start(run= False, dev= False, init= False, hotswap= False):
 
             #print("declarations")
 
-            if ImportParser.shouldCompile(False, "main", declarations):
+            #print(declarations.shouldCompile)
+
+            if (dev and run) or ImportParser.shouldCompile(False, "main", declarations):
+                print("\n======== recompiling =========")
                 parser = Parser.Parser(lexed["main"], filenames["main"])
                 ResolveSymbols.insert(declarations, parser, only= True)
 
@@ -295,50 +319,58 @@ def start(run= False, dev= False, init= False, hotswap= False):
 
                 for i in parser.compiled:
                     if parser.compiled[i][0]:
-                        if hotswap:
-                            print("hotswap")
-                            prepareForHotswap(parser.compiled[i][1][0])
                         CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1], target).compile(opt=opt)
-
 
                 if target == "full":
                     _linkCSSWithFiles = linkCSSWithFiles
                     client_linkWithFiles = linkWithFiles + clientLinkWithFiles
                     node_linkWithFiles = linkWithFiles + nodeLinkWithFiles
 
-                    a = CodeGen.link(parser.compiled, outputFile, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
+                    a = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
 
-                    import webbrowser
-                    webbrowser.open("http://127.0.0.1:3000/")
+                    if run:
+                        import webbrowser
+                        webbrowser.open("http://127.0.0.1:3000/")
 
-                    l = CodeGen.link(parser.compiled, outputFile, run= True, opt= opt, dev=dev, linkWithCSS=[], linkWith= node_linkWithFiles, target = "node")
+                    l = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
+
                 else:
                     _linkCSSWithFiles = [] if target != "client" else linkCSSWithFiles
                     _linkWithFiles = linkWithFiles + nodeLinkWithFiles if target == "node" else linkWithFiles + clientLinkWithFiles if target == "client" else []
 
                     l = CodeGen.link(parser.compiled, outputFile,
-                                     run=run, opt=opt, dev=dev,
+                                     run=run, opt=opt, dev=dev, hotswap= hotswap,
                                      linkWithCSS=_linkCSSWithFiles, linkWith=_linkWithFiles, target=target)
-                return (True, l, parser)
+                x.didCompile = True
+                return parser
             elif run:
-                CodeGen.exec(outputFile)
-            elif init:
-                return (True, open("bin/"+outputFile+".js").read())
-            elif dev:
-                return (False, "")
+                if target == "full":
+                    if run:
+                        import webbrowser
+                        webbrowser.open("http://127.0.0.1:3000/")
+
+                    CodeGen.execNode(outputFile, dev)
+                else:
+                    CodeGen.exec(outputFile)
+
+
+            return declarations
+
 
         fil = filenames[target]
         sour = sources[target]
 
-        compile(target, sour, fil)
+        return compile(target, sour, fil)
 
     except EOFError as e:
         if dev:
-            return (False, str(error))
+            Error.error(str(e))
         else:
             print(e, file= sys.stderr)
-    else:
+
+    if x.didCompile:
         print("Compilation took : " + str(time() - time1))
+
 
     #profile.print_stats("time")
 
@@ -369,15 +401,15 @@ def modified(files, outputfile):
     import time
     o = compiled
 
-    return True #delete after testing
+    #return True #delete after testing
 
     try:
-        t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+".js")
+        t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-node.js")
         t = datetime.datetime.fromtimestamp(int(t))
     except:
         return True
 
-    for i in files:
+    for i in files["full"]:
         file = os.path.getmtime(os.path.join(i[0], i[1]))
         file = datetime.datetime.fromtimestamp(int(file))
 

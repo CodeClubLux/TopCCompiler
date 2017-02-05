@@ -41,6 +41,7 @@ def main(url: string) Page do
 
         _ -> Page-not-found
 
+
 def on-new-url(page: Page, url: string) Page do
     main url
 
@@ -183,9 +184,6 @@ def render(app: Page, a: Atom[Page]) html.VNode =
         Page-Parts p -> parts p, a
         Page-Part p -> single-part p, a
         _ -> html.h1 \[], "Page not found!"
-
-let add = [0..9].map |i| i + 1
-log add
 
 html.on-url-change on-new-url, app-state
 html.app render, app-state

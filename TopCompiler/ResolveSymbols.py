@@ -23,7 +23,13 @@ def resolve(self):
     filenames = self.filename
 
     for c in filenames:
+
         PackageParser.packDec(self, c, pack=True)
+        if self.hotswap and ImportParser.shouldCompile(False, self.package, self):
+            self.scope[self.package] = [{}]
+            self.structs[self.package] = {}
+            self.interfaces[self.package] = {}
+
         self.allImports[c] = []
         for i in range(len(tokens[c])):
             self.allImports[filenames[c][i][0]] = []
@@ -48,8 +54,12 @@ def resolve(self):
 
     return self
 
+from TopCompiler import ImportParser
 
 def _resolve(self, tokens, filename, passN= 0 ):
+    if self.hotswap and not ImportParser.shouldCompile(False, self.package, self):
+        return
+
     self.filename = filename
     self.iter = 0
 
@@ -132,5 +142,9 @@ def insert(parser, p, only= False, copy= False):
     p.compiled = parser.compiled
     p.opt = parser.opt
     p.externFuncs = parser.externFuncs
+    p.hotswap = parser.hotswap
     p.global_target = parser.global_target
+    p.shouldCompile = parser.shouldCompile
+    p.atoms = parser.atoms
+    p.atomTyp = parser.atomTyp
 

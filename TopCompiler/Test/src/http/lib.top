@@ -21,6 +21,7 @@ let response = Response {
     body = ""
 }
 
+ext node port: int = "process.env.PORT || 3000"
 ext client get: |string| do Response = "_http_get"
 
 ext node server: ||Request| do Response| -> Server = "server_createServer"

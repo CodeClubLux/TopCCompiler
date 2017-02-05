@@ -12,7 +12,6 @@ def read(path: string) string do
             log "cannot find file, "+path
             quit 1
 
-let htmlFile = read "Simulation.html"
 let logo = read "images/variation.png"
 let async = read "images/async.png"
 let tools = read "images/tools.png"
@@ -65,7 +64,11 @@ def requestHandler(req: http.Request) http.Response do
                     log "didn't find {name+".jpg"}"
                     http.response{status = 404}
         "/" ->
-            http.response {body = htmlFile, content-type = "text/html"}
+            match _read "Simulation.html" with
+                Some content ->
+                    http.response {body = content, content-type = "text/html"}
+                None -> http.response{status = 404}
+
         "/arrow.png" ->
             http.response {body = logo, content-type = "image/png"}
         "/async.png" ->
@@ -81,13 +84,13 @@ def requestHandler(req: http.Request) http.Response do
         _ ->
             http.response {status= 404, body = "404 Page not found"}
 
-ext node port: int = "process.env.PORT || 3000"
+//ext node port: int = PORT //"process.env.PORT || 3000"
 
 let server = http.server requestHandler
 
-server.listen port
+server.listen http.port
 
-log "started web server on port {port}"
+log "started web server on port {http.port}"
 
 type Part =
     kind: string

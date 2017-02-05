@@ -225,12 +225,67 @@ def getRuntimeNode():
     file = open(runtimeName, mode="r")
     return file.read()
 
-def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
-    linked = '';
+def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswap):
+    needSocket = False
+    if target == "node" and dev:
+        linked = """(function(){
+            var fs = require("fs");
+            var io = require("socket.io").listen(8080);
+
+            var watch = require("chokidar");
+
+            watch.watch('"""+output+"""-client.js').on("change", (filename) => {
+            //console.log("I think it changed");
+                if (filename) {
+                    fs.readFile('./"""+output+"""-client.js', function (err, data) {
+                        if (!err) {
+                            data = String(data);
+                            io.sockets.emit('reload', data);
+                        }
+                    });
+                }
+            });
+
+            watch.watch("""+str([i+"" for i in linkWithCSS]) + """, {cwd: "../"}).on("change", (filename) => {
+                fs.readFile("../" + filename, function (err, data) {
+                    if (!err) {
+                        console.log("\\n==== reloaded stylesheets ====");
+                        data = String(data);
+                        io.sockets.emit('style', {name: filename, content: data});
+                    }
+                })
+            })
+        })();"""
+
+    elif target == "client" and not run and dev:
+        needSocket = True
+        linked = ""
+
+        socket = """
+        (function (){
+            var socket = io.connect('http://127.0.0.1:8080');
+
+            socket.on('reload', function (data) {
+                console.log("\\n======== reloaded =========");
+
+                document.getElementById("code").innerHTML = "";
+                eval(data);
+            });
+
+            socket.on('style', function (data) {
+                var name = data.name;
+                var content = data.content;
+                console.log("\\n==== reloaded stylesheets ====");
+                document.getElementById(name).innerHTML = content;
+            });
+        })();"""
+    else:
+        linked = ""
+
     if opt == 3:
         linked += "(function () {"
     import sys
-    runtime = getRuntime() if target == "client" else getRuntimeNode()
+    runtime = "" if hotswap and target == "client" else getRuntime() if target == "client" else getRuntimeNode()
 
     linked += runtime
 
@@ -249,15 +304,16 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
     linked += ";".join(array)
     css = ""
 
-    for i in linkWithCSS:
-        try:
-            f = open(i, mode="r")
-        except:
-            f.close()
+    if target == "client":
+        for i in linkWithCSS:
+            try:
+                f = open(i, mode="r")
+            except:
+                f.close()
 
-            Error.error("cannot find file "+i+" to link")
-        css += "<style>"+f.read()+"</style>"
-        f.close()
+                Error.error("cannot find file "+i+" to link")
+            css += '<style id="'+i+'">'+f.read()+"</style>"
+            f.close()
 
     linked += "\n"
 
@@ -283,11 +339,10 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
         output += ".min"
         linked = open("bin/"+output+"-"+target+".js", "r").read()
 
+
     if target == "node":
-        if dev:
-            return preCall
         if run:
-            execNode(output)
+            execNode(output, dev)
         return
 
     if target == "full":
@@ -303,14 +358,19 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
     html = """
 <!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <HTML>
-    <HEAD>
+    <head>
         <meta charset="UTF-8">
         <TITLE>""" + output + """</TITLE>
         <link rel="icon" href="favicon.ico" type="image/x-icon" />
-        """+css+"""
-    </HEAD>
+        """+css+('<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>'+socket+"</script>" if needSocket else '')+"""
+    </head>
     <body>
-        <div id= "code"></div>
+        """ + ("""
+            <div style="width: 100%; height: 30%; position:fixed; bottom:0;background-color: white;">
+            <input value=">" style="width: 100%; font-size: 20px; margin-right: 0px; margin-left: 0px;"></input>
+            </div>
+        """ if needSocket else "") + """
+        <div id= "code" """+ ('style= "height: 70%; position: relative;"' if needSocket else "") + """></div>
         <script>
         """ +linked + """
         </script>
@@ -324,18 +384,20 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target):
     f.close()
     fjs.close()
 
-    if dev:
-        return preCall
-
     if run: exec(output)
 
 def exec(outputFile):
     args = ["open", "bin/"+outputFile+".html"]
     subprocess.check_call(args, shell=False)
 
-def execNode(outputFile):
-    args = ["node", outputFile + "-node.js"]
-    subprocess.call(args, shell=False, cwd="bin/")
+def execNode(outputFile, dev):
+    if dev:
+        args = ["node", outputFile+"-node.js"]
+
+        subprocess.Popen(args, cwd="bin/")
+    else:
+        args = ["node", outputFile + "-node.js"]
+        subprocess.call(args, shell=False, cwd="bin/")
 
 class Info:
     def __init__(self):
