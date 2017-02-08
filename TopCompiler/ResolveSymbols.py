@@ -149,4 +149,5 @@ def insert(parser, p, only= False, copy= False):
     p.shouldCompile = parser.shouldCompile
     p.atoms = parser.atoms
     p.atomTyp = parser.atomTyp
+    p.jsFiles = parser.jsFiles
 

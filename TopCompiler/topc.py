@@ -257,7 +257,7 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
             declarations.shouldCompile = {}
             declarations.atoms = 0
             declarations.atomTyp = False
-
+            declarations.jsFiles = clientLinkWithFiles + linkWithFiles
 
             if cache:
                 declarations.scope = cache.scope
@@ -287,7 +287,7 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
 
             #print(declarations.shouldCompile)
 
-            if (dev and run) or ImportParser.shouldCompile(False, "main", declarations, jsFiles= clientLinkWithFiles+linkWithFiles):
+            if (dev and run) or ImportParser.shouldCompile(False, "main", declarations):
                 parser = Parser.Parser(lexed["main"], filenames["main"])
                 ResolveSymbols.insert(declarations, parser, only= True)
 
@@ -401,7 +401,6 @@ def modified(files, outputfile, jsFiles=[]):
     except:
         return True
 
-    print(outputfile)
     for i in jsFiles:
         file = os.path.getmtime(i)
         file = datetime.datetime.fromtimestamp(int(file))

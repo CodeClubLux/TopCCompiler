@@ -7,7 +7,7 @@ from TopCompiler import ResolveSymbols
 import AST as Tree
 from TopCompiler import Types
 
-def shouldCompile(decl, name, parser, mutated= (), jsFiles=[]):
+def shouldCompile(decl, name, parser, mutated= ()):
     if not decl and not name in parser.compiled and not name in mutated:
         mutated += (name,)
 
@@ -19,7 +19,7 @@ def shouldCompile(decl, name, parser, mutated= (), jsFiles=[]):
                 parser.shouldCompile[name] = True
                 return True
 
-        res = topc.modified(parser.files[name], name, jsFiles= jsFiles)
+        res = topc.modified(parser.files[name], name, jsFiles= parser.jsFiles)
         parser.shouldCompile[name] = res
 
         return res
