@@ -432,11 +432,14 @@ class Parser:  # all mutable state
             self._parse(tokens[i], filenames[i][1])
 
             #self.imports = []
+        self.iter = 0
+
+        infer(self, self.currentNode)
 
         self.tokens = tokens
         self.filename = filenames
 
-        infer(self, self.currentNode)
+
 
         if self.sc:
             Tree.transform(self.currentNode)

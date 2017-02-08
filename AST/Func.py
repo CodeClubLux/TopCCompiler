@@ -30,9 +30,11 @@ class Lambda(Node):
 
     def compileToJS(self, codegen):
         codegen.append("(function(")
+        codegen.incrScope()
         self.nodes[0].compileToJS(codegen)
         self.nodes[1].compileToJS(codegen)
         codegen.append(")")
+
 
 class FuncStart(Node):
     def __init__(self, name, returnType, parser):

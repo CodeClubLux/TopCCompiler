@@ -30,9 +30,10 @@ def resolve(self):
             self.structs[self.package] = {}
             self.interfaces[self.package] = {}
 
-        self.allImports[c] = []
+        if not c in self.allImports:
+            self.allImports[c] = set()
+
         for i in range(len(tokens[c])):
-            self.allImports[filenames[c][i][0]] = []
             _resolve(self, tokens[c][i], filenames[c][i][1], passN=0)
 
     for n in range(1,3):
@@ -105,7 +106,8 @@ def _resolve(self, tokens, filename, passN= 0 ):
 
     for i in self.imports:
         if not i in self.allImports[self.package]:
-            self.allImports[self.package].append(i)
+            self.allImports[self.package].add(i)
+
 
     self.imports = []
 

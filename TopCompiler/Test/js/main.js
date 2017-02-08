@@ -28,6 +28,8 @@ window.html_hyper = function (type, attrib, children) {
     return res;
 }
 
+
+
 window._html_onUrlChange = function _html_onUrlChange(func, next) {
     window.addEventListener('hashchange', function(){
         func(window.location.hash.slice(1), function(){})
@@ -192,6 +194,14 @@ function onVisibilityChange(el, callback) {
             }
         }
     }
+}
+
+function saveDataInLocalhost() {
+
+}
+
+function readDataFromLocalhost() {
+
 }
 
 var handlers = [];

@@ -10,7 +10,7 @@ import os
 import time
 
 def main():
-    error = False
+    error = ""
     while True:
         try:
             parser = topc.start(run= True, dev=True)
@@ -18,9 +18,10 @@ def main():
             error = False
             break
         except EOFError as e:
-            if not error:
+            e = str(e)
+            if error != e:
                 print(e, file=sys.stderr)
-            error = True
+            error = e
             time.sleep(0.2)
 
     while True:
@@ -29,8 +30,9 @@ def main():
             parser = topc.start(run= False, dev= True, hotswap= True, cache=parser)
             error = False
         except EOFError as e:
-            if not error:
+            e = str(e)
+            if error != e:
                 print(e, file=sys.stderr)
-            error = True
+            error = e
 if __name__ == '__main__':
     main()

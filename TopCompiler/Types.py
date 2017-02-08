@@ -290,6 +290,7 @@ class FuncPointer(Type):
         self.generic = generic
         self.types = {}
         self.do = do
+        self.isLambda = False
 
     def duckType(self, parser, other, node, mynode, iter= 0):
         if not type(other) is FuncPointer:
@@ -420,6 +421,10 @@ class Array(Pointer):
                     [self.elemT],
                     Bool()
                 ),
+                "indexOf": FuncPointer(
+                    [self.elemT],
+                    I32()
+                ),
                 "operator_add": FuncPointer(
                     [self.elemT],
                     Array(False, self.elemT)
@@ -525,10 +530,18 @@ class Enum(Type):
         for name in self.generic:
             a = self.generic[name]
             b = other.generic[name]
-            try:
-                a.duckType(parser, b, node, mynode, iter)
-            except EOFError as e:
-                Error.beforeError(e, "For generic parameter "+name+": ")
+
+            if type(b) is T:
+                #print(b.owner)
+                #print((self.package+"." if self.package != "_global" else "")+self.normalName)
+
+                if (self.package+"." if self.package != "_global" else "")+self.normalName != b.owner:
+                    node.error("For generic parameter " + name + ": "+" Expecting type "+str(a) +", not "+str(b))
+            else:
+                try:
+                    a.duckType(parser, b, node, mynode, iter)
+                except EOFError as e:
+                    Error.beforeError(e, "For generic parameter "+name+": ")
 
 
 All = Interface(False, {})
@@ -740,6 +753,7 @@ def Lambda(func, vars, typ= False, do= False):
 
     f.duckType = types.MethodType(duckType, f)
     f.check = types.MethodType(check, f)
+    f.isLambda = True
 
     return f
 

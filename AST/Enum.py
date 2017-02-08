@@ -14,7 +14,7 @@ class Enum(Node):
             args = self.const[name]
             names = [codegen.getName() for _ in args]
             codegen.inFunction()
-            if len(args) > 0:
+            if len(names) > 0:
                 codegen.append("function "+self.package+"_"+name+"(")
                 codegen.append(",".join(names))
                 codegen.append("){return ["+str(count)+","+",".join(names)+"]}")

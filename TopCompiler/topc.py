@@ -140,6 +140,7 @@ error = ""
 
 def start(run= False, dev= False, init= False, hotswap= False, cache= False):
     global outputFile
+    global didCompile
 
     try:
         opt = 0
@@ -246,11 +247,7 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
 
         globalTarget = target
 
-        class T:
-            pass
-
-        x = T()
-        x.didCompile = False
+        didCompile = False
 
         def compile(target, sources, filenames, former = None):
             lexed = Lexer.lex(sources, filenames)
@@ -260,6 +257,7 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
             declarations.shouldCompile = {}
             declarations.atoms = 0
             declarations.atomTyp = False
+
 
             if cache:
                 declarations.scope = cache.scope
@@ -289,8 +287,7 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
 
             #print(declarations.shouldCompile)
 
-            if (dev and run) or ImportParser.shouldCompile(False, "main", declarations):
-                print("\n======== recompiling =========")
+            if (dev and run) or ImportParser.shouldCompile(False, "main", declarations, jsFiles= clientLinkWithFiles+linkWithFiles):
                 parser = Parser.Parser(lexed["main"], filenames["main"])
                 ResolveSymbols.insert(declarations, parser, only= True)
 
@@ -341,7 +338,8 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
                     l = CodeGen.link(parser.compiled, outputFile,
                                      run=run, opt=opt, dev=dev, hotswap= hotswap,
                                      linkWithCSS=_linkCSSWithFiles, linkWith=_linkWithFiles, target=target)
-                x.didCompile = True
+                didCompile = True
+                print("\n======== recompiling =========")
                 return parser
             elif run:
                 if target == "full":
@@ -368,9 +366,8 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
         else:
             print(e, file= sys.stderr)
 
-    if x.didCompile:
+    if didCompile:
         print("Compilation took : " + str(time() - time1))
-
 
     #profile.print_stats("time")
 
@@ -397,17 +394,25 @@ def prepareForHotswap(arg):
     return False
 
 import datetime
-def modified(files, outputfile):
-    import time
-    o = compiled
-
-    #return True #delete after testing
-
+def modified(files, outputfile, jsFiles=[]):
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-node.js")
         t = datetime.datetime.fromtimestamp(int(t))
     except:
         return True
+
+    print(outputfile)
+    for i in jsFiles:
+        file = os.path.getmtime(i)
+        file = datetime.datetime.fromtimestamp(int(file))
+
+        if file > t:
+            return True
+
+    import time
+    o = compiled
+
+    #return True #delete after testing
 
     for i in files["full"]:
         file = os.path.getmtime(os.path.join(i[0], i[1]))

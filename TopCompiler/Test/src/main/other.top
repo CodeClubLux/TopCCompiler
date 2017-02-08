@@ -6,6 +6,13 @@ type Feature =
     description: string
     image: string
 
+type Part =
+    kind: string
+    name: string
+    rating: int
+    price: float
+    other: []{name: string, value: string}
+
 def Feature.toString(self) string =
     "Feature({self.id},{self.name},{self.image})"
 
@@ -26,15 +33,22 @@ type Docs =
     headers: []string
     footer: string
 
+type Kind =
+    name: string
+    image: string
+    selected: Maybe[Part]
+
 type Page either
     Page-home(Home)
     Page-docs(Docs)
-    Page-kinds({headers: []string, kinds: []string})
+    Page-kinds({headers: []string, kinds: []Kind})
     Page-parts(PartsPage)
     Page-part({headers: []string, p: Part})
     Page-not-found()
     Page-Get-Started()
 
+def Part.toString(self) string =
+    "Part({self.kind}, {self.name}, {self.rating} stars, ${self.price}, {self.other})"
 
 let headers = ["HOME", "EXAMPLES", "DOCS", "COMMUNITY", "BLOG"]
 let footer_text = "All code for this site is written in Top, including the server - Lucas Goetz"

@@ -626,6 +626,13 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
         if len(shouldBeTyp.args) != len(normalTyp.args):
             return shouldBeTyp
 
+        if normalTyp.isLambda:
+            try:
+                shouldBeTyp = Types.replaceT(shouldBeTyp, generics)
+                shouldBeTyp.duckType(parser, normalTyp, Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
+            except EOFError as e:
+                normalTyp.check(parser)
+
         for (should, nor) in zip(shouldBeTyp.args, normalTyp.args):
             args.append(resolveGen(should, nor, generics, parser))
 

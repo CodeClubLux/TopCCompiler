@@ -365,12 +365,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         """+css+('<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>'+socket+"</script>" if needSocket else '')+"""
     </head>
     <body>
-        """ + ("""
-            <div style="width: 100%; height: 30%; position:fixed; bottom:0;background-color: white;">
-            <input value=">" style="width: 100%; font-size: 20px; margin-right: 0px; margin-left: 0px;"></input>
-            </div>
-        """ if needSocket else "") + """
-        <div id= "code" """+ ('style= "height: 70%; position: relative;"' if needSocket else "") + """></div>
+        <div id= "code"></div>
         <script>
         """ +linked + """
         </script>

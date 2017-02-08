@@ -241,9 +241,7 @@ function Some(x) {
     return [0, x];
 }
 
-function None() {
-    return [0];
-}
+var None = [1];
 
 function sleep(time, callback) {
     setTimeout(callback, time);
@@ -327,6 +325,7 @@ function core_json_struct(constr, array) {
 function core_json_interface(array) {
     return function (realObj) {
         var obj = {};
+        var len = array.length;
         for (var i = 0; i < len; i++) {
             var arr = array[i];
             obj[arr[0]] = arr[1](realObj[arr[0]]);
@@ -611,6 +610,17 @@ Vector.prototype.get = function (key) {
 
 Vector.prototype.toJSON = function() {
     return this.toArray();
+}
+
+Vector.prototype.indexOf = function(find) {
+    var index = -1;
+    for (var i = 0; i < this.length; i++) {
+        if (this.get(i).operator_eq(find)) {
+            index += 1;
+            return index;
+        }
+    }
+    return -1;
 }
 
 Vector.prototype.append_m = function (value) {

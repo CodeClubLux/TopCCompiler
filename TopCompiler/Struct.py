@@ -118,10 +118,14 @@ def typeParser(parser, decl= False):
 
     if decl:
         meth = parser.structs[parser.package][name].methods
+        types = parser.structs[parser.package][name].types
 
         parser.structs[parser.package][name] = Struct(name, args, fields, gen, typ)
+        tmp =  parser.structs[parser.package][name].types
         parser.structs[parser.package][name].methods = meth
         parser.structs[parser.package][name].package = parser.package
+        parser.structs[parser.package][name].types = types
+        types.update(tmp)
 
         Scope.changeType(parser, name, parser.structs[parser.package][name] )
 

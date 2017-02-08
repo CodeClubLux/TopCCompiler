@@ -92,14 +92,4 @@ server.listen http.port
 
 log "started web server on port {http.port}"
 
-type Part =
-    kind: string
-    name: string
-    rating: int
-    price: float
-
-def Part.toString(self) string =
-    " Part({self.kind}, {self.name}, {self.rating} stars, ${self.price})"
-
-
 //db.insert coll, {x = 10, y = 20}

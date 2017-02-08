@@ -33,6 +33,17 @@ Vector.prototype.toJSON = function() {
     return this.toArray();
 }
 
+Vector.prototype.indexOf = function(find) {
+    var index = -1;
+    for (var i = 0; i < this.length; i++) {
+        if (this.get(i).operator_eq(find)) {
+            index += 1;
+            return index;
+        }
+    }
+    return -1;
+}
+
 Vector.prototype.append_m = function (value) {
     var width = Vector.prototype.width;
 

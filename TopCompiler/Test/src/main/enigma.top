@@ -12,9 +12,26 @@ def main(url: string) Page do
             }
 
         "PARTS" ->
+            let null: Maybe[Part] = None
             Page-Kinds \{
-                headers =  names
-                kinds = ["CPU", "CPU COOLER", "MOTHERBOARD"]
+                headers = names
+                kinds = [
+                    Kind {
+                        "CPU"
+                        "https://www.tutorialspoint.com/computer_fundamentals/images/cpu.jpg"
+                        null
+                    }
+                    Kind {
+                        "CPU COOLER"
+                        "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcRh-2GiRrYLj2t2uirg_eyPrBPM3zIy9YOtcuH3Xb8io4m3tNFjOQ"
+                        null
+                    }
+                    Kind {
+                        "MOTHERBOARD"
+                        "http://media.gamersnexus.net/images/media/2014/guides/asus-rog-hero.png"
+                        null
+                    }
+                ]
             }
 
         "PARTS/CPU/{name}" ->
@@ -49,7 +66,7 @@ let app-state = newAtom main html.page-load-url
 
 def nav-bar(_headers: []string, page: string) html.VNode =
     let style = "border-style: solid; border-radius: 6px;
-     border-width: 1px; border-color: #0081D5;
+     border-width: 1px; border-color: #CA343D;
      margin: 10px;
      width: 130px;
      "
@@ -57,7 +74,7 @@ def nav-bar(_headers: []string, page: string) html.VNode =
     def element(header: string) html.VNode =
         let _style =
             if header == page then
-                style + "background-color: #0081D5;"
+                style + "background-color: #CA343D;"
             else
                 style
 
@@ -76,7 +93,7 @@ def nav-bar(_headers: []string, page: string) html.VNode =
 def home(app: Home, a: Atom[Page]) html.VNode =
     html.div \[], [
         html.div \[(html.style "height: 100%;"), html.class "enigma-background"], [
-            nav-bar app.headers, "HOME"
+            nav-bar names, "HOME"
             html.image \[
                 html.src "enigma.png"
                 html.style "height: 70%; width: auto; display: block; margin-left: auto; margin-right: auto"
@@ -85,21 +102,32 @@ def home(app: Home, a: Atom[Page]) html.VNode =
         ]
     ]
 
+def kinds(app: {headers: []string, kinds: []Kind}, a: Atom[Page]) html.VNode =
+    def part(s: Kind) html.VNode =
+        let res = match s.selected with
+            Some p ->
+                html.a \[
+                    html.style "font-size: 27px; color: black; width: 100%; position: absolute; text-align: center; text-decoration: none;"
+                    html.href "#KIND/"+s.name
+                ], [
+                    html.p \[], s.name+"S"
+                    html.p \[html.style "font-size: 20px;"], p.name
+                ]
 
-def kinds(app: {headers: []string, kinds: []string}, a: Atom[Page]) html.VNode =
-    def part(s: string) html.VNode =
-        html.li \[html.style "margin-left: 20%; list-style-type: circle; color: white;"],
-            html.a \[
-                html.style "color: white;"
-                html.href "#KIND/"+s
-                html.class "link"
-            ], s+"S"
+            None ->
+                html.a \[
+                    html.style "font-size: 27px; color: black; text-align: center; width: 100%; vertical-align: middle; line-height: 160px; position: absolute; text-decoration: none;"
+                    html.href "#KIND/"+s.name
+                ], s.name+"S"
+
+        html.li \[html.style "color: white; display: inline;"],
+            html.div \[html.class "kind"], res
 
     html.div \[], [
-        html.div \[(html.style "height: 100%;"), html.class "enigma-background"], [
+        html.div \[html.class "enigma-background"], [
             nav-bar app.headers, "PARTS"
             html.h1 \[html.style "color: white; width: 100%; margin-left: 15%; font-size: 40px;"], "Individual Parts"
-            html.ul \[], app.kinds.map part
+            html.ul \[html.style "position: relative; width: 80%; margin-left: 10%;"], app.kinds.map part
         ]
     ]
 
@@ -131,7 +159,7 @@ def parts(app: PartsPage, a: Atom[Page]) html.VNode =
         html.li \[html.class "part"],
             html.a \[
                 html.href "#PARTS/"+app.kind+"/"+p.name
-                html.style "text-decoration: none;"
+                html.style "text-decoration: none; elementoverflow: hidden;"
             ], [
                 html.span \[html.class "link"], p.name
                 html.span \[
@@ -142,40 +170,75 @@ def parts(app: PartsPage, a: Atom[Page]) html.VNode =
             ]
 
     html.div \[], [
-        html.div \[(html.style "height: 100%;"), html.class "enigma-background"], [
+        html.div \[html.class "enigma-background"], [
             nav-bar app.headers, "PARTS"
             html.h1 \[html.style "color: white; width: 100%; text-align: center; font-size: 40px;"], app.kind
             html.input \[
-                html.style "width: 80%; margin-left: 10%; margin-right: 10%; font-size: 25px; margin-bottom: 20px;"
+                html.style "width: 80%; margin-left: 10%; margin-right: 10%; font-size: 25px; margin-bottom: 20px; border-radius: 5px; border-width: 0px;"
                 html.on-input search, a
+                html.place-holder "search"
             ], ""
             html.ul \[html.class "parts"], app.parts.map part
         ]
     ]
 
+def add-to-build(p: Part, page: Page, ev: html.Event) Page do
+    //def get(i: Kind) string =
+    //    i.name
+
+    match main "PARTS" with
+        Page-Kinds newPage ->
+            let types = newPage.kinds
+            let _names = types.map |i| i.name
+            let iter = _names.indexOf p.kind
+
+            let _page = types[iter]
+            let selected-page = _page {selected = Some p}
+
+            Page-Kinds \{
+                headers = newPage.headers
+                kinds = types.set iter, selected-page
+            }
+        _ ->
+            page
+
+
+
 def single-part(app: {headers: []string, p: Part}, a: Atom[Page]) html.VNode =
+    def specs(attr: {name: string, value: string}) html.VNode =
+        html.div \[html.style "margin-left: 20px; position: relative;"], [
+            html.h3 \[html.style "font-size: 15px; color: grey; margin-bottom: 5px;"], attr.name
+            html.h3 \[html.style "font-size: 20px; color: black; margin-top: 0px;"], attr.value
+        ]
+
+
     let p = app.p
     html.div \[], [
         html.div \[(html.style "100%"), html.class "enigma-background"], [
             nav-bar app.headers, "PARTS"
             html.span \[], ""
             html.span \[], ""
-            html.div \[html.style "margin-left: 10%;"], [
-                html.span \[
-                    html.class "unchecked"
-                    html.style "width: 40px; height: 40px;"
-                ], ""
-                html.h1 \[html.style "color: white; font-size: 40px; margin-left: 10px; display: inline;"], p.name
+            html.div \[html.style "margin-left: 10%; margin-right: 10%;"], [
+                html.h1 \[html.style "color: white; font-size: 40px; display: inline;"], p.name
                 html.br \[], ""
                 html.div \[html.style "color: gold; font-size: 40px; text-align: left; margin-left: 10px; display: inline;"], [p.rating: "★"]
                 html.span \[html.style "margin-left: 20px; color: white; font-size: 40px;"], toString "€{p.price}"
+                html.button \[
+                    html.class "link"
+                    html.on-click (add-to-build p), a
+                    html.style "border-radius: 5px; display: block; background-color: #6DE56A; font-size: 20px; color: white; padding: 10px; margin-top: 30px; border-width: 0px;"
+                ], "Add to build"
                 html.image \[
                     html.src "parts/"+p.name
-                    html.style "width: auto; height: 50%; margin-top: 5%; margin-left: 10%;"
+                    html.style "height: auto; width: 100%; margin-top: 5%; border-radius: 5px; padding-right: 0px;"
                 ], ""
+                html.div \[
+                    html.style "background-color: white; position: relative; border-radius: 5px; width: 100%; padding-bottom: 2px; padding-top: 3px; margin-top: 20px;"
+                ], p.other.map specs
             ]
         ]
     ]
+
 
 def render(app: Page, a: Atom[Page]) html.VNode =
     match app with

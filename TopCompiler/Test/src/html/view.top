@@ -190,4 +190,3 @@ def app[T](r: |T, Atom[T]| -> VNode, appstate: Atom[T]) do
     appstate.watch rerender
 
 ext client animateOnVisible: |HtmlElem, string| do none = "html_addClassOnVisible"
-
