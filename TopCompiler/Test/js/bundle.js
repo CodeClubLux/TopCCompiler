@@ -38,6 +38,11 @@ window._html_onUrlChange = function _html_onUrlChange(func, next) {
     next();
 }
 
+window._html_setUrl = function _html_setUrl(url, next) {
+    window.location.hash = url;
+    next();
+}
+
 window._nextTick = function(func, next) {
     requestAnimationFrame(func.bind(null, function(){}));
     next();
