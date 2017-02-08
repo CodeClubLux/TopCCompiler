@@ -1,6 +1,5 @@
 include TopCompiler/runtime.js
-include TopCompiler/runtime_node.js
-include TopCompiler/jquery.js
+include TopCompiler/runtime_node.jsi'
 include setup.cfg
 exclude .gitignore
 recursive-exclude *.egg-info *

@@ -196,15 +196,15 @@ function onVisibilityChange(el, callback) {
     }
 }
 
-function saveDataInLocalhost() {
+console.log(localStorage);
 
+function saveDataInLocalhost() {
+    Storage.localStorage;
 }
 
 function readDataFromLocalhost() {
 
 }
-
-
 
 var handlers = [];
 
