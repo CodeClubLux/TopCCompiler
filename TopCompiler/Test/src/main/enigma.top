@@ -147,12 +147,16 @@ def kinds(app: {headers: []string, kinds: []Kind}, a: Atom[Page]) html.VNode =
     background \[
         nav-bar app.headers, "CUSTOM BUILDS"
         html.span \[], ""
-        html.image \[
-            html.src "https://image.flaticon.com/icons/png/512/2/2772.png"
-            html.style "float: right; width: 40px; height: 40px; filter: invert(100%); padding-top: 32px; padding-right: 25px;"
-        ], ""
+        html.a \[
+            html.href "#CHECKOUT"
+        ],
+            html.image \[
+                html.src "https://image.flaticon.com/icons/png/512/2/2772.png"
+                html.style "float: right; width: 40px; height: 40px; filter: invert(100%); margin-top: 32px; padding-right: 10%;"
+            ], ""
+
         html.h1 \[html.style "color: white; width: 100%; margin-left: 15%; font-size: 40px;"], "Individual Parts"
-        html.ul \[html.style "position: relative; width: 95%; margin-left: 5%;"], app.kinds.map part
+        html.ul \[html.style "position: relative; width: 90%; margin-left: 10%;"], app.kinds.map part
     ]
 
 def rating(r: int) html.VNode =
@@ -265,7 +269,7 @@ def single-part(app: {headers: []string, p: Part}, a: Atom[Page]) html.VNode =
 def about(a: Atom[Page]) html.VNode  =
     background \[
         nav-bar names, "ABOUT"
-        html.h1 \[], "Hello World!"
+        html.h1 \[], "hello world!"
     ]
 
 def render(app: Page, a: Atom[Page]) html.VNode =
