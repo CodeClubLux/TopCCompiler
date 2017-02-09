@@ -204,12 +204,16 @@ class Block(Node):
         Node.__init__(self, parser)
         self.noBrackets = False
         self.yielding = False
+        self.first = True
 
     def __str__(self):
         return "block"
 
-    def case(self, codegen, number):
-        codegen.append("}/*case*/")
+    def case(self, codegen, number, node):
+        if not (type(node) is Tree.FuncCall and not node == self.nodes[-1])or self.first:
+            codegen.append("}/*case*/")
+
+        self.first = False
 
         if len(self.owner.nodes) > (2 if type(self.owner) is If else 3):
             num = codegen.count + 1
@@ -223,7 +227,7 @@ class Block(Node):
 
         if type(self.outer_scope) is Tree.Block and actuallyYields(self) and self.outer_scope.first:
             self.outer_scope.first = False
-            self.outer_scope.case(codegen, number)
+            self.outer_scope.case(codegen, number, self)
         else:
             codegen.append("case " + str(number) + ":")
 

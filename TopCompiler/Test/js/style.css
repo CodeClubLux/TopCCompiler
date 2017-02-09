@@ -3,6 +3,7 @@
     height: 100%;
     font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
     color: #fff;
+
 }
 
 ul {
@@ -196,10 +197,9 @@ h3.header {
 }
 
 .enigma-background {
-    min-height: 100%;
+    height: 100%;
     width: 100%;
-    display: inline-block;
-    padding-bottom: 5%;
+    position: fixed;
     background: #232323; /*linear-gradient(90deg, #463D3D, #5B5151);";
     */
 }
@@ -240,8 +240,8 @@ li.nav-bar-enigma:hover {
     position: relative;
 }
 
-.kind:hover {
-    background-color: #CA343D;
+.red:hover {
+    background-color: #CA343D
 }
 
 .unchecked:after {

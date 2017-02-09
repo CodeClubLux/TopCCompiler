@@ -301,6 +301,17 @@ function core_json_interface(array) {
     }
 }
 
+function core_json_enum(array) {
+    return function (realObj) {
+        var iter = realObj[0]
+        var _enum = [iter];
+        for (var i = 1; i < realObj.length; i++) {
+            _enum[i] = array[iter][i-1](realObj[i]);
+        }
+        return _enum;
+    }
+}
+
 function core_json_vector(decoder) {
     return function (realObj) {
         return fromArray(realObj.map(decoder));

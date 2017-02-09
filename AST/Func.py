@@ -108,7 +108,7 @@ class FuncBody(Node):
     def __str__(self):
         return "}"
 
-    def case(self, codegen, number):
+    def case(self, codegen, number, node):
         codegen.append("case "+str(number)+":")
 
     def compileToJS(self, codegen):
@@ -388,7 +388,7 @@ class FuncCall(Node):
 
         if yilds:
             codegen.append(";")
-            self.outer_scope.case(codegen, nextNum)
+            self.outer_scope.case(codegen, nextNum, self)
 
         elif self.type == Types.Null():
             codegen.append(";")

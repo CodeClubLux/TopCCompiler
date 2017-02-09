@@ -29,7 +29,20 @@ window.html_hyper = function (type, attrib, children) {
     return res;
 }
 
+window._html_setLocalStorage = function _html_setLocalStorage(item, next) {
+    var obj = JSON.stringify(item);
+    localStorage.setItem("data", obj);
+    next();
+}
 
+window._html_readLocalStorage = function _html_setLocalStorage(decoder, next) {
+    var d = localStorage.getItem("data");
+    if (!d) {
+        next([1]);
+    } else {
+        next([0, parseJson(decoder, d)]);
+    }
+}
 
 window._html_onUrlChange = function _html_onUrlChange(func, next) {
     window.addEventListener('hashchange', function(){
@@ -200,16 +213,6 @@ function onVisibilityChange(el, callback) {
             }
         }
     }
-}
-
-console.log(localStorage);
-
-function saveDataInLocalhost() {
-    Storage.localStorage;
-}
-
-function readDataFromLocalhost() {
-
 }
 
 var handlers = [];

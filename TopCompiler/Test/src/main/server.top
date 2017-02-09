@@ -54,15 +54,6 @@ def requestHandler(req: http.Request) http.Response do
     if (http.isQuery req.url) then
         http.handleQuery req.url, query
     else match req.url with
-        "/parts/{name}" ->
-            match _read "images/parts/"+name+".jpg" with
-                Some content ->
-                    log "found something"
-                    http.response {body = content, content-type = "image/jpg"}
-
-                None ->
-                    log "didn't find {name+".jpg"}"
-                    http.response{status = 404}
         "/" ->
             match _read "Simulation.html" with
                 Some content ->

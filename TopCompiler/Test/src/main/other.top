@@ -12,6 +12,7 @@ type Part =
     rating: int
     price: float
     other: []{name: string, value: string}
+    image: string
 
 def Feature.toString(self) string =
     "Feature({self.id},{self.name},{self.image})"
@@ -43,6 +44,7 @@ type Page either
     Page-docs(Docs)
     Page-kinds({headers: []string, kinds: []Kind})
     Page-parts(PartsPage)
+    Page-about
     Page-part({headers: []string, p: Part})
     Page-not-found()
     Page-Get-Started()

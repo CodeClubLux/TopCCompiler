@@ -285,6 +285,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     if opt == 3:
         linked += "(function () {"
     import sys
+
     runtime = "" if hotswap and target == "client" else getRuntime() if target == "client" else getRuntimeNode()
 
     linked += runtime

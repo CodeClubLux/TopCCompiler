@@ -107,7 +107,7 @@ class Operator(Node):
 
             if yilds:
                 codegen.append(";")
-                self.outer_scope.case(codegen, nextNum)
+                self.outer_scope.case(codegen, nextNum, self)
                 codegen.append(";")
 
 

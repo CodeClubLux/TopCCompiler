@@ -659,10 +659,15 @@ def replaceT(typ, gen):
         return Interface(False, types)
     elif type(typ) is Enum:
         const = coll.OrderedDict()
+        g = {}
 
         for name in typ.const:
             const[name] = [replaceT(i, gen) for i in typ.const[name]]
-        return Enum(typ.package, typ.normalName, const, gen)
+
+        for name in typ.generic:
+            g[name] = replaceT(typ.generic[name], gen)
+
+        return Enum(typ.package, typ.normalName, const, g)
     elif isGeneric(typ):
         if type(typ) is Array:
             return Array(False, replaceT(typ.elemT, gen))

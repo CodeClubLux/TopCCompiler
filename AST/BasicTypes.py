@@ -104,11 +104,12 @@ class Decoder(Node):
 
                 codegen.append("])")
             elif type(typ) is Types.Enum:
-                codegen.append("core_json_enum[")
-                const = list(typ.const)[0]
+                codegen.append("core_json_enum([")
+                const = typ.const
                 for n in const:
-                    loop(n)
-                    codegen.append(",")
+                    codegen.append("[")
+                    [loop(i) for i in const[n]]
+                    codegen.append("],")
                 codegen.append("])")
             elif type(typ) is Types.Array:
                 codegen.append("core_json_vector(")

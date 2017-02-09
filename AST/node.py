@@ -54,7 +54,7 @@ class Root:
 
         self.before = []
 
-    def case(self, codegen, number):
+    def case(self, codegen, number, node):
         codegen.append("case "+number+":")
 
     def addNode(self, node):

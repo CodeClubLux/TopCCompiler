@@ -42,6 +42,9 @@ def onEvent[T](name: string, x: |T, Event| do T, a: Atom[T]) Attribute =
 
 ext client _onUrlChange: ||string| do none| do none = "_html_onUrlChange"
 ext client setUrl: |string| do none = "_html_setUrl"
+ext client setLocalStorage: |Any| do none = "_html_setLocalStorage"
+ext client readLocalStorage: [T]||Any| -> T| do Maybe[T] = "_html_readLocalStorage"
+
 ext client page-load-url: string = "window.location.hash.slice(1)"
 
 def onUrlChange[T](func: |T, string| do T, a: Atom[T]) do
