@@ -1,0 +1,1 @@
+function db_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:db_connect = _monk_connect;db_document = _monk_get;db_find = _monk_find;db_insert = _monk_insert;db_search = _monk_search;return;}}}()}function db_Parts(f){return [0,f]}function db_DB(){}db_DB.fields=[];function db_Collection(c,d){this.manager=c;this.name=d;}db_Collection.fields=["manager","name"];

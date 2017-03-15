@@ -1,0 +1,1 @@
+function db_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:return;}}}()}function db_Parts(f){return [0,f]}function db_DB(){}db_DB.fields=[];function db_Collection(c,d){this.manager=c;this.name=d;}db_Collection.fields=["manager","name"];

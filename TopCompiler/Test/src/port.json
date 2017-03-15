@@ -1,9 +1,6 @@
 
     {
-        "name": "Simulation",
+        "name": "EC",
         "target": "full",
-        "version": 0,
-        "linkWith-client": ["js/bundle.js"],
-        "linkWith-node": ["js/node.js"],
-        "linkCSS": ["js/style.css"]
+        "version": 0
     }

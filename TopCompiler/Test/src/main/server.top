@@ -1,77 +1,26 @@
 import "http"
-import "db"
 
 ext node _read: |string| do Maybe[string] = "server_readFile"
 ext node quit: |int| -> string = "process.exit"
 
 def read(path: string) string do
     match _read path with
-        Some x ->
-            x
+        Some x -> x
         None ->
             log "cannot find file, "+path
             quit 1
 
-let logo = read "images/variation.png"
-let async = read "images/async.png"
-let tools = read "images/tools.png"
-let favicon = read "images/arrow.ico"
-let error = read "images/error.png"
-let enigma = read "images/enigma.png"
-
-let monk = db.connect "mongodb://127.0.0.1:27017/enigma"
-let coll = db.document monk, "parts", decoder Part
-
-def query(q: Routes) http.Response do
-    match q with
-        Query-Docs end ->
-            //replace static information with database query
-            end Docs {
-                overview = ["Get Started", "Examples", "How to structure your program"]
-                learn = ["An Introduction to Top", "FAQ", "Syntax", "Style Guide",
-                    "The Zen of Top", "Writing Documentation"]
-                packages = ["All Packages", "Core", "HTML"]
-                headers = headers
-                footer = footer_text
-            }
-
-        Query-Parts name, keywords, end ->
-            log "handling"
-
-            if keywords == "" then
-                end (db.find coll, {kind = name})
-            else
-                end (db.search coll, {kind = name}, keywords)
-
-        Query-Part name, end ->
-            end (db.find coll, {name = name})[0]
-
-            //end (db.find coll, {name = name, $text: {$search: "dogs"} }, {score: {$meta: "toextScore"}}).sort({score:{$meta:"textScore"}})})[0]
-
 def requestHandler(req: http.Request) http.Response do
     log "request, "+req.url
 
-    if (http.isQuery req.url) then
-        http.handleQuery req.url, query
-    else match req.url with
+    match req.url with
         "/" ->
-            match _read "Simulation.html" with
+            match _read "EC.html" with
                 Some content ->
                     http.response {body = content, content-type = "text/html"}
-                None -> http.response{status = 404}
+                None ->
+                    http.response{status = 404}
 
-        "/arrow.png" ->
-            http.response {body = logo, content-type = "image/png"}
-        "/async.png" ->
-            http.response {body = async, content-type = "image/png"}
-        "/tools.png" ->
-            http.response {body = tools, content-type = "image/png"}
-        "/favicon.ico" ->
-            http.response {body = favicon, content-type = "image/x-icon"}
-        "/error.png" ->
-            http.response {body = error, content-type = "image/png"}
-        "/enigma.png" ->
-            http.response {body = enigma, content-type = "image/png"}
         _ ->
             http.response {status= 404, body = "404 Page not found"}
 
