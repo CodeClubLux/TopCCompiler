@@ -4,7 +4,6 @@ import collections
 
 from TopCompiler import Error
 
-
 class Token:
     def __init__(self,token,type,line,column):
         self.token = str(token)
@@ -15,12 +14,14 @@ class Token:
     def __repr__(self):
         return str((self.token,self.type, self.line, self.column ))
 
-def lex(stream, filename):
-    lexed = {}
+from TopCompiler import topc
+
+def lex(stream, filename, modifiers, hotswap, lexed):
     for c in stream:
-        lexed[c] = []
-        for i in range(len(stream[c])):
-            lexed[c].append(tokenize(stream[c][i], filename[c][i]))
+        if not hotswap or (hotswap and topc.modified(modifiers[c], c)):
+            lexed[c] = []
+            for i in range(len(stream[c])):
+                lexed[c].append(tokenize(stream[c][i], filename[c][i]))
     return lexed
 
 import re
@@ -30,7 +31,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         'import',
         'def',
         'then', 'do', 'if', 'elif', 'else', 'while',
-        'int', 'float', 'none', 'bool', 'string',
+        'int', 'float', 'none', 'bool', 'string', 'as',
         'break', 'continue',
         'true', 'false',
         'let',
@@ -42,6 +43,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         "lens",
         "match",
         "with",
+        "from",
         "decoder",
     ]
 
@@ -66,6 +68,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ("semi", r";"),
         ('ne', r'!='),
         ('assign',  r'='),
+        ('whiteOpenS', r' +\['),
         ('openS', r'\['),
         ('closeS', r'\]'),
         ('assignPlus', r'\+='),
@@ -92,6 +95,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
 
     pos = spos
     mo = get_token(s)
+
     lastIndent = 0
     lastTyp = None
     linePos = slinePos
@@ -204,6 +208,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         lastTyp = typ
 
         pos = mo.end() - linePos
+
         mo = next
 
     if spos == 0 and sline == 0:

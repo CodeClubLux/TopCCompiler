@@ -1,0 +1,37 @@
+from TopCompiler import topc
+from TopCompiler import Error
+import os
+import sys
+import subprocess
+
+import json
+
+def main():
+    err = False
+    try:
+        f = open("src/port.json")
+    except:
+        err = True
+
+    if err:
+        try:
+            Error.error("cannot find port.json")
+        except EOFError as e:
+            print(e, file=sys.stderr)
+            sys.exit()
+
+    file = f.read()
+    port = json.loads(file)
+
+    if not os.path.exists("packages"):
+        os.makedirs("packages")
+
+    os.chdir("packages")
+
+    if len(sys.argv) > 1:
+        arr = ["git", "clone", sys.argv[1]]
+        subprocess.call(arr)
+    else:
+        print("missing url")
+
+main()

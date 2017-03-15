@@ -22,7 +22,7 @@ def traitParser(parser, name, decl, generic):
     if decl:
         del parser.structs[parser.package][name]# = Struct.Struct(name, args, fields, coll.OrderedDict())
 
-        i = Types.Interface(False, names, generic)
+        i = Types.Interface(False, names, generic, parser.package+"."+name)
         parser.interfaces[parser.package][name] = i
 
     Scope.decrScope(parser)

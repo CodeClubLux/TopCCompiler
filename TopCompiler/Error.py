@@ -9,19 +9,19 @@ def compileError(filename, line, message):
     raise EOFError("File \""+os.path.abspath(filename+".top")+"\", line "+str(line)+"\n\t"+message, file=sys.stderr)
 
 def parseError(parser, message):
-    filename = parser.filename
+    filename = [a+"/"+parser.filename for (a,b) in parser._filename if b == parser.filename][0]
+
     package = parser.package
 
     token = parser.tokens[parser.iter]
 
-    errorAst(message,  package, filename, token)
-
+    errorAst(message, package, filename, token)
 
 def errorAst(message, package, filename, token):
     from TopCompiler import topc
     html = '<div class="error">'
 
-    err = ("File \"" + str(os.path.abspath("src/"+package + "/" + filename + ".top")) + "\", line " + str(token.line + 1) + "\n\t" + message[0].capitalize() + message[1:])+"\n"
+    err = ("File \"" + str(filename + ".top") + "\", line " + str(token.line + 1) + "\n\t" + message[0].capitalize() + message[1:])+"\n"
 
     html += "<p>"+("File \"" + os.path.abspath("src/"+package + "/" + filename + ".top") + "\", line " + str(
         token.line + 1) + "</p><p style=\"text-indent: 50px;\">"+message[0].capitalize() + message[1:])+"\n"+"</p><br>"
@@ -31,7 +31,7 @@ def errorAst(message, package, filename, token):
     f.close()""
     """
 
-    s = topc.filenames_sources[package][filename]
+    s = topc.filenames_sources[package][os.path.basename(filename)]
 
     divided = s.split("\n")
     line = ("\n\t" + divided[token.line])

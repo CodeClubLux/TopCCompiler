@@ -98,4 +98,7 @@ def getFile(name: string) string do
 ```
 
 
-  
+# Known Bugs
+Two side effect function calls after each other
+Which target each scope is compiled to, is lost when not recompiling from scratch
+Function chain operator doesn't work on do functions

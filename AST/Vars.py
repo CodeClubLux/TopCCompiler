@@ -21,15 +21,27 @@ class Create(Node):
         return self.name + ": "+str(self.varType)
 
     def compileToJS(self, codegen):
+        if type(self.name) is Tree.PlaceHolder:
+            for i in self.names:
+                self.name = i
+                self.compileToJS(codegen)
+            return
 
         if type(self.owner) is FuncBraceOpen:
             codegen.append(codegen.createName(self.package+"_"+self.name))
             return
 
+        inFunc = codegen.inAFunction
+
         if self.attachTyp:
-            codegen.out_parts.append("var " + self.attachTyp.package+"_"+self.attachTyp.normalName+"_"+self.name+";")
+            codegen.inAFunction = True
+            codegen.append("var " + self.attachTyp.package+"_"+self.attachTyp.normalName+"_"+self.name+";")
+            codegen.inAFunction = inFunc
         elif not self.isGlobal: codegen.append("var "+codegen.createName(self.package+"_"+self.name)+";")
-        else: codegen.out_parts.append("var "+self.package + "_" + self.name+";")
+        else:
+            codegen.inAFunction = True
+            codegen.append("var "+self.package + "_" + self.name+";")
+            codegen.inAFunction = inFunc
 
     def validate(self, parser): pass
 
@@ -43,6 +55,8 @@ class CreateAssign(Node):
         return "CreateAssign "
 
     def compileToJS(self, codegen):
+        create = self.nodes[0]
+
         self.nodes[0].compileToJS(codegen)
         self.nodes[1].compileToJS(codegen)
 
@@ -76,7 +90,10 @@ class Assign(Node):
             self.nodes[1].compileToJS(codegen)
             return
         if self.init:
-            name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
+            if type(self.name) is Tree.PlaceHolder:
+                name = codegen.getName()
+            else:
+                name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
 
             codegen.append(name + " = ")
 
@@ -85,6 +102,24 @@ class Assign(Node):
             else:
                 self.nodes[0].compileToJS(codegen)
             codegen.append(";")
+
+            if type(self.name) is Tree.PlaceHolder:
+                pattern = self.name
+
+                def gen(tmp, p):
+                    if type(p) is Tree.Tuple:
+                        for (index, i) in enumerate(p):
+                            gen(tmp + "[" + str(index) + "]", i)
+                    elif type(p) is Tree.ReadVar:
+                        if not p.isGlobal:
+                            name = codegen.readName(self.package + "_" + p.name)
+                        else:
+                            name = self.package+"_"+p.name
+
+                        codegen.append(name + "=" + tmp + ";")
+
+                gen(name, pattern.nodes[0])
+                return
         else:
             self.nodes[0].compileToJS(codegen)
             codegen.append("=")
@@ -141,7 +176,6 @@ class ReadVar(Node):
             pass #print(self.name)
 
         if not (type(self.owner) is Tree.FuncCall and self.owner.nodes[0] == self) and self.name in ["log", "println", "print"]:
-            print("unop")
             codegen.append(self.name+"_unop")
             return
 

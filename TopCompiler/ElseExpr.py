@@ -17,9 +17,17 @@ def iterForIf(ifNode):
 
 def checkIf(parser, i):
     typ = i.nodes[1].type
+
     for iter in i.nodes[3:][::2]:
-        if iter.type != typ:
-            (iter.nodes[-1] if len(iter.nodes) > 0 else iter).error("type mismatch in arms of if, "+str(iter.type)+" and "+str(typ))
+        try:
+            thisTyp = iter.type
+
+            typ.duckType(parser, typ, iter, i, 0)
+        except EOFError as e:
+            Error.beforeError(e, "Type mismatch in arms of if ")
+
+        #if iter.type != typ:
+        #    (iter.nodes[-1] if len(iter.nodes) > 0 else iter).error("type mismatch in arms of if, "+str(iter.type)+" and "+str(typ))
 
     i.type = i.nodes[1].type
 

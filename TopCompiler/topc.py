@@ -17,6 +17,12 @@ from optimization import *
 
 # is class
 
+def handleOptions(jsonLoad, names):
+    t = ()
+    for i in names:
+        t += (jsonLoad[i] if i in jsonLoad else [],)
+    return t
+
 def traverse(parsed, indent=""):
     if parsed.isEnd():
         print(indent + str(parsed))
@@ -80,67 +86,100 @@ def newPack(name):
 }
         """)
     except:
-        Error.error("directory has no source folder")
+        Error.error("directory has no src folder")
+
+
+class FakeParser:
+    def __init__(f, scope, structs, interfaces, allImports, lexed):
+        f.scope = scope
+        f.structs = structs
+
+        print(interfaces)
+
+        f.interfaces = interfaces
+        f.allImports = allImports
+        #f.lexed = lexed
 
 def getCompilationFiles(target):
     try:
         proj = open("src/port.json", mode="r")
         proj.close()
     except:
-        Error.error("missing port.json in source folder")
+        Error.error("missing port.json in src folder")
 
-    def getCompFiles(dir= ""):
-        file = {}
+    file = {}
 
+    def getCompFiles(start, dir):
         for root, dirs, files in os.walk(dir, topdown=False):
             package = root
-            if package == "src/": continue
-            package = package[len("src/"):]
+            if package == start: continue
+            package = package[package.find("src/")+len("src/"):]
 
-            file[package] = {"client": [], "full": [], "node": []}
+            if package in file and not package == "main":
+                Error.error("multiple packages named "+package)
+
+            file[package] = []
 
             try:
-                port = open("src/"+package+"/port.json", mode= "r")
+                port = open(start+package+"/port.json", mode= "r")
             except:
                 Error.error("missing file port.json in package "+package+"")
 
             files = []
             try:
                 j = json.loads(port.read())
-                files.append((target, j["files"]))
+                port.close()
+                files = j["files"]
+
             except KeyError:
-                pass
+                Error.error("In file port.js, in directory "+package+", expecting attribute files")
             except json.decoder.JSONDecodeError as e:
                 Error.error("In file port.json, in directory "+package+", "+str(e))
 
-
-            if "client-files" in j and (target in ["full", "client"]):
-                files.append(("client", j["client-files"]))
-            if "node-files" in j and (target in ["full", "node"]):
-                files.append(("node", j["node-files"]))
-
-            if len(files) == 0:
-                Error.error("no compilation files are specified in package "+ package + "/port.json")
-
             for f in files:
-                for name in f[1]:
-                    file[package][f[0]].append((root, name+".top"))
+                file[package].append((root, f+".top"))
 
             if root[0].lower() != root[0]:
                 Error.error("package name must be lowercase")
-        return file
+    try:
+        (_, dirs, _) = next(os.walk("packages"))
+    except StopIteration:
+        dirs = {}
 
-    return getCompFiles("src/")
+    (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = [[],[],[],[]]
+
+    for name in dirs:
+        f = open("packages/"+name+"/src/port.json")
+        jsonLoads = json.loads(f.read())
+
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = handleOptions(jsonLoads,
+            ["linkCSS", "linkWith", "linkWith-client", "linkWith-node"])
+
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [["packages/"+name+"/"+c for c in i] for i in (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
+
+        linkCSSWithFiles += _linkCSSWithFiles
+        linkWithFiles += _linkWithFiles
+        clientLinkWithFiles += _clientLinkWithFiles
+        nodeLinkWithFiles += _nodeLinkWithFiles
+
+        getCompFiles("packages/"+name+"/src/", "packages/"+name+"/src/")
+
+    getCompFiles("src/", "src/")
+
+    return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, file)
 
 compiled = []
 
 error = ""
 
+filenames_sources = {}
 
-
-def start(run= False, dev= False, init= False, hotswap= False, cache= False):
+def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache= False):
+    hotswap = dev and not run
     global outputFile
     global didCompile
+
+    didCompile = False
 
     try:
         opt = 0
@@ -165,19 +204,17 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
             else:
                 Error.error("unknown argument '" + i + "'.")
 
-        port = open("src/port.json")
-        data = port.read()
-        jsonLoad = json.loads(data)
+        try:
+            port = open("src/port.json")
+            data = port.read()
+            port.close()
+        except:
+            Error.error("Missing file port.json in folder src")
 
-        port.close()
-
-        def handleOptions(names):
-            t = ()
-            for i in names:
-                t += (jsonLoad[i] if i in jsonLoad else [],)
-            return t
-
-        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = handleOptions(["linkCSS", "linkWith", "linkWith-client", "linkWith-node"])
+        try:
+            jsonLoad = json.loads(data)
+        except:
+            Error.error("invalid json in port.json")
 
         try:
             target = jsonLoad["target"]
@@ -186,53 +223,57 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
         except KeyError:
             Error.error("must specify compilation target in port.json file")
 
-        files = getCompilationFiles(target)
-        allfilenames = []
-        allsources = []
+        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node"])
+
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles, files) = getCompilationFiles(target)
+
+        linkCSSWithFiles += _linkCSSWithFiles
+        linkWithFiles += _linkWithFiles
+        clientLinkWithFiles += _clientLinkWithFiles
+        nodeLinkWithFiles += _nodeLinkWithFiles
+
+        global filenames_sources
 
         sources = {}
         filenames = {}
 
-        filenames = {"client": {}, "full": {}, "node": {}}
-        sources = {"client": {}, "full": {}, "node": {}}
+        for package in files:
+            #if not hotswap or (hotswap and modified(files[c], c)):
 
-        for c in files:
-            for _i in files[c]:
-                filenames[_i][c] = []
-                sources[_i][c] = []
 
-                def iterate(i):
-                    try:
-                        file = open(os.path.join(i[0], i[1] ), mode="r")
-                        r = file.read()
-                        allsources.append(r)
+            def iterate(i):
+                try:
+                    file = open(os.path.join(i[0], i[1]), mode="r")
+                    r = file.read()
 
-                        sources[_i][c].append(r)
+                    filenames_sources[package][i[1][:-4]] = r
+                    sources[package].append(r)
 
-                        if i[1][0].upper() == i[1][0]:
-                            Error.error("file name must be lowercase")
+                    if i[1][0].upper() == i[1][0]:
+                        Error.error("File name must be lowercase")
 
-                        filenames[_i][c].append((c, i[1][:-4]))
-                        allfilenames.append((c, i[1][:-4]))
+                    filenames[package].append((i[0], i[1][:-4]))
 
-                        file.close()
-                    except FileNotFoundError:
-                        Error.error("file " + i[1] +", not found")
+                    file.close()
+                except FileNotFoundError:
+                    Error.error("File " + os.path.join(i[0], i[1]) + ", not found")
 
-                for i in files[c][_i]:
+            sources[package] = []
+            if not hotswap or (hotswap and modified(cache.files[package], package)):
+                filenames[package] = []
+                filenames_sources[package] = {}
+
+
+                for i in files[package]:
                     iterate(i)
+            else:
+                for (pkg, name) in cache.files[package]:
+                    sources[package].append(filenames_sources[package][name[:-4]])
+
+                filenames[package] = cache.files[package]
 
         if outputFile == "":
             outputFile = (jsonLoad["name"])
-
-        global filenames_sources
-
-        filenames_sources = {i: {} for i in sources["full"]}
-
-        for _target in filenames:
-            for package in filenames[_target]:
-                for i, c in enumerate(filenames[_target][package]):
-                    filenames_sources[package][c[1]] = sources[_target][package][i]
 
         if not "main" in filenames_sources:
             Error.error("Project must have a main package, from where to start the code for the client")
@@ -250,14 +291,14 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
         didCompile = False
 
         def compile(target, sources, filenames, former = None):
-            lexed = Lexer.lex(sources, filenames)
+            lexed = Lexer.lex(sources, filenames, files, hotswap, cache.lexed if cache else {})
 
             declarations = Parser.Parser(lexed, filenames)
             declarations.hotswap = False
             declarations.shouldCompile = {}
             declarations.atoms = 0
             declarations.atomTyp = False
-            declarations.jsFiles = clientLinkWithFiles + linkWithFiles
+            declarations.jsFiles = clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles
 
             if cache:
                 declarations.scope = cache.scope
@@ -287,8 +328,9 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
 
             #print(declarations.shouldCompile)
 
-            if (dev and run) or ImportParser.shouldCompile(False, "main", declarations):
+            if opt == 3 or doc or (dev and run) or ImportParser.shouldCompile(False, "main", declarations):
                 parser = Parser.Parser(lexed["main"], filenames["main"])
+                parser.package = "main"
                 ResolveSymbols.insert(declarations, parser, only= True)
 
                 parser.files = files
@@ -300,7 +342,7 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
 
                 parsed = parser.parse()
 
-                parser.compiled["main"] = (True, (parsed, parser.externFuncs["main"]))
+                parser.compiled["main"] = (True, (parsed, []))
 
                 import AST as Tree
                 allCode = Tree.Root()
@@ -314,9 +356,14 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
 
                 #print("parsing")
 
+                if doc:
+                    return parser
+
                 for i in parser.compiled:
                     if parser.compiled[i][0]:
-                        CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1], target).compile(opt=opt)
+                        CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
+
+                #print(dill.detect.badobjects(parser.scope))
 
                 if target == "full":
                     _linkCSSWithFiles = linkCSSWithFiles
@@ -330,7 +377,6 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
                         webbrowser.open("http://127.0.0.1:3000/")
 
                     l = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
-
                 else:
                     _linkCSSWithFiles = [] if target != "client" else linkCSSWithFiles
                     _linkWithFiles = linkWithFiles + nodeLinkWithFiles if target == "node" else linkWithFiles + clientLinkWithFiles if target == "client" else []
@@ -339,7 +385,10 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
                                      run=run, opt=opt, dev=dev, hotswap= hotswap,
                                      linkWithCSS=_linkCSSWithFiles, linkWith=_linkWithFiles, target=target)
                 didCompile = True
+
                 print("\n======== recompiling =========")
+                print("Compilation took : " + str(time() - time1))
+
                 return parser
             elif run:
                 if target == "full":
@@ -351,16 +400,15 @@ def start(run= False, dev= False, init= False, hotswap= False, cache= False):
                 else:
                     CodeGen.exec(outputFile)
 
-
             return declarations
 
 
-        fil = filenames[target]
-        sour = sources[target]
+        fil = filenames
+        sour = sources
 
         return compile(target, sour, fil)
 
-    except EOFError as e:
+    except (EOFError, ArithmeticError) as e:
         if dev:
             Error.error(str(e))
         else:
@@ -395,7 +443,7 @@ def prepareForHotswap(arg):
 
 import datetime
 def modified(files, outputfile, jsFiles=[]):
-    #return True
+    return True
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-node.js")
@@ -415,8 +463,9 @@ def modified(files, outputfile, jsFiles=[]):
 
     #return True #delete after testing
 
-    for i in files["full"]:
-        file = os.path.getmtime(os.path.join(i[0], i[1]))
+    for i in files:
+        joined = os.path.join(i[0], i[1])
+        file = os.path.getmtime(joined)
         file = datetime.datetime.fromtimestamp(int(file))
 
         if file > t:

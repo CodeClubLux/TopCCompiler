@@ -8,4 +8,7 @@ AST/__pycache__/
 TopCompiler.egg-info/
 TopCompiler/__pycache__/
 build/
+js/bundle.min.js
+js/node_modules
+js/data
 optimization/__pycache__/

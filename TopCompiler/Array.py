@@ -6,11 +6,14 @@ import AST as Tree
 from .ExprParser import *
 from .Error import *
 
-def arrayLiteral(parser):
+def isRead(parser):
+    return not isUnary(parser, parser.lookBehind())
+
+def arrayLiteral(parser, shouldRead= True):
     numB = parser.bracket
     parser.bracket += 1
 
-    if not isUnary(parser, parser.lookBehind()):
+    if shouldRead and isRead(parser):
         return arrayRead(parser)
 
     parser.nextToken()
@@ -131,3 +134,4 @@ def closeBracket(parser):
 Parser.exprToken["["] = arrayLiteral
 Parser.exprToken["]"] = closeBracket
 Parser.exprToken[".."] = lambda parser: Error.parseError(parser, "unexpected ..")
+Parser.exprType["whiteOpenS"] = lambda parser, token: arrayLiteral(parser, False)

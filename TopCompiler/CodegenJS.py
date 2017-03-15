@@ -11,9 +11,11 @@ import os
 import copy
 
 class CodeGen:
-    def __init__(self, filename, tree, externFunctions, target, main= True):
+    def __init__(self, filename, tree, externFunctions, target, opt, main=True):
         self.tree = tree
         self.filename = filename
+
+        self.opt = opt
 
         self.out = ""
 
@@ -31,7 +33,7 @@ class CodeGen:
 
         self.main = ""
 
-        self.externs =externFunctions
+        self.externs = externFunctions
 
         self.inAFunction = False
         self.names = [{}]
@@ -48,7 +50,7 @@ class CodeGen:
         self.out_scopes = []
         self.count = 0
 
-    def toJSHelp(self, tree= None, isGlobal= True):
+    def toJSHelp(self, tree=None, isGlobal=True):
         if tree is None:
             tree = self.tree
         out = ""
@@ -57,7 +59,7 @@ class CodeGen:
         tree._name = self.getName()
         tree._context = self.getName()
 
-        #variable declarations
+        # variable declarations
         self.inAFunction = True
         for i in tree.before:
             self.target = i.global_target
@@ -71,27 +73,39 @@ class CodeGen:
     def toEvalHelp(self):
         tree = self.tree
 
+        tree.res = self.getName()
+        tree._name = self.getName()
+        tree._context = self.getName()
+
         for i in tree.nodes[:-1]:
             i.compileToJS(self)
 
         from TopCompiler import Types
+        import AST
 
-
-        if not type(tree.nodes[-1].type) is Types.Null:
-            self.append("(")
+        if AST.yields(tree.nodes[-1]):
             tree.nodes[-1].compileToJS(self)
-            self.append(").toString()")
+            self.append(";reply(" + tree.res + ", '" + str(tree.nodes[-1].type) + "')")
+            self.append(";return;")
+        elif not type(tree.nodes[-1].type) is Types.Null:
+            self.append(";reply(")
+            tree.nodes[-1].compileToJS(self)
+            self.append(", '" + str(tree.nodes[-1].type) + "')")
+            self.append(";return")
         else:
             tree.nodes[-1].compileToJS(self)
-            self.append(";")
-            self.append("undefined")
+            self.append("reply(undefined, 'none')")
 
     def getName(self):
         return next(self.gen)
 
     def createName(self, name):
-        self.names[-1][name] = self.getName()
-        return self.names[-1][name]
+        if self.opt == 0:
+            self.names[-1][name] = name
+            return name
+        else:
+            self.names[-1][name] = self.getName()
+            return self.names[-1][name]
 
     def readName(self, name):
         for i in reversed(self.names):
@@ -109,9 +123,9 @@ class CodeGen:
     def toJS(self, _target):
         def _compile(out, main, target):
             return "function " + str(self.filename) + "_" + target + "Init(){var " + self.tree._context + "=0;" + \
-                  "return function " + self.tree._name + "(" + self.tree.res + "){" + \
-                  "while(1){switch (" + self.tree._context + "){case 0:" + main + "return;}}}()}" + \
-                  out
+                   "return function " + self.tree._name + "(" + self.tree.res + "){" + \
+                   "while(1){switch (" + self.tree._context + "){case 0:" + main + ";return;}}}()}" + \
+                   out
 
         if _target == "full":
             main = self.filename == "main"
@@ -124,7 +138,8 @@ class CodeGen:
             self.client_out = "".join(self.client_out_parts)
             self.client_main = "".join(self.client_main_parts)
 
-            return (_compile(self.node_out, self.node_main, "node"), _compile(self.client_out, self.client_main, "client"))
+            return (
+            _compile(self.node_out, self.node_main, "node"), _compile(self.client_out, self.client_main, "client"))
         else:
             main = self.filename == "main"
 
@@ -143,9 +158,15 @@ class CodeGen:
         self.out = "".join(self.out_parts)
         self.main = "".join(self.main_parts)
 
-        if self.out == "":
-            return self.main
-        return self.out + ";" + self.main
+        out = self.out
+        main = self.main
+
+        result = out + "(function(){var " + self.tree._context + "=0;" + \
+                 "return function " + self.tree._name + "(" + self.tree.res + "){" + \
+                 "while(1){switch (" + self.tree._context + "){case 0:" + main + ";return;}}}()}" + \
+                 ")();"
+
+        return result
 
     def append(self, value):
         if value is None:
@@ -186,21 +207,21 @@ class CodeGen:
         self.inAFunction = False
         self.info.reset(self._level, self._pointer)
 
-    def compile(self, opt= 0):
+    def compile(self, opt=0):
         target = self.global_target
 
         if target == "full":
             (node, client) = self.toJS(target)
 
             try:
-                f = open("lib/"+self.filename.replace("/", ".") + "-node.js", mode="w")
+                f = open("lib/" + self.filename.replace("/", ".") + "-node.js", mode="w")
                 f.write(node)
                 f.close()
             except:
                 Error.error("Compilation failed")
 
             try:
-                f = open("lib/"+self.filename.replace("/", ".") + "-client.js", mode="w")
+                f = open("lib/" + self.filename.replace("/", ".") + "-client.js", mode="w")
                 f.write(client)
                 f.close()
             except:
@@ -209,21 +230,24 @@ class CodeGen:
             js = self.toJS(target)
 
             try:
-                f = open("lib/"+self.filename.replace("/", ".") + "-node.js", mode="w")
+                f = open("lib/" + self.filename.replace("/", ".") + "-node.js", mode="w")
                 f.write(js)
                 f.close()
             except:
                 Error.error("Compilation failed")
+
 
 def getRuntime():
     runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime.js"
     file = open(runtimeName, mode="r")
     return file.read()
 
+
 def getRuntimeNode():
     runtimeName = __file__[0:__file__.rfind("/") + 1] + "runtime_node.js"
     file = open(runtimeName, mode="r")
     return file.read()
+
 
 def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswap):
     needSocket = False
@@ -234,10 +258,10 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
 
             var watch = require("chokidar");
 
-            watch.watch('"""+output+"""-client.js').on("change", (filename) => {
+            watch.watch('""" + output + """-client.js').on("change", (filename) => {
             //console.log("I think it changed");
                 if (filename) {
-                    fs.readFile('./"""+output+"""-client.js', function (err, data) {
+                    fs.readFile('./""" + output + """-client.js', function (err, data) {
                         if (!err) {
                             data = String(data);
                             io.sockets.emit('reload', data);
@@ -246,7 +270,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
                 }
             });
 
-            watch.watch("""+str([i+"" for i in linkWithCSS]) + """, {cwd: "../"}).on("change", (filename) => {
+            watch.watch(""" + str([i + "" for i in linkWithCSS]) + """, {cwd: "../"}).on("change", (filename) => {
                 fs.readFile("../" + filename, function (err, data) {
                     if (!err) {
                         console.log("\\n==== reloaded stylesheets ====");
@@ -282,8 +306,6 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     else:
         linked = ""
 
-    if opt == 3:
-        linked += "(function () {"
     import sys
 
     runtime = "" if hotswap and target == "client" else getRuntime() if target == "client" else getRuntimeNode()
@@ -291,14 +313,14 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     linked += runtime
 
     array = []
-    #print("====", target)
+    # print("====", target)
     for i in linkWith:
         try:
             f = open(i, mode="r")
         except:
             f.close()
 
-            Error.error("cannot find file "+i+" to link")
+            Error.error("cannot find file " + i + " to link")
         array.append(f.read())
         f.close()
 
@@ -312,34 +334,32 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
             except:
                 f.close()
 
-                Error.error("cannot find file "+i+" to link")
-            css += '<style id="'+i+'">'+f.read()+"</style>"
+                Error.error("cannot find file " + i + " to link")
+            css += '<style id="' + i + '">' + f.read() + "</style>"
             f.close()
 
     linked += "\n"
 
     for i in filenames:
-        f = open("lib/"+i.replace("/", ".") +  "-" + target + ".js", mode="r")
+        f = open("lib/" + i.replace("/", ".") + "-" + target + ".js", mode="r")
         linked += f.read()
         f.close()
 
-    fjs = open("bin/"+ output + "-" + target + ".js", mode="w")
+    fjs = open("bin/" + output + "-" + target + ".js", mode="w")
 
     preCall = linked
     linked += "main_" + target + "Init();"
 
-    if opt == 3 and target != "full":
-        linked += "})()"
-
     fjs.write(linked)
     fjs.close()
 
-    if opt == 3 and target != "full":
-        args = ["uglifyjs", "--compress", "--output", "bin/"+output+".min-"+target+".js", "--mangle", "--", "bin/"+output+"-"+target+".js"]
-        subprocess.call(args, shell=False)
-        output += ".min"
-        linked = open("bin/"+output+"-"+target+".js", "r").read()
+    if opt == 3 and target == "client":
+        args = ["uglifyjs", "--noerr", "--warn" "--compress", "--output", "bin/" + output + ".min-" + target + ".js", "--mangle", "--",
+               "bin/" + output + "-" + target + ".js"]
 
+        subprocess.check_call(args, shell=False)
+        output += ".min"
+        linked = open("bin/" + output + "-" + target + ".js", "r").read()
 
     if target == "node":
         if run:
@@ -363,16 +383,15 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         <meta charset="UTF-8">
         <TITLE>""" + output + """</TITLE>
         <link rel="icon" href="favicon.ico" type="image/x-icon" />
-        """+css+('<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>'+socket+"</script>" if needSocket else '')+"""
+        """ + css + (
+    '<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>' + socket + "</script>" if needSocket else '') + """
     </head>
     <body>
         <div id= "code"></div>
         <script>
-        """ +linked + """
+        """ + linked + """
         </script>
     </body>
-
-
 </HTML>"""
 
     f.write(html)
@@ -382,24 +401,27 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
 
     if run: exec(output)
 
+
 def exec(outputFile):
-    args = ["open", "bin/"+outputFile+".html"]
+    args = ["open", "bin/" + outputFile + ".html"]
     subprocess.check_call(args, shell=False)
+
 
 def execNode(outputFile, dev):
     if dev:
-        args = ["node", outputFile+"-node.js"]
+        args = ["node", outputFile + "-node.js"]
 
         subprocess.Popen(args, cwd="bin/")
     else:
         args = ["node", outputFile + "-node.js"]
         subprocess.call(args, shell=False, cwd="bin/")
 
+
 class Info:
     def __init__(self):
         self.pointer = 0
         self.array = [0]
-        
+
     def reset(self, lastArr, pointer):
         self.array = lastArr
         self.pointer = pointer
@@ -420,11 +442,11 @@ def genNames(info):
             info.array[info.pointer] = 0
             if info.pointer == 0:
                 info.array = [0] * (len(info.array) + 1)
-                info.pointer = len(info.array)-1
+                info.pointer = len(info.array) - 1
             else:
                 info.pointer -= 1
                 info.array[info.pointer] += 1
-        elif info.pointer != len(info.array)-1:
+        elif info.pointer != len(info.array) - 1:
 
             yield ("".join((letters[i] for i in info.array)))
             info.pointer += 1

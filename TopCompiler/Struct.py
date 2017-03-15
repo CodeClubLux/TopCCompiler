@@ -14,11 +14,13 @@ from TopCompiler import FuncParser
 from TopCompiler import Enum
 
 class Struct:
-    def __init__(self, name, fieldType, actualfields, gen, node):
+    def __init__(self, name, fieldType, actualfields, gen, node, package):
         self.fieldType = fieldType
 
         self.offsets = {}
         self.types = {}
+
+        self.package = package
 
         self.generic = gen
 
@@ -120,7 +122,7 @@ def typeParser(parser, decl= False):
         meth = parser.structs[parser.package][name].methods
         types = parser.structs[parser.package][name].types
 
-        parser.structs[parser.package][name] = Struct(name, args, fields, gen, typ)
+        parser.structs[parser.package][name] = Struct(name, args, fields, gen, typ, parser.package)
         tmp =  parser.structs[parser.package][name].types
         parser.structs[parser.package][name].methods = meth
         parser.structs[parser.package][name].package = parser.package
@@ -229,7 +231,7 @@ Parser.exprToken["."] = index
 
 
 def offsetsToList(offsets):
-    array = [0] * 100
+    array = [0] * len(offsets)
     for key in offsets:
         array[offsets[key]] = key
     return array

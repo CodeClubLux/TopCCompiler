@@ -71,7 +71,7 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    return (lastToken.type in ["operator", "indent", "keyword"] or lastToken.token in ["(", "{", "[", ",", ":", "..", "=", "\n", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
+    return (lastToken.type in ["operator", "indent", "keyword", "whiteOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "\n", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool"]
 
 def plus(parser):
@@ -102,6 +102,17 @@ def minus(parser):
     else:
         Parser.Opcode(parser, "-", lambda: operatorPop(parser, op, 2))
 
+def asOperator(parser):
+    lastToken = parser.lookBehind()
+
+    if not isUnary(parser, lastToken):
+        op = Tree.Operator("as", parser)
+        parser.nextToken()
+        op.type = Types.parseType(parser)
+        operatorPop(parser, op, 1)
+    else:
+        Error.parseError(parser, "unexpected as operator ")
+
 newOperator("|>", (2, True), 2)
 newOperator(">>", (2, True), 2)
 newOperator("and", (3, True), 2)
@@ -121,5 +132,6 @@ newOperator("*", (40, True), 2)
 newOperator("/", (40, True), 2)
 newOperator("%", (40, True), 2)
 newOperator("^", (60, False), 2)
+newOperator('as', (70, True), 1, func= asOperator)
 
 Parser.exprToken["\\"] = lambda parser: parser.nodeBookmark.append(len(parser.currentNode.owner.nodes))

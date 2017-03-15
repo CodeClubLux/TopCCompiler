@@ -19,26 +19,31 @@ def func(parser):
     count = -1
 
     while parser.thisToken().token != "|":
-        count += 1
-
-        if b.type == "identifier":
+        if b.type == "identifier" and parser.lookInfront().token != ":":
+            count += 1
             VarParser.createParser(parser, b, typ= Types.Unknown(count, place), check= False)
             b = parser.nextToken()
             continue
+        elif parser.thisToken().token == ":":
+            count += 1
         elif b.token == ",":
             b = parser.nextToken()
             continue
 
         Parser.declareOnly(parser)
-        b = parser.Parser.nextToken(parser)
+        b = parser.nextToken()
 
     vars = [i.varType for i in brace]
 
     typ = False
     do = False
 
-    if parser.nextToken().token == "->":
+    parser.nextToken()
+
+    if parser.thisToken().token == "->":
+        parser.nextToken()
         typ = Types.parseType(parser)
+        parser.nextToken()
 
     body = Tree.FuncBody(parser)
 
@@ -55,9 +60,11 @@ def func(parser):
 
     first = True
 
+    parser.iter -= 1
+
     while not Parser.isEnd(parser):
-        Parser.callToken(parser, lam = first)
         parser.nextToken()
+        Parser.callToken(parser, lam=first)
         first = False
 
     ExprParser.endExpr(parser)

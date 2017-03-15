@@ -9,22 +9,51 @@ from TopCompiler import FuncParser
 from TopCompiler import ExprParser
 from TopCompiler import Types
 from TopCompiler import Struct
+from TopCompiler import Lexer
+
+
+def pattern(name, names, parser, getName):
+    if type(name) in [Tree.Tuple, Tree.PlaceHolder]:
+        node = name.nodes[0]
+        if type(node) is Tree.Tuple:
+            for i in node:
+                pattern(i, names, parser, getName)
+        return name
+    elif type(name) is Tree.ReadVar:
+        names.append(name.name)
+        return getName(name.token)
+    elif type(name) is Tree.Under:
+        names.append(name.name)
+    elif type(name) is Lexer.Token and name.type == "identifier":
+        return getName(name)
+    else:
+        p = Tree.PlaceHolder(parser)
+        p.token = name
+        p.error("Unexpected token " + name.token)
 
 def createParser(parser, name= "", typ= None, check= True, imutable= True, attachTyp= False): # : creation
     if name == "":
         name = parser.lookBehind()
 
-    if name.type != "identifier":
-        Error.parseError(parser, "variable name must be of type identifier, not "+parser.lookBehind().type)
+    names = []
 
-    name = name.token
+    def getName(name):
+        if name.type != "identifier":
+            Error.parseError(parser, "variable name must be of type identifier, not " + parser.lookBehind().type)
 
-    if name[0].lower() != name[0]:
-        Error.parseError(parser, "variable name must be lower case")
+        name = name.token
+
+        if name[0].lower() != name[0]:
+            Error.parseError(parser, "variable name must be lower case")
+
+        return name
+
+    name = pattern(name, names, parser, getName)
 
     node = Tree.Create(name, Types.Null(), parser)
     node.package = parser.package
     node.imutable = imutable
+    node.names = names
 
     if attachTyp:
         node.attachTyp = attachTyp
@@ -46,7 +75,7 @@ def assignParser(parser, name= "", init= False, package = ""):
     if package == "": package = parser.package
 
     if name == "":
-        node = Tree.Assign("",  parser= parser)
+        node = Tree.Assign("", parser=parser)
         node.addNode(i)
     else:
         node = Tree.Assign(name, parser=parser)
@@ -65,8 +94,6 @@ def assignParser(parser, name= "", init= False, package = ""):
         parser.nextToken()
         Parser.callToken(parser)
 
-    if name == "_random":
-        print()
     ExprParser.endExpr(parser)
 
     parser.currentNode = node.owner
@@ -91,7 +118,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
     if parser.lookInfront().token == ".":
 
-        attachTyp = Types.parseType(parser, attachTyp= True)
+        attachTyp = Types.parseType(parser, _attachTyp= True)
         parser.nextToken()
         if not imutable or not type(node) is Tree.Root:
             Error.parseError(parser, "expecting =, not .")
@@ -101,8 +128,26 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
     name = parser.thisToken()
 
     typ = None
-
     create = False
+    pattern = False
+
+    isPattern = False
+
+    if parser.thisToken().token == "(":
+        isPattern = True
+        owner = parser.currentNode
+        pattern = Tree.PlaceHolder(parser)
+        parser.currentNode = pattern
+
+        Parser.callToken(parser)
+
+        paren = parser.paren
+        while parser.paren > paren:
+            parser.nextToken()
+            Parser.callToken(parser)
+
+        parser.currentNode = owner
+        name = pattern
 
     if parser.nextToken().token == ":":
         checkIt = True
@@ -117,10 +162,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
     elif parser.thisToken().token != "=":
         Error.parseError(parser, "expecting =, not "+parser.thisToken().token)
 
-
-
     if not create:
-
         n = Tree.CreateAssign(parser)
         parser.currentNode.addNode(n)
         parser.currentNode = n
@@ -130,7 +172,8 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         if attachTyp:
             assignParser(parser, name=attachTyp.name+"_"+name.token, package= attachTyp.package, init=True)
         else:
-            assignParser(parser, name= name.token, init= True)
+            c = name if type(name) is Tree.PlaceHolder else name.token
+            assignParser(parser, name= c, init= True)
 
         n.nodes[1].isGlobal = n.nodes[0].isGlobal
         n.nodes[1].createTyp = n.nodes[0].varType

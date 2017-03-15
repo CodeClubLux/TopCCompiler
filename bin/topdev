@@ -34,5 +34,10 @@ def main():
             if error != e:
                 print(e, file=sys.stderr)
             error = e
+
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except (KeyboardInterrupt, SystemExit):
+        import os
+        os.remove("lib/main-node.js")

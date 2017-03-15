@@ -15,8 +15,7 @@ def incrScope(parser):
     parser.scope[parser.package].append({})
 
 def addVar(node, parser, name, type, _global=False):
-
-    if varExists(parser, parser.package, name):
+    if not parser.repl and varExists(parser, parser.package, name):
         node.error( "variable "+name+" already exists")
 
     if _global:
@@ -28,7 +27,7 @@ def addVar(node, parser, name, type, _global=False):
             parser.scope[parser.package][-1][name] = type
 
 def addFunc(node, parser, name, typ, imutable= True):
-    if varExists(parser, parser.package, name):
+    if not parser.repl and varExists(parser, parser.package, name):
         node.error("function "+name+" already exists")
 
     parser.scope[parser.package][-2][name] = Type(type= typ, imutable= imutable)

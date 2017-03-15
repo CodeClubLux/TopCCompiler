@@ -29,7 +29,6 @@ def enumParser(parser, name, decl, generic):
             Parser.callToken(parser)
             continue
 
-
         if t.type != "identifier":
             Error.parseError(parser, "expecting identifier")
 
@@ -198,9 +197,9 @@ def match(parser):
                 Parser.callToken(parser)
             #print("break", parser.thisToken())
             Parser.returnBookmark(parser)
+
+            ExprParser.endExpr(parser)
             parser.currentNode = body.owner
-
-
 
             continue
 

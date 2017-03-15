@@ -45,7 +45,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             return Tuple(args)
         elif token == "enum":
             return EnumT()
-        elif token == "[":
+        elif token == "[" or parser.thisToken().type == "whiteOpenS":
             incrScope(parser)
             if parser.lookInfront().token != "]":
                 from TopCompiler import FuncParser
@@ -150,7 +150,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
                 if parser.nextToken().token != "[":
                     parseError(parser, "must specify generic parameters for generic type")
                 gen = parseGeneric(parser, parser.structs[package][token])
-            return Struct(mutable, token, parser.structs[package][token].types, package, gen)
+            return Struct(mutable, token, parser.structs[package][token].types, parser.structs[package][token].package, gen)
 
         elif varExists(parser, package, token):
             t = typeOfVar(Tree.PlaceHolder(parser), parser, package, token)
@@ -207,7 +207,7 @@ class Type:
     name = "type"
 
     def __str__(self):
-        return "'"+self.name+"'"
+        return self.name
 
     def __repr__(self):
         return self.name
@@ -220,7 +220,6 @@ class Type:
             mynode.error("expecting type "+str(self)+" and got type "+str(other))
 
     def hasMethod(self, parser, field): pass
-
 
 class EnumT:
     def __init__(self):
@@ -256,6 +255,7 @@ class StructInit(Type):
     def __str__(self):
         return self.name
 
+""""
 def newType(n):
     class BasicType(Type):
         name=n
@@ -264,6 +264,7 @@ def newType(n):
         types = {"toString": FuncPointer([], String(0))}
 
     return BasicType
+"""
 
 class Pointer(Type):
     def __init__(self, pointerType):
@@ -280,17 +281,21 @@ class String(Type):
             "indexOf": FuncPointer([self], I32()),
             "replace": FuncPointer([self, self], self),
             "toLowerCase": FuncPointer([], self),
+            "operator_eq": FuncPointer([self], Bool()),
         }
 
 class FuncPointer(Type):
     def __init__(self, argtypes, returnType, generic= coll.OrderedDict(), do= False):
         self.args = argtypes
-        self.name = ("do " if do else "") + "|"+", ".join([i.name for i in argtypes])+"| -> "+returnType.name
+        self.name = "|"+", ".join([i.name for i in argtypes])+"| " +  ("do " if do else "-> ") +returnType.name
         self.returnType = returnType
         self.generic = generic
         self.types = {}
         self.do = do
         self.isLambda = False
+
+    def check(self):
+        pass
 
     def duckType(self, parser, other, node, mynode, iter= 0):
         if not type(other) is FuncPointer:
@@ -334,7 +339,7 @@ class Struct(Type):
 
         #print(self.gen)
 
-        genericS = "[" + ",".join([i + ": " + str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+        genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
 
         self.name = package + "." + name + genericS
         #print(self.name)
@@ -364,15 +369,18 @@ class Tuple(Type):
         self.list = types
         self.types = dict([(str(index), i) for (index, i) in enumerate(types)])
 
-    def __str__(self):
-        array = list(range(0,len(self.types)))
+        array = list(range(0, len(self.types)))
         for i in self.types:
             array[int(i)] = str(self.types[i])
-        return "("+",".join(array)+")"
+        self.name = "(" + ",".join(array) + ")"
 
     def duckType(self, parser, other, node, mynode, iter):
         if not type(other) is Tuple:
             node.error("expecting type "+str(self)+", not "+str(other))
+
+        if len(self.types) != len(other.types):
+            node.error("expecting tuple of length "+str(len(self.types))+", not "+str(len(other.types)))
+
         for key in self.types:
             i = self.types[key]
             othk = other.types[key]
@@ -384,7 +392,7 @@ class Tuple(Type):
 
 class Array(Pointer):
     def __init__(self, mutable, elemT, empty=False):
-        self.name = ("mut " if mutable else "") + "[]"+elemT.name
+        self.name = "[]"+elemT.name
 
         self.elemT = elemT
 
@@ -454,11 +462,18 @@ def isMutable(typ):
     return False
 
 class Interface(Type):
-    def __init__(self, mutable, args, generic= coll.OrderedDict()):
-        self.name = "{"+", ".join([str(i)+": "+str(args[i]) for i in args])+"}"
+    def __init__(self, mutable, args, generic= coll.OrderedDict(), name=""):
+        if name != "":
+            gen = generic
+            genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+            self.name = name+genericS
+        else:
+            self.name = "{"+", ".join([str(i + ": " + str(args[i])) for i in args])+"}"
         self.mutable = False
         self.types = args
         self.generic = generic
+        self.normalName = name
+
 
     def hasMethod(self, parser, field):
         """if field in self.types:
@@ -506,6 +521,7 @@ class T(Type):
         self.name = owner+"."+name
         self.types = self.type.types
         self.owner = owner
+        self.realName = name
 
     """def duckType(self, parser, other, node, mynode, iter):
         self.type.duckType(parser, other, node, mynode, iter)
@@ -519,9 +535,19 @@ class Enum(Type):
         self.generic = generic
         self.const = const
         self.types = {}
-        self.name = "enum "+package+"."+name
+
         self.package = package
         self.normalName = name
+
+        self.remainingGen = generic
+
+        gen = self.remainingGen
+
+        # print(self.gen)
+
+        genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+
+        self.name = (package + "." if package != "_global" else "") + name + genericS
 
     def duckType(self, parser, other, node, mynode, iter):
         if self.name != other.name:
@@ -564,7 +590,6 @@ def isGeneric(t):
 class Null(Type):
     name = "none"
     types = {}
-    pass
 
 def remainingT(s):
     args = coll.OrderedDict()
@@ -628,13 +653,24 @@ class Float(Type):
             }
 
         return self.__types__
+class Bool(Type):
+    name = "bool"
+    normalName = "bool"
 
-Bool = newType("bool")
-Func = newType("Func")
+package= "_global"
+types = {"toString": FuncPointer([], String(0))}
 
-Package = newType("package")
+class Func(Type):
+    name = "Func"
+    normalName = "Func"
 
-Underscore = newType("_")
+class Package(Type):
+    name = "package"
+    normalName = "package"
+
+class Underscore(Type):
+    name = "_"
+    normalName = "_"
 
 def replaceT(typ, gen):
     if type(typ) is T:
@@ -656,7 +692,9 @@ def replaceT(typ, gen):
         types = typ.types
         types = {i: replaceT(types[i], gen) for i in types}
 
-        return Interface(False, types)
+        genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+
+        return Interface(False, types, name= typ.normalName+genericS)
     elif type(typ) is Enum:
         const = coll.OrderedDict()
         g = {}
@@ -668,6 +706,13 @@ def replaceT(typ, gen):
             g[name] = replaceT(typ.generic[name], gen)
 
         return Enum(typ.package, typ.normalName, const, g)
+    elif type(typ) is Tuple:
+        arr = []
+        for i in typ.list:
+            arr.append(replaceT(i, gen))
+
+        return Types.Tuple(arr)
+
     elif isGeneric(typ):
         if type(typ) is Array:
             return Array(False, replaceT(typ.elemT, gen))
@@ -687,6 +732,8 @@ def Lambda(func, vars, typ= False, do= False):
         typ = Unknown(-1, func)
     f = FuncPointer(vars, typ, do= do)
     f.already = False
+    f.scope = False
+    f.func = func
 
     def duckType(self, parser, other, node, mynode, iter):
         if not type(other) is FuncPointer:
@@ -717,29 +764,46 @@ def Lambda(func, vars, typ= False, do= False):
             beforeError(e, "Function type return type: ")
 
     def check(self, parser):
-        if self.already:
-            return
         name = ("do " if do else "") + "|" + ", ".join([i.name for i in self.args]) + "| -> " + self.returnType.name
 
-        self.already = True
+        self.name = name
+
+        if self.already:
+            return
+
         for i in self.args:
-            if type(i) is Unknown:
-                self.name = name
-                return
+            if type(i) is Unknown: return
 
         from TopCompiler import TypeInference
         from TopCompiler import Scope
 
-        Scope.incrScope(parser)
+
 
         for (a,b) in zip(func.nodes[0], func.type.args):
             a.varType = b
 
-        if type(self.returnType) is Unknown:
-            TypeInference.infer(parser, func.nodes[0])
-            TypeInference.infer(parser, func.nodes[1])
+        if self.scope:
+            self.already = True
+            s = parser.scope[parser.package]
+
+            parser.scope[parser.package] = self.scope
+            Scope.incrScope(parser)
+
+            err = False
+            try:
+                TypeInference.infer(parser, func.nodes[0])
+                TypeInference.infer(parser, func.nodes[1])
+            except EOFError as e:
+                err = str(e)
 
             Scope.decrScope(parser)
+            parser.scope[parser.package] = s
+
+            if err:
+                e = EOFError(err)
+                e.special = True
+
+                raise e
 
             if len(func.nodes[1]) == 0:
                 typ = Types.Null()
@@ -747,17 +811,25 @@ def Lambda(func, vars, typ= False, do= False):
                 typ = func.nodes[1].nodes[-1].type
             self.returnType = typ
             func.nodes[1].returnType = typ
-        else:
-            TypeInference.infer(parser, func)
 
         name = ("do " if do else "") + "|" + ", ".join([i.name for i in self.args]) + "| -> " + self.returnType.name
         self.name = name
 
+    def getstate(self):
+        self = f
+        if self.already:
+            c = FuncPointer(self.args, self.returnType)
+            c.do = self.do
+            c.generic = self.generic
+            c.name = self.name
+
+            return c.__dict__
 
     import types
 
     f.duckType = types.MethodType(duckType, f)
     f.check = types.MethodType(check, f)
+    f.__getstate__ = types.MethodType(getstate, f)
     f.isLambda = True
 
     return f

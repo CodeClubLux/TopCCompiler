@@ -379,6 +379,16 @@ function core_json_vector(decoder) {
     }
 }
 
+function core_json_tuple(decoder) {
+    return function (arr) {
+        var a = [];
+        for (var i = 0; i < arr.length; i++) {
+            a.push(decoder[i](arr[i]));
+        }
+        return a;
+    }
+}
+
 function parseJson(decoder, str) {
     var obj = JSON.parse(str);
     return decoder(obj);

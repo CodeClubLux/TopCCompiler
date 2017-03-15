@@ -46,6 +46,11 @@ def newLine(parser):
 
     indent = int(parser.lookInfront().token)
 
+    if parser.iter + 2 < len(parser.tokens) and parser.tokens[parser.iter+2].token == "\n":
+        parser.nextToken()
+
+        return
+
     if parser.normalIndent == 0:
         if indent > parser.indent[-1]:
             # indent
@@ -134,9 +139,6 @@ def declareOnly(self, noVar=False):
 
     tok = self.thisToken().token
 
-    if tok == "var":
-        print("var")
-
     if self.thisToken().type == "indent":
         pass
     elif s1 != None:
@@ -216,7 +218,6 @@ def selectExpr(parser, token):
 def selectStmt(parser, token):
     if token.token in stmts:
         return stmts[token.token]
-
 
 def callToken(self, lam= False):
     s1 = selectStmt(self, self.thisToken())
@@ -303,7 +304,7 @@ class Parser:  # all mutable state
 
         All = Types.All
 
-        Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )})
+        Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringable")
         self.Stringable = Stringable
 
         Lengthable = Types.Interface(False, {"length": Types.I32()})
@@ -316,7 +317,7 @@ class Parser:  # all mutable state
             "unary_read": FuncPointer([], T, do= True),
             "operator_set": FuncPointer([T], Null(), do= True),
             "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True)
-        }, coll.OrderedDict([("Atom.T", T)]))
+        }, coll.OrderedDict([("Atom.T", T)]), "Atom")
 
         A = Types.T("A", All, "Lens")
         B = Types.T("B", All, "Lens")
@@ -324,7 +325,7 @@ class Parser:  # all mutable state
         Lens = Types.Interface(False, {
             "query": Types.FuncPointer([A], B),
             "set": Types.FuncPointer([A, B], A),
-        }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]))
+        }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]), "Lens")
 
         defer_T = Types.T("T", All, "defer")
         defer_X = Types.T("X", All, "defer")
@@ -427,8 +428,11 @@ class Parser:  # all mutable state
         tokens = self.tokens
         filenames = self.filename
 
+        self._tokens = tokens
+        self._filename = filenames
+
         for i in range(len(tokens)):
-            PackageParser.packDec(self, filenames[i][0])
+            PackageParser.packDec(self, self.package)
             self._parse(tokens[i], filenames[i][1])
 
             #self.imports = []
@@ -438,8 +442,6 @@ class Parser:  # all mutable state
 
         self.tokens = tokens
         self.filename = filenames
-
-
 
         if self.sc:
             Tree.transform(self.currentNode)

@@ -59,7 +59,8 @@ class String(Node):
         return self.string
 
     def toString(self):
-        if self.target == "node":
+        #if self.target == "node"
+        if True:
             return self.string.\
                 replace("\\{", "{"). \
                 replace("\\}", "}"). \
@@ -115,4 +116,11 @@ class Decoder(Node):
                 codegen.append("core_json_vector(")
                 loop(typ.elemT)
                 codegen.append(")")
+            elif type(typ) is Types.Tuple:
+                codegen.append("core_json_tuple([")
+                for i in typ.list:
+                    loop(i)
+                    codegen.append(",")
+                codegen.append("])")
+
         loop(typ)

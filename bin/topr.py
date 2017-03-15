@@ -14,49 +14,96 @@ def main():
     tokens = [[]]
     parser = Parser.Parser(tokens, [("main", "anonymous")])
     parser.compiled = {}
-    parser.global_target = "node"
+    parser.global_target = "client"
     parser.opt = 0
     parser.externFuncs = {"main": []}
     parser.repl = True
+    parser.hotswap = False
+    parser._tokens = parser.tokens
+    parser._filename = parser.filename
     PackageParser.packDec(parser, "main", pack=True)
+
+    parenThing = 0
 
     js = js2py.EvalJs()
     js.eval(CodeGen.getRuntimeNode())
 
     text = ""
+    indent = 0
+
+
     while True:
-        line =  input("> ")
+        if indent == 0:
+            line = input("> ")
+        else:
+            line = input("." * indent + " ")
+
         text = line+"\n"
         topc.filenames_sources = {"main": {"anonymous": text}}
         try:
-            tokens[0] = Lexer.tokenize(line, "anonymous")
+            t = Lexer.tokenize(line, "anonymous")
+            if indent == 0:
+                tokens[0] = t
+            else:
+                tokens[0] += t
 
-            #ResolveSymbols.insert(parser, parser, only= True)
-            parser.package = "main"
-            parser.opackage = "main"
+            count = 0
+            for i in t:
+                if i.token in ["(", "{", "["]:
+                    count += 1
+                elif i.token in [")", "}", "]"]:
+                    count -= 1
 
-            t = parser.tokens
-            f = parser.filename
+            parenThing += count
 
-            for i in range(3):
-                ResolveSymbols._resolve(parser, tokens[0], "anonymous", i)
+            if count > 0:
+                indent += 4
+            elif count < 0 and parenThing == 0:
+                indent -= 4
 
-            parser.currentNode = Tree.Root()
+            if len(t) > 2:
+                c = t[-3]
+                if c.type == "keyword" or c.token == "=":
+                    indent += 4
+            elif len(t) == 2:
+                indent -= 4
 
-            parser.tokens = t
-            parser.filename = f
+            tokens[0][-1].token = str(indent)
 
-            parsed = parser.parse()
+            if indent == 0:
+                #ResolveSymbols.insert(parser, parser, only= True)
+                parser.package = "main"
+                parser.opackage = "main"
 
-            compiled = (parsed, {"main": []})
+                t = parser.tokens
+                f = parser.filename
 
-            code = CodeGen.CodeGen("main", parsed, {"main": []}, "node").toEval()
-            #print(code)
-            print(parsed.nodes[-1].type, ":", js.eval(code))
-            tokens[0] = []
-            parser.currentNode = Tree.Root()
+                for i in range(3):
+                    ResolveSymbols._resolve(parser, tokens[0], "anonymous", i)
+
+                parser.currentNode = Tree.Root()
+
+                parser.tokens = t
+                parser.filename = f
+
+                parsed = parser.parse()
+
+                compiled = (parsed, {"main": []})
+
+                code = CodeGen.CodeGen("main", parsed, {"main": []}, "node", 0).toEval()
+                    #print(code)
+
+                js.eval(code)
+                print("Of type: "+str(parsed.nodes[-1].type))
+                tokens[0] = []
+                parser.currentNode = Tree.Root()
 
         except EOFError as e:
-            print(e)
+            parser.tokens = parser._tokens
+            parser.filename = parser._filename
+
+            CRED = '\033[91m'
+            CEND = '\033[0m'
+            print(CRED+str(e)+CEND)
 
 main()

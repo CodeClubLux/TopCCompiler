@@ -32,8 +32,15 @@ def infer(parser, tree):
                 Scope.incrScope(parser)
 
             if not (i.isEnd() or type(i) is Tree.MatchCase or (type(i) is Tree.Block and type(i.owner) is Tree.Match)):
+                if type(i) is Tree.Lambda:
+                    i.type.check(parser)
+
                 if not type(i) is Tree.Lambda:
                     loop(i, o_iter)
+                elif not i.type.already:
+                    import copy
+                    i.type.scope = [parser.scope[parser.package][0]] + copy.copy(parser.scope[parser.package][1:])
+                    i.type.check(parser)
 
             if type(i) is Tree.Match:
                 typ = i.nodes[0].type
@@ -61,7 +68,19 @@ def infer(parser, tree):
                 i.type = first if first else Types.Null()
 
             elif type(i) is Tree.CreateAssign:
-                if i.nodes[0].varType is None and i.nodes[0].name != "_":
+                if type(i.nodes[0].name) is Tree.PlaceHolder:
+                    p = i.nodes[0].name.nodes[0]
+
+                    def recur(node, pattern):
+                        if type(pattern) is Tree.Tuple:
+                            for (a,b) in zip(node, pattern):
+                                recur(a,b)
+                        else:
+                            Scope.addVar(node, parser, pattern.name, Scope.Type(True, node.type, i.global_target))
+                            pattern.isGlobal = Scope.isGlobal(parser, parser.package, pattern.name)
+
+                    recur(i.nodes[1].nodes[0], p)
+                elif i.nodes[0].varType is None and i.nodes[0].name != "_":
                     if i.extern:
                         i.error("expecting type declaration, for external variable declaration")
                     i.nodes[0].varType = i.nodes[1].nodes[0].type
@@ -72,6 +91,7 @@ def infer(parser, tree):
                     else:
                         Scope.addVar(i, parser, i.nodes[0].name, Scope.Type(i.nodes[0].imutable, i.nodes[1].nodes[0].type, i.global_target))
                         i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
+
                 if i.global_target != parser.global_target:
                     #print(i.nodes[0].name)
                     Scope.changeTarget(parser, i.nodes[0].name, i.global_target)
@@ -81,11 +101,12 @@ def infer(parser, tree):
                 def check(n, _i):
                     for c in n:
                         if type(c) is Tree.FuncCall:
-                            if c.nodes[0].type.do and not _i.do and not c.partial and not c.curry:
+                            if not _i.do and not c.partial and not c.curry and c.nodes[0].type.do:
                                 c.nodes[0].error("cannot call function with side effects in a pure function")
 
                         if type(c) is Tree.FuncBody:
-                            check(c, c)
+                            pass
+                        #   check(c, c)
 
                         elif not c.isEnd():
                             check(c, _i)
@@ -122,19 +143,22 @@ def infer(parser, tree):
                     self.package = Scope.packageOfVar(parser, parser.package, self.name)
 
                     target = Scope.targetOfVar(i, parser, parser.package, self.name)
+                    realT = tree.nodes[o_iter].global_target
 
                     if target != parser.global_target:
-                        root = tree.nodes[o_iter]
+                        root = parser.currentNode.nodes[o_iter]
 
                         if type(root) is Tree.FuncBody:
-                            tree.nodes[o_iter-1].global_target = target
-                            tree.nodes[o_iter-2].global_target = target
+                            try:
+                                tree.nodes[o_iter-1].global_target = target
+                                tree.nodes[o_iter-2].global_target = target
+                            except IndexError:
+                                pass
 
                         root.global_target = target
 
-                    elif tree.nodes[o_iter].global_target != target and target != "full":
-                        realT = tree.nodes[o_iter].global_target
-                        i.error("variable "+i.name+" is bound to target "+realT+" however, this variable is from target "+target)
+                    elif realT != target and target != "full" and realT != "full":
+                        i.error("variable "+i.name+" is of target "+target + ", but being used in a "+realT+" target")
 
             elif type(i) is Tree.Field:
                 def bind():
@@ -162,7 +186,7 @@ def infer(parser, tree):
                     target = Scope.targetOfVar(i, parser, i.nodes[0].name, i.field)
 
                     if target != parser.global_target:
-                        root = tree.nodes[o_iter]
+                        root = parser.currentNode.nodes[o_iter]
 
                         if type(root) is Tree.FuncBody:
                             tree.nodes[o_iter-1].global_target = target
@@ -237,6 +261,8 @@ def infer(parser, tree):
                         self.type = Types.FuncPointer(a.args, b.returnType, do= a.do or b.do, generic=a.generic)
                     else:
                         self.type = b.returnType
+                elif i.kind == "as":
+                    i.type.duckType(parser, i.nodes[0].type, i, i.nodes[0], 0)
                 elif i.kind == "<-":
                     if i.unary:
                         try:
@@ -444,7 +470,10 @@ def infer(parser, tree):
                                 arr.nodes[1].error("expecting integer for range end, not "+str(arr.nodes[1].type))
                             typ = Types.I32()
                         else:
-                            typ = arr.nodes[1].type
+                            if len(arr.nodes) > 1:
+                                typ = arr.nodes[1].type
+                            else:
+                                arr.nodes[0].error("expecting value after :")
 
                     else:
                         typ = arr.nodes[0].type
@@ -453,11 +482,20 @@ def infer(parser, tree):
 
                         count = 0
                         for c in arr.nodes[1:]:
+                            err = False
                             if typ != c.type:
                                 try:
                                     typ.duckType(parser, c.type, i, c, count)
                                 except EOFError as e:
-                                    Error.beforeError(e, "Element type in array: ")
+                                    try:
+                                        c.type.duckType(parser, typ, c, i, count)
+                                        typ = c
+                                    except EOFError as e:
+                                        err = e
+
+
+                                if err:
+                                    Error.beforeError(err, "Element type in array: ")
 
                             count += 1
 
@@ -626,12 +664,15 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
         if len(shouldBeTyp.args) != len(normalTyp.args):
             return shouldBeTyp
 
-        if normalTyp.isLambda:
+        if normalTyp.isLambda and not normalTyp.already:
             try:
                 shouldBeTyp = Types.replaceT(shouldBeTyp, generics)
-                shouldBeTyp.duckType(parser, normalTyp, Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
+                shouldBeTyp.duckType(parser, normalTyp, Tree.PlaceHolder(parser), normalTyp.func, 0)
             except EOFError as e:
-                normalTyp.check(parser)
+                if hasattr(e, "special"):
+                    raise e
+                else:
+                    normalTyp.check(parser)
 
         for (should, nor) in zip(shouldBeTyp.args, normalTyp.args):
             args.append(resolveGen(should, nor, generics, parser))
@@ -639,8 +680,18 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
         resolveGen(shouldBeTyp.returnType, normalTyp.returnType, generics, parser)
 
         return Types.replaceT(shouldBeTyp, generics)
+    elif type(shouldBeTyp) is Types.Tuple:
+        if not type(normalTyp) is Types.Tuple:
+            return shouldBeTyp
+
+        arr = []
+        for (should, nor) in zip(shouldBeTyp.list, normalTyp.list):
+            arr.append(resolveGen(should, nor, generics, parser))
+
+        return Types.Tuple(arr)
+
     elif type(shouldBeTyp) in [Types.Struct, Types.Enum]:
-        if not type(normalTyp) is Types.Struct:
+        if not type(normalTyp) is type(shouldBeTyp):
             return shouldBeTyp
         self = shouldBeTyp
         other = normalTyp
@@ -649,7 +700,10 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser):
 
         types = {}
         shouldGeneric = shouldBeTyp.remainingGen
-        normalGeneric = normalTyp.gen
+        if type(shouldBeTyp) is Types.Enum:
+            normalGeneric = normalTyp.generic
+        else:
+            normalGeneric = normalTyp.gen
 
         for i in shouldGeneric:
             generics[i] = resolveGen(shouldGeneric[i], normalGeneric[i], generics, parser)

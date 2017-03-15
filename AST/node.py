@@ -120,7 +120,13 @@ class Node(Root):  # partially immutable data structure
         self.selfpackage = parser.opackage
         self.opackage = parser.opackage
 
-        self.filename = parser.filename
+        self._filename = parser._filename
+
+        try:
+            self.filename = [a + "/" + parser.filename for (a, b) in parser._filename if b == parser.filename][0]
+        except IndexError:
+            self.filename = parser.filename
+
         self.curry = False
         self.repl = parser.repl
         self.first = True

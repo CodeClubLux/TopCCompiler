@@ -26,6 +26,9 @@ class Operator(Node):
             self.nodes[0].compileToJS(codegen)
             codegen.append(")")
             return
+        elif self.kind == "as":
+            self.nodes[0].compileToJS(codegen)
+            return
         elif self.kind == ">>":
             codegen.append("function(")
             names = ",".join([codegen.getName() for i in self.nodes[0].type.args])
@@ -184,7 +187,7 @@ class Operator(Node):
             ">="
         ]
 
-        if i.kind in ["|>", ">>", "concat"] : return
+        if i.kind in ["|>", ">>", "concat", "as"] : return
 
         if not i.opT.name in operators or i.curry or i.partial:
             if unary:

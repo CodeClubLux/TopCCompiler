@@ -103,8 +103,9 @@ class FuncBraceOpen(Node):
 class FuncBody(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
-        self.returnType = "."
+        self.returnType = ""
         self.before = []
+
     def __str__(self):
         return "}"
 
@@ -112,6 +113,10 @@ class FuncBody(Node):
         codegen.append("case "+str(number)+":")
 
     def compileToJS(self, codegen):
+        if type(self.returnType) is str:
+            codegen.append("}")
+            return
+
         if self.do:
             self.res = codegen.getName()
             self._name = codegen.getName()
@@ -139,19 +144,19 @@ class FuncBody(Node):
             if self.do:
                 if not y:
                     did = True
-                    codegen.append("return " + self._next + "(")
+                    codegen.append(";return " + self._next + "(")
             else:
-                codegen.append("return ")
+                codegen.append(";return ")
 
         if len(self.nodes) > 0:
             self.nodes[-1].compileToJS(codegen)
 
         if self.do:
             if not did:
-                if y:
-                    codegen.append("return " + self._next + "(" + self.res + ")")
+                if self.returnType != Types.Null():
+                    codegen.append(";return " + self._next + "(" + self.res + ")")
                 else:
-                    codegen.append("return "+self._next + "()")
+                    codegen.append(";return "+self._next + "()")
             else:
                 codegen.append(")")
 
@@ -169,6 +174,11 @@ class FuncBody(Node):
         checkUseless(self)
 
         actReturnType = Types.Null()
+
+        if type(self.returnType) is str:
+            Scope.decrScope(parser)
+            return
+
         if self.returnType == Types.Null(): pass
         elif len(self.nodes) > 0:
             if self.nodes[-1].type == Types.Null():
@@ -365,6 +375,9 @@ class FuncCall(Node):
             codegen.append("("+",".join(names)+");}})(")
         else:
             self.nodes[0].compileToJS(codegen)
+            if self.curry and len(self.nodes[1:]) == 0:
+                return
+
             if self.curry:
                 codegen.append(".bind(null,")
             else:

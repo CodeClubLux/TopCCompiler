@@ -16,6 +16,7 @@ function int_toInt(s) { return s }
 
 String.prototype.toInt = function () { return Number(this) | 0 }
 String.prototype.toFloat = function () { return Number(this) }
+String.prototype.operator_eq = function(s) { return this == s }
 
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
@@ -315,6 +316,16 @@ function core_json_enum(array) {
 function core_json_vector(decoder) {
     return function (realObj) {
         return fromArray(realObj.map(decoder));
+    }
+}
+
+function core_json_tuple(decoder) {
+    return function (arr) {
+        var a = [];
+        for (var i = 0; i < arr.length; i++) {
+            a.push(decoder[i](arr[i]));
+        }
+        return a;
     }
 }
 
