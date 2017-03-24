@@ -1,5 +1,6 @@
-from "html" import (h1,span,p,br,button,app,div,style,render,onClick,comp,Event,VNode,mapView,toEffect)
+from "html" import (h1,onChange,input,span,p,br,button,app,div,style,render,onClick,comp,Event,VNode,mapView,toEffect)
 
+/*
 type Gender either
     Male
     Female
@@ -49,7 +50,7 @@ def categorize(arr: []Data) [](string, int, int) =
         (
             c
             (arr.filter |i: Data|
-                match i.gender with
+                match i with
                     Male -> i.color == c
                     _ -> false
             ).length
@@ -73,21 +74,131 @@ def toHtml(arr: [](string,int,int)) VNode =
         h1 [], "colours {total.1} |||||| {total.2} ||||||| {total.1 + total.2}"
     ]
 
-//def r(elem: int, indiv: []int) (Maybe[int], []int) =
-
 def r(i: []int) []int =
     def func(elem: int, state: int) (Maybe[int], int) =
         ((Some elem - state), elem)
 
     for func, i[0], i.slice 1, i.length
 
-let add = |a: int,b:int| a + b
+//render p [], toString r [10,20,5]
+
+//render p [], toHtml data//toString r [0,2,5,9]//).map |i| if i > -1 then ("+{i}") else toString i
+
+render p [], toHtml categorize data
+
+*/
+
+type Result[T] either
+    Data(T)
+    Error
+
+def for[A,T,X](func: |A,X| -> (Maybe[T],X), _state: X, arr: []A) []T =
+    var state = _state
+    var new = [] as []T
+    let length = arr.length
+    var i = 0
+
+    while i < length do
+        let tx = func arr[i], state
+
+        let t = tx.0
+        state = tx.1
+
+        new = match t with
+            Some tmp -> new.append tmp
+            None -> new
+
+        i += 1
+
+    new
+
+let unique = for (|elem: float, indiv: []float|
+    if not (indiv.has elem) then
+        ((Some elem), indiv.append elem)
+    else
+        (None, indiv)
+), []
+
+def Result[T].withDefault(self, default: T) T =
+    match self with
+        Data x -> x
+        Error -> default
 
 
-log (add 20)(30)
-//render (p [], "hello world") //r [2,3,4,-4,0] //).map |i| if i > -1 then ("+{i}") else toString i
+def Result[A].map[B](self, func: |A| -> B) Result[B] =
+    match self with
+        Data x -> Data func x
+        Error -> Error
 
-//render p [], toHtml categorize data
+ext full sort: |[]float| -> []float = "function(arr)\{
+    return fromArray(arr.toArray().sort(function(x,y)\{
+        return x > y
+    \} ));
+\} "
+
+def median(x: []float) float =
+    let length = x.length
+    let tmp = sort x
+
+    if length % 2 == 0 then
+        (tmp[length/2] + tmp[length/2 - 1]) / 2.0
+    else
+        tmp[(length-1) / 2]
+
+def average(x: []float) float =
+    (x.reduce (+)) / toFloat x.length
+
+ext full _console: |Stringable| -> none = "console.log"
+
+def debug[T: Stringable](x: T) T =
+    _console x.toString!
+    x
+
+
+def mode(x: []float) string =
+    let uniques = (unique x)
+    let u = uniques.map |i| ("{i}", (x.filter i==).length,0)
+    let count = u
+        .reduce |a,b|
+            if a.1 > b.1 then a
+            elif a.1 == b.1 then ("b",b.1,a.2+1)
+            else b
+
+    let _ = debug count.2
+    if count.2 == uniques.length-1 then "n" else count.0
+
+/*
+let a = [250,300,310,340,720]
+let b = [320,360,400,400,440,480,520,600]
+
+let score = [2,3,5,6]
+*/
+
+def answer(x: []float) VNode =
+    div [], [
+        h1 [], toString x
+        h1 [], "Mean {average x.map toFloat}"
+        h1 [], "Median {median x.map toFloat}"
+        h1 [], "Mode {mode x}"
+    ]
+
+def enter(x: []float, ev: Event) []float do
+    parse-json decoder []float, "[{ev.target.value}]"
+
+let math = |x: []float, a|
+    div [], [
+        input [onChange enter, a], ""
+        answer x
+    ]
+
+//answer [70,69,84,52,104,104]
+
+let app-state = newAtom [0.0]
+
+app math, app-state
+
+hk
+
 
 /*
 //update
@@ -111,7 +222,7 @@ let counter = |count: int, a|
 
 let list = |elem: []int, a|
     div [], [
-        h1 [], "Dynamic Lise"
+        h1 [], "Dynamic List"
         button [onClick append, a], "Add Counter"
         button [onClick remove, a], "Remove Counter"
         button [onClick resetAll, a], "Reset All Counter"
