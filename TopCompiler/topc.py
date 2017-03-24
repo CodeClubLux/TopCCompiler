@@ -443,7 +443,7 @@ def prepareForHotswap(arg):
 
 import datetime
 def modified(files, outputfile, jsFiles=[]):
-    return True
+    #return True
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-node.js")

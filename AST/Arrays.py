@@ -40,6 +40,8 @@ class Array(Node):
             codegen.append(")")
 
     def validate(self, parser):
+        return
+
         arr = self
         mutable = self.mutable
         if self.range:

@@ -22,9 +22,13 @@ def checkIf(parser, i):
         try:
             thisTyp = iter.type
 
-            typ.duckType(parser, typ, iter, i, 0)
+            typ.duckType(parser, thisTyp, iter, i, 0)
         except EOFError as e:
-            Error.beforeError(e, "Type mismatch in arms of if ")
+            try:
+                thisTyp.duckType(parser, typ, i, iter, 0)
+                typ = thisTyp
+            except EOFError:
+                Error.beforeError(e, "Type mismatch in arms of if ")
 
         #if iter.type != typ:
         #    (iter.nodes[-1] if len(iter.nodes) > 0 else iter).error("type mismatch in arms of if, "+str(iter.type)+" and "+str(typ))

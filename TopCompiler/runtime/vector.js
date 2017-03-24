@@ -245,7 +245,7 @@ Vector.prototype.toArray = function () {
 }
 
 Vector.prototype.toString = function () {
-    return "["+this.toArray().join(",")+"]"
+    return "["+this.join(",")+"]"
 }
 
 Vector.prototype.operator_eq = function (other) {
@@ -297,7 +297,7 @@ Vector.prototype.reduce = function (func) {
 }
 
 Vector.prototype.join = function (s) {
-    if (s.length == 0) { return "" }
+    if (this.length == 0) { return "" }
     var string = this.get(0);
     var len = this.length;
     for (var i = 1; i < len; i++) {

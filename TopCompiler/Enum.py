@@ -55,7 +55,7 @@ def enumParser(parser, name, decl, generic):
         if t.token == "\n" or t.type == "indent":
             Parser.callToken(parser)
 
-    parser.currentNode.addNode(Tree.Enum(const, parser))
+    parser.currentNode.addNode(Tree.Enum(const, name, parser))
 
     Scope.decrScope(parser)
 

@@ -72,9 +72,15 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         parser.nextToken()
 
         try:
+
             attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package)
         except KeyError:
-            Error.parseError(parser, "no attachable data structure found, called "+name)
+            try:
+                attachTyp = parser.interfaces[parser.package][name]
+                if not type(attachTyp) is Types.Enum:
+                    raise EOFError()
+            except KeyError:
+                Error.parseError(parser, "no attachable data structure found, called "+name)
         return funcHead(parser, decl, dontAdd, True, attachTyp)
     name = parser.nextToken()
 
@@ -87,7 +93,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     g = {}
     if parser.thisToken().token != "(":
         if parser.thisToken().token == "[":
-            g = generics(parser, (str(attachTyp)+"." if method else "")+name)
+            g = generics(parser, (attachTyp.normalName+"." if method else "")+name)
             if parser.thisToken().token == ".":
                 if attachTyp: Error.parseError(parser, "unexpected .")
                 if not Scope.varExists(parser, parser.package, name): Error.parseError(parser,
@@ -97,7 +103,14 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
                     attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package,
                                          parserMethodGen(parser, g, parser.structs[parser.package][name]))
                 except KeyError:
-                    Error.parseError(parser, "no attachable data structure found, called " + name)
+                    try:
+                        tmp = parser.interfaces[parser.package][name]
+                        if not type(tmp) is Types.Enum:
+                            raise KeyError
+
+                        attachTyp = Types.replaceT(tmp, parserMethodGen(parser, g, tmp))
+                    except KeyError:
+                        Error.parseError(parser, "no attachable data structure found, called " + name)
 
                 return funcHead(parser, decl, dontAdd, True, attachTyp)
 

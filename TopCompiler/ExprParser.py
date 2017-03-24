@@ -47,9 +47,7 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False):
     def f(parser):
         op = Tree.Operator(kind, parser)
 
-        if kind == "|>":
-            print(kind)
-        if not kind in ["|>"] and len(parser.currentNode.nodes) != 0:
+        if len(parser.currentNode.nodes) != 0:
             if not unary and isUnary(parser, parser.lookBehind()):
                 Error.parseError(parser, "unexpected "+kind)
             elif unary and not isUnary(parser, parser.lookBehind()):
@@ -71,8 +69,15 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    return (lastToken.type in ["operator", "indent", "keyword", "whiteOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "\n", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool"]
+
+    if fact: return True
+    else:
+        if parser.thisToken().type == "operator":
+            return len(parser.currentNode.nodes) == 0
+        else:
+            return lastToken.type == "indent" or lastToken.token == "\n"
 
 def plus(parser):
     lastToken = parser.lookBehind()

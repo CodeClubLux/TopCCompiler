@@ -267,7 +267,7 @@ function core_json_int(obj) {
 }
 
 function core_json_float(obj) {
-    return Number(obj);
+    return obj;
 }
 
 function core_json_bool(obj) {

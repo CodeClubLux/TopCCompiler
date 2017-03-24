@@ -19,8 +19,11 @@ def addMethod(node, parser, attachTyp, name, func, otherNode= False):
             Types.Struct(False, attachTyp.name, attachTyp.types, attachTyp.package, attachTyp.generic).duckType(parser, func.args[0], node, otherNode, 0)
 
         attachTyp.addMethod(parser, name, func)
+    elif type(attachTyp) is Types.Enum:
+        parser.interfaces[attachTyp.package][attachTyp.normalName].addMethod(parser, name, func)
     else:
         node.error("Can't add method to "+str(attachTyp))
+
 def checkIfOperator(parser, attachTyp, name, func):
     operators = {
         "add": Types.FuncPointer([attachTyp, attachTyp], attachTyp),

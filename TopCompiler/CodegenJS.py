@@ -282,6 +282,8 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         })();"""
 
     elif target == "client" and not run and dev:
+        terminal = open(__file__[0:__file__.rfind("/") + 1] + "terminal/bundle.html").read()
+
         needSocket = True
         linked = ""
 
@@ -350,6 +352,9 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     preCall = linked
     linked += "main_" + target + "Init();"
 
+    #import jsbeautifier
+    #linked = jsbeautifier.beautify(linked)
+
     fjs.write(linked)
     fjs.close()
 
@@ -384,10 +389,10 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         <TITLE>""" + output + """</TITLE>
         <link rel="icon" href="favicon.ico" type="image/x-icon" />
         """ + css + (
-    '<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>' + socket + "</script>" if needSocket else '') + """
+    '<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>' + socket + "</script>"+terminal if needSocket else '') + """
     </head>
     <body>
-        <div id= "code"></div>
+        """ + ('<div id= "code" style= ""></div>' if needSocket else '<div id= "code"></div>') + """
         <script>
         """ + linked + """
         </script>

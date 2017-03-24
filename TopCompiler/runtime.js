@@ -77,6 +77,7 @@ function int_toInt(s) { return s }
 
 String.prototype.toInt = function () { return Number(this) | 0 }
 String.prototype.toFloat = function () { return Number(this) }
+String.prototype.operator_eq = function(s) { return this == s }
 
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
@@ -327,7 +328,7 @@ function core_json_int(obj) {
 }
 
 function core_json_float(obj) {
-    return Number(obj);
+    return obj;
 }
 
 function core_json_bool(obj) {
@@ -873,7 +874,7 @@ Vector.prototype.toArray = function () {
 }
 
 Vector.prototype.toString = function () {
-    return "["+this.toArray().join(",")+"]"
+    return "["+this.join(",")+"]"
 }
 
 Vector.prototype.operator_eq = function (other) {
@@ -925,7 +926,7 @@ Vector.prototype.reduce = function (func) {
 }
 
 Vector.prototype.join = function (s) {
-    if (s.length == 0) { return "" }
+    if (this.length == 0) { return "" }
     var string = this.get(0);
     var len = this.length;
     for (var i = 1; i < len; i++) {

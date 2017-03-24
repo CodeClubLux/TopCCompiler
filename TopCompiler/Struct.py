@@ -39,7 +39,7 @@ class Struct:
         package = parser.package
 
         if package in self.methods:
-            if name in parser.structs[package][self.name].methods[package]:
+            if name in self.methods[package]:
                 Error.parseError(parser, "method "+self.name+"."+name+" already exists")
             self.methods[package][name] = method
         else:

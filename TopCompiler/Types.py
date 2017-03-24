@@ -533,6 +533,7 @@ class T(Type):
 class Enum(Type):
     def __init__(self, package, name, const, generic):
         self.generic = generic
+
         self.const = const
         self.types = {}
 
@@ -540,6 +541,7 @@ class Enum(Type):
         self.normalName = name
 
         self.remainingGen = generic
+        self.methods = {}
 
         gen = self.remainingGen
 
@@ -549,21 +551,44 @@ class Enum(Type):
 
         self.name = (package + "." if package != "_global" else "") + name + genericS
 
+    def addMethod(self, parser, name, method):
+        package = parser.package
+
+        if package in self.methods:
+            if name in self.methods[package]:
+                Error.parseError(parser, "method "+self.name+"."+name+" already exists")
+            self.methods[package][name] = method
+        else:
+            self.methods[package] = {name: method}
+
+    def hasMethod(attachTyp, parser, name):
+        self = parser.interfaces[attachTyp.package][attachTyp.normalName]
+
+        packages = []
+        b = None
+        for i in parser.imports+[parser.package]+["_global"]:
+            if not i in self.methods: continue
+            if name in self.methods[i]:
+                b = self.methods[i][name]
+                b.package = i
+
+                if not i in packages:
+                    packages.append(i)
+
+        if len(packages) > 1:
+            self.node.error("ambiguous, multiple definitions of the method "+self.name+"."+name+" in packages: "+", ".join(packages[:-1])+" and "+packages[-1])
+
+        return replaceT(b, attachTyp.generic)
+
     def duckType(self, parser, other, node, mynode, iter):
-        if self.name != other.name:
+        if self.normalName != other.normalName:
             node.error("expecting type "+self.name+", not "+str(other))
 
         for name in self.generic:
             a = self.generic[name]
             b = other.generic[name]
 
-            if type(b) is T:
-                #print(b.owner)
-                #print((self.package+"." if self.package != "_global" else "")+self.normalName)
-
-                if (self.package+"." if self.package != "_global" else "")+self.normalName != b.owner:
-                    node.error("For generic parameter " + name + ": "+" Expecting type "+str(a) +", not "+str(b))
-            else:
+            if not (type(b) is T and b.owner == (self.package+"." if self.package != "_global" else "")+self.normalName):
                 try:
                     a.duckType(parser, b, node, mynode, iter)
                 except EOFError as e:
@@ -653,6 +678,11 @@ class Float(Type):
             }
 
         return self.__types__
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if not type(other) in [I32,Float]:
+            mynode.error("expecting type " + str(self) + ", or "+str(I32())+" and got type " + str(other))
+
 class Bool(Type):
     name = "bool"
     normalName = "bool"

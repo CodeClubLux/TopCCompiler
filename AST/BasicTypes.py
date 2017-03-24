@@ -61,11 +61,10 @@ class String(Node):
     def toString(self):
         #if self.target == "node"
         if True:
-            return self.string.\
+            return self.string. \
+                replace("\n", "\\n").\
                 replace("\\{", "{"). \
-                replace("\\}", "}"). \
-                replace("\n", "\\n")
-
+                replace("\\}", "}")
         else:
             return self.string.replace("<", "&lt"). \
                 replace(">", "&gt"). \

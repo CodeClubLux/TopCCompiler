@@ -17,6 +17,7 @@ class Create(Node):
         self.extern = False
         self.escapes = False
         self.attachTyp = False
+
     def __str__(self):
         return self.name + ": "+str(self.varType)
 
@@ -98,7 +99,8 @@ class Assign(Node):
             codegen.append(name + " = ")
 
             if self.extern:
-                codegen.append(self.nodes[0].toString()[1:-1])
+                tmp = self.nodes[0].string.replace("\{", "{").replace("\}", "}")
+                codegen.append(tmp[1:-1])
             else:
                 self.nodes[0].compileToJS(codegen)
             codegen.append(";")
