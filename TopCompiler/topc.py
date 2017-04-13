@@ -298,6 +298,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.shouldCompile = {}
             declarations.atoms = 0
             declarations.atomTyp = False
+            declarations.outputFile = outputFile
             declarations.jsFiles = clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles
 
             if cache:
@@ -321,6 +322,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.externFuncs = {"main": []}
             declarations.filenames_sources = filenames_sources
             declarations.global_target = target
+            declarations.didCompile = False
 
             ResolveSymbols.resolve(declarations)
 
@@ -339,6 +341,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 parser.filenames = filenames
                 parser.compiled = declarations.compiled
                 parser.compiled["main"] = None
+                parser.dev = dev
 
                 parsed = parser.parse()
 
@@ -365,6 +368,9 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
                 #print(dill.detect.badobjects(parser.scope))
 
+                print("\n======== recompiling =========")
+                print("Compilation took : " + str(time() - time1))
+
                 if target == "full":
                     _linkCSSWithFiles = linkCSSWithFiles
                     client_linkWithFiles = linkWithFiles + clientLinkWithFiles
@@ -386,19 +392,20 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                                      linkWithCSS=_linkCSSWithFiles, linkWith=_linkWithFiles, target=target)
                 didCompile = True
 
-                print("\n======== recompiling =========")
-                print("Compilation took : " + str(time() - time1))
+                parser.didCompile = True
 
                 return parser
             elif run:
                 if target == "full":
-                    if run:
-                        import webbrowser
-                        webbrowser.open("http://127.0.0.1:3000/")
+                    import webbrowser
+                    webbrowser.open("http://127.0.0.1:3000/")
 
                     CodeGen.execNode(outputFile, dev)
                 else:
-                    CodeGen.exec(outputFile)
+                    if target == "node":
+                        CodeGen.execNode(outputFile, dev)
+                    else:
+                        CodeGen.exec(outputFile)
 
             return declarations
 
@@ -406,7 +413,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         fil = filenames
         sour = sources
 
-        return compile(target, sour, fil)
+        c = compile(target, sour, fil)
+        return c
 
     except (EOFError, ArithmeticError) as e:
         if dev:

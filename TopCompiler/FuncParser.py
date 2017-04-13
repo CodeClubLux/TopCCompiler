@@ -44,7 +44,7 @@ def generics(parser, fname):
             parser.nextToken()
             interface = Types.parseType(parser)
 
-            if not type(interface) in [Types.Interface, Types.EnumT]:
+            if not type(interface) in [Types.Interface, Types.EnumT, Types.Assign]:
                 Error.parseError(parser, "Type variable "+name+", must either be a interface or enumT, not "+str(interface))
 
             typ = Types.T(name, interface, parser.package+"."+fname)
@@ -73,7 +73,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
 
         try:
 
-            attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package)
+            attachTyp = Types.Struct(False, name, parser.structs[parser.package][name]._types, parser.package)
         except KeyError:
             try:
                 attachTyp = parser.interfaces[parser.package][name]
@@ -100,7 +100,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
                      "cannot attach method to unknown type main."+name)
 
                 try:
-                    attachTyp = Types.Struct(False, name, parser.structs[parser.package][name].types, parser.package,
+                    attachTyp = Types.Struct(False, name, parser.structs[parser.package][name]._types, parser.package,
                                          parserMethodGen(parser, g, parser.structs[parser.package][name]))
                 except KeyError:
                     try:

@@ -19,6 +19,7 @@ def main():
     parser.externFuncs = {"main": []}
     parser.repl = True
     parser.hotswap = False
+    parser.atoms = 0
     parser._tokens = parser.tokens
     parser._filename = parser.filename
     PackageParser.packDec(parser, "main", pack=True)
@@ -26,7 +27,7 @@ def main():
     parenThing = 0
 
     js = js2py.EvalJs()
-    js.eval(CodeGen.getRuntimeNode())
+    js.eval(CodeGen.getRuntimeNode()+';reply = function(a,b) { console.log(a + " : " + b) }')
 
     text = ""
     indent = 0
@@ -94,7 +95,7 @@ def main():
                     #print(code)
 
                 js.eval(code)
-                print("Of type: "+str(parsed.nodes[-1].type))
+                #print("Of type: "+str(parsed.nodes[-1].type))
                 tokens[0] = []
                 parser.currentNode = Tree.Root()
 

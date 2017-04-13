@@ -105,7 +105,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             else:
                 parseError(parser, "expecting .")
 
-        elif token == "{":
+        elif token == "{" or parser.thisToken().type == "bracketOpenS":
             args = {}
             parser.nextToken()
             while parser.thisToken().token != "}":
@@ -121,7 +121,6 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
                     parser.nextToken()
                     typ = parseType(parser)
                     args[name] = typ
-
 
                 parser.nextToken()
 
@@ -150,7 +149,8 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
                 if parser.nextToken().token != "[":
                     parseError(parser, "must specify generic parameters for generic type")
                 gen = parseGeneric(parser, parser.structs[package][token])
-            return Struct(mutable, token, parser.structs[package][token].types, parser.structs[package][token].package, gen)
+
+            return Struct(mutable, token, parser.structs[package][token]._types, parser.structs[package][token].package, gen)
 
         elif varExists(parser, package, token):
             t = typeOfVar(Tree.PlaceHolder(parser), parser, package, token)
@@ -205,6 +205,7 @@ def parseGeneric(parser, typ):
 
 class Type:
     name = "type"
+    normalName = ""
 
     def __str__(self):
         return self.name
@@ -245,7 +246,10 @@ class Assign(Type):
                 node.error("type "+str(other)+" has the field "+i+" to much to be casted into "+str(self))
             else:
                 if not type(typ[i]) is Null:
-                    const[i].duckType(parser, typ[i], node, mynode, iter)
+                    try:
+                        const[i].duckType(parser, typ[i], node, mynode, iter)
+                    except EOFError as e:
+                        Error.beforeError(e, "In field "+i+" : ")
 
 class StructInit(Type):
     def __init__(self, name):
@@ -286,6 +290,9 @@ class String(Type):
 
 class FuncPointer(Type):
     def __init__(self, argtypes, returnType, generic= coll.OrderedDict(), do= False):
+        if not (type(generic) in [dict,coll.OrderedDict]):
+            raise Error()
+
         self.args = argtypes
         self.name = "|"+", ".join([i.name for i in argtypes])+"| " +  ("do " if do else "-> ") +returnType.name
         self.returnType = returnType
@@ -321,6 +328,10 @@ class FuncPointer(Type):
             self.returnType.duckType(parser, other.returnType, node, mynode, iter)
         except EOFError as e:
             beforeError(e, "Function type return type: ")
+
+def isPart(i, name):
+    return ".".join(i.split(".")[:-1]) == name
+
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen=coll.OrderedDict()):
         self.types = types
@@ -333,7 +344,7 @@ class Struct(Type):
         self.mutable = mutable
 
         self.gen = gen
-        self.remainingGen = remainingT(self)
+        self.remainingGen = areParts(gen, package+"."+name)
 
         gen = self.remainingGen
 
@@ -345,16 +356,27 @@ class Struct(Type):
         #print(self.name)
 
     def hasMethod(self, parser, field):
-        m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
+        try:
+            m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
+        except KeyError:
+            try:
+                m = parser.interfaces[self.package][self.normalName].types[field]
+            except KeyError:
+                m = False
+
         if m:
             return replaceT(m, self.gen)
 
     def duckType(self, parser, other, node, mynode, iter=0):
+        if self.name == other.name:
+            return
+
         if not type(other) is Struct:
             node.error("expecting type "+str(self)+", not "+str(other))
         if self.package+"_"+self.normalName != other.package+"_"+other.normalName:
             node.error("expecting type "+str(self)+", not "+str(other))
 
+        """
         for key in other.remainingGen:
             i = self.gen[key]
             othk = other.gen[key]
@@ -363,6 +385,17 @@ class Struct(Type):
                 i.duckType(parser, othk, node, mynode, iter)
             except EOFError as e:
                 beforeError(e, "Generic argument "+key+": ")
+        """
+
+        for name in self.remainingGen:
+            a = self.gen[name]
+            b = other.gen[name]
+
+            if not (type(b) is T and b.owner == self.package+"."+self.normalName):
+                try:
+                    a.duckType(parser, b, node, mynode, iter)
+                except EOFError as e:
+                    beforeError(e, "For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(b))
 
 class Tuple(Type):
     def __init__(self, types):
@@ -415,6 +448,18 @@ class Array(Pointer):
                     Array(False, T("T", All,  "Array")),
                     coll.OrderedDict([("Array.T", All)])
                 ),
+                "serial": FuncPointer(
+                    [FuncPointer([self.elemT], T("T", All, "Array"), do=True)],
+                    Array(False, T("T", All, "Array")),
+                    generic=coll.OrderedDict([("Array.T", All)]),
+                    do=True
+                ),
+                "parallel": FuncPointer(
+                    [FuncPointer([self.elemT], T("T", All, "Array"), do=True)],
+                    Array(False, T("T", All, "Array")),
+                    generic=coll.OrderedDict([("Array.T", All)]),
+                    do=True
+                ),
                 "set": FuncPointer([Types.I32(), self.elemT], self)
                 ,
                 "filter": FuncPointer(
@@ -461,8 +506,18 @@ def isMutable(typ):
         return typ.mutable
     return False
 
+def areParts(generic, name):
+    c = coll.OrderedDict()
+
+    for i in generic:
+        if isPart(i, name):
+            c[i] = generic[i]
+
+    return c
+
 class Interface(Type):
     def __init__(self, mutable, args, generic= coll.OrderedDict(), name=""):
+        generic = areParts(generic, name)
         if name != "":
             gen = generic
             genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
@@ -474,13 +529,15 @@ class Interface(Type):
         self.generic = generic
         self.normalName = name
 
-
     def hasMethod(self, parser, field):
         """if field in self.types:
             return self.types[field]
         """
         pass
     def duckType(self, parser, other, node, mynode, iter):
+        if self.name == other.name:
+            return
+
         try:
             isStruct = other
             isStruct.types
@@ -489,6 +546,21 @@ class Interface(Type):
             mynode.error("expecting type "+str(self)+" not "+str(other))
 
         notInField = False
+
+        ended = True
+
+        for name in self.generic:
+            a = self.generic[name]
+            try:
+                b = other.generic[name]
+            except:
+                ended = False
+                continue
+
+            if not (type(b) is T and b.owner == self.normalName):
+                if a != b:
+                    Error.error("For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(b))
+        if ended and len(self.generic) > 0: return
 
         i = 0
         try:
@@ -523,9 +595,15 @@ class T(Type):
         self.owner = owner
         self.realName = name
 
-    """def duckType(self, parser, other, node, mynode, iter):
-        self.type.duckType(parser, other, node, mynode, iter)
-    """
+    def duckType(self, parser, other, node, mynode, iter):
+        if self.name == other.name:
+            return True
+
+        if type(other) is T and self.normalName != other.normalName and self.type == other.type:
+            return True
+
+        Type.duckType(self, parser, other, node, mynode, iter)
+        #self.type.duckType(parser, other, node, mynode, iter)
 
     def hasMethod(self, parser, name):
         self.type.hasMethod(parser, name)
@@ -589,28 +667,27 @@ class Enum(Type):
             b = other.generic[name]
 
             if not (type(b) is T and b.owner == (self.package+"." if self.package != "_global" else "")+self.normalName):
-                try:
-                    a.duckType(parser, b, node, mynode, iter)
-                except EOFError as e:
-                    Error.beforeError(e, "For generic parameter "+name+": ")
-
+                if a != b:
+                    Error.error("For generic parameter "+name+": "+"Expecting type "+str(a)+", but got type "+str(b))
 
 All = Interface(False, {})
 
 def isGeneric(t):
     if type(t) in [FuncPointer]:
+        if not (type(t.generic) in [dict,coll.OrderedDict]):
+            print(type(t.generic))
+
         if t.generic != {}: return True
         for i in t.args:
             if isGeneric(i): return True
         return isGeneric(t.returnType)
     elif type(t) is Array and isGeneric(t.elemT): return True
     elif type(t) is T: return True
-    elif type(t) is Interface: return True
-    elif type(t) is Struct: return True
+    elif type(t) is Interface: return t.normalName != t.name
+    elif type(t) is Struct: return t.normalName != t.name
     elif type(t) is Assign: return True
 
     return False
-
 
 class Null(Type):
     name = "none"
@@ -707,10 +784,15 @@ def replaceT(typ, gen):
         if typ.normalName in gen:
             r = gen[typ.normalName]
             if type(r) is Underscore:
-                return typ
+                #if type(typ.type) is Assign:
+                return T(typ.realName, replaceT(typ.type, gen), typ.owner)
+                #return typ
+
             return r
         else:
-            return typ
+            #if type(typ.type) is Assign:
+            return T(typ.realName, replaceT(typ.type, gen), typ.owner)
+            #return typ
     elif type(typ) is Struct:
         rem = {}
         for i in typ.remainingGen:
@@ -722,9 +804,15 @@ def replaceT(typ, gen):
         types = typ.types
         types = {i: replaceT(types[i], gen) for i in types}
 
-        genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+        c = Interface(False, types, gen, typ.normalName)
+        """
+        if len(gen) != 0:
+            c.name = typ.normalName+genericS
+            c.normalName = typ.normalName
+            c.generic = {i: gen[i] for i in gen if ".".join(i.split(".")[:-1]) == typ.normalName}
+        """
 
-        return Interface(False, types, name= typ.normalName+genericS)
+        return c
     elif type(typ) is Enum:
         const = coll.OrderedDict()
         g = {}

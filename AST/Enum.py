@@ -11,10 +11,9 @@ class Enum(Node):
 
     def compileToJS(self, codegen):
         count = 0
+        codegen.inFunction()
 
         tmp = codegen.getName()
-
-        codegen.inFunction()
 
         codegen.append("function " + self.package + "_" + self.normalName + "(" + tmp + "){this[0]=" + tmp + "}")
         for name in self.const:

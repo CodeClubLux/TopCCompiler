@@ -29,6 +29,14 @@ Vector.prototype.get = function (key) {
     return node[key & mask]
 }
 
+Vector.prototype.serial = function (func, next) {
+    serial(this.map(defer(func)), next);
+}
+
+Vector.prototype.parallel = function (func, next) {
+    parallel(this.map(defer(func)), next);
+}
+
 Vector.prototype.toJSON = function() {
     return this.toArray();
 }

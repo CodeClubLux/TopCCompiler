@@ -85,10 +85,14 @@ def handle_message(line):
     text = line + "\n"
     #
 
+    if lock:
+        lock.acquire()
     try:
         topc.filenames_sources["main"]["_"] = text
     except KeyError:
         topc.filenames_sources = {"main": {"_": text}}
+
+    parser.dev = False
 
     try:
         t = Lexer.tokenize(line, "_")
@@ -116,7 +120,12 @@ def handle_message(line):
             if c.token in["do", "=", "with", "either", "then", "else"]:
                 indent += 4
         elif len(t) == 2:
-            indent -= 4
+            if indent == 0:
+                if lock:
+                    lock.release()
+                return
+            else:
+                indent -= 4
 
         tokens[0][-1].token = str(indent)
 
@@ -126,14 +135,12 @@ def handle_message(line):
             parser.opackage = "main"
 
             if lock:
-                lock.acquire()
-
                 filename = parser.filename
                 lexed = parser.tokens
                 compiled = parser.compiled
                 target = parser.global_target
 
-                #parser = Parser.Parser(tokens, [("main", "_")])
+                # parser = Parser.Parser(tokens, [("main", "_")])
                 parser.filename = [("main", "_")]
                 parser.tokens = tokens
                 parser.compiled = {}
@@ -163,9 +170,19 @@ def handle_message(line):
 
             code = CodeGen.CodeGen("main", parsed, {"main": []}, "node", 0).toEval()
 
-            if lock:
 
 
+            # js.eval(code)
+            # print("Of type: "+str(parsed.nodes[-1].type))
+
+            socketio.emit("code", code)
+
+            tokens[0] = []
+            parser.currentNode = Tree.Root()
+        else:
+            socketio.emit("prefix", "." * indent)
+
+        if lock:
                 filename = parser.filename
                 lexed = parser.tokens
                 compiled = parser.compiled
@@ -184,16 +201,6 @@ def handle_message(line):
                 parser.filenames = {}
 
                 lock.release()
-
-            # js.eval(code)
-            # print("Of type: "+str(parsed.nodes[-1].type))
-
-            socketio.emit("code", code)
-
-            tokens[0] = []
-            parser.currentNode = Tree.Root()
-        else:
-            socketio.emit("prefix", "." * indent)
 
     except EOFError as e:
         indent = 0

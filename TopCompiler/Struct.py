@@ -19,6 +19,7 @@ class Struct:
 
         self.offsets = {}
         self.types = {}
+        self._types = {}
 
         self.package = package
 
@@ -31,7 +32,7 @@ class Struct:
 
         for i in range(len(actualfields)):
             self.offsets[actualfields[i].name] = i
-            self.types[actualfields[i].name] = self.fieldType[i]
+            self._types[actualfields[i].name] = self.fieldType[i]
 
         self.methods = {}
 
@@ -120,14 +121,14 @@ def typeParser(parser, decl= False):
 
     if decl:
         meth = parser.structs[parser.package][name].methods
-        types = parser.structs[parser.package][name].types
+        _types = parser.structs[parser.package][name]._types
 
         parser.structs[parser.package][name] = Struct(name, args, fields, gen, typ, parser.package)
-        tmp =  parser.structs[parser.package][name].types
+        tmp =  parser.structs[parser.package][name]._types
         parser.structs[parser.package][name].methods = meth
         parser.structs[parser.package][name].package = parser.package
-        parser.structs[parser.package][name].types = types
-        types.update(tmp)
+        parser.structs[parser.package][name]._types = _types
+        _types.update(tmp)
 
         Scope.changeType(parser, name, parser.structs[parser.package][name] )
 
@@ -135,10 +136,10 @@ def typeParser(parser, decl= False):
 
     Scope.decrScope(parser)
 
-def initStruct(parser, package= ""):
+def initStruct(parser, package= "", shouldRead=True):
     numB = parser.curly
-    unary = False
-    if ExprParser.isUnary(parser, parser.lookBehind()):
+    unary = not shouldRead
+    if shouldRead and ExprParser.isUnary(parser, parser.lookBehind()):
         unary = True
 
     parser.curly += 1
@@ -237,4 +238,5 @@ def offsetsToList(offsets):
     return array
 
 Parser.exprToken["{"] = initStruct
+Parser.exprType["bracketOpenS"] = lambda parser, tok: initStruct(parser, shouldRead=False)
 Parser.exprToken["}"] = closeCurly

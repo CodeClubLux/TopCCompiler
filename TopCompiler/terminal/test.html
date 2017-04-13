@@ -40,8 +40,6 @@
 
         socket.on("comp_error", function(err) {
             err = err.replace("\n", "<br>").replace("\t", "&nsbt;&nsbt;&nsbt;&nsbt;");
-
-
         })
 
         socket.on('reload', function (data) {
@@ -57,34 +55,6 @@
             console.log("\\n==== reloaded stylesheets ====");
             document.getElementById(name).innerHTML = content;
         });
-
-        function dumpObject(obj) {
-            if (obj === undefined || obj === null) {
-                result = "";
-            } else if (obj.constructor === Array) {
-                var result = "(" + obj.map(dumpObject) + ")";
-            } else if (obj.constructor == Vector) {
-                var result = "[";
-
-                for (var i = 0; i < obj.length; i++) {
-                    result += dumpObject(obj.get(i))+",";
-                }
-                result = result.slice(0,result.length-1)+"]"
-            } else if (typeof obj == "object") {
-                var result = "{";
-
-                for (var property in obj) {
-                    var value = dumpObject(obj[property]);
-                    result += property + ' = ' + value + ",";
-                }
-                result = result.slice(0,result.length-1) + "}";
-
-            } else {
-                result = obj.toString();
-            }
-
-            return result;
-        }
 
         socket.on("code", function(command) {
             isCode = false;

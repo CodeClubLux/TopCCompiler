@@ -69,6 +69,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('ne', r'!='),
         ('assign',  r'='),
         ('whiteOpenS', r' +\['),
+        ('bracketOpenS', r' +\{'),
         ('openS', r'\['),
         ('closeS', r'\]'),
         ('assignPlus', r'\+='),
@@ -80,6 +81,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  #[A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
         ('underscore', '_'),
         ('skip', r'[ \t]'),
+        ("single", r"'(?:[^'\\])*'"),
         ("str", r'"(?:\\.|({.*})|[^"\\])*"'),
         ('doubleDot', '\.\.'),
         ('dot', '\.'),
@@ -171,7 +173,9 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
 
             tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
             array += tokens
-
+        elif typ == "single":
+            val = mo.group(typ)
+            array.append(Token(val, "str", line, pos))
         elif typ != 'skip' and not typ in ["comment", "commentLine"]:
             val = mo.group(typ)
             if typ == "identifier":

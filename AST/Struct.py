@@ -71,7 +71,7 @@ class Type(Node):
         for i in range(len(self.fields)):
             codegen.append("this."+self.fields[i]+"="+names[i]+";")
         codegen.append("}")
-        codegen.append(self.package+"_"+self.normalName+".fields=[")
+        codegen.append(self.package+"_"+self.normalName+"._fields=[")
         codegen.append(",".join('"'+i+'"' for i in self.fields))
         codegen.append("];")
         codegen.outFunction()

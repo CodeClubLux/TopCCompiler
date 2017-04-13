@@ -69,8 +69,8 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
-        not lastToken.token in ["int", "float", "bool"]
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
+        not lastToken.token in ["int", "float", "bool", "lens"]
 
     if fact: return True
     else:

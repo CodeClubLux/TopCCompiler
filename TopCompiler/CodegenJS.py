@@ -195,6 +195,11 @@ class CodeGen:
                 self.node_out_parts.append(value)
             else:
                 self.node_main_parts.append(value)
+        elif self.target == "full":
+            if self.inAFunction:
+                self.out_parts.append(value)
+            else:
+                self.main_parts.append(value)
 
     def inFunction(self):
         self.inAFunction = True
@@ -281,6 +286,8 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
             })
         })();"""
 
+        linked = ""
+
     elif target == "client" and not run and dev:
         terminal = open(__file__[0:__file__.rfind("/") + 1] + "terminal/bundle.html").read()
 
@@ -304,7 +311,11 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
                 console.log("\\n==== reloaded stylesheets ====");
                 document.getElementById(name).innerHTML = content;
             });
+
+            recordNewValue(previousState.arg);
         })();"""
+
+        socket = ""
     else:
         linked = ""
 
@@ -313,6 +324,34 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     runtime = "" if hotswap and target == "client" else getRuntime() if target == "client" else getRuntimeNode()
 
     linked += runtime
+
+    if target == "client" and not run and dev:
+        linked += """log= function(d) {
+            terminal.echo(d);
+        };
+
+        log_unop = function(data, next) {
+            terminal.echo(data);
+            next();
+        };
+
+        function newAtom(arg) {
+            previousState = {
+                unary_read: unary_read,
+                operator_set: operator_set,
+                arg: arg,
+                watch: atom_watch,
+                events: [],
+            }
+
+            calledBy.push("init");
+            recordNewValue(arg, function(){});
+
+            previousState.events.push(recordNewValue);
+
+            return previousState
+        }
+        """
 
     array = []
     # print("====", target)
@@ -388,11 +427,11 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         <meta charset="UTF-8">
         <TITLE>""" + output + """</TITLE>
         <link rel="icon" href="favicon.ico" type="image/x-icon" />
-        """ + css + (
-    '<script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script><script>' + socket + "</script>"+terminal if needSocket else '') + """
+        """ + css + """
     </head>
     <body>
-        """ + ('<div id= "code" style= ""></div>' if needSocket else '<div id= "code"></div>') + """
+        """ + ('<div id="container" style="padding-top: 50px; margin-top: -10px; padding-bottom: 100px; color: white; margin-right: 10px; position: fixed; display: inline-block; float: left; height: 100%; background-color: black; width: 30%;"><button id="switchMode" style="position: fixed; color: black; z-index: 100000; top: 20; margin-left: 10px;so">Time Travel</button><div id="terminal" style="position: fixed; width: inherit; height: 90%;"></div></div><div id= "code" style= "float: right; width: 70%; position: relative;"></div>' if needSocket else '<div id= "code"></div>') + """
+        """+('<script>' + socket + "</script>"+terminal if needSocket else '') + """
         <script>
         """ + linked + """
         </script>
@@ -411,7 +450,6 @@ def exec(outputFile):
     args = ["open", "bin/" + outputFile + ".html"]
     subprocess.check_call(args, shell=False)
 
-
 def execNode(outputFile, dev):
     if dev:
         args = ["node", outputFile + "-node.js"]
@@ -419,8 +457,7 @@ def execNode(outputFile, dev):
         subprocess.Popen(args, cwd="bin/")
     else:
         args = ["node", outputFile + "-node.js"]
-        subprocess.call(args, shell=False, cwd="bin/")
-
+        subprocess.call(args, cwd="bin/")
 
 class Info:
     def __init__(self):

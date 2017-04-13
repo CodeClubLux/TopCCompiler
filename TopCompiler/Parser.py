@@ -325,7 +325,7 @@ class Parser:  # all mutable state
         Lens = Types.Interface(False, {
             "query": Types.FuncPointer([A], B),
             "set": Types.FuncPointer([A, B], A),
-        }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]), "Lens")
+        }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]), name="Lens")
 
         defer_T = Types.T("T", All, "defer")
         defer_X = Types.T("X", All, "defer")
@@ -446,6 +446,29 @@ class Parser:  # all mutable state
         if self.sc:
             Tree.transform(self.currentNode)
             validate(self, self.currentNode)
+
+        if self.package == "main" and self.dev:
+            typ = self.atomTyp
+            d = Tree.Decoder(self)
+            d.shouldBeTyp = typ
+
+            c = Tree.CreateAssign(self)
+
+            cr = Tree.Create("decoderForAtom", typ, self)
+            cr.package = ""
+            cr.isGlobal = True
+
+            c.addNode(cr)
+
+            a = Tree.Assign("decoderForAtom", self)
+            a.isGlobal = True
+            a.init = True
+            a.package = ""
+
+            a.addNode(d)
+            c.addNode(a)
+
+            self.currentNode.addNode(c)
 
         return self.currentNode
 

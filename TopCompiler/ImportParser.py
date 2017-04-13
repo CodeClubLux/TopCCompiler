@@ -84,6 +84,8 @@ def importParser(parser, decl= False):
     parser.imports.append(oname)
 
 def fromParser(parser, decl= False, stage=False):
+    place = Tree.PlaceHolder(parser)
+
     importParser(parser, decl)
     name = parser.imports[-1]
 
@@ -102,11 +104,13 @@ def fromParser(parser, decl= False, stage=False):
         package = parser.package
 
         if nameOfVar in parser.structs[name]:
-            if not decl: return
+            if decl:
+                if stage and nameOfVar in parser.structs[package]:
+                    Error.parseError(parser, nameOfVar + " is already a struct")
+                parser.structs[package][nameOfVar] = parser.structs[name][nameOfVar]
+            else:
+                Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
 
-            if stage and nameOfVar in parser.structs[package]:
-                Error.parseError(parser, nameOfVar + " is already a struct")
-            parser.structs[package][nameOfVar] = parser.structs[name][nameOfVar]
             names.append((nameOfVar, parser.global_target))
         elif nameOfVar in parser.interfaces[name]:
             if not decl: return
@@ -116,7 +120,7 @@ def fromParser(parser, decl= False, stage=False):
             parser.interfaces[package][nameOfVar] = parser.interfaces[name][nameOfVar]
         elif not decl and nameOfVar in parser.scope[name][0]:
             token.error = lambda msg: Error.parseError(parser, msg)
-            Scope.addVar(token, parser, nameOfVar, parser.scope[name][0][nameOfVar])
+            Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
             names.append((nameOfVar, parser.scope[name][0][nameOfVar].target))
         elif not decl:
             Error.parseError(parser, "Package " + name + " does not have a variable, or type called " + nameOfVar)

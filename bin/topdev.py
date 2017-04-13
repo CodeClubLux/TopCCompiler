@@ -15,6 +15,7 @@ mutex = threading.Lock()
 
 def main():
     error = ""
+    mutex.acquire()
     while True:
         try:
             parser = topc.start(run= True, dev=True)
@@ -28,6 +29,8 @@ def main():
             error = e
             time.sleep(0.2)
 
+    mutex.release()
+
     socketRepl.init()
     socketRepl.parser = parser
 
@@ -38,13 +41,15 @@ def main():
         mutex.acquire()
         try:
             parser = topc.start(run= False, dev= True, hotswap= True, cache=parser)
+            if parser.didCompile:
+                socketRepl.socketio.emit("reload", open("bin/"+parser.outputFile+"-client.js").read())
             error = False
         except EOFError as e:
             e = str(e)
             if error != e:
                 print(e, file=sys.stderr)
                 #socketRepl.socketio.emit("error", "Compile Error\n\n"+str(e))
-                socketRepl.socketio.emit("comp_error", str(e))
+                socketRepl.socketio.emit("comp_error", str(e).replace("\t", "    ").replace(" ", "&nbsp;").replace("\n", "<br>"))
             error = e
         finally:
             mutex.release()
@@ -52,15 +57,6 @@ def main():
 def initRepl():
     socketRepl.lock = mutex
     socketRepl.socketio.run(socketRepl.app, port=9000)
-    log_names = ['werkzeug']
-    app_logs = map(lambda logname: logging.getLogger(logname), log_names)
-    file_handler = logging.FileHandler('log/app.test.log', 'w')
-
-    for app_log in app_logs:
-        for hdlr in app_log.handlers[:]:  # remove all old handlers
-            app_log.removeHandler(hdlr)
-
-        app_log.addHandler(file_handler)
 
 if __name__ == '__main__':
     try:

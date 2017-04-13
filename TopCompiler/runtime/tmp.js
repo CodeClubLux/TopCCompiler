@@ -211,14 +211,13 @@ function atom_watch(func, next) {
 }
 
 function newAtom(arg) {
-    previousState = {
+    return {
         unary_read: unary_read,
         operator_set: operator_set,
         arg: arg,
         watch: atom_watch,
         events: [],
     }
-    return previousState;
 }
 
 function newLens(reader, setter) {
@@ -628,6 +627,14 @@ Vector.prototype.get = function (key) {
           node = node[(key >> level) & mask]
     }
     return node[key & mask]
+}
+
+Vector.prototype.serial = function (func, next) {
+    serial(this.map(defer(func)), next);
+}
+
+Vector.prototype.parallel = function (func, next) {
+    parallel(this.map(defer(func)), next);
 }
 
 Vector.prototype.toJSON = function() {

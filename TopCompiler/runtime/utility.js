@@ -178,14 +178,13 @@ function atom_watch(func, next) {
 }
 
 function newAtom(arg) {
-    previousState = {
+    return {
         unary_read: unary_read,
         operator_set: operator_set,
         arg: arg,
         watch: atom_watch,
         events: [],
     }
-    return previousState;
 }
 
 function newLens(reader, setter) {
