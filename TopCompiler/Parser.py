@@ -96,6 +96,7 @@ from .TypeInference import *
 from .Enum import *
 from .ParseJson import *
 from .Lambda import *
+from .Dict import *
 
 def isEnd(parser):
     token = parser.thisToken()
@@ -379,7 +380,8 @@ class Parser:  # all mutable state
             "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
             "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
             "jsonStringify": Scope.Type(True, Types.FuncPointer([All], Types.String(0))),
-            "parseJson": Scope.Type(True, Types.FuncPointer([Types.FuncPointer([All], parseT), Types.String(0)], parseT))
+            "parseJson": Scope.Type(True, Types.FuncPointer([Types.FuncPointer([All], parseT), Types.String(0)], parseT)),
+            "dict": Scope.Type(True, dictFunc),
         }]}
 
         self.iter = 0
@@ -418,6 +420,7 @@ class Parser:  # all mutable state
                 "Lens": Lens,
                 "Any": All,
                 "Maybe": Maybe,
+                "Dict": topDict,
             }
         }
 

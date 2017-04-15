@@ -46,7 +46,6 @@ class Enum(Node):
     def validate(self, parser):
         pass
 
-
 class Match(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
@@ -169,6 +168,30 @@ class MatchCase(Node):
                     else:
                         name = codegen.readName(i.package + "_" + i.name)
                     codegen.append(name + "=" + tmp + "[" + str(index + 1) + "];")
+        elif type(self.nodes[0]) is Tree.Tuple:
+            codegen.append("(")
+            iter = 0
+            for (index, i) in enumerate(node):
+                if type(i) != Tree.ReadVar:
+                    if iter > 0:
+                        codegen.append("&&(")
+                    i.compileToJS(codegen)
+                    if type(node.nodes[0].type) in [Types.I32, Types.Float, Types.String, Types.Bool]:
+                        codegen.append(")==" + tmp + "[" + str(index) + "]")
+                    else:
+                        codegen.append(").operator_eq(" + tmp + "[" + str(index) + "]")
+                    iter += 1
+
+            codegen.append(")){")
+
+            for (index, i) in enumerate(node):
+                if type(i) is Tree.ReadVar:
+                    if not self.yielding:
+                        name = codegen.createName(i.package + "_" + i.name)
+                        codegen.append("var ")
+                    else:
+                        name = codegen.readName(i.package + "_" + i.name)
+                    codegen.append(name + "=" + tmp + "[" + str(index) + "];")
 
         elif type(self.nodes[0]) is Tree.ReadVar:
             count = list(node.type.const.keys()).index(node.name)

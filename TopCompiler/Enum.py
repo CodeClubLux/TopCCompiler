@@ -100,6 +100,10 @@ def checkCase(parser, case, typ, first=False):
         case.type = typ
         case.nodes[0].type = typ
         case.nodes[1].type = typ
+    elif type(case) is Tree.Tuple:
+        for iter in range(len(case.nodes)):
+            node = case.nodes[iter]
+            checkCase(parser, node, typ.list[iter])
 
     elif type(case) is Tree.Operator and case.kind == "or" and not case.curry and not case.partial:
         typT = case.nodes[0].type
@@ -149,6 +153,7 @@ def match(parser):
     self = Tree.Match(parser)
     parser.currentNode.addNode(self)
     parser.currentNode = self
+
     while t.token != "with":
         t = parser.nextToken()
         if t.token == "with":
@@ -209,8 +214,6 @@ def match(parser):
             parser.iter -= 1
 
     parser.currentNode = self.owner
-
-
 
 Parser.exprToken["match"] = match
 Parser.exprToken["with"] = lambda parser: \

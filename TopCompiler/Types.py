@@ -213,6 +213,9 @@ class Type:
     def __repr__(self):
         return self.name
 
+    def __hash__(self):
+        return id(self)
+
     def __eq__(self, other):
         return other.name == self.name
 
@@ -460,12 +463,13 @@ class Array(Pointer):
                     generic=coll.OrderedDict([("Array.T", All)]),
                     do=True
                 ),
-                "set": FuncPointer([Types.I32(), self.elemT], self)
+                "set": FuncPointer([I32(), self.elemT], self)
                 ,
                 "filter": FuncPointer(
                     [FuncPointer([self.elemT], Bool())],
                     self,
                 ),
+                "get": FuncPointer([I32()], self.elemT),
                 "reduce": FuncPointer(
                     [FuncPointer([self.elemT, self.elemT], self.elemT)],
                     self.elemT,
@@ -528,6 +532,12 @@ class Interface(Type):
         self.types = args
         self.generic = generic
         self.normalName = name
+
+    def fromObj(self, obj):
+        self.name = obj.name
+        self.types = obj.types
+        self.generic = obj.generic
+        self.normalName = obj.normalName
 
     def hasMethod(self, parser, field):
         """if field in self.types:
@@ -686,6 +696,10 @@ def isGeneric(t):
     elif type(t) is Interface: return t.normalName != t.name
     elif type(t) is Struct: return t.normalName != t.name
     elif type(t) is Assign: return True
+    elif type(t) is Tuple:
+        for i in t.list:
+            if isGeneric(i):
+                return True
 
     return False
 
@@ -730,8 +744,12 @@ class I32(Type):
                 "operator_add": FuncPointer([self], self),
                 "operator_sub": FuncPointer([self], self),
                 "operator_div": FuncPointer([self], self),
-                "operator_mul": FuncPointer([self], self)
+                "operator_mul": FuncPointer([self], self),
+                "operator_eq": FuncPointer([self], Bool()),
+                "operator_gt": FuncPointer([self], Bool()),
+                "operator_lt": FuncPointer([self], Bool()),
             }
+
         return self.__types__
 
 class Float(Type):
@@ -779,68 +797,80 @@ class Underscore(Type):
     name = "_"
     normalName = "_"
 
-def replaceT(typ, gen):
+def replaceT(typ, gen, acc={}):
+    if typ in acc:
+        return acc[typ]
+
     if type(typ) is T:
         if typ.normalName in gen:
             r = gen[typ.normalName]
             if type(r) is Underscore:
                 #if type(typ.type) is Assign:
-                return T(typ.realName, replaceT(typ.type, gen), typ.owner)
+                return T(typ.realName, replaceT(typ.type, gen, acc), typ.owner)
                 #return typ
 
             return r
         else:
             #if type(typ.type) is Assign:
-            return T(typ.realName, replaceT(typ.type, gen), typ.owner)
+            return T(typ.realName, replaceT(typ.type, gen, acc), typ.owner)
             #return typ
     elif type(typ) is Struct:
         rem = {}
         for i in typ.remainingGen:
-            rem[i] = replaceT(typ.remainingGen[i], gen)
+            rem[i] = replaceT(typ.remainingGen[i], gen, acc)
         return Struct(False, typ.normalName, typ.types, typ.package, rem)
     elif type(typ) is Assign:
-        return Assign(replaceT(typ.const, gen))
+        return Assign(replaceT(typ.const, gen, acc))
     elif type(typ) is Interface:
         types = typ.types
-        types = {i: replaceT(types[i], gen) for i in types}
 
-        c = Interface(False, types, gen, typ.normalName)
+        c = Interface(False,{})
+
+        if acc == {}:
+            acc = {typ: c}
+        else:
+            acc[typ] = c
+
+        types = {i: replaceT(types[i], gen, acc) for i in types}
+
+        new = Interface(False, types, gen, typ.normalName)
+        c.fromObj(new)
+
         """
         if len(gen) != 0:
             c.name = typ.normalName+genericS
             c.normalName = typ.normalName
             c.generic = {i: gen[i] for i in gen if ".".join(i.split(".")[:-1]) == typ.normalName}
         """
-
         return c
     elif type(typ) is Enum:
         const = coll.OrderedDict()
         g = {}
 
         for name in typ.const:
-            const[name] = [replaceT(i, gen) for i in typ.const[name]]
+            const[name] = [replaceT(i, gen, acc) for i in typ.const[name]]
 
         for name in typ.generic:
-            g[name] = replaceT(typ.generic[name], gen)
+            g[name] = replaceT(typ.generic[name], gen, acc)
 
         return Enum(typ.package, typ.normalName, const, g)
     elif type(typ) is Tuple:
         arr = []
         for i in typ.list:
-            arr.append(replaceT(i, gen))
+            arr.append(replaceT(i, gen, acc))
 
         return Types.Tuple(arr)
 
     elif isGeneric(typ):
         if type(typ) is Array:
-            return Array(False, replaceT(typ.elemT, gen))
+            return Array(False, replaceT(typ.elemT, gen, acc))
         generics = typ.generic
         if type(typ) is FuncPointer:
             arr = []
             for i in typ.args:
-                arr.append(replaceT(i, gen))
+                arr.append(replaceT(i, gen, acc))
 
-            newTyp = replaceT(typ.returnType, gen)
+            newTyp = replaceT(typ.returnType, gen, acc)
             return FuncPointer(arr, newTyp, remainingT(newTyp), do= typ.do)
     else:
         return typ

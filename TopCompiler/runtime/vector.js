@@ -70,8 +70,7 @@ Vector.prototype.append_m = function (value) {
         var tmp = node[res]
 
         if (tmp === undefined) {
-
-            tmp = Array(width);
+            tmp = [];
             node[res] = tmp;
         }
         node = tmp;
@@ -112,7 +111,7 @@ Vector.prototype.append = function (value) {
             var pos = key >> level & mask;
 
             if (!node) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -123,7 +122,7 @@ Vector.prototype.append = function (value) {
             var pos = key & mask;
 
             if (node == null) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -135,9 +134,9 @@ Vector.prototype.append = function (value) {
     var width = Vector.prototype.width;
 
     if (Math.pow(width, this.depth) === this.length) {
-        var n = Array(width)
+        var n = [];
         n[0] = this.root;
-        n[1] = Array(width)
+        n[1] = [];
 
         var u = update(n, this.depth * this.bits, this.length);
         return new Vector(u, this.length+1, this.depth+1)
