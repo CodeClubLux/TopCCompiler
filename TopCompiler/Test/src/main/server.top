@@ -17,12 +17,12 @@ def requestHandler(req: http.Request) http.Response do
         "/" ->
             match _read "EC.html" with
                 Some content ->
-                    http.response {body = content, content-type = "text/html"}
+                    http.response{body = content, content-type = "text/html"}
                 None ->
                     http.response{status = 404}
 
         _ ->
-            http.response {status= 404, body = "404 Page not found"}
+            http.response{status= 404, body = "404 Page not found"}
 
 //ext node port: int = PORT //"process.env.PORT || 3000"
 
