@@ -13,6 +13,7 @@ import sys
 import os
 import json
 from TopCompiler import ResolveSymbols
+from TopCompiler import Module
 from optimization import *
 
 # is class
@@ -155,7 +156,7 @@ def getCompilationFiles(target):
         (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = handleOptions(jsonLoads,
             ["linkCSS", "linkWith", "linkWith-client", "linkWith-node"])
 
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [["packages/"+name+"/"+c for c in i] for i in (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [[(name, "packages/"+name+"/"+c) for c in i] for i in (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
 
         linkCSSWithFiles += _linkCSSWithFiles
         linkWithFiles += _linkWithFiles
@@ -223,7 +224,10 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         except KeyError:
             Error.error("must specify compilation target in port.json file")
 
-        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node"])
+        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node", "transforms"])
+
+        for i in transforms:
+            Module.importModule(os.path.abspath(i))
 
         (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles, files) = getCompilationFiles(target)
 
@@ -299,7 +303,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.atoms = 0
             declarations.atomTyp = False
             declarations.outputFile = outputFile
-            declarations.jsFiles = clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles
+            declarations.jsFiles = [b for (a,b) in clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles]
 
             if cache:
                 declarations.scope = cache.scope
@@ -362,9 +366,20 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 if doc:
                     return parser
 
+                canStartWith = []
+
                 for i in parser.compiled:
+                    tmp = os.path.dirname(parser.filenames[i][0][0])
+                    dir = tmp[tmp.find("packages")+len("packages")+1:tmp.rfind("src")-1]
+                    canStartWith.append(dir)
+
                     if parser.compiled[i][0]:
                         CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
+
+                _linkCSSWithFiles = [i for (d, i) in linkCSSWithFiles if d in canStartWith]
+                _clientLinkWithFiles = [i for (d, i) in clientLinkWithFiles if d in canStartWith]
+                _nodeLinkWithFiles = [i for (d, i) in nodeLinkWithFiles if d in canStartWith]
+                _linkWithFiles = [i for (d, i) in linkWithFiles if d in canStartWith]
 
                 #print(dill.detect.badobjects(parser.scope))
 
@@ -372,9 +387,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 print("Compilation took : " + str(time() - time1))
 
                 if target == "full":
-                    _linkCSSWithFiles = linkCSSWithFiles
-                    client_linkWithFiles = linkWithFiles + clientLinkWithFiles
-                    node_linkWithFiles = linkWithFiles + nodeLinkWithFiles
+                    client_linkWithFiles = _linkWithFiles + _clientLinkWithFiles
+                    node_linkWithFiles = _linkWithFiles + _nodeLinkWithFiles
 
                     a = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
 
@@ -384,12 +398,12 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
                     l = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
                 else:
-                    _linkCSSWithFiles = [] if target != "client" else linkCSSWithFiles
-                    _linkWithFiles = linkWithFiles + nodeLinkWithFiles if target == "node" else linkWithFiles + clientLinkWithFiles if target == "client" else []
+                    _link_CSSWithFiles = [] if target != "client" else _linkCSSWithFiles
+                    _linkWithFiles = _linkWithFiles + _nodeLinkWithFiles if target == "node" else _linkWithFiles + _clientLinkWithFiles if target == "client" else []
 
                     l = CodeGen.link(parser.compiled, outputFile,
                                      run=run, opt=opt, dev=dev, hotswap= hotswap,
-                                     linkWithCSS=_linkCSSWithFiles, linkWith=_linkWithFiles, target=target)
+                                     linkWithCSS=_link_CSSWithFiles, linkWith=_linkWithFiles, target=target)
                 didCompile = True
 
                 parser.didCompile = True

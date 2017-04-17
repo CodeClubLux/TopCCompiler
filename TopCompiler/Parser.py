@@ -97,6 +97,7 @@ from .Enum import *
 from .ParseJson import *
 from .Lambda import *
 from .Dict import *
+from TopCompiler import Module
 
 def isEnd(parser):
     token = parser.thisToken()
@@ -231,7 +232,7 @@ def callToken(self, lam= False):
         s1(self)
         returnBookmark(self)
     else:
-        if not lam and (b.token in ["!", "_", "(", "\\", "$", "decoder", "|"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if not lam and Module.shouldCall(b) and (b.token in ["!", "_", "(", "\\", "$", "decoder", "|"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
             if b.token == "$":
                 ExprParser.endExpr(self, -2)
             addBookmark(self)

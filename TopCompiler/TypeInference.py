@@ -10,6 +10,8 @@ from TopCompiler import MethodParser
 from TopCompiler import Struct
 from TopCompiler import Enum
 
+checkTyp = []
+
 def infer(parser, tree):
     varTypes = {}
     sc = parser.sc
@@ -512,7 +514,7 @@ def infer(parser, tree):
                                 except EOFError as e:
                                     try:
                                         c.type.duckType(parser, typ, c, i, count)
-                                        typ = c
+                                        typ = c.type
                                     except EOFError as e:
                                         err = e
 
@@ -671,6 +673,10 @@ def infer(parser, tree):
             elif type(i) is Tree.Block:
                 if len(i.nodes) > 0:
                     i.type = i.nodes[-1].type
+            else:
+                for c in checkTyp:
+                    if c(i):
+                        break
 
             if type(i) in [Tree.Block, Tree.While]:
                 Scope.decrScope(parser)

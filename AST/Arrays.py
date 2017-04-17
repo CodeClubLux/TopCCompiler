@@ -9,6 +9,8 @@ class Array(Node):
 
         self.range = False
         self.init = False
+        self.mutable = False
+        self.type = Types.Array(False,Types.Null(),empty=True)
 
     def __str__(self):
         return "[]"

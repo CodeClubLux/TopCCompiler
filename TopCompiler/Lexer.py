@@ -26,8 +26,7 @@ def lex(stream, filename, modifiers, hotswap, lexed):
 
 import re
 
-def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
-    keywords = [
+keywords = [
         'import',
         'def',
         'then', 'do', 'if', 'elif', 'else', 'while',
@@ -46,10 +45,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         "from",
         "decoder",
     ]
-
-    special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub", "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS', 'openS', 'doubleDot', 'semi']
-
-    token_specification = [
+token_specification = [
         ("comment", r"/\*([\s\S]*?)\*/"),
         ("indent", r'\n[ ]*'),
         ('commentLine', r'//.*'),
@@ -91,6 +87,11 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         ('dollar', '\$'),
         ('set', '=>'),
     ]
+special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub",
+               "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS',
+               'openS', 'doubleDot', 'semi']
+
+def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
     get_token = re.compile(tok_regex).match
     line = 1
@@ -134,6 +135,7 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
             line += len(val) - len(val.replace("\n", ""))
             array.append(Token(val, "comment", line, pos ))
         elif typ in ["str"]:
+            template = False
             val = mo.group(typ)
             def notBack(iter):
                 if iter == 0: return True
@@ -154,16 +156,21 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     inBrace = True
                     start = iter+1
                     shouldBe = bcount
+                    template = True
 
                 if i == "{":
                     bcount += 1
                 elif notBack(iter) and i == "}":
                     bcount -= 1
                     if bcount == shouldBe and inBrace:
-                        tokens.append(Token("concat", "operator", line, pos+start))
-                        tokens.append(Token("(", "symbol", line, pos+start))
+                        tokens.append(Token("concat", "operator", line, pos+iter))
+                        tokens.append(Token("(", "symbol", line, pos+iter))
 
-                        tokens += tokenize(val[start: iter], filename, pos+start, line, linePos)
+                        t = tokenize(val[start: iter], filename)
+                        for i in t:
+                            i.line += line
+                            i.column += pos+start
+                            tokens.append(i)
                         tokens.append(Token(")", "symbol", line, pos+iter))
                         tokens.append(Token("concat", "operator", line, pos+iter))
                         start = iter + 1
@@ -172,6 +179,9 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     line += 1
 
             tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
+            if template:
+                tokens.insert(0, Token("(", "symbol", line, pos))
+                tokens.append(Token(")", "symbol", line, pos + iter))
             array += tokens
         elif typ == "single":
             val = mo.group(typ)
@@ -211,8 +221,9 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
 
         lastTyp = typ
 
-        pos = mo.end() - linePos
+        #mo.start() - line_start
 
+        pos = mo.start() - linePos
         mo = next
 
     if spos == 0 and sline == 0:

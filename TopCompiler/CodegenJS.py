@@ -235,7 +235,7 @@ class CodeGen:
             js = self.toJS(target)
 
             try:
-                f = open("lib/" + self.filename.replace("/", ".") + "-node.js", mode="w")
+                f = open("lib/" + self.filename.replace("/", ".") + "-"+ target +".js", mode="w")
                 f.write(js)
                 f.close()
             except:
@@ -319,6 +319,9 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     else:
         linked = ""
 
+    if opt == 3:
+        linked = "(function(){"
+
     import sys
 
     runtime = "" if hotswap and target == "client" else getRuntime() if target == "client" else getRuntimeNode()
@@ -390,6 +393,8 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
 
     preCall = linked
     linked += "main_" + target + "Init();"
+    if opt == 3:
+        linked += "})()"
 
     #import jsbeautifier
     #linked = jsbeautifier.beautify(linked)
@@ -398,10 +403,12 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     fjs.close()
 
     if opt == 3 and target == "client":
-        args = ["uglifyjs", "--noerr", "--warn" "--compress", "--output", "bin/" + output + ".min-" + target + ".js", "--mangle", "--",
-               "bin/" + output + "-" + target + ".js"]
+        #args = ["uglifyjs", "--noerr", "--warn" "--compress", "unused,dead_code", "--output", output + ".min-" + target + ".js", "--mangle", "--",
+        #      output + "-" + target + ".js"]
 
-        subprocess.check_call(args, shell=False)
+        args = ["closure-compiler", "--js", "EC-client.js", "--js_output_file", "EC.min-client.js", "--warning_level", "QUIET", "--compilation_level", "ADVANCED"]
+
+        subprocess.check_call(args, shell=False, cwd="bin")
         output += ".min"
         linked = open("bin/" + output + "-" + target + ".js", "r").read()
 
@@ -417,8 +424,6 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         output = output[:-len(".min")]
 
     f = open("bin/" + output + ".html", mode="w")
-
-    html = """<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><HEAD><meta charset="UTF-8"><TITLE>""" + output + """</TITLE></HEAD><script>""" + linked + """</script></HTML>"""
 
     html = """
 <!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
