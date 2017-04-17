@@ -1,5 +1,5 @@
-from "html" import (PosAtom,h1,onChange,input,span,p,br,button,app,value,div,style,render,onClick,Event,VNode,mapView,toEffect)
-import "http"
+from "html" import (PosAtom,h1,id,br,onChange,input,span,p,button,app,value,div,style,render,onClick,Event,VNode,mapView,toEffect)
+//import "http"
 
 /*
 type Result[T] either
@@ -18,6 +18,8 @@ def Result[A].map[B](self, func: |A| -> B) Result[B] =
         Error -> Error
 */
 
+
+/*
 
 def for[A,T,X](func: |A,X| -> (Maybe[T],X), _state: X, arr: []A) []T =
     var state = _state
@@ -116,10 +118,36 @@ type Point =
 def getPoint(x: Point) Point =
     x
 
-log (dict [
-    (0, 10)
-    (10, 30)
-])[0]
-
 app math, app-state
+*/
 
+let add = |x: int,ev| do 1+x
+let sub = |x: int,ev| do x -1
+
+let append = |x: []int,ev| do x.append 0
+
+let view = |count: int, a|
+    <div>
+        <button on-click = add,a> + </button>
+        Count s{count}
+        <button on-click = sub,a> - </button>
+    </div>
+
+let multiple = |counters: []int, a|
+    <div>
+        <h1>Multiple Counters</h1>
+        {mapView view, counters, a}
+        <button on-click = append,a>Add</button>
+    </div>
+
+
+/*
+let multiple = |counters: []int, a|
+    div [], [
+        h1 [], "Multiple Counters"
+        mapView view, counters, a
+        button [onClick append, a], "Add"
+    ]
+*/
+
+app multiple, new-atom [0]

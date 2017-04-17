@@ -1,6 +1,7 @@
 
     {
         "name": "EC",
-        "target": "full",
-        "version": 0
+        "target": "client",
+        "version": 0,
+        "transforms": ["transforms/JSX.py"]
     }

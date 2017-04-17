@@ -397,235 +397,6 @@ function parseJson(decoder, str) {
 function jsonStringify(i) {
     return JSON.stringify(i);
 }
-//linked list
-/*
-function List(value, list) {
-    this.head = value;
-    this.tail = list;
-
-    if (list === null) {
-        if (value === null) {
-            this.length = 0
-        } else {
-            this.length = 1;
-        }
-    } else {
-        this.length = list.length+1
-    }
-}
-
-var EmptyList = new List(null, null);
-
-List.prototype.append = function (head) {
-    return new List(head, this);
-}
-
-List.prototype.toArray = function () {
-    var v = [];
-    var curr = this;
-    for (var i = 0; i < this.length; i++) {
-        v.push(curr.head);
-        curr = curr.tail
-    }
-    return v.reverse();
-}
-
-List.prototype.getProperIndex = function (index) {
-    if (index < 0) {
-        return (this.length + index);
-    }
-    return index;
-}
-
-List.prototype.getList = function (index) {
-    index = this.getProperIndex(index)
-
-    var getElement = (this.length-index)-1;
-    var curr = this;
-
-    for (var i = 0; i < getElement; i++) {
-        curr = curr.tail;
-    }
-    return curr;
-}
-
-List.prototype.get = function (index) {
-    return this.getList(index).head;
-}
-
-List.prototype.toString = function () {
-    return "List("+this.join(", ")+")"
-}
-
-List.prototype.join = function(sep) {
-    if (sep === null) sep = ",";
-
-    var curr = this;
-
-    if (this.length === 0) return "";
-
-    var str = curr.head.toString();
-
-    for (var i = 1; i< this.length; i++ ) {
-        curr = curr.tail;
-        str = (curr.head.toString() + sep.toString()) + str
-    }
-    return str;
-
-}
-
-List.prototype.insert = function (pos, val) {
-    function insert(self, position, value) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position === 0) {
-            return self.append(value);
-        } else {
-            return insert(self.tail, position - 1, value).append(self.head);
-
-        }
-    }
-
-    pos = this.getProperIndex(pos);
-    return insert(this, this.length - pos, val)
-}
-
-List.prototype.del = function (pos) {
-    function insert(self, position) {
-        if (position < 0) {
-           throw new Error("")
-        } else if (position === 1) {
-            var t = self.tail;
-            if (t === null) {
-                t = EmptyList;
-            }
-            return t;
-        } else {
-            return insert(self.tail, position - 1).append(self.head);
-
-        }
-    }
-
-    pos = this.getProperIndex(pos);
-    return insert(this, this.length - pos)
-}
-
-List.prototype.slice = function (index, indexEnd) {
-    if (index == null ) { index = 0 }
-    if (indexEnd == null ) { indexEnd = this.length }
-    indexEnd = this.getProperIndex(indexEnd-1);
-    index = this.getProperIndex(index);
-
-    var l = this.getList(indexEnd)
-    var e = new List(l.head, l.tail);
-
-    e.length = indexEnd-index+1;
-
-    return e;
-}
-
-List.prototype.reverse = function () {
-    var v = EmptyList;
-    var curr = this;
-    for (var i = 0; i < this.length; i++) {
-        v = v.append(curr.head);
-        curr = curr.tail;
-    }
-    return v;
-}
-
-List.prototype.operator_eq = function (other) {
-    if (this.length !== other.length) return false;
-    if (self === other) return true;
-
-    var self = this;
-
-    for (var i = 0; i < this.length; i++) {
-        if (!self.head.operator_eq(other.head)) {
-            return false;
-        }
-
-        self = self.tail;
-        other = other.tail;
-    }
-    return true;
-}
-
-List.prototype.operator_add = function (other) {
-    function insert(self, position, s) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position == 0) {
-            return new List(s.head, s.tail);
-        } else {
-            return insert(self.tail, position - 1, s).append(self.head);
-
-        }
-    }
-
-    return insert(other, other.length, this)
-}
-
-List.prototype.copy = function () {
-    function insert(self, position) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position == 0) {
-            return self;
-        } else {
-            return insert(self.tail, position - 1).append(self.head);
-        }
-    }
-
-    return insert(this, this.length)
-}
-
-List.prototype.set = function (pos, val) {
-    function insert(self, position, value) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position === 0) {
-            return new List(value, self.tail)
-        } else {
-            return insert(self.tail, position - 1, value).append(self.head);
-
-        }
-    }
-
-    pos = this.getProperIndex(pos);
-    return insert(this, this.length - pos - 1, val)
-}
-
-function listFromArray(arr) {
-    var len = arr.length;
-    var curr = EmptyList;
-
-    for (var i = 0; i < len; i++) {
-        curr = curr.append(arr[i]);
-    }
-    return curr;
-}
-
-function newList() {
-    return listFromArray(Array.prototype.slice.call(arguments));
-}
-
-function newListRange(start, end) {
-    var arr = EmptyList;
-    for (var i = start; i < end; i++) {
-        arr = arr.append(i)
-    }
-    return arr;
-}
-
-function newListInit(repeat, elem) {
-    var arr = EmptyList;
-    for (var i = 0; i < repeat; i++) {
-        arr = arr.append(i);
-    }
-    return arr;
-}
-*/
 function Vector(root, len, depth, start) {
     this.shift = (depth - 1) * this.bits;
     this.root = root;
@@ -698,8 +469,7 @@ Vector.prototype.append_m = function (value) {
         var tmp = node[res]
 
         if (tmp === undefined) {
-
-            tmp = Array(width);
+            tmp = [];
             node[res] = tmp;
         }
         node = tmp;
@@ -740,7 +510,7 @@ Vector.prototype.append = function (value) {
             var pos = key >> level & mask;
 
             if (!node) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -751,7 +521,7 @@ Vector.prototype.append = function (value) {
             var pos = key & mask;
 
             if (node == null) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -763,9 +533,9 @@ Vector.prototype.append = function (value) {
     var width = Vector.prototype.width;
 
     if (Math.pow(width, this.depth) === this.length) {
-        var n = Array(width)
+        var n = [];
         n[0] = this.root;
-        n[1] = Array(width)
+        n[1] = [];
 
         var u = update(n, this.depth * this.bits, this.length);
         return new Vector(u, this.length+1, this.depth+1)
@@ -3694,13 +3464,4 @@ function extend() {
 
 },{}]},{},[1]);
 
-function http_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","");http_get = _http_get;;return;}}}()}var http_response;var http_get;function http_Server(c){this.listen=c;}http_Server._fields=["listen"];function http_NodeHTTP(c){this.createServer=c;}http_NodeHTTP._fields=["createServer"];function http_Request(c){this.url=c;}http_Request._fields=["url"];function http_Response(c,d,f){this.status=c;this.contentType=d;this.body=f;}http_Response._fields=["status","contentType","body"];http_Response.prototype.toString=(function(){return http_Response_toString(this)});function http_Response_toString(http_self){;return (((((((((((("Response(")+(((http_self).status)).toString()))+(", ").toString()))+(((http_self).contentType)).toString()))+(", ").toString()))+(((http_self).body)).toString()))+(")").toString());}function http_endResponse(http_x){;return core_assign(http_response,{body:jsonStringify(http_x)});}function http_toUrl(http_expects){;return ("query/"+jsonStringify(http_expects(http_endResponse)));}function http_query(http_fromJSON, http_expects,c){var http_url;var http_body;var g=0;return function f(d){while(1){switch(g){case 0:http_url = http_toUrl(http_expects);g=1;return http_get(http_url,f);case 1:http_body = ((d)).body;;return c(http_fromJSON(http_body));}}}()}function main_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_clientInit();html_clientInit();main_PosAtom= typeof html_PosAtom=='undefined'||html_PosAtom;main_h1= typeof html_h1=='undefined'||html_h1;main_onChange= typeof html_onChange=='undefined'||html_onChange;main_input= typeof html_input=='undefined'||html_input;main_span= typeof html_span=='undefined'||html_span;main_p= typeof html_p=='undefined'||html_p;main_br= typeof html_br=='undefined'||html_br;main_button= typeof html_button=='undefined'||html_button;main_app= typeof html_app=='undefined'||html_app;main_value= typeof html_value=='undefined'||html_value;main_div= typeof html_div=='undefined'||html_div;main_style= typeof html_style=='undefined'||html_style;main_render= typeof html_render=='undefined'||html_render;main_onClick= typeof html_onClick=='undefined'||html_onClick;main_Event= typeof html_Event=='undefined'||html_Event;main_mapView= typeof html_mapView=='undefined'||html_mapView;main_toEffect= typeof html_toEffect=='undefined'||html_toEffect;main_unique = main_for.bind(null,((function(main_elem, main_indiv){;return (function(){if((!((main_indiv).has(main_elem)))){return [(Some(main_elem)),(main_indiv).append(main_elem)];}
-else{return [None,main_indiv];}})();})),EmptyVector);main_sort = function(arr){
-    return fromArray(arr.toArray().sort(function(x,y){
-        return x > y
-    } ));
-} ;main__console = console.log;main_enter = (function(main_x, main_ev,f){var j=0;return function h(g){while(1){switch(j){case 0:;return f(parseJson(core_json_vector(core_json_float),(((("[")+((((main_ev).target).value)).toString()))+("]").toString())));}}}()});main_math = (function(main_x, main_a){;return main_div(EmptyVector,newVector(main_input(newVector((main_onChange(main_enter,main_a)),(main_value((main_x).join(", ")))),""),main_answer(main_x)));});main_appState = newAtom(newVector(0.0));log((dict(newVector([0,10],[10,30]))).get(0));d=6;return main_app(main_math,main_appState,c);case 6:;return;}}}()}var main_unique;var main_sort;var main__console;var main_enter;var main_math;var main_appState;var main_PosAtom;var main_h1;var main_onChange;var main_input;var main_span;var main_p;var main_br;var main_button;var main_app;var main_value;var main_div;var main_style;var main_render;var main_onClick;var main_Event;var main_mapView;var main_toEffect;function main_for(main_func, main__state, main_arr){var main_state;main_state = main__state;var main_new;main_new = EmptyVector;var main_length;main_length = (main_arr).length;var main_i;main_i = 0;
-while((main_i<main_length)){var main_tx;main_tx = main_func(main_arr.get(main_i),main_state);var main_t;main_t = (main_tx)[0];main_state=(main_tx)[1];main_new=function(){var c=main_t; if (c[0]==0){var main_tmp=c[1];return (main_new).append(main_tmp);} if (c[0]==1){return main_new;}}();main_i=((main_i+1)|0);};return main_new;}function main_median(main_x){var main_length;main_length = (main_x).length;var main_tmp;main_tmp = main_sort(main_x);;return (function(){if((((main_length%2)|0)===0)){return (((main_tmp.get(((main_length/2)|0))+main_tmp.get(((((main_length/2)|0)-1)|0))))/2.0);}
-else{return main_tmp.get((((((main_length-1)|0))/2)|0));}})();}function main_average(main_x){;return (((main_x).reduce((operator_add)))/toFloat((main_x).length));}function main_debug(main_x){main__console((main_x).toString());;return main_x;}function main_mode(main_x){var main_uniques;main_uniques = (main_unique(main_x));var main_u;main_u = (main_uniques).map((function(main_i){;return [(((("")+((main_i)).toString()))+("").toString()),(((main_x).filter(operator_eq.bind(null,main_i)))).length,0];}));var main_count;main_count = (main_u).reduce((function(main_a, main_b){;return (function(){if(((main_a)[1]>(main_b)[1])){return main_a;}else if(((main_a)[1]===(main_b)[1])){return ["b",(main_b)[1],(((main_a)[2]+1)|0)];}
-else{return main_b;}})();}));var main__;main__ = main_debug((main_count)[2]);;return (function(){if(((main_count)[2]===(((main_uniques).length-1)|0))){return "n";}
-else{return (main_count)[0];}})();}function main_answer(main_x){;return main_div(EmptyVector,newVector(main_h1(EmptyVector,toString(main_x)),main_h1(EmptyVector,(((("Mean ")+((main_average((main_x).map(toFloat)))).toString()))+("").toString())),main_h1(EmptyVector,(((("Median ")+((main_median((main_x).map(toFloat)))).toString()))+("").toString())),main_h1(EmptyVector,(((("Mode ")+((main_mode(main_x))).toString()))+("").toString()))));}function main_test(main_func, main_x){;return toString(main_func(main_x));}function main_Point(c,d){this.x=c;this.y=d;}main_Point._fields=["x","y"];function main_getPoint(main_x){;return main_x;}function html_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html_register = _html_register;html_changeName = _html_changeName;html__onUrlChange = _html_onUrlChange;html_setUrl = _html_setUrl;html_setLocalStorage = _html_setLocalStorage;html_readLocalStorage = _html_readLocalStorage;html_pageLoadUrl = window.location.hash.slice(1);html_nextTick = _nextTick;html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html_kind = html_newAttrib.bind(null,"type");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_hyper);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_br = html_h("br",EmptyVector,"");html_hr = html_h.bind(null,"hr");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = EmptyVector;html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_ul = html_h.bind(null,"ul");html_li = html_h.bind(null,"li");html_a = html_h.bind(null,"a");html_image = html_h.bind(null,"img");html_span = html_h.bind(null,"span");html__appendChild = toAsync(html_appendChild);html__handle = html_handle;html_animateOnVisible = html_addClassOnVisible;;return;}}}()}var html_register;var html_changeName;var html__onUrlChange;var html_setUrl;var html_setLocalStorage;var html_readLocalStorage;var html_pageLoadUrl;var html_nextTick;var html_style;var html_placeHolder;var html_position;var html__type;var html_height;var html_width;var html_id;var html_min;var html_max;var html_step;var html_value;var html_href;var html_src;var html_kind;var html__float;var html_class;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_br;var html_hr;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;var html_ul;var html_li;var html_a;var html_image;var html_span;var html__appendChild;var html__handle;var html_animateOnVisible;function html_PosAtom(c,d){this.a=c;this.pos=d;}html_PosAtom._fields=["a","pos"];html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(html_self,d){var h=0;return function g(f){while(1){switch(h){case 0:h=1;return (html_self).a.unary_read(g);case 1:;;return d(((html_self).pos).query(f));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(html_self, html_new,f){var j=0;return function h(g){while(1){switch(j){case 0:j=2;return (html_self).a.unary_read(h);case 2:;j=3;return ((html_self).a).operator_set(((html_self).pos).set(g,html_new),h);case 3:;return f();}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(html_self, html_f,f){var j=0;return function h(g){while(1){switch(j){case 0:function html_func(html_x,k){var n=0;return function m(l){while(1){switch(n){case 0:n=4;return (html_self).a.unary_read(m);case 4:;n=5;return html_f(((html_self).pos).query(l),m);case 5:;return k();}}}()}j=6;return ((html_self).a).watch(html_func,h);case 6:;return f();}}}()}function html_comp(html_func){;return html_func;}function html_Event(c){this.target=c;}html_Event._fields=["target"];function html_Attribute(c,d){this.name=c;this.value=d;}html_Attribute._fields=["name","value"];function html_newAttrib(html_name, html_value){;return new html_Attribute(html_name,html_value,html_value);}function html_onEvent(html_name, html_x, html_a){function html_clicked(html_e,c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=7;return html_a.unary_read(f);case 7:;g=8;return html_x(d,html_e,f);case 8:html_res = d;g=9;return html_register(html_x,f);case 9:g=10;return (html_a).operator_set(html_res,f);case 10:;return c();}}}()};return new html_Attribute(html_name,html_clicked,html_clicked);}function html_onUrlChange(html_func, html_a,c){var g=0;return function f(d){while(1){switch(g){case 0:function html_fired(html_url,h){var html_res;var l=0;return function k(j){while(1){switch(l){case 0:l=11;return html_a.unary_read(k);case 11:;l=12;return html_func(j,html_url,k);case 12:html_res = j;l=13;return html_register(html_func,k);case 13:l=14;return (html_a).operator_set(html_res,k);case 14:;return h();}}}()}g=15;return html__onUrlChange(html_fired,f);case 15:;return c();}}}()}function html_async(html_x, html_a){function html_fired(c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=16;return html_a.unary_read(f);case 16:;g=17;return html_x(d,f);case 17:html_res = d;g=18;return html_register(html_x,f);case 18:g=19;return (html_a).operator_set(html_res,f);case 19:;return c();}}}()};return html_fired;}function html_ignoreAct(html_name, html_f){function html_func(html_x, html_y,c){var g=0;return function f(d){while(1){switch(g){case 0:g=20;return html_f(html_x,f);case 20:;return c(d);}}}()};return html_changeName(html_func,html_name);}function html_withId(html_f){function html_func(html_id, html_m, html_e,c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=21;return html_f(html_m.get(html_id),html_e,f);case 21:html_res = (d);;return c((html_m).set(html_id,html_res));}}}()};return html_func;}function html_mapWithId(html_v, html_arr, html_a){function html_func(html_id){;return html_v(html_arr.get(html_id),html_id,html_a);};return (newVectorRange(0,(html_arr).length)).map(html_func);}function html_toEffect(html_name, html_f){function html_func(html_x, html_ev,c){var g=0;return function f(d){while(1){switch(g){case 0:;return c(html_f(html_x,html_ev));}}}()};return html_changeName(html_func,html_name);}function html_mapView(html_v, html_model, html_a){function html_mapper(html_idx){var html_result;html_result = html_model.get(html_idx);var html_pos;html_pos = (newLens(function(c){return c.get(html_idx)}, function(d,c){return d.set(html_idx,c)}));var html_newA;html_newA = new html_PosAtom(html_a,html_pos,html_pos);;return html_v(html_result,html_newA);};return (newVectorRange(0,(html_model).length)).map(html_mapper);}function html_viewFromLens(html_v, html_model, html_pos, html_a){;return html_v(((html_pos).query(html_model)),new html_PosAtom(html_a,html_pos,html_pos));}function html_render(html_newTree,c){var html_rootNode;var html_root;var g=0;return function f(d){while(1){switch(g){case 0:html_rootNode = html_createElement(html_newTree);html_root = html_cssSelector("#code");g=22;return html__appendChild(html_root,html_rootNode,f);case 22:;return c(html_rootNode);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:;return c();}}}()}function html_app(html_r, html_appstate,c){var html_oldV;var html_root;var g=0;return function f(d){while(1){switch(g){case 0:g=23;return html_appstate.unary_read(f);case 23:;html_oldV = html_r((d),html_appstate);g=24;return html_get(f);case 24:g=25;return html_render(html_oldV,f);case 25:html_root = d;function html_rerender(html_i,h){var html_newV;var html_patches;var l=0;return function k(j){while(1){switch(l){case 0:html_newV = html_r(html_i,html_appstate);html_patches = html_diff(html_oldV,html_newV);l=26;return html_patch(html_root,html_patches,k);case 26:html_root=j;html__handle();html_oldV=html_newV;;return h();}}}()}g=27;return (html_appstate).watch(html_rerender,f);case 27:;return c();}}}()}main_clientInit();
+function html_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html_register = _html_register;html_changeName = _html_changeName;html__onUrlChange = _html_onUrlChange;html_setUrl = _html_setUrl;html_setLocalStorage = _html_setLocalStorage;html_readLocalStorage = _html_readLocalStorage;html_pageLoadUrl = window.location.hash.slice(1);html_nextTick = _nextTick;html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html_kind = html_newAttrib.bind(null,"type");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_hyper);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_br = html_h("br",EmptyVector,"");html_hr = html_h.bind(null,"hr");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = EmptyVector;html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_ul = html_h.bind(null,"ul");html_li = html_h.bind(null,"li");html_a = html_h.bind(null,"a");html_image = html_h.bind(null,"img");html_span = html_h.bind(null,"span");html__appendChild = toAsync(html_appendChild);html__handle = html_handle;html_animateOnVisible = html_addClassOnVisible;;return;}}}()}var html_register;var html_changeName;var html__onUrlChange;var html_setUrl;var html_setLocalStorage;var html_readLocalStorage;var html_pageLoadUrl;var html_nextTick;var html_style;var html_placeHolder;var html_position;var html__type;var html_height;var html_width;var html_id;var html_min;var html_max;var html_step;var html_value;var html_href;var html_src;var html_kind;var html__float;var html_class;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_br;var html_hr;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;var html_ul;var html_li;var html_a;var html_image;var html_span;var html__appendChild;var html__handle;var html_animateOnVisible;function html_PosAtom(c,d){this.a=c;this.pos=d;}html_PosAtom._fields=["a","pos"];html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(html_self,d){var h=0;return function g(f){while(1){switch(h){case 0:h=1;return (html_self).a.unary_read(g);case 1:;;return d(((html_self).pos).query(f));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(html_self, html_new,f){var j=0;return function h(g){while(1){switch(j){case 0:j=2;return (html_self).a.unary_read(h);case 2:;j=3;return ((html_self).a).operator_set(((html_self).pos).set(g,html_new),h);case 3:;return f();}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(html_self, html_f,f){var j=0;return function h(g){while(1){switch(j){case 0:function html_func(html_x,k){var n=0;return function m(l){while(1){switch(n){case 0:n=4;return (html_self).a.unary_read(m);case 4:;n=5;return html_f(((html_self).pos).query(l),m);case 5:;return k();}}}()}j=6;return ((html_self).a).watch(html_func,h);case 6:;return f();}}}()}function html_comp(html_func){;return html_func;}function html_Event(c){this.target=c;}html_Event._fields=["target"];function html_Attribute(c,d){this.name=c;this.value=d;}html_Attribute._fields=["name","value"];function html_newAttrib(html_name, html_value){;return new html_Attribute(html_name,html_value,html_value);}function html_onEvent(html_name, html_x, html_a){function html_clicked(html_e,c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=7;return html_a.unary_read(f);case 7:;g=8;return html_x(d,html_e,f);case 8:html_res = d;g=9;return html_register(html_x,f);case 9:g=10;return (html_a).operator_set(html_res,f);case 10:;return c();}}}()};return new html_Attribute(html_name,html_clicked,html_clicked);}function html_onUrlChange(html_func, html_a,c){var g=0;return function f(d){while(1){switch(g){case 0:function html_fired(html_url,h){var html_res;var l=0;return function k(j){while(1){switch(l){case 0:l=11;return html_a.unary_read(k);case 11:;l=12;return html_func(j,html_url,k);case 12:html_res = j;l=13;return html_register(html_func,k);case 13:l=14;return (html_a).operator_set(html_res,k);case 14:;return h();}}}()}g=15;return html__onUrlChange(html_fired,f);case 15:;return c();}}}()}function html_async(html_x, html_a){function html_fired(c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=16;return html_a.unary_read(f);case 16:;g=17;return html_x(d,f);case 17:html_res = d;g=18;return html_register(html_x,f);case 18:g=19;return (html_a).operator_set(html_res,f);case 19:;return c();}}}()};return html_fired;}function html_ignoreAct(html_name, html_f){function html_func(html_x, html_y,c){var g=0;return function f(d){while(1){switch(g){case 0:g=20;return html_f(html_x,f);case 20:;return c(d);}}}()};return html_changeName(html_func,html_name);}function html_withId(html_f){function html_func(html_id, html_m, html_e,c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=21;return html_f(html_m.get(html_id),html_e,f);case 21:html_res = (d);;return c((html_m).set(html_id,html_res));}}}()};return html_func;}function html_mapWithId(html_v, html_arr, html_a){function html_func(html_id){;return html_v(html_arr.get(html_id),html_id,html_a);};return (newVectorRange(0,(html_arr).length)).map(html_func);}function html_toEffect(html_name, html_f){function html_func(html_x, html_ev,c){var g=0;return function f(d){while(1){switch(g){case 0:;return c(html_f(html_x,html_ev));}}}()};return html_changeName(html_func,html_name);}function html_mapView(html_v, html_model, html_a){function html_mapper(html_idx){var html_result;html_result = html_model.get(html_idx);var html_pos;html_pos = (newLens(function(c){return c.get(html_idx)}, function(d,c){return d.set(html_idx,c)}));var html_newA;html_newA = new html_PosAtom(html_a,html_pos,html_pos);;return html_v(html_result,html_newA);};return (newVectorRange(0,(html_model).length)).map(html_mapper);}function html_viewFromLens(html_v, html_model, html_pos, html_a){;return html_v(((html_pos).query(html_model)),new html_PosAtom(html_a,html_pos,html_pos));}function html_render(html_newTree,c){var html_rootNode;var html_root;var g=0;return function f(d){while(1){switch(g){case 0:html_rootNode = html_createElement(html_newTree);html_root = html_cssSelector("#code");g=22;return html__appendChild(html_root,html_rootNode,f);case 22:;return c(html_rootNode);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:;return c();}}}()}function html_app(html_r, html_appstate,c){var html_oldV;var html_root;var g=0;return function f(d){while(1){switch(g){case 0:g=23;return html_appstate.unary_read(f);case 23:;html_oldV = html_r((d),html_appstate);g=24;return html_get(f);case 24:g=25;return html_render(html_oldV,f);case 25:html_root = d;function html_rerender(html_i,h){var html_newV;var html_patches;var l=0;return function k(j){while(1){switch(l){case 0:html_newV = html_r(html_i,html_appstate);html_patches = html_diff(html_oldV,html_newV);l=26;return html_patch(html_root,html_patches,k);case 26:html_root=j;html__handle();html_oldV=html_newV;;return h();}}}()}g=27;return (html_appstate).watch(html_rerender,f);case 27:;return c();}}}()}function main_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html_clientInit();main_PosAtom= typeof html_PosAtom=='undefined'||html_PosAtom;main_h1= typeof html_h1=='undefined'||html_h1;main_id= typeof html_id=='undefined'||html_id;main_br= typeof html_br=='undefined'||html_br;main_onChange= typeof html_onChange=='undefined'||html_onChange;main_input= typeof html_input=='undefined'||html_input;main_span= typeof html_span=='undefined'||html_span;main_p= typeof html_p=='undefined'||html_p;main_button= typeof html_button=='undefined'||html_button;main_app= typeof html_app=='undefined'||html_app;main_value= typeof html_value=='undefined'||html_value;main_div= typeof html_div=='undefined'||html_div;main_style= typeof html_style=='undefined'||html_style;main_render= typeof html_render=='undefined'||html_render;main_onClick= typeof html_onClick=='undefined'||html_onClick;main_Event= typeof html_Event=='undefined'||html_Event;main_mapView= typeof html_mapView=='undefined'||html_mapView;main_toEffect= typeof html_toEffect=='undefined'||html_toEffect;main_add = (function(main_x, main_ev,f){var j=0;return function h(g){while(1){switch(j){case 0:;return f(((1+main_x)|0));}}}()});main_sub = (function(main_x, main_ev,k){var n=0;return function m(l){while(1){switch(n){case 0:;return k(((main_x-1)|0));}}}()});main_append = (function(main_x, main_ev,p){var s=0;return function r(q){while(1){switch(s){case 0:;return p((main_x).append(0));}}}()});main_view = (function(main_count, main_a){;return main_div(EmptyVector,newVector("\n",main_button(newVector(main_onClick(main_add,main_a)),newVector("+     ")),"\n","Count       ",toString(main_count),"\n",main_button(newVector(main_onClick(main_sub,main_a)),newVector("-     ")),"\n"));});main_multiple = (function(main_counters, main_a){;return main_div(EmptyVector,newVector("\n",main_h1(EmptyVector,newVector("Multiple ","Counters")),"\n",main_mapView(main_view,main_counters,main_a),"\n",main_button(newVector(main_onClick(main_append,main_a)),newVector("Add ")),"\n"));});d=1;return main_app(main_multiple,newAtom(newVector(0)),c);case 1:;return;}}}()}var main_add;var main_sub;var main_append;var main_view;var main_multiple;var main_PosAtom;var main_h1;var main_id;var main_br;var main_onChange;var main_input;var main_span;var main_p;var main_button;var main_app;var main_value;var main_div;var main_style;var main_render;var main_onClick;var main_Event;var main_mapView;var main_toEffect;main_clientInit();

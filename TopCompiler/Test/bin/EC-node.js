@@ -1,4 +1,4 @@
-function operator_add(x,y) {return x.operator_add(y)}
+(function(){function operator_add(x,y) {return x.operator_add(y)}
 function operator_sub(x,y) {return x.operator_sub(y)}
 function operator_mul(x,y) {return x.operator_mul(y)}
 function operator_div(x,y) {return x.operator_div(y)}
@@ -369,235 +369,6 @@ function parseJson(decoder, str) {
 function jsonStringify(i) {
     return JSON.stringify(i);
 }
-//linked list
-/*
-function List(value, list) {
-    this.head = value;
-    this.tail = list;
-
-    if (list === null) {
-        if (value === null) {
-            this.length = 0
-        } else {
-            this.length = 1;
-        }
-    } else {
-        this.length = list.length+1
-    }
-}
-
-var EmptyList = new List(null, null);
-
-List.prototype.append = function (head) {
-    return new List(head, this);
-}
-
-List.prototype.toArray = function () {
-    var v = [];
-    var curr = this;
-    for (var i = 0; i < this.length; i++) {
-        v.push(curr.head);
-        curr = curr.tail
-    }
-    return v.reverse();
-}
-
-List.prototype.getProperIndex = function (index) {
-    if (index < 0) {
-        return (this.length + index);
-    }
-    return index;
-}
-
-List.prototype.getList = function (index) {
-    index = this.getProperIndex(index)
-
-    var getElement = (this.length-index)-1;
-    var curr = this;
-
-    for (var i = 0; i < getElement; i++) {
-        curr = curr.tail;
-    }
-    return curr;
-}
-
-List.prototype.get = function (index) {
-    return this.getList(index).head;
-}
-
-List.prototype.toString = function () {
-    return "List("+this.join(", ")+")"
-}
-
-List.prototype.join = function(sep) {
-    if (sep === null) sep = ",";
-
-    var curr = this;
-
-    if (this.length === 0) return "";
-
-    var str = curr.head.toString();
-
-    for (var i = 1; i< this.length; i++ ) {
-        curr = curr.tail;
-        str = (curr.head.toString() + sep.toString()) + str
-    }
-    return str;
-
-}
-
-List.prototype.insert = function (pos, val) {
-    function insert(self, position, value) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position === 0) {
-            return self.append(value);
-        } else {
-            return insert(self.tail, position - 1, value).append(self.head);
-
-        }
-    }
-
-    pos = this.getProperIndex(pos);
-    return insert(this, this.length - pos, val)
-}
-
-List.prototype.del = function (pos) {
-    function insert(self, position) {
-        if (position < 0) {
-           throw new Error("")
-        } else if (position === 1) {
-            var t = self.tail;
-            if (t === null) {
-                t = EmptyList;
-            }
-            return t;
-        } else {
-            return insert(self.tail, position - 1).append(self.head);
-
-        }
-    }
-
-    pos = this.getProperIndex(pos);
-    return insert(this, this.length - pos)
-}
-
-List.prototype.slice = function (index, indexEnd) {
-    if (index == null ) { index = 0 }
-    if (indexEnd == null ) { indexEnd = this.length }
-    indexEnd = this.getProperIndex(indexEnd-1);
-    index = this.getProperIndex(index);
-
-    var l = this.getList(indexEnd)
-    var e = new List(l.head, l.tail);
-
-    e.length = indexEnd-index+1;
-
-    return e;
-}
-
-List.prototype.reverse = function () {
-    var v = EmptyList;
-    var curr = this;
-    for (var i = 0; i < this.length; i++) {
-        v = v.append(curr.head);
-        curr = curr.tail;
-    }
-    return v;
-}
-
-List.prototype.operator_eq = function (other) {
-    if (this.length !== other.length) return false;
-    if (self === other) return true;
-
-    var self = this;
-
-    for (var i = 0; i < this.length; i++) {
-        if (!self.head.operator_eq(other.head)) {
-            return false;
-        }
-
-        self = self.tail;
-        other = other.tail;
-    }
-    return true;
-}
-
-List.prototype.operator_add = function (other) {
-    function insert(self, position, s) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position == 0) {
-            return new List(s.head, s.tail);
-        } else {
-            return insert(self.tail, position - 1, s).append(self.head);
-
-        }
-    }
-
-    return insert(other, other.length, this)
-}
-
-List.prototype.copy = function () {
-    function insert(self, position) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position == 0) {
-            return self;
-        } else {
-            return insert(self.tail, position - 1).append(self.head);
-        }
-    }
-
-    return insert(this, this.length)
-}
-
-List.prototype.set = function (pos, val) {
-    function insert(self, position, value) {
-        if (position < 0) {
-            throw new Exception();
-        } else if (position === 0) {
-            return new List(value, self.tail)
-        } else {
-            return insert(self.tail, position - 1, value).append(self.head);
-
-        }
-    }
-
-    pos = this.getProperIndex(pos);
-    return insert(this, this.length - pos - 1, val)
-}
-
-function listFromArray(arr) {
-    var len = arr.length;
-    var curr = EmptyList;
-
-    for (var i = 0; i < len; i++) {
-        curr = curr.append(arr[i]);
-    }
-    return curr;
-}
-
-function newList() {
-    return listFromArray(Array.prototype.slice.call(arguments));
-}
-
-function newListRange(start, end) {
-    var arr = EmptyList;
-    for (var i = start; i < end; i++) {
-        arr = arr.append(i)
-    }
-    return arr;
-}
-
-function newListInit(repeat, elem) {
-    var arr = EmptyList;
-    for (var i = 0; i < repeat; i++) {
-        arr = arr.append(i);
-    }
-    return arr;
-}
-*/
 function Vector(root, len, depth, start) {
     this.shift = (depth - 1) * this.bits;
     this.root = root;
@@ -670,8 +441,7 @@ Vector.prototype.append_m = function (value) {
         var tmp = node[res]
 
         if (tmp === undefined) {
-
-            tmp = Array(width);
+            tmp = [];
             node[res] = tmp;
         }
         node = tmp;
@@ -712,7 +482,7 @@ Vector.prototype.append = function (value) {
             var pos = key >> level & mask;
 
             if (!node) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -723,7 +493,7 @@ Vector.prototype.append = function (value) {
             var pos = key & mask;
 
             if (node == null) {
-                var newNode = Array(width);
+                var newNode = [];
             } else {
                 var newNode = node.slice();
             }
@@ -735,9 +505,9 @@ Vector.prototype.append = function (value) {
     var width = Vector.prototype.width;
 
     if (Math.pow(width, this.depth) === this.length) {
-        var n = Array(width)
+        var n = [];
         n[0] = this.root;
-        n[1] = Array(width)
+        n[1] = [];
 
         var u = update(n, this.depth * this.bits, this.length);
         return new Vector(u, this.length+1, this.depth+1)
@@ -1282,13 +1052,4 @@ function server_handleQuery(url, func, next) {
 function server_isQuery(url) {
     return url.slice(1, url.indexOf("/", 2)) === "query"
 }
-function http_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","");http_port = process.env.PORT || 3000;http_server = server_createServer;http_handleQuery = server_handleQuery;http_isQuery = server_isQuery;;return;}}}()}var http_response;var http_port;var http_server;var http_handleQuery;var http_isQuery;function http_Server(c){this.listen=c;}http_Server._fields=["listen"];function http_NodeHTTP(c){this.createServer=c;}http_NodeHTTP._fields=["createServer"];function http_Request(c){this.url=c;}http_Request._fields=["url"];function http_Response(c,d,f){this.status=c;this.contentType=d;this.body=f;}http_Response._fields=["status","contentType","body"];http_Response.prototype.toString=(function(){return http_Response_toString(this)});function http_Response_toString(http_self){;return (((((((((((("Response(")+(((http_self).status)).toString()))+(", ").toString()))+(((http_self).contentType)).toString()))+(", ").toString()))+(((http_self).body)).toString()))+(")").toString());}function http_endResponse(http_x){;return core_assign(http_response,{body:jsonStringify(http_x)});}function http_toUrl(http_expects){;return ("query/"+jsonStringify(http_expects(http_endResponse)));}function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_nodeInit();main__read = server_readFile;main_quit = process.exit;main_server = http_server(main_requestHandler);d=5;return (main_server).listen(http_port,c);case 5:log((((("started web server on port ")+((http_port)).toString()))+("").toString()));html_nodeInit();main_PosAtom= typeof html_PosAtom=='undefined'||html_PosAtom;main_onChange= typeof html_onChange=='undefined'||html_onChange;main_app= typeof html_app=='undefined'||html_app;main_value= typeof html_value=='undefined'||html_value;main_style= typeof html_style=='undefined'||html_style;main_render= typeof html_render=='undefined'||html_render;main_onClick= typeof html_onClick=='undefined'||html_onClick;main_Event= typeof html_Event=='undefined'||html_Event;main_mapView= typeof html_mapView=='undefined'||html_mapView;main_toEffect= typeof html_toEffect=='undefined'||html_toEffect;main_unique = main_for.bind(null,((function(main_elem, main_indiv){;return (function(){if((!((main_indiv).has(main_elem)))){return [(Some(main_elem)),(main_indiv).append(main_elem)];}
-else{return [None,main_indiv];}})();})),EmptyVector);main_sort = function(arr){
-    return fromArray(arr.toArray().sort(function(x,y){
-        return x > y
-    } ));
-} ;main__console = console.log;main_enter = (function(main_x, main_ev,f){var j=0;return function h(g){while(1){switch(j){case 0:;return f(parseJson(core_json_vector(core_json_float),(((("[")+((((main_ev).target).value)).toString()))+("]").toString())));}}}()});main_math = (function(main_x, main_a){;return main_div(EmptyVector,newVector(main_input(newVector((main_onChange(main_enter,main_a)),(main_value((main_x).join(", ")))),""),main_answer(main_x)));});main_appState = newAtom(newVector(0.0));log((dict(newVector([0,10],[10,30]))).get(0));;return;}}}()}var main__read;var main_quit;var main_server;var main_unique;var main_sort;var main__console;var main_enter;var main_math;var main_appState;var main_PosAtom;var main_h1;var main_onChange;var main_input;var main_span;var main_p;var main_br;var main_button;var main_app;var main_value;var main_div;var main_style;var main_render;var main_onClick;var main_Event;var main_mapView;var main_toEffect;function main_read(main_path,c){var main_Some;var main_x;var main_None;var g=0;return function f(d){while(1){switch(g){case 0:g=1;return main__read(main_path,f);case 1:;return c(function(){var h=d; if (h[0]==0){var main_x=h[1];return main_x;} if (h[0]==1){log(("cannot find file, "+main_path));return main_quit(1);}}());}}}()}function main_requestHandler(main_req,c){var main_Some;var main_content;var main_None;var g=0;return function f(d){while(1){switch(g){case 0:log(("request, "+(main_req).url));var h=(main_req).url; if (h=="/"){g=3;return main__read("EC.html",f);}/*case*/g=4;break;/*case*/case 3:d=function(){var j=d; if (j[0]==0){var main_content=j[1];return core_assign(http_response,{body:main_content,contentType:"text/html"});} if (j[0]==1){return core_assign(http_response,{status:404});}}();g=2;/*block*/break;/*if*/case 4:/*notif*/ if (1){d=core_assign(http_response,{status:404,body:"404 Page not found"});g=2;/*block*/break;}case 2:;return c(d);}}}()}function main_for(main_func, main__state, main_arr){var main_state;main_state = main__state;var main_new;main_new = EmptyVector;var main_length;main_length = (main_arr).length;var main_i;main_i = 0;
-while((main_i<main_length)){var main_tx;main_tx = main_func(main_arr.get(main_i),main_state);var main_t;main_t = (main_tx)[0];main_state=(main_tx)[1];main_new=function(){var c=main_t; if (c[0]==0){var main_tmp=c[1];return (main_new).append(main_tmp);} if (c[0]==1){return main_new;}}();main_i=((main_i+1)|0);};return main_new;}function main_median(main_x){var main_length;main_length = (main_x).length;var main_tmp;main_tmp = main_sort(main_x);;return (function(){if((((main_length%2)|0)===0)){return (((main_tmp.get(((main_length/2)|0))+main_tmp.get(((((main_length/2)|0)-1)|0))))/2.0);}
-else{return main_tmp.get((((((main_length-1)|0))/2)|0));}})();}function main_average(main_x){;return (((main_x).reduce((operator_add)))/toFloat((main_x).length));}function main_debug(main_x){main__console((main_x).toString());;return main_x;}function main_mode(main_x){var main_uniques;main_uniques = (main_unique(main_x));var main_u;main_u = (main_uniques).map((function(main_i){;return [(((("")+((main_i)).toString()))+("").toString()),(((main_x).filter(operator_eq.bind(null,main_i)))).length,0];}));var main_count;main_count = (main_u).reduce((function(main_a, main_b){;return (function(){if(((main_a)[1]>(main_b)[1])){return main_a;}else if(((main_a)[1]===(main_b)[1])){return ["b",(main_b)[1],(((main_a)[2]+1)|0)];}
-else{return main_b;}})();}));var main__;main__ = main_debug((main_count)[2]);;return (function(){if(((main_count)[2]===(((main_uniques).length-1)|0))){return "n";}
-else{return (main_count)[0];}})();}function main_test(main_func, main_x){;return toString(main_func(main_x));}function main_Point(c,d){this.x=c;this.y=d;}main_Point._fields=["x","y"];function main_getPoint(main_x){;return main_x;}function html_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:html_changeName = _html_changeName;html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html_kind = html_newAttrib.bind(null,"type");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_noAttrib = EmptyVector;;return;}}}()}var html_changeName;var html_style;var html_placeHolder;var html_position;var html__type;var html_height;var html_width;var html_id;var html_min;var html_max;var html_step;var html_value;var html_href;var html_src;var html_kind;var html__float;var html_class;var html_noAttrib;function html_PosAtom(c,d){this.a=c;this.pos=d;}html_PosAtom._fields=["a","pos"];html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(html_self,d){var h=0;return function g(f){while(1){switch(h){case 0:h=1;return (html_self).a.unary_read(g);case 1:;;return d(((html_self).pos).query(f));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(html_self, html_new,f){var j=0;return function h(g){while(1){switch(j){case 0:j=2;return (html_self).a.unary_read(h);case 2:;j=3;return ((html_self).a).operator_set(((html_self).pos).set(g,html_new),h);case 3:;return f();}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(html_self, html_f,f){var j=0;return function h(g){while(1){switch(j){case 0:function html_func(html_x,k){var n=0;return function m(l){while(1){switch(n){case 0:n=4;return (html_self).a.unary_read(m);case 4:;n=5;return html_f(((html_self).pos).query(l),m);case 5:;return k();}}}()}j=6;return ((html_self).a).watch(html_func,h);case 6:;return f();}}}()}function html_comp(html_func){;return html_func;}function html_Event(c){this.target=c;}html_Event._fields=["target"];function html_Attribute(c,d){this.name=c;this.value=d;}html_Attribute._fields=["name","value"];function html_newAttrib(html_name, html_value){;return new html_Attribute(html_name,html_value,html_value);}function html_ignoreAct(html_name, html_f){function html_func(html_x, html_y,c){var g=0;return function f(d){while(1){switch(g){case 0:g=20;return html_f(html_x,f);case 20:;return c(d);}}}()};return html_changeName(html_func,html_name);}function html_withId(html_f){function html_func(html_id, html_m, html_e,c){var html_res;var g=0;return function f(d){while(1){switch(g){case 0:g=21;return html_f(html_m.get(html_id),html_e,f);case 21:html_res = (d);;return c((html_m).set(html_id,html_res));}}}()};return html_func;}function html_mapWithId(html_v, html_arr, html_a){function html_func(html_id){;return html_v(html_arr.get(html_id),html_id,html_a);};return (newVectorRange(0,(html_arr).length)).map(html_func);}function html_toEffect(html_name, html_f){function html_func(html_x, html_ev,c){var g=0;return function f(d){while(1){switch(g){case 0:;return c(html_f(html_x,html_ev));}}}()};return html_changeName(html_func,html_name);}function html_mapView(html_v, html_model, html_a){function html_mapper(html_idx){var html_result;html_result = html_model.get(html_idx);var html_pos;html_pos = (newLens(function(c){return c.get(html_idx)}, function(d,c){return d.set(html_idx,c)}));var html_newA;html_newA = new html_PosAtom(html_a,html_pos,html_pos);;return html_v(html_result,html_newA);};return (newVectorRange(0,(html_model).length)).map(html_mapper);}function html_viewFromLens(html_v, html_model, html_pos, html_a){;return html_v(((html_pos).query(html_model)),new html_PosAtom(html_a,html_pos,html_pos));}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:;return c();}}}()}main_nodeInit();
+function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_nodeInit();main__read = server_readFile;main_quit = process.exit;main_server = http_server(main_requestHandler);d=5;return (main_server).listen(http_port,c);case 5:log((((("started web server on port ")+((http_port)).toString()))+("").toString()));;return;}}}()}var main__read;var main_quit;var main_server;function main_read(c,d){var j;var k;var l;var h=0;return function g(f){while(1){switch(h){case 0:h=1;return main__read(c,g);case 1:;return d(function(){var m=f; if (m[0]==0){var n=m[1];return n;} if (m[0]==1){log(("cannot find file, "+c));return main_quit(1);}}());}}}()}function main_requestHandler(c,d){var j;var k;var l;var h=0;return function g(f){while(1){switch(h){case 0:log(("request, "+(c).url));var m=(c).url; if (m=="/"){h=3;return main__read("EC.html",g);}/*case*/h=4;break;/*case*/case 3:f=function(){var n=f; if (n[0]==0){var p=n[1];return core_assign(http_response,{body:p,contentType:"text/html"});} if (n[0]==1){return core_assign(http_response,{status:404});}}();h=2;/*block*/break;/*if*/case 4:/*notif*/ if (1){f=core_assign(http_response,{status:404,body:"404 Page not found"});h=2;/*block*/break;}case 2:;return d(f);}}}()}function http_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","");http_port = process.env.PORT || 3000;http_server = server_createServer;http_handleQuery = server_handleQuery;http_isQuery = server_isQuery;;return;}}}()}var http_response;var http_port;var http_server;var http_handleQuery;var http_isQuery;function http_Server(c){this.listen=c;}http_Server._fields=["listen"];function http_NodeHTTP(c){this.createServer=c;}http_NodeHTTP._fields=["createServer"];function http_Request(c){this.url=c;}http_Request._fields=["url"];function http_Response(c,d,f){this.status=c;this.contentType=d;this.body=f;}http_Response._fields=["status","contentType","body"];http_Response.prototype.toString=(function(){return http_Response_toString(this)});function http_Response_toString(http_self){;return (((((((((((("Response(")+(((http_self).status)).toString()))+(", ").toString()))+(((http_self).contentType)).toString()))+(", ").toString()))+(((http_self).body)).toString()))+(")").toString());}function http_endResponse(http_x){;return core_assign(http_response,{body:jsonStringify(http_x)});}function http_toUrl(http_expects){;return ("query/"+jsonStringify(http_expects(http_endResponse)));}main_nodeInit();})()
