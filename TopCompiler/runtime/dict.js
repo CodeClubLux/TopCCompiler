@@ -63,19 +63,19 @@ var nil;
         return new_node(node.key, node.val, node.lev, lo, hi);
     };
     with_lo = function(node, lo) {
-        return lo && lo.operator_eq(node.lo) ? node : with_lo_hi(node, lo, node.hi);
+        return lo && lo.op_eq(node.lo) ? node : with_lo_hi(node, lo, node.hi);
     };
     with_hi = function(node, hi) {
         return hi === node.hi ? node : with_lo_hi(node, node.lo, hi);
     };
     go_lo = function(node, key, lt) {
-        return (lt && lt(key, node.key)) || (!lt && key.operator_lt( node.key));
+        return (lt && lt(key, node.key)) || (!lt && key.op_lt( node.key));
     };
 
 
     has = function(node, key, lt) {
         while (node) {
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 return true;
             }
             node = go_lo(node, key, lt) ? node.lo : node.hi;
@@ -94,7 +94,7 @@ var nil;
 
     get = function(node, key, fail, lt) {
         while (node) {
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 return node.val;
             }
             node = go_lo(node, key, lt) ? node.lo : node.hi;
@@ -106,8 +106,8 @@ var nil;
         if (!node) {
             return new_node(key, val, 0);
         }
-        if (key.operator_eq(node.key)) {
-            return val.operator_eq(node.val) ? node : new_node(key, val, node.lev, node.lo, node.hi);
+        if (key.op_eq(node.key)) {
+            return val.op_eq(node.val) ? node : new_node(key, val, node.lev, node.lo, node.hi);
         }
         node = go_lo(node, key, lt) ? skew(node, put(node.lo, key, val, lt)) :
             skew(with_hi(node, put(node.hi, key, val, lt)));
@@ -119,7 +119,7 @@ var nil;
             var lo = node.lo,
                 hi = node.hi,
                 hi_lo, lev = node.lev;
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 if (!lo || !hi) {
                     return lo || hi;
                 }
@@ -137,7 +137,7 @@ var nil;
                 node = with_hi(node, hi);
             }
             if ((lo && lo.lev < lev - 1) || (hi && hi.lev < lev - 1)) {
-                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .operator_gt( lev) ? with_lev(hi, lev - 1) : hi);
+                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .op_gt( lev) ? with_lev(hi, lev - 1) : hi);
                 node = skew(node);
                 if (node.hi) {
                     node = with_hi(node, skew(node.hi));

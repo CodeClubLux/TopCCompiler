@@ -69,12 +69,12 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->"] or Parser.selectStmt(parser, lastToken) != None) and\
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "set"] or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool", "lens"]
 
     if fact: return True
     else:
-        if parser.thisToken().type == "operator":
+        if parser.thisToken().type in ["operator", "dotS"] or parser.thisToken().token in ["."]:
             return len(parser.currentNode.nodes) == 0
         else:
             return lastToken.type == "indent" or lastToken.token == "\n"
@@ -107,6 +107,14 @@ def minus(parser):
     else:
         Parser.Opcode(parser, "-", lambda: operatorPop(parser, op, 2))
 
+def read(parser):
+    op = Tree.Operator("<-", parser)
+    Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 1, unary=True))
+
+def set(parser):
+    op = Tree.Operator("<-", parser)
+    Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 2, unary=False))
+
 def asOperator(parser):
     lastToken = parser.lookBehind()
 
@@ -118,12 +126,13 @@ def asOperator(parser):
     else:
         Error.parseError(parser, "unexpected as operator ")
 
+newOperator("set", (2, True), 2, func=set)
 newOperator("|>", (2, True), 2)
 newOperator(">>", (2, True), 2)
 newOperator("and", (3, True), 2)
 newOperator("or", (4, True), 2)
 newOperator("not", (6, False), 1, unary= True)
-newOperator("<-", (100, False), 1, unary= True)
+newOperator("<-", (100, False), 1, func = read)
 newOperator("==", (8, True), 2)
 newOperator("!=", (8, True), 2)
 newOperator("<", (10, True), 2)

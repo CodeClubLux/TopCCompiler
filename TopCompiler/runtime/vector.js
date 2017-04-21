@@ -44,7 +44,7 @@ Vector.prototype.toJSON = function() {
 Vector.prototype.indexOf = function(find) {
     var index = -1;
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(find)) {
+        if (this.get(i).op_eq(find)) {
             index += 1;
             return index;
         }
@@ -255,12 +255,12 @@ Vector.prototype.toString = function () {
     return "["+this.join(",")+"]"
 }
 
-Vector.prototype.operator_eq = function (other) {
+Vector.prototype.op_eq = function (other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!(this.get(i).operator_eq(other.get(i)))) {
+        if (!(this.get(i).op_eq(other.get(i)))) {
             return false;
         }
     }
@@ -334,14 +334,14 @@ function getProperIndex(self, index) {
 
 Vector.prototype.has = function (s) {
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(s)) {
+        if (this.get(i).op_eq(s)) {
             return true;
         }
     }
     return false;
 }
 
-Vector.prototype.operator_add = function (s) {
+Vector.prototype.op_add = function (s) {
     var newArr = this;
     for (var i = 0; i < s.length; i++) {
         newArr = newArr.append(s.get(i));

@@ -6,9 +6,9 @@ from .Error import *
 
 tmp = T("K", Interface(False,{}), "Dict")
 key_interface = Interface(False,{
-    "operator_gt": FuncPointer([tmp], Bool()),
-    "operator_lt": FuncPointer([tmp], Bool()),
-    "operator_eq": FuncPointer([tmp], Bool())
+    "op_gt": FuncPointer([tmp], Bool()),
+    "op_lt": FuncPointer([tmp], Bool()),
+    "op_eq": FuncPointer([tmp], Bool())
 }, {}, "Comparable")
 
 K = T("K", key_interface,"Dict")

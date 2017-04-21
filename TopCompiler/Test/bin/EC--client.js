@@ -27,39 +27,39 @@ function print_unop(s, next) {
 
 
 
-function operator_add(x,y) {return x.operator_add(y)}
-function operator_sub(x,y) {return x.operator_sub(y)}
-function operator_mul(x,y) {return x.operator_mul(y)}
-function operator_div(x,y) {return x.operator_div(y)}
-function operator_mod(x,y) {return x.operator_mod(y)}
-function operator_eq(x,y) {return x.operator_eq(y)}
-function operator_pow(x,y) {return Math.pow(x,y)}
-function operator_lt(x,y) {return x.operator_lt(y)}
-function operator_gt(x,y) {return x.operator_gt(y)}
-function operator_or(x,y) {return x || y}
-function operator_not(x) {return !x}
-function operator_and(x,y) { return x && y }
-function operator_ne(x,y) { return x.operator_ne(y) }
+function op_add(x,y) {return x.op_add(y)}
+function op_sub(x,y) {return x.op_sub(y)}
+function op_mul(x,y) {return x.op_mul(y)}
+function op_div(x,y) {return x.op_div(y)}
+function op_mod(x,y) {return x.op_mod(y)}
+function op_eq(x,y) {return x.op_eq(y)}
+function op_pow(x,y) {return Math.pow(x,y)}
+function op_lt(x,y) {return x.op_lt(y)}
+function op_gt(x,y) {return x.op_gt(y)}
+function op_or(x,y) {return x || y}
+function op_not(x) {return !x}
+function op_and(x,y) { return x && y }
+function op_ne(x,y) { return x.op_ne(y) }
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
 
-Number.prototype.operator_add = function (other) { return this + other }
-Number.prototype.operator_div = function (other) { return this / other }
-Number.prototype.operator_sub = function (other) { return this - other }
-Number.prototype.operator_mul = function (other) { return this * other }
-Number.prototype.operator_eq = function (other) { return this == other }
-Number.prototype.operator_mod = function (other) { return this % other }
-Number.prototype.operator_lt = function (other) { return this < other }
-Number.prototype.operator_gt = function (other) { return this > other }
-Number.prototype.operator_ne = function (other) { return this != other }
+Number.prototype.op_add = function (other) { return this + other }
+Number.prototype.op_div = function (other) { return this / other }
+Number.prototype.op_sub = function (other) { return this - other }
+Number.prototype.op_mul = function (other) { return this * other }
+Number.prototype.op_eq = function (other) { return this == other }
+Number.prototype.op_mod = function (other) { return this % other }
+Number.prototype.op_lt = function (other) { return this < other }
+Number.prototype.op_gt = function (other) { return this > other }
+Number.prototype.op_ne = function (other) { return this != other }
 
 Number.prototype.toFloat = function () { return this }
 Number.prototype.toInt = function () { return this | 0 }
 
-String.prototype.operator_eq = function (other) { return this == other }
-String.prototype.operator_ne = function (other) { return this != other }
-String.prototype.operator_add = function (other) { return this + other }
+String.prototype.op_eq = function (other) { return this == other }
+String.prototype.op_ne = function (other) { return this != other }
+String.prototype.op_add = function (other) { return this + other }
 function toString(s) {
     return s.toString()
 }
@@ -225,7 +225,7 @@ function unary_read(next) {
     next(this.arg);
 }
 
-function operator_set(val, next) {
+function op_set(val, next) {
     this.arg = val;
     for (var i = 0; i < this.events.length; i++ ) {
         this.events[i](val, _empty_func);
@@ -241,7 +241,7 @@ function atom_watch(func, next) {
 function newAtom(arg) {
     previousState = {
         unary_read: unary_read,
-        operator_set: operator_set,
+        op_set: op_set,
         arg: arg,
         watch: atom_watch,
         events: [],
@@ -665,7 +665,7 @@ Vector.prototype.toJSON = function() {
 Vector.prototype.indexOf = function(find) {
     var index = -1;
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(find)) {
+        if (this.get(i).op_eq(find)) {
             index += 1;
             return index;
         }
@@ -877,12 +877,12 @@ Vector.prototype.toString = function () {
     return "["+this.toArray().join(",")+"]"
 }
 
-Vector.prototype.operator_eq = function (other) {
+Vector.prototype.op_eq = function (other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!(this.get(i).operator_eq(other.get(i)))) {
+        if (!(this.get(i).op_eq(other.get(i)))) {
             return false;
         }
     }
@@ -956,14 +956,14 @@ function getProperIndex(self, index) {
 
 Vector.prototype.has = function (s) {
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(s)) {
+        if (this.get(i).op_eq(s)) {
             return true;
         }
     }
     return false;
 }
 
-Vector.prototype.operator_add = function (s) {
+Vector.prototype.op_add = function (s) {
     var newArr = this;
     for (var i = 0; i < s.length; i++) {
         newArr = newArr.append(s.get(i));
@@ -1262,7 +1262,7 @@ if (window.addEventListener) {
 
 
 function http_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","");http_get = _http_get;;return;}}}()}var http_response;var http_get;function http_Server(c){this.listen=c;}http_Server.fields=["listen"];function http_NodeHTTP(c){this.createServer=c;}http_NodeHTTP.fields=["createServer"];function http_Request(c){this.url=c;}http_Request.fields=["url"];function http_Response(c,d,f){this.status=c;this.contentType=d;this.body=f;}http_Response.fields=["status","contentType","body"];http_Response.prototype.toString=(function(){return http_Response_toString(this)});function http_Response_toString(c){return (((((((((((("Response(")+(((c).status)).toString()))+(", ").toString()))+(((c).contentType)).toString()))+(", ").toString()))+(((c).body)).toString()))+(")").toString());}function http_endResponse(c){return core_assign(http_response,{body:jsonStringify(c)});}function http_toUrl(c){return ("query/"+jsonStringify(c(http_endResponse)));}function http_query(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:k = http_toUrl(d);j=1;return http_get(k,h);case 1:l = ((g)).body;return f(c(l));}}}()}function main_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_clientInit();html_clientInit();main_h1= typeof html_h1=='undefined'||html_h1;main_span= typeof html_span=='undefined'||html_span;main_br= typeof html_br=='undefined'||html_br;main_button= typeof html_button=='undefined'||html_button;main_app= typeof html_app=='undefined'||html_app;main_div= typeof html_div=='undefined'||html_div;main_style= typeof html_style=='undefined'||html_style;main_render= typeof html_render=='undefined'||html_render;main_onClick= typeof html_onClick=='undefined'||html_onClick;main_comp= typeof html_comp=='undefined'||html_comp;main_mapView= typeof html_mapView=='undefined'||html_mapView;main_toEffect= typeof html_toEffect=='undefined'||html_toEffect;main_add = main_toEffect((function(f, g){return ((f+1)|0);}));main_sub = main_toEffect((function(h, j){return (function(){if((h===0)){return 0;}
-else{return ((h-1)|0);}})();}));main_reset = main_toEffect((function(k, l){return 0;}));main_append = main_toEffect((function(m, n){return (m).append(0);}));main_remove = main_toEffect((function(p, q){return (p).shorten(1);}));main_resetAll = main_toEffect((function(r, s){return newVectorInit((r).length,0);}));main_counter = (function(t, v){return main_div(newVector(main_style("width: 100%;")),newVector(main_button(newVector(main_onClick(main_add,v)),"+"),main_span(EmptyVector,((((" ")+((t)).toString()))+(" ").toString())),main_button(newVector(main_onClick(main_sub,v)),"-"),main_button(newVector(main_onClick(main_reset,v))," reset")));});main_list = (function(w, x){return main_div(EmptyVector,newVector(main_h1(EmptyVector,"Dynamic List"),main_button(newVector(main_onClick(main_append,x)),"Add Counter"),main_button(newVector(main_onClick(main_remove,x)),"Remove Counter"),main_button(newVector(main_onClick(main_resetAll,x)),"Reset All Counter"),main_br,main_br,main_div(EmptyVector,main_mapView(main_counter,w,x))));});d=6;return main_app(main_list,newAtom(newVector(0)),c);case 6:;return;}}}()}var main_add;var main_sub;var main_reset;var main_append;var main_remove;var main_resetAll;var main_counter;var main_list;var main_h1;var main_span;var main_br;var main_button;var main_app;var main_div;var main_style;var main_render;var main_onClick;var main_comp;var main_mapView;var main_toEffect;function html_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html__onUrlChange = _html_onUrlChange;html_setUrl = _html_setUrl;html_setLocalStorage = _html_setLocalStorage;html_readLocalStorage = _html_readLocalStorage;html_pageLoadUrl = window.location.hash.slice(1);html_nextTick = _nextTick;html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html_kind = html_newAttrib.bind(null,"type");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_hyper);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_br = html_h("br",EmptyVector,"");html_hr = html_h.bind(null,"hr");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = EmptyVector;html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_ul = html_h.bind(null,"ul");html_li = html_h.bind(null,"li");html_a = html_h.bind(null,"a");html_image = html_h.bind(null,"img");html_span = html_h.bind(null,"span");html__appendChild = toAsync(html_appendChild);html__handle = html_handle;html_animateOnVisible = html_addClassOnVisible;;return;}}}()}var html__onUrlChange;var html_setUrl;var html_setLocalStorage;var html_readLocalStorage;var html_pageLoadUrl;var html_nextTick;var html_style;var html_placeHolder;var html_position;var html__type;var html_height;var html_width;var html_id;var html_min;var html_max;var html_step;var html_value;var html_href;var html_src;var html_kind;var html__float;var html_class;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_br;var html_hr;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;var html_ul;var html_li;var html_a;var html_image;var html_span;var html__appendChild;var html__handle;var html_animateOnVisible;function html_PosAtom(c,d){this.a=c;this.pos=d;}html_PosAtom.fields=["a","pos"];html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(d,f){var j=0;return function h(g){while(1){switch(j){case 0:j=1;return (d).a.unary_read(h);case 1:;return f(((d).pos).query(g));}}}()}html_PosAtom.prototype.operator_set=(function(c,d){return html_PosAtom_operator_set(this,c,d)});function html_PosAtom_operator_set(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=2;return (f).a.unary_read(k);case 2:;l=3;return ((f).a).operator_set(((f).pos).set(j,g),k);case 3:return h(j);}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:function m(n,p){var s=0;return function r(q){while(1){switch(s){case 0:s=4;return (f).a.unary_read(r);case 4:;s=5;return g(((f).pos).query(q),r);case 5:return p(q);}}}()}l=6;return ((f).a).watch(m,k);case 6:return h(j);}}}()}function html_comp(c){return c;}function html_Event(c){this.target=c;}html_Event.fields=["target"];function html_Attribute(c,d){this.name=c;this.value=d;}html_Attribute.fields=["name","value"];function html_newAttrib(c, d){return new html_Attribute(c,d,d);}function html_onEvent(c, d, f){function g(h,j){var m=0;return function l(k){while(1){switch(m){case 0:m=7;return f.unary_read(l);case 7:;m=8;return d(k,h,l);case 8:m=9;return (f).operator_set(k,l);case 9:return j(k);}}}()}return new html_Attribute(c,g,g);}function html_onUrlChange(c, d,f){var j=0;return function h(g){while(1){switch(j){case 0:function k(l,m){var q=0;return function p(n){while(1){switch(q){case 0:q=10;return d.unary_read(p);case 10:;q=11;return c(n,l,p);case 11:q=12;return (d).operator_set(n,p);case 12:return m(n);}}}()}j=13;return html__onUrlChange(k,h);case 13:return f(g);}}}()}function html_async(c, d){function f(g){var k=0;return function j(h){while(1){switch(k){case 0:k=14;return d.unary_read(j);case 14:;k=15;return c(h,j);case 15:k=16;return (d).operator_set(h,j);case 16:return g(h);}}}()}return f;}function html_ignoreAct(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=17;return c(f,k);case 17:return h(j);}}}()}return d;}function html_withId(c){function d(f, g, h,j){var n;var m=0;return function l(k){while(1){switch(m){case 0:m=18;return c(g.get(f),h,l);case 18:n = (k);return j((g).set(f,n));}}}()}return d;}function html_mapWithId(c, d, f){function g(h){return c(d.get(h),h,f);}return (newVectorRange(0,(d).length)).map(g);}function html_toEffect(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:return h(c(f,g));}}}()}return d;}function html_mapView(c, d, f){function g(h){var j;j = d.get(h);var k;k = newLens(function(l){return l.get(h)}, function(m,l){return m.set(h,l)});var n;n = new html_PosAtom(f,k,k);return c(j,n);}return (newVectorRange(0,(d).length)).map(g);}function html_viewFromLens(c, d, f, g){return c(((f).query(d)),new html_PosAtom(g,f,f));}function html_render(c,d){var j;var k;var h=0;return function g(f){while(1){switch(h){case 0:j = html_createElement(c);k = html_cssSelector("#code");h=19;return html__appendChild(k,j,g);case 19:return d(j);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:return c();}}}()}function html_app(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:j=20;return d.unary_read(h);case 20:;k = c((g),d);j=21;return html_get(h);case 21:j=22;return html_render(k,h);case 22:l = g;function m(n,p){var t;var v;var s=0;return function r(q){while(1){switch(s){case 0:t = c(n,d);v = html_diff(k,t);s=23;return html_patch(l,v,r);case 23:l=q;html__handle();k=t;return p();}}}()}j=24;return (d).watch(m,h);case 24:return f(g);}}}()}main_clientInit();
+else{return ((h-1)|0);}})();}));main_reset = main_toEffect((function(k, l){return 0;}));main_append = main_toEffect((function(m, n){return (m).append(0);}));main_remove = main_toEffect((function(p, q){return (p).shorten(1);}));main_resetAll = main_toEffect((function(r, s){return newVectorInit((r).length,0);}));main_counter = (function(t, v){return main_div(newVector(main_style("width: 100%;")),newVector(main_button(newVector(main_onClick(main_add,v)),"+"),main_span(EmptyVector,((((" ")+((t)).toString()))+(" ").toString())),main_button(newVector(main_onClick(main_sub,v)),"-"),main_button(newVector(main_onClick(main_reset,v))," reset")));});main_list = (function(w, x){return main_div(EmptyVector,newVector(main_h1(EmptyVector,"Dynamic List"),main_button(newVector(main_onClick(main_append,x)),"Add Counter"),main_button(newVector(main_onClick(main_remove,x)),"Remove Counter"),main_button(newVector(main_onClick(main_resetAll,x)),"Reset All Counter"),main_br,main_br,main_div(EmptyVector,main_mapView(main_counter,w,x))));});d=6;return main_app(main_list,newAtom(newVector(0)),c);case 6:;return;}}}()}var main_add;var main_sub;var main_reset;var main_append;var main_remove;var main_resetAll;var main_counter;var main_list;var main_h1;var main_span;var main_br;var main_button;var main_app;var main_div;var main_style;var main_render;var main_onClick;var main_comp;var main_mapView;var main_toEffect;function html_clientInit(){var d=0;return function c(b){while(1){switch (d){case 0:html__onUrlChange = _html_onUrlChange;html_setUrl = _html_setUrl;html_setLocalStorage = _html_setLocalStorage;html_readLocalStorage = _html_readLocalStorage;html_pageLoadUrl = window.location.hash.slice(1);html_nextTick = _nextTick;html_style = html_newAttrib.bind(null,"style");html_placeHolder = html_newAttrib.bind(null,"placeholder");html_position = html_newAttrib.bind(null,"position");html__type = html_newAttrib.bind(null,"type");html_height = html_newAttrib.bind(null,"height");html_width = html_newAttrib.bind(null,"width");html_id = html_newAttrib.bind(null,"id");html_min = html_newAttrib.bind(null,"min");html_max = html_newAttrib.bind(null,"max");html_step = html_newAttrib.bind(null,"step");html_value = html_newAttrib.bind(null,"value");html_href = html_newAttrib.bind(null,"href");html_src = html_newAttrib.bind(null,"src");html_kind = html_newAttrib.bind(null,"type");html__float = html_newAttrib.bind(null,"float");html_class = html_newAttrib.bind(null,"className");html_onClick = html_onEvent.bind(null,"onclick");html_onInput = html_onEvent.bind(null,"oninput");html_onChange = html_onEvent.bind(null,"onchange");html_h = fromJS(html_hyper);html_createElement = virtualDom.create;html_diff = virtualDom.diff;html_patch = toAsync(virtualDom.patch);html_clear = toAsync(clearElement);html_cssSelector = document.querySelector.bind(document);html_h1 = html_h.bind(null,"h1");html_h2 = html_h.bind(null,"h2");html_h3 = html_h.bind(null,"h3");html_h4 = html_h.bind(null,"h4");html_h5 = html_h.bind(null,"h5");html_h6 = html_h.bind(null,"h6");html_br = html_h("br",EmptyVector,"");html_hr = html_h.bind(null,"hr");html_button = html_h.bind(null,"button");html_input = html_h.bind(null,"input");html_noAttrib = EmptyVector;html_div = html_h.bind(null,"div");html_p = html_h.bind(null,"p");html_ul = html_h.bind(null,"ul");html_li = html_h.bind(null,"li");html_a = html_h.bind(null,"a");html_image = html_h.bind(null,"img");html_span = html_h.bind(null,"span");html__appendChild = toAsync(html_appendChild);html__handle = html_handle;html_animateOnVisible = html_addClassOnVisible;;return;}}}()}var html__onUrlChange;var html_setUrl;var html_setLocalStorage;var html_readLocalStorage;var html_pageLoadUrl;var html_nextTick;var html_style;var html_placeHolder;var html_position;var html__type;var html_height;var html_width;var html_id;var html_min;var html_max;var html_step;var html_value;var html_href;var html_src;var html_kind;var html__float;var html_class;var html_onClick;var html_onInput;var html_onChange;var html_h;var html_createElement;var html_diff;var html_patch;var html_clear;var html_cssSelector;var html_h1;var html_h2;var html_h3;var html_h4;var html_h5;var html_h6;var html_br;var html_hr;var html_button;var html_input;var html_noAttrib;var html_div;var html_p;var html_ul;var html_li;var html_a;var html_image;var html_span;var html__appendChild;var html__handle;var html_animateOnVisible;function html_PosAtom(c,d){this.a=c;this.pos=d;}html_PosAtom.fields=["a","pos"];html_PosAtom.prototype.unary_read=(function(c){return html_PosAtom_unary_read(this,c)});function html_PosAtom_unary_read(d,f){var j=0;return function h(g){while(1){switch(j){case 0:j=1;return (d).a.unary_read(h);case 1:;return f(((d).pos).query(g));}}}()}html_PosAtom.prototype.op_set=(function(c,d){return html_PosAtom_op_set(this,c,d)});function html_PosAtom_op_set(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=2;return (f).a.unary_read(k);case 2:;l=3;return ((f).a).op_set(((f).pos).set(j,g),k);case 3:return h(j);}}}()}html_PosAtom.prototype.watch=(function(c,d){return html_PosAtom_watch(this,c,d)});function html_PosAtom_watch(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:function m(n,p){var s=0;return function r(q){while(1){switch(s){case 0:s=4;return (f).a.unary_read(r);case 4:;s=5;return g(((f).pos).query(q),r);case 5:return p(q);}}}()}l=6;return ((f).a).watch(m,k);case 6:return h(j);}}}()}function html_comp(c){return c;}function html_Event(c){this.target=c;}html_Event.fields=["target"];function html_Attribute(c,d){this.name=c;this.value=d;}html_Attribute.fields=["name","value"];function html_newAttrib(c, d){return new html_Attribute(c,d,d);}function html_onEvent(c, d, f){function g(h,j){var m=0;return function l(k){while(1){switch(m){case 0:m=7;return f.unary_read(l);case 7:;m=8;return d(k,h,l);case 8:m=9;return (f).op_set(k,l);case 9:return j(k);}}}()}return new html_Attribute(c,g,g);}function html_onUrlChange(c, d,f){var j=0;return function h(g){while(1){switch(j){case 0:function k(l,m){var q=0;return function p(n){while(1){switch(q){case 0:q=10;return d.unary_read(p);case 10:;q=11;return c(n,l,p);case 11:q=12;return (d).op_set(n,p);case 12:return m(n);}}}()}j=13;return html__onUrlChange(k,h);case 13:return f(g);}}}()}function html_async(c, d){function f(g){var k=0;return function j(h){while(1){switch(k){case 0:k=14;return d.unary_read(j);case 14:;k=15;return c(h,j);case 15:k=16;return (d).op_set(h,j);case 16:return g(h);}}}()}return f;}function html_ignoreAct(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:l=17;return c(f,k);case 17:return h(j);}}}()}return d;}function html_withId(c){function d(f, g, h,j){var n;var m=0;return function l(k){while(1){switch(m){case 0:m=18;return c(g.get(f),h,l);case 18:n = (k);return j((g).set(f,n));}}}()}return d;}function html_mapWithId(c, d, f){function g(h){return c(d.get(h),h,f);}return (newVectorRange(0,(d).length)).map(g);}function html_toEffect(c){function d(f, g,h){var l=0;return function k(j){while(1){switch(l){case 0:return h(c(f,g));}}}()}return d;}function html_mapView(c, d, f){function g(h){var j;j = d.get(h);var k;k = newLens(function(l){return l.get(h)}, function(m,l){return m.set(h,l)});var n;n = new html_PosAtom(f,k,k);return c(j,n);}return (newVectorRange(0,(d).length)).map(g);}function html_viewFromLens(c, d, f, g){return c(((f).query(d)),new html_PosAtom(g,f,f));}function html_render(c,d){var j;var k;var h=0;return function g(f){while(1){switch(h){case 0:j = html_createElement(c);k = html_cssSelector("#code");h=19;return html__appendChild(k,j,g);case 19:return d(j);}}}()}function html_get(c){var g=0;return function f(d){while(1){switch(g){case 0:return c();}}}()}function html_app(c, d,f){var k;var l;var j=0;return function h(g){while(1){switch(j){case 0:j=20;return d.unary_read(h);case 20:;k = c((g),d);j=21;return html_get(h);case 21:j=22;return html_render(k,h);case 22:l = g;function m(n,p){var t;var v;var s=0;return function r(q){while(1){switch(s){case 0:t = c(n,d);v = html_diff(k,t);s=23;return html_patch(l,v,r);case 23:l=q;html__handle();k=t;return p();}}}()}j=24;return (d).watch(m,h);case 24:return f(g);}}}()}main_clientInit();
 },{"virtual-dom":5,"virtual-hyperscript-svg":39}],2:[function(require,module,exports){
 var createElement = require("./vdom/create-element.js")
 
@@ -2442,7 +2442,7 @@ var SVG_PROPERTIES = {
     'observer': DEFAULT_NAMESPACE,
     'offset': DEFAULT_NAMESPACE,
     'opacity': DEFAULT_NAMESPACE,
-    'operator': DEFAULT_NAMESPACE,
+    'op': DEFAULT_NAMESPACE,
     'order': DEFAULT_NAMESPACE,
     'orient': DEFAULT_NAMESPACE,
     'orientation': DEFAULT_NAMESPACE,

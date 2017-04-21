@@ -131,11 +131,15 @@ def getCompilationFiles(target):
                 j = json.loads(port.read())
                 port.close()
                 files = j["files"]
-
             except KeyError:
                 Error.error("In file port.js, in directory "+package+", expecting attribute files")
             except json.decoder.JSONDecodeError as e:
                 Error.error("In file port.json, in directory "+package+", "+str(e))
+
+            try:
+                transforms[package] = j["transforms"]
+            except KeyError:
+                pass
 
             for f in files:
                 file[package].append((root, f+".top"))
@@ -147,7 +151,7 @@ def getCompilationFiles(target):
     except StopIteration:
         dirs = {}
 
-    (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = [[],[],[],[]]
+    (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = [[],[],[],[], {}]
 
     for name in dirs:
         f = open("packages/"+name+"/src/port.json")
@@ -167,7 +171,7 @@ def getCompilationFiles(target):
 
     getCompFiles("src/", "src/")
 
-    return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, file)
+    return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, file, transforms)
 
 compiled = []
 
@@ -175,10 +179,13 @@ error = ""
 
 filenames_sources = {}
 
+global_parser = 0
+
 def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache= False):
     hotswap = dev and not run
     global outputFile
     global didCompile
+    global global_parser
 
     didCompile = False
 
@@ -224,12 +231,12 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         except KeyError:
             Error.error("must specify compilation target in port.json file")
 
-        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node", "transforms"])
+        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node", "register-transforms"])
 
         for i in transforms:
             Module.importModule(os.path.abspath(i))
 
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles, files) = getCompilationFiles(target)
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles, files, transforms) = getCompilationFiles(target)
 
         linkCSSWithFiles += _linkCSSWithFiles
         linkWithFiles += _linkWithFiles
@@ -263,7 +270,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                     Error.error("File " + os.path.join(i[0], i[1]) + ", not found")
 
             sources[package] = []
-            if not hotswap or (hotswap and modified(cache.files[package], package)):
+            if not hotswap or (hotswap and modified(cache.package, cache.files[package], package)):
                 filenames[package] = []
                 filenames_sources[package] = {}
 
@@ -295,7 +302,9 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         didCompile = False
 
         def compile(target, sources, filenames, former = None):
-            lexed = Lexer.lex(sources, filenames, files, hotswap, cache.lexed if cache else {})
+            global global_parser
+
+            lexed = Lexer.lex(target, sources, filenames, files, hotswap, cache.lexed if cache else {}, transforms)
 
             declarations = Parser.Parser(lexed, filenames)
             declarations.hotswap = False
@@ -304,6 +313,9 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.atomTyp = False
             declarations.outputFile = outputFile
             declarations.jsFiles = [b for (a,b) in clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles]
+            declarations.transforms = transforms
+
+            global_parser = declarations
 
             if cache:
                 declarations.scope = cache.scope
@@ -350,6 +362,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 parsed = parser.parse()
 
                 parser.compiled["main"] = (True, (parsed, []))
+
+                global_parser = parser
 
                 import AST as Tree
                 allCode = Tree.Root()
@@ -464,11 +478,14 @@ def prepareForHotswap(arg):
     return False
 
 import datetime
-def modified(files, outputfile, jsFiles=[]):
+def modified(target, files, outputfile, jsFiles=[]):
+    if target == "full":
+        target = "node"
+
     #return True
 
     try:
-        t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-node.js")
+        t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-"+target+".js")
         t = datetime.datetime.fromtimestamp(int(t))
     except:
         return True
@@ -482,8 +499,6 @@ def modified(files, outputfile, jsFiles=[]):
 
     import time
     o = compiled
-
-    #return True #delete after testing
 
     for i in files:
         joined = os.path.join(i[0], i[1])

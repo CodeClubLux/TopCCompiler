@@ -16,7 +16,7 @@ function int_toInt(s) { return s }
 
 String.prototype.toInt = function () { return Number(this) | 0 }
 String.prototype.toFloat = function () { return Number(this) }
-String.prototype.operator_eq = function(s) { return this == s }
+String.prototype.op_eq = function(s) { return this == s }
 
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
@@ -164,7 +164,7 @@ function unary_read(next) {
     next(this.arg);
 }
 
-function operator_set(val, next) {
+function op_set(val, next) {
     this.arg = val;
     for (var i = 0; i < this.events.length; i++ ) {
         this.events[i](val, _empty_func);
@@ -180,14 +180,15 @@ function atom_watch(func, next) {
 function newAtom(arg) {
     return {
         unary_read: unary_read,
-        operator_set: operator_set,
+        op_set: op_set,
         arg: arg,
         watch: atom_watch,
         events: [],
+        toString: function(){return ""},
     }
 }
 
-function newLens(reader, setter) {
+function newLens(reader, setter, string) {
     return {
         query: function(item) {
             return reader(item);
@@ -195,6 +196,9 @@ function newLens(reader, setter) {
         set: function(old, item) {
             return setter(old, item)
         },
+        toString: function() {
+            return string;
+        }
     }
 }
 
@@ -204,11 +208,42 @@ function defer(func) {
     }
 }
 
-function Some(x) {
-    return [0, x];
+function Maybe(x) {
+    this[0] = x;
 }
 
-var None = [1];
+function Some(x) {
+    var s = new Maybe(0);
+    s[1] = x;
+    return s
+}
+
+var None = new Some(1);
+
+function Maybe_withDefault(self,def){
+    if (def[0] == 0) {
+        return self[1];
+    } else {
+        return def;
+    }
+}
+
+
+function Maybe_map(self,func){
+    if (def[0] == 0) {
+        return Some(func(def[1]));
+    } else {
+        return None;
+    }
+}
+
+Maybe.prototype.withDefault = function(def){
+    return Maybe_withDefault(this,def);
+}
+
+Maybe.prototype.map = function(func){
+    return Maybe_map(this,def);
+}
 
 function sleep(time, callback) {
     setTimeout(callback, time);

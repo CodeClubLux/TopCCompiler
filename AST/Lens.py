@@ -8,6 +8,18 @@ class Lens(Node):
         name = codegen.getName()
         old = codegen.getName()
 
+
+        def loop(n):
+            for i in n:
+                if type(i) is Tree.Field:
+                    codegen.append('+"' + "."+i.field + '"')
+                elif type(i) is Tree.ArrRead:
+                    codegen.append('+"' + '["+')
+                    i.nodes[1].compileToJS(codegen)
+                    codegen.append('+"]"')
+                if not i.isEnd():
+                    loop(i)
+
         self.nodes[0].newValue = name
 
         self.place.compileToJS = lambda codegen: codegen.append(name)
@@ -15,7 +27,9 @@ class Lens(Node):
         self.nodes[0].compileToJS(codegen)
         codegen.append("}, function("+old+","+name+"){")
         self.place.owner.set(old, codegen)
-        codegen.append("})")
+        codegen.append("},''")
+        loop(self)
+        codegen.append(")")
 
     def validate(self, parser):
         pass

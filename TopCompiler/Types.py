@@ -288,7 +288,7 @@ class String(Type):
             "indexOf": FuncPointer([self], I32()),
             "replace": FuncPointer([self, self], self),
             "toLowerCase": FuncPointer([], self),
-            "operator_eq": FuncPointer([self], Bool()),
+            "op_eq": FuncPointer([self], Bool()),
         }
 
 class FuncPointer(Type):
@@ -371,7 +371,7 @@ class Struct(Type):
             return replaceT(m, self.gen)
 
     def duckType(self, parser, other, node, mynode, iter=0):
-        if self.name == other.name:
+        if self.gen != {} and self.name == other.name:
             return
 
         if not type(other) is Struct:
@@ -482,7 +482,7 @@ class Array(Pointer):
                     [self.elemT],
                     I32()
                 ),
-                "operator_add": FuncPointer(
+                "op_add": FuncPointer(
                     [self.elemT],
                     Array(False, self.elemT)
                 ),
@@ -545,7 +545,7 @@ class Interface(Type):
         """
         pass
     def duckType(self, parser, other, node, mynode, iter):
-        if self.name == other.name:
+        if self.generic != {} and self.name == other.name:
             return
 
         try:
@@ -569,7 +569,7 @@ class Interface(Type):
 
             if not (type(b) is T and b.owner == self.normalName):
                 if a != b:
-                    Error.error("For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(b))
+                    mynode.error("For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(b))
         if ended and len(self.generic) > 0: return
 
         i = 0
@@ -678,7 +678,31 @@ class Enum(Type):
 
             if not (type(b) is T and b.owner == (self.package+"." if self.package != "_global" else "")+self.normalName):
                 if a != b:
-                    Error.error("For generic parameter "+name+": "+"Expecting type "+str(a)+", but got type "+str(b))
+                    mynode.error("For generic parameter "+name+": "+"Expecting type "+str(a)+", but got type "+str(b))
+
+class Alias(Type):
+    def __init__(self, package, name, typ, generic):
+        self.typ = typ
+        self.types = typ.types
+        self.normalName = name
+
+        self.generic = generic
+
+        self.package = package
+
+        gen = generic
+        genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+
+        self.name = (package + "." if package != "_global" else "") + name + genericS
+
+    def hasMethod(self, parser, field):
+        self.typ.hasMethod(parser, field)
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if type(other) is Alias:
+            self.typ.duckType(parser, other.typ, node, mynode, iter)
+        else:
+            self.typ.duckType(parser, other, node, mynode, iter)
 
 All = Interface(False, {})
 
@@ -741,13 +765,13 @@ class I32(Type):
                 "toInt": FuncPointer([], self),
                 "toFloat": FuncPointer([], Float()),
                 "toString": FuncPointer([], String(0)),
-                "operator_add": FuncPointer([self], self),
-                "operator_sub": FuncPointer([self], self),
-                "operator_div": FuncPointer([self], self),
-                "operator_mul": FuncPointer([self], self),
-                "operator_eq": FuncPointer([self], Bool()),
-                "operator_gt": FuncPointer([self], Bool()),
-                "operator_lt": FuncPointer([self], Bool()),
+                "op_add": FuncPointer([self], self),
+                "op_sub": FuncPointer([self], self),
+                "op_div": FuncPointer([self], self),
+                "op_mul": FuncPointer([self], self),
+                "op_eq": FuncPointer([self], Bool()),
+                "op_gt": FuncPointer([self], Bool()),
+                "op_lt": FuncPointer([self], Bool()),
             }
 
         return self.__types__
@@ -766,10 +790,10 @@ class Float(Type):
                 "toInt": FuncPointer([], I32()),
                 "toFloat": FuncPointer([], self),
                 "toString": FuncPointer([], String(0)),
-                "operator_add": FuncPointer([self], self),
-                "operator_sub": FuncPointer([self], self),
-                "operator_div": FuncPointer([self], self),
-                "operator_mul": FuncPointer([self], self)
+                "op_add": FuncPointer([self], self),
+                "op_sub": FuncPointer([self], self),
+                "op_div": FuncPointer([self], self),
+                "op_mul": FuncPointer([self], self)
             }
 
         return self.__types__
@@ -781,6 +805,17 @@ class Float(Type):
 class Bool(Type):
     name = "bool"
     normalName = "bool"
+
+    __types__ = None
+
+    @property
+    def types(self):
+        if self.__types__ is None:
+            self.__types__ = {
+                "toString": FuncPointer([], String(0))
+            }
+
+        return self.__types__
 
 package= "_global"
 types = {"toString": FuncPointer([], String(0))}
@@ -819,6 +854,11 @@ def replaceT(typ, gen, acc={}):
         for i in typ.remainingGen:
             rem[i] = replaceT(typ.remainingGen[i], gen, acc)
         return Struct(False, typ.normalName, typ.types, typ.package, rem)
+    elif type(typ) is Alias:
+        rem = {}
+        for i in typ.generic:
+            rem[i] = replaceT(typ.generic[i], gen, acc)
+        return Alias(typ.package, typ.normalName, replaceT(typ.typ, gen), rem)
     elif type(typ) is Assign:
         return Assign(replaceT(typ.const, gen, acc))
     elif type(typ) is Interface:
@@ -993,7 +1033,6 @@ class Unknown(Type):
         self.func = func
 
     def __eq__(self, other):
-
         self.func.check()
 
     def duckType(self, parser, other, node, mynode, iter):

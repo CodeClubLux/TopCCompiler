@@ -32,13 +32,43 @@ class Array(Node):
             self.nodes[1].compileToJS(codegen)
             codegen.append(")")
         else:
-            codegen.append("newVector(")
+            paren = False
+            i = self.nodes[0]
+            if not (type(i) is Tree.Operator and i.kind == ".."):
+                codegen.append("newVector(")
+            count = 0
             for i in self.nodes[:-1]:
-                i.compileToJS(codegen)
-                codegen.append(",")
+                if type(i) is Tree.Operator and i.kind == "..":
+                    if paren:
+                        codegen.append(")")
+                    paren = True
+
+                    if count == 0:
+                        codegen.append("(")
+                    else:
+                        codegen.append(").op_add(")
+                    i.nodes[0].compileToJS(codegen)
+                    codegen.append(").op_add(newVector(")
+                else:
+                    i.compileToJS(codegen)
+                    next = self.nodes[count+1]
+                    if not (type(next) is Tree.Operator and next.kind == ".."):
+                        codegen.append(",")
+
+                count += 1
 
             if len(self.nodes) > 0 :
-                self.nodes[-1].compileToJS(codegen)
+                i = self.nodes[-1]
+
+                if type(i) is Tree.Operator and i.kind == "..":
+                    if paren:
+                        codegen.append(")")
+                    codegen.append(").op_add(")
+                    i.nodes[0].compileToJS(codegen)
+                else:
+                    i.compileToJS(codegen)
+                    if paren:
+                        codegen.append(")")
             codegen.append(")")
 
     def validate(self, parser):

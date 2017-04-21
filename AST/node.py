@@ -97,9 +97,9 @@ def isUseless(i):
         if i.type != Types.Null():
             i.error("not using return of function")
     try:
-        t = type(i).curry
+        t = i.curry
         if t: i.error("useless curry")
-        t = type(i).partial
+        t = i.partial
         if t: i.error("useless function application")
     except AttributeError:
         pass
@@ -146,7 +146,8 @@ class Node(Root):  # partially immutable data structure
         return self.token
 
     def validate(self, parser):
-        raise NotImplementedError(str(self))
+        pass
+        #raise NotImplementedError(str(self))
 
     def compileToJS(self, codegen):
         raise NotImplementedError(str(self))

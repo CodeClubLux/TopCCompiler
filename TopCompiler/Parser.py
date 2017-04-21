@@ -22,7 +22,7 @@ def parenOpen(parser):
 
         while not parser.paren < paren:
             parser.nextToken()
-            if parser.thisToken().token == ",":
+            if parser.thisToken().token in [",", "\n"]:
                 endExpr(parser)
             else:
                 callToken(parser)
@@ -41,6 +41,7 @@ def parenClose(parser):
 
 
 def newLine(parser):
+    maybeEnd(parser)
 
     parser.lineNumber += 1
 
@@ -100,6 +101,9 @@ from .Dict import *
 from TopCompiler import Module
 
 def isEnd(parser):
+    if parser.thisToken().token == "\n" and parser.stack != [] and parser.stack[-1].kind == "<-" and parser.package == "main":
+        print(parser.stack)
+
     token = parser.thisToken()
 
     if parser.fired:
@@ -117,11 +121,6 @@ def isEnd(parser):
 
         if token.token in ["with"] and type(parser.currentNode) in [Tree.IfCondition, Tree.Match, Tree.PlaceHolder]:
             return False
-
-        #"""
-        elif token.token == "|>":
-            ExprParser.endExpr(parser, -2)
-        #"""
 
         return maybeEnd(parser)
     return False
@@ -157,7 +156,8 @@ def declareOnly(self, noVar=False):
 
 def maybeEnd(parser):
     if parser.indent[-1] >= parser.indentLevel and parser.paren <= parser.parenBookmark[-1] and parser.bracket <= parser.bracketBookmark[-1]:
-        #parser.iter -= 1
+        if parser.stack != [] and type(parser.currentNode) in [Tree.FuncBody, Tree.Root]:
+            ExprParser.endExpr(parser, -2)
         return True
     return False
 
@@ -188,6 +188,9 @@ class Opcode:
         self.pos = len(parser.currentNode.nodes)
         parser.stack.append(self)
         return
+
+    def __repr__(self):
+        return self.kind
 
 
 def addBookmark(parser):
@@ -317,8 +320,9 @@ class Parser:  # all mutable state
 
         Atom = Types.Interface(False, {
             "unary_read": FuncPointer([], T, do= True),
-            "operator_set": FuncPointer([T], Null(), do= True),
-            "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True)
+            "op_set": FuncPointer([T], Null(), do= True),
+            "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True),
+            "toString": FuncPointer([], Types.String(0)),
         }, coll.OrderedDict([("Atom.T", T)]), "Atom")
 
         A = Types.T("A", All, "Lens")
@@ -327,6 +331,7 @@ class Parser:  # all mutable state
         Lens = Types.Interface(False, {
             "query": Types.FuncPointer([A], B),
             "set": Types.FuncPointer([A, B], A),
+            "toString": Types.FuncPointer([], Types.String(0))
         }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]), name="Lens")
 
         defer_T = Types.T("T", All, "defer")
@@ -348,9 +353,22 @@ class Parser:  # all mutable state
             Types.FuncPointer([], serial_T, do=True)
         )], Types.Array(False, serial_T), do=True, generic=coll.OrderedDict([("serial.T", serial_T)]))
         Maybe_T = Types.T("T", All, "Maybe")
+        Maybe_R = Types.T("R", All, "Maybe")
+
         Maybe_gen = coll.OrderedDict([("Maybe.T", Maybe_T)])
 
         Maybe = Types.Enum("_global", "Maybe", coll.OrderedDict([("Some", [Maybe_T]), ("None", [])]), generic=Maybe_gen)
+        Maybe.methods["_global"] = {}
+        Maybe.methods["_global"]["withDefault"] = Types.FuncPointer(
+            [Types.All, Maybe_T],
+            Maybe_T
+        )
+
+        Maybe.methods["_global"]["map"] = Types.FuncPointer(
+            [Types.All, Types.FuncPointer([Maybe_T], Maybe_R)],
+            Types.replaceT(Maybe, {"T": Maybe_R}),
+            generic = coll.OrderedDict([("R", Maybe_R)])
+        )
 
         assign_T = Types.T("T", All, "assign")
 
@@ -390,6 +408,7 @@ class Parser:  # all mutable state
         self.package = "_global"
         self.opackage = ""
         self.imports = []
+        self.transforms = []
 
         self.rootAst = Tree.Root()
         self.currentNode = self.rootAst
@@ -429,6 +448,14 @@ class Parser:  # all mutable state
         self.tokens = tokens
 
     def parse(self):
+        try:
+            tr = self.transforms[self.package]
+        except KeyError:
+            tr = []
+
+        for i in tr:
+            Module.initModule(i)
+
         tokens = self.tokens
         filenames = self.filename
 
@@ -473,6 +500,9 @@ class Parser:  # all mutable state
             c.addNode(a)
 
             self.currentNode.addNode(c)
+
+        for i in tr:
+            Module.removeModule(i)
 
         return self.currentNode
 

@@ -1,36 +1,36 @@
-function operator_add(x,y) {return x.operator_add(y)}
-function operator_sub(x,y) {return x.operator_sub(y)}
-function operator_mul(x,y) {return x.operator_mul(y)}
-function operator_div(x,y) {return x.operator_div(y)}
-function operator_mod(x,y) {return x.operator_mod(y)}
-function operator_eq(x,y) {return x.operator_eq(y)}
-function operator_pow(x,y) {return Math.pow(x,y)}
-function operator_lt(x,y) {return x.operator_lt(y)}
-function operator_gt(x,y) {return x.operator_gt(y)}
-function operator_or(x,y) {return x || y}
-function operator_not(x) {return !x}
-function operator_and(x,y) { return x && y }
-function operator_ne(x,y) { return x.operator_ne(y) }
+function op_add(x,y) {return x.op_add(y)}
+function op_sub(x,y) {return x.op_sub(y)}
+function op_mul(x,y) {return x.op_mul(y)}
+function op_div(x,y) {return x.op_div(y)}
+function op_mod(x,y) {return x.op_mod(y)}
+function op_eq(x,y) {return x.op_eq(y)}
+function op_pow(x,y) {return Math.pow(x,y)}
+function op_lt(x,y) {return x.op_lt(y)}
+function op_gt(x,y) {return x.op_gt(y)}
+function op_or(x,y) {return x || y}
+function op_not(x) {return !x}
+function op_and(x,y) { return x && y }
+function op_ne(x,y) { return x.op_ne(y) }
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
 
-Number.prototype.operator_add = function (other) { return this + other }
-Number.prototype.operator_div = function (other) { return this / other }
-Number.prototype.operator_sub = function (other) { return this - other }
-Number.prototype.operator_mul = function (other) { return this * other }
-Number.prototype.operator_eq = function (other) { return this == other }
-Number.prototype.operator_mod = function (other) { return this % other }
-Number.prototype.operator_lt = function (other) { return this < other }
-Number.prototype.operator_gt = function (other) { return this > other }
-Number.prototype.operator_ne = function (other) { return this != other }
+Number.prototype.op_add = function (other) { return this + other }
+Number.prototype.op_div = function (other) { return this / other }
+Number.prototype.op_sub = function (other) { return this - other }
+Number.prototype.op_mul = function (other) { return this * other }
+Number.prototype.op_eq = function (other) { return this == other }
+Number.prototype.op_mod = function (other) { return this % other }
+Number.prototype.op_lt = function (other) { return this < other }
+Number.prototype.op_gt = function (other) { return this > other }
+Number.prototype.op_ne = function (other) { return this != other }
 
 Number.prototype.toFloat = function () { return this }
 Number.prototype.toInt = function () { return this | 0 }
 
-String.prototype.operator_eq = function (other) { return this == other }
-String.prototype.operator_ne = function (other) { return this != other }
-String.prototype.operator_add = function (other) { return this + other }
+String.prototype.op_eq = function (other) { return this == other }
+String.prototype.op_ne = function (other) { return this != other }
+String.prototype.op_add = function (other) { return this + other }
 function toString(s) {
     return s.toString()
 }
@@ -49,7 +49,7 @@ function int_toInt(s) { return s }
 
 String.prototype.toInt = function () { return Number(this) | 0 }
 String.prototype.toFloat = function () { return Number(this) }
-String.prototype.operator_eq = function(s) { return this == s }
+String.prototype.op_eq = function(s) { return this == s }
 
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
@@ -197,7 +197,7 @@ function unary_read(next) {
     next(this.arg);
 }
 
-function operator_set(val, next) {
+function op_set(val, next) {
     this.arg = val;
     for (var i = 0; i < this.events.length; i++ ) {
         this.events[i](val, _empty_func);
@@ -213,14 +213,15 @@ function atom_watch(func, next) {
 function newAtom(arg) {
     return {
         unary_read: unary_read,
-        operator_set: operator_set,
+        op_set: op_set,
         arg: arg,
         watch: atom_watch,
         events: [],
+        toString: function(){return ""},
     }
 }
 
-function newLens(reader, setter) {
+function newLens(reader, setter, string) {
     return {
         query: function(item) {
             return reader(item);
@@ -228,6 +229,9 @@ function newLens(reader, setter) {
         set: function(old, item) {
             return setter(old, item)
         },
+        toString: function() {
+            return string;
+        }
     }
 }
 
@@ -237,11 +241,42 @@ function defer(func) {
     }
 }
 
-function Some(x) {
-    return [0, x];
+function Maybe(x) {
+    this[0] = x;
 }
 
-var None = [1];
+function Some(x) {
+    var s = new Maybe(0);
+    s[1] = x;
+    return s
+}
+
+var None = new Some(1);
+
+function Maybe_withDefault(self,def){
+    if (def[0] == 0) {
+        return self[1];
+    } else {
+        return def;
+    }
+}
+
+
+function Maybe_map(self,func){
+    if (def[0] == 0) {
+        return Some(func(def[1]));
+    } else {
+        return None;
+    }
+}
+
+Maybe.prototype.withDefault = function(def){
+    return Maybe_withDefault(this,def);
+}
+
+Maybe.prototype.map = function(func){
+    return Maybe_map(this,def);
+}
 
 function sleep(time, callback) {
     setTimeout(callback, time);
@@ -415,7 +450,7 @@ Vector.prototype.toJSON = function() {
 Vector.prototype.indexOf = function(find) {
     var index = -1;
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(find)) {
+        if (this.get(i).op_eq(find)) {
             index += 1;
             return index;
         }
@@ -626,12 +661,12 @@ Vector.prototype.toString = function () {
     return "["+this.join(",")+"]"
 }
 
-Vector.prototype.operator_eq = function (other) {
+Vector.prototype.op_eq = function (other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!(this.get(i).operator_eq(other.get(i)))) {
+        if (!(this.get(i).op_eq(other.get(i)))) {
             return false;
         }
     }
@@ -705,14 +740,14 @@ function getProperIndex(self, index) {
 
 Vector.prototype.has = function (s) {
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(s)) {
+        if (this.get(i).op_eq(s)) {
             return true;
         }
     }
     return false;
 }
 
-Vector.prototype.operator_add = function (s) {
+Vector.prototype.op_add = function (s) {
     var newArr = this;
     for (var i = 0; i < s.length; i++) {
         newArr = newArr.append(s.get(i));
@@ -816,19 +851,19 @@ var nil;
         return new_node(node.key, node.val, node.lev, lo, hi);
     };
     with_lo = function(node, lo) {
-        return lo && lo.operator_eq(node.lo) ? node : with_lo_hi(node, lo, node.hi);
+        return lo && lo.op_eq(node.lo) ? node : with_lo_hi(node, lo, node.hi);
     };
     with_hi = function(node, hi) {
         return hi === node.hi ? node : with_lo_hi(node, node.lo, hi);
     };
     go_lo = function(node, key, lt) {
-        return (lt && lt(key, node.key)) || (!lt && key.operator_lt( node.key));
+        return (lt && lt(key, node.key)) || (!lt && key.op_lt( node.key));
     };
 
 
     has = function(node, key, lt) {
         while (node) {
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 return true;
             }
             node = go_lo(node, key, lt) ? node.lo : node.hi;
@@ -847,7 +882,7 @@ var nil;
 
     get = function(node, key, fail, lt) {
         while (node) {
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 return node.val;
             }
             node = go_lo(node, key, lt) ? node.lo : node.hi;
@@ -859,8 +894,8 @@ var nil;
         if (!node) {
             return new_node(key, val, 0);
         }
-        if (key.operator_eq(node.key)) {
-            return val.operator_eq(node.val) ? node : new_node(key, val, node.lev, node.lo, node.hi);
+        if (key.op_eq(node.key)) {
+            return val.op_eq(node.val) ? node : new_node(key, val, node.lev, node.lo, node.hi);
         }
         node = go_lo(node, key, lt) ? skew(node, put(node.lo, key, val, lt)) :
             skew(with_hi(node, put(node.hi, key, val, lt)));
@@ -872,7 +907,7 @@ var nil;
             var lo = node.lo,
                 hi = node.hi,
                 hi_lo, lev = node.lev;
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 if (!lo || !hi) {
                     return lo || hi;
                 }
@@ -890,7 +925,7 @@ var nil;
                 node = with_hi(node, hi);
             }
             if ((lo && lo.lev < lev - 1) || (hi && hi.lev < lev - 1)) {
-                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .operator_gt( lev) ? with_lev(hi, lev - 1) : hi);
+                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .op_gt( lev) ? with_lev(hi, lev - 1) : hi);
                 node = skew(node);
                 if (node.hi) {
                     node = with_hi(node, skew(node.hi));
@@ -1003,7 +1038,7 @@ assertEq(newVector(1,2,3).insert(0, 0), newVector(0,1,2,3))
 assertEq(newVector(1,1,2,3).set(0,0), newVector(0,1,2,3))
 
 //add
-assertEq(newVector(1,2,3).operator_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))
+assertEq(newVector(1,2,3).op_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))
 
 //parralel
 parallel(newVector(sleep.bind(null, 0), sleep.bind(null, 0)), function() {});
@@ -1030,7 +1065,7 @@ function assert(condition) {
 }
 
 function assertEq(value, shouldBe) {
-    if (!value.operator_eq(shouldBe)){
+    if (!value.op_eq(shouldBe)){
         throw new Error("Expecting result to be: "+shouldBe+",\n not "+value);
     }
 }

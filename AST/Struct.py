@@ -88,12 +88,19 @@ class Field(Node):
         self.indexPackage = False
         self.newValue = False
         self.number = False
+        self.unary = False
 
 
     def __str__(self):
         return "."+self.field
 
     def compileToJS(self, codegen):
+        if self.unary:
+            tmp = codegen.getName()
+            field = "get"+self.field[0].upper()+self.field[1:]
+            codegen.append("(function get"+self.field+"("+tmp+"){return "+tmp+"."+self.field+"})")
+            return
+
         if not self.indexPackage:
             codegen.append("(")
         self.nodes[0].compileToJS(codegen)

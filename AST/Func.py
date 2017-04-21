@@ -133,6 +133,8 @@ class FuncBody(Node):
 
         for i in self.nodes[:-1]:
             i.compileToJS(codegen)
+            if not type(i) in [Tree.FuncCall,Tree.If,Tree.Match,Tree.FuncBody,Tree.Create,Tree.Assign,Tree.CreateAssign,Tree.Tree.FuncBraceOpen,Tree.FuncStart] and i.type.name == "none":
+                codegen.append(";")
 
         did = False
 

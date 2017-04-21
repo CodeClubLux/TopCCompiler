@@ -16,12 +16,24 @@ class Token:
 
 from TopCompiler import topc
 
-def lex(stream, filename, modifiers, hotswap, lexed):
+def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
     for c in stream:
-        if not hotswap or (hotswap and topc.modified(modifiers[c], c)):
+        try:
+            t = transforms[c]
+        except KeyError:
+            t = []
+
+        for i in t:
+            Module.initModule(i)
+
+        if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
             lexed[c] = []
             for i in range(len(stream[c])):
                 lexed[c].append(tokenize(stream[c][i], filename[c][i]))
+
+        for i in t:
+            Module.removeModule(i)
+
     return lexed
 
 import re
@@ -44,6 +56,7 @@ keywords = [
         "with",
         "from",
         "decoder",
+        "extension",
     ]
 token_specification = [
         ("comment", r"/\*([\s\S]*?)\*/"),
@@ -66,12 +79,14 @@ token_specification = [
         ('assign',  r'='),
         ('whiteOpenS', r' +\['),
         ('bracketOpenS', r' +\{'),
+        ('dotS', r' +\.'),
         ('openS', r'\['),
         ('closeS', r'\]'),
         ('assignPlus', r'\+='),
         ('assignSub', r'\-='),
         ('assignMul', r'\*='),
         ('assignDiv', r'\/='),
+        ('setAtom', '<\-[ ]+'),
         ('operator',  r'(\|>|>>|<-)|[+*\/\-%><^\\]'),
         ('line', r'\|'),
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  #[A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
@@ -87,9 +102,14 @@ token_specification = [
         ('dollar', '\$'),
         ('set', '=>'),
     ]
+
+normalLength = len(token_specification)
+
 special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub",
                "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS',
                'openS', 'doubleDot', 'semi']
+
+from TopCompiler import Module
 
 def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
@@ -104,6 +124,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
     linePos = slinePos
 
     line = sline
+
+    extension = False
 
     array = []
 
@@ -134,6 +156,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
             linePos = c + r
             line += len(val) - len(val.replace("\n", ""))
             array.append(Token(val, "comment", line, pos ))
+        elif typ == "setAtom":
+            array.append(Token("set", "operator", line, pos))
         elif typ in ["str"]:
             template = False
             val = mo.group(typ)
@@ -202,6 +226,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                     typ = "symbol"
                 else:
                     typ = "keyword"
+                    extension = True
+
             elif typ == "f32":
                 val = val[:-1]+".0" if val[-1] == "f" else val
             elif typ == "hex":

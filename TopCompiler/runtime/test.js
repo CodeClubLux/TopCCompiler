@@ -34,7 +34,7 @@ assertEq(newVector(1,2,3).insert(0, 0), newVector(0,1,2,3))
 assertEq(newVector(1,1,2,3).set(0,0), newVector(0,1,2,3))
 
 //add
-assertEq(newVector(1,2,3).operator_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))
+assertEq(newVector(1,2,3).op_add(newVector(4,5,6)), newVector(1,2,3,4,5,6))
 
 //parralel
 parallel(newVector(sleep.bind(null, 0), sleep.bind(null, 0)), function() {});

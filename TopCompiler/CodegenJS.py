@@ -69,6 +69,8 @@ class CodeGen:
         for i in tree:
             self.target = i.global_target
             i.compileToJS(self)
+            if not type(i) in [Tree.FuncCall,Tree.If,Tree.Match,Tree.FuncBody,Tree.Create,Tree.Assign,Tree.CreateAssign,Tree.Tree.FuncBraceOpen,Tree.FuncStart] and i.type.name == "none":
+                self.append(";")
 
     def toEvalHelp(self):
         tree = self.tree
@@ -256,65 +258,12 @@ def getRuntimeNode():
 
 def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswap):
     needSocket = False
-    if target == "node" and dev:
-        linked = """(function(){
-            var fs = require("fs");
-            var io = require("socket.io").listen(8080);
 
-            var watch = require("chokidar");
-
-            watch.watch('""" + output + """-client.js').on("change", (filename) => {
-            //console.log("I think it changed");
-                if (filename) {
-                    fs.readFile('./""" + output + """-client.js', function (err, data) {
-                        if (!err) {
-                            data = String(data);
-                            io.sockets.emit('reload', data);
-                        }
-                    });
-                }
-            });
-
-            watch.watch(""" + str([i + "" for i in linkWithCSS]) + """, {cwd: "../"}).on("change", (filename) => {
-                fs.readFile("../" + filename, function (err, data) {
-                    if (!err) {
-                        console.log("\\n==== reloaded stylesheets ====");
-                        data = String(data);
-                        io.sockets.emit('style', {name: filename, content: data});
-                    }
-                })
-            })
-        })();"""
-
-        linked = ""
-
-    elif target == "client" and not run and dev:
+    if target == "client" and dev:
         terminal = open(__file__[0:__file__.rfind("/") + 1] + "terminal/bundle.html").read()
 
         needSocket = True
         linked = ""
-
-        socket = """
-        (function (){
-            var socket = io.connect('http://127.0.0.1:8080');
-
-            socket.on('reload', function (data) {
-                console.log("\\n======== reloaded =========");
-
-                document.getElementById("code").innerHTML = "";
-                eval(data);
-            });
-
-            socket.on('style', function (data) {
-                var name = data.name;
-                var content = data.content;
-                console.log("\\n==== reloaded stylesheets ====");
-                document.getElementById(name).innerHTML = content;
-            });
-
-            recordNewValue(previousState.arg);
-        })();"""
-
         socket = ""
     else:
         linked = ""
@@ -328,7 +277,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
 
     linked += runtime
 
-    if target == "client" and not run and dev:
+    if target == "client" and dev:
         linked += """log= function(d) {
             terminal.echo(d);
         };
@@ -341,13 +290,14 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         function newAtom(arg) {
             previousState = {
                 unary_read: unary_read,
-                operator_set: operator_set,
+                op_set: op_set,
                 arg: arg,
                 watch: atom_watch,
                 events: [],
+                toString: function(){ return "" }
             }
 
-            calledBy.push("init");
+            calledBy.push("init -> ");
             recordNewValue(arg, function(){});
 
             previousState.events.push(recordNewValue);

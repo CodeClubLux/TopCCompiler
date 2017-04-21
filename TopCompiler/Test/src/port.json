@@ -3,5 +3,5 @@
         "name": "EC",
         "target": "client",
         "version": 0,
-        "transforms": ["transforms/JSX.py"]
+        "register-transforms": ["transforms/JSX.py"]
     }

@@ -1,7 +1,7 @@
 from "html" import (PosAtom,h1,id,br,onChange,input,span,p,button,app,value,div,style,render,onClick,Event,VNode,mapView,toEffect)
 //import "http"
 
-/*
+
 type Result[T] either
     Data(T)
     Error
@@ -16,10 +16,6 @@ def Result[A].map[B](self, func: |A| -> B) Result[B] =
     match self with
         Data x -> Data func x
         Error -> Error
-*/
-
-
-/*
 
 def for[A,T,X](func: |A,X| -> (Maybe[T],X), _state: X, arr: []A) []T =
     var state = _state
@@ -85,69 +81,42 @@ def mode(x: []float) string =
     let _ = debug count.2
     if count.2 == uniques.length-1 then "n" else count.0
 
-
 def answer(x: []float) VNode =
-    div [], [
-        h1 [], toString x
-        h1 [], "Mean {average x.map toFloat}"
-        h1 [], "Median {median x.map toFloat}"
-        h1 [], "Mode {mode x}"
-    ]
+    <div>
+        <h1>"{x}"</h1>
+        <h1>"Mean {average x.map toFloat}"</h1>
+        <h1>"Median {median x.map toFloat}"</h1>
+        <h1>"Mode {mode x}"</h1>
+    </div>
 
 let enter = |x: []float,ev| do
-    parse-json decoder []float, "[{ev.target.value}]"
+    parse-json decoder []float, "["+ev.target.value+"]"
 
-let math = |x: []float, a|
-    div [], [
-        input [(onChange enter, a), (value x.join ", ")], ""
+def math(x: []float, a: Atom[[]float]) VNode =
+    <div>
+        <input onChange=enter,a value=(x.join ",")/>
         answer x
-    ]
-
-let app-state = newAtom [0.0]
-
-//let _lens = lens.x
-//let pos-a = PosAtom{app-state, _lens}
-
-def test[T: Stringable](func: |T| -> T, x: T) string =
-    toString func x
-
-type Point =
-    x: int
-    y: int
-
-def getPoint(x: Point) Point =
-    x
-
-app math, app-state
-*/
-
-let add = |x: int,ev| do 1+x
-let sub = |x: int,ev| do x -1
-
-let append = |x: []int,ev| do x.append 0
-
-let view = |count: int, a|
-    <div>
-        <button on-click = add,a> + </button>
-        Count s{count}
-        <button on-click = sub,a> - </button>
     </div>
 
-let multiple = |counters: []int, a|
+def append(x: [][]float, ev: Event) [][]float do
+    x.append [0.0]
+
+def remove(x: [][]float, ev: Event) [][]float do
+    x.shorten 1
+
+def multiple(x: [][]float, a: Atom[[][]float]) VNode =
     <div>
-        <h1>Multiple Counters</h1>
-        {mapView view, counters, a}
-        <button on-click = append,a>Add</button>
+        <button on-click=append,a>"Add another"</button>
+        <br/>
+        <button on-click=remove,a>"Remove"</button>
+        mapView math, x, a
     </div>
 
 
-/*
-let multiple = |counters: []int, a|
-    div [], [
-        h1 [], "Multiple Counters"
-        mapView view, counters, a
-        button [onClick append, a], "Add"
-    ]
-*/
 
-app multiple, new-atom [0]
+let app-state = new-atom [[0.0], [0.0]]
+
+
+app-state <- [[0.0]]
+
+app multiple, app-state

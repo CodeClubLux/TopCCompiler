@@ -30,14 +30,45 @@ class Operator(Node):
             self.nodes[0].compileToJS(codegen)
             return
         elif self.kind == ">>":
-            codegen.append("function(")
-            names = ",".join([codegen.getName() for i in self.nodes[0].type.args])
-            codegen.append(names)
-            codegen.append("){return ")
-            self.nodes[1].compileToJS(codegen)
-            codegen.append("(")
-            self.nodes[0].compileToJS(codegen)
-            codegen.append("("+names+"))}")
+            a = self.nodes[0].type
+            b = self.nodes[1].type
+
+            if not (a.do and b.do):
+                codegen.append("function(")
+                names = ",".join([codegen.getName() for i in self.nodes[0].type.args])
+                codegen.append(names)
+                codegen.append("){return ")
+                self.nodes[1].compileToJS(codegen)
+                codegen.append("(")
+                self.nodes[0].compileToJS(codegen)
+                codegen.append("("+names+"))}")
+            else:
+                codegen.append("function(")
+                callback = codegen.getName()
+                _names = [codegen.getName() for i in self.nodes[0].type.args]
+                names = ",".join(_names+[callback])
+                codegen.append(names)
+                codegen.append("){")
+
+                if a.do and b.do:
+                    self.nodes[0].compileToJS(codegen)
+                    n = codegen.getName()
+                    codegen.append("("+",".join(_names+["function("+n+"){"]))
+                    self.nodes[1].compileToJS(codegen)
+                    codegen.append("("+n+","+callback+")});")
+                elif a.do:
+                    self.nodes[0].compileToJS(codegen)
+                    n = codegen.getName()
+                    codegen.append("("+",".join(_names+["function("+n+"){"]))
+                    codegen.append(callback+"(")
+                    self.nodes[1].compileToJS(codegen)
+                    codegen.append(")}")
+                elif b.do:
+                    self.nodes[1].compileToJS(codegen)
+                    codegen.append("(")
+                    self.nodes[0].compileToJS(codegen)
+                    codegen.append("("+",".join(_names))
+                    codegen.append("),"+callback+")}")
             return
 
             #todo: implement do function
@@ -161,14 +192,16 @@ class Operator(Node):
         if self.type == Types.I32():
             codegen.append("|0)")
 
-    def validate(self, parser):
+
+
+def checkOperator(self, parser):
         unary = self.unary
         i = self
 
-        if i.type == Types.Null():
-            i.error("operator "+i.kind + " cannot operate on type "+str(i.type))
+        if not (i.kind == "<-" and not unary) and i.type == Types.Null():
+            i.error("op "+i.kind + " cannot operate on type "+str(i.type))
 
-        operators = {
+        ops = {
             "int": ["+", "-", "%", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
             "float": ["+", "-", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
             "string": ["+", "==", "!=", "<", ">"],
@@ -187,9 +220,9 @@ class Operator(Node):
             ">="
         ]
 
-        if i.kind in ["|>", ">>", "concat", "as"] : return
+        if i.kind in ["|>", ">>", "concat", "as", ".."] : return
 
-        if not i.opT.name in operators or i.curry or i.partial:
+        if not i.opT.name in ops or i.curry or i.partial:
             if unary:
                overloads = {
                     "+": "unary_add",
@@ -204,17 +237,18 @@ class Operator(Node):
                 }
             else:
                 overloads = {
-                    "+": "operator_add",
-                    "-": "operator_sub",
-                    "*": "operator_mul",
-                    "/": "operator_div",
-                    "^": "operator_pow",
-                    "%": "operator_mod",
-                    "!=": "operator_ne",
-                    "==": "operator_eq",
-                    "<": "operator_lt",
-                    ">": "operator_gt",
-                    "or": "operator_or"
+                    "+": "op_add",
+                    "-": "op_sub",
+                    "*": "op_mul",
+                    "/": "op_div",
+                    "^": "op_pow",
+                    "%": "op_mod",
+                    "!=": "op_ne",
+                    "==": "op_eq",
+                    "<": "op_lt",
+                    ">": "op_gt",
+                    "or": "op_or",
+                    "<-": "op_set",
                 }
 
             if len(i.nodes) == 0:
@@ -238,10 +272,10 @@ class Operator(Node):
 
                 i.overload = True
             else:
-                if not i.kind in operators[i.opT.name]:
+                if not i.kind in ops[i.opT.name]:
                     i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))
                 i.package = ""
                 i.name = overloads[i.kind]
 
-        elif not i.kind in operators[i.opT.name]:
+        elif not i.kind in ops[i.opT.name]:
             i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))

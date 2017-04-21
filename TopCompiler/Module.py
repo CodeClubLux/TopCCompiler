@@ -31,11 +31,29 @@ def addRule(rule, parse, type=nothing, before=False):
 
     Parser.exprType[rule[0]] = parse
     if type != nothing:
-        TypeInference.checkTyp.append(type)
+        TypeInference.checkTyp[rule] = type
+
+def removeRule(rule):
+    rules = Lexer.token_specification
+    if rule in TypeInference.checkTyp:
+        del TypeInference.checkTyp[rule]
+    if rule in Parser.exprType:
+        del Parser.exprType[rule]
+    del rules[indexOfInRules(rules,rule)]
+
+def removeKeyword(rule):
+    rules = Lexer.token_specification
+    if rule in TypeInference.checkTyp:
+        del TypeInference.checkTyp[rule]
+    if rule in Parser.exprToken:
+        del Parser.exprToken[rule]
+        Lexer.token_specification = rules[:Lexer.normalLength]
 
 import importlib.util
 import os
 from TopCompiler import Error
+
+transforms = {}
 
 def importModule(path):
     moduleName = os.path.basename(os.path.splitext(path)[0])
@@ -45,7 +63,20 @@ def importModule(path):
 
     foo = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(foo)
-    foo.init()
+
+    transforms[moduleName] = foo
+
+def initModule(moduleName):
+    try:
+        transforms[moduleName].init()
+    except Exception as e:
+        Error.error("Error "+str(e)+" happened when intializing syntax extension "+moduleName)
+
+def removeModule(moduleName):
+    try:
+        transforms[moduleName].remove()
+    except Exception as e:
+        Error.error("Error "+str(e)+" happened when removing syntax extension "+moduleName)
 
 shouldCallTyp = {}
 shouldCallToken = {}

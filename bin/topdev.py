@@ -3,6 +3,7 @@ __author__ = 'antonellacalvia'
 from TopCompiler import topc
 from TopCompiler import CodegenJS
 from TopCompiler import Error
+from TopCompiler import Module
 
 import sys
 import logging
@@ -12,6 +13,15 @@ import socketRepl
 import threading
 
 mutex = threading.Lock()
+
+def removeTransforms(parser):
+    for i in parser.transforms:
+        try:
+            tr = parser.transforms[i]
+        except KeyError:
+            tr = []
+    for i in tr:
+        Module.removeModule(i)
 
 def main():
     error = ""
@@ -26,6 +36,9 @@ def main():
             e = str(e)
             if error != e:
                 print(e, file=sys.stderr)
+
+            removeTransforms(topc.global_parser)
+
             error = e
             time.sleep(0.2)
 
@@ -51,6 +64,7 @@ def main():
                 #socketRepl.socketio.emit("error", "Compile Error\n\n"+str(e))
                 socketRepl.socketio.emit("comp_error", str(e).replace("\t", "    ").replace(" ", "&nbsp;").replace("\n", "<br>"))
             error = e
+            removeTransforms(topc.global_parser)
         finally:
             mutex.release()
 

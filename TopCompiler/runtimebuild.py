@@ -19,7 +19,7 @@ function assert(condition) {
 }
 
 function assertEq(value, shouldBe) {
-    if (!value.operator_eq(shouldBe)){
+    if (!value.op_eq(shouldBe)){
         throw new Error("Expecting result to be: "+shouldBe+",\\n not "+value);
     }
 }

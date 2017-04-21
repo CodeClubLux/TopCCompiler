@@ -23,12 +23,14 @@ def shouldCompile(decl, name, parser, mutated= ()):
                 parser.shouldCompile[name] = True
                 return True
 
-        res = topc.modified(parser.files[name], name, jsFiles= parser.jsFiles)
+        res = topc.modified(parser.global_target, parser.files[name], name, jsFiles= parser.jsFiles)
         parser.shouldCompile[name] = res
 
         return res
 
     return False
+
+from TopCompiler import Module
 
 def shouldParse(decl, name, parser):
     return not decl and not name in parser.compiled
@@ -36,6 +38,7 @@ def shouldParse(decl, name, parser):
 def importParser(parser, decl= False):
     import os
     name = parser.nextToken()
+
     if name.type != "str":
         Error.parseError(parser, "expecting string")
 

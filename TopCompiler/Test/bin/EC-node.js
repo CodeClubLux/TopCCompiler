@@ -1,36 +1,36 @@
-(function(){function operator_add(x,y) {return x.operator_add(y)}
-function operator_sub(x,y) {return x.operator_sub(y)}
-function operator_mul(x,y) {return x.operator_mul(y)}
-function operator_div(x,y) {return x.operator_div(y)}
-function operator_mod(x,y) {return x.operator_mod(y)}
-function operator_eq(x,y) {return x.operator_eq(y)}
-function operator_pow(x,y) {return Math.pow(x,y)}
-function operator_lt(x,y) {return x.operator_lt(y)}
-function operator_gt(x,y) {return x.operator_gt(y)}
-function operator_or(x,y) {return x || y}
-function operator_not(x) {return !x}
-function operator_and(x,y) { return x && y }
-function operator_ne(x,y) { return x.operator_ne(y) }
+function op_add(x,y) {return x.op_add(y)}
+function op_sub(x,y) {return x.op_sub(y)}
+function op_mul(x,y) {return x.op_mul(y)}
+function op_div(x,y) {return x.op_div(y)}
+function op_mod(x,y) {return x.op_mod(y)}
+function op_eq(x,y) {return x.op_eq(y)}
+function op_pow(x,y) {return Math.pow(x,y)}
+function op_lt(x,y) {return x.op_lt(y)}
+function op_gt(x,y) {return x.op_gt(y)}
+function op_or(x,y) {return x || y}
+function op_not(x) {return !x}
+function op_and(x,y) { return x && y }
+function op_ne(x,y) { return x.op_ne(y) }
 
 function unary_add(x) {return x}
 function unary_sub(x) {return -x}
 
-Number.prototype.operator_add = function (other) { return this + other }
-Number.prototype.operator_div = function (other) { return this / other }
-Number.prototype.operator_sub = function (other) { return this - other }
-Number.prototype.operator_mul = function (other) { return this * other }
-Number.prototype.operator_eq = function (other) { return this == other }
-Number.prototype.operator_mod = function (other) { return this % other }
-Number.prototype.operator_lt = function (other) { return this < other }
-Number.prototype.operator_gt = function (other) { return this > other }
-Number.prototype.operator_ne = function (other) { return this != other }
+Number.prototype.op_add = function (other) { return this + other }
+Number.prototype.op_div = function (other) { return this / other }
+Number.prototype.op_sub = function (other) { return this - other }
+Number.prototype.op_mul = function (other) { return this * other }
+Number.prototype.op_eq = function (other) { return this == other }
+Number.prototype.op_mod = function (other) { return this % other }
+Number.prototype.op_lt = function (other) { return this < other }
+Number.prototype.op_gt = function (other) { return this > other }
+Number.prototype.op_ne = function (other) { return this != other }
 
 Number.prototype.toFloat = function () { return this }
 Number.prototype.toInt = function () { return this | 0 }
 
-String.prototype.operator_eq = function (other) { return this == other }
-String.prototype.operator_ne = function (other) { return this != other }
-String.prototype.operator_add = function (other) { return this + other }
+String.prototype.op_eq = function (other) { return this == other }
+String.prototype.op_ne = function (other) { return this != other }
+String.prototype.op_add = function (other) { return this + other }
 function toString(s) {
     return s.toString()
 }
@@ -49,7 +49,7 @@ function int_toInt(s) { return s }
 
 String.prototype.toInt = function () { return Number(this) | 0 }
 String.prototype.toFloat = function () { return Number(this) }
-String.prototype.operator_eq = function(s) { return this == s }
+String.prototype.op_eq = function(s) { return this == s }
 
 function float_toFloat(s) { return s }
 function int_toFloat(s) { return s }
@@ -197,7 +197,7 @@ function unary_read(next) {
     next(this.arg);
 }
 
-function operator_set(val, next) {
+function op_set(val, next) {
     this.arg = val;
     for (var i = 0; i < this.events.length; i++ ) {
         this.events[i](val, _empty_func);
@@ -213,14 +213,14 @@ function atom_watch(func, next) {
 function newAtom(arg) {
     return {
         unary_read: unary_read,
-        operator_set: operator_set,
+        op_set: op_set,
         arg: arg,
         watch: atom_watch,
         events: [],
     }
 }
 
-function newLens(reader, setter) {
+function newLens(reader, setter, string) {
     return {
         query: function(item) {
             return reader(item);
@@ -228,6 +228,9 @@ function newLens(reader, setter) {
         set: function(old, item) {
             return setter(old, item)
         },
+        toString: function() {
+            return string;
+        }
     }
 }
 
@@ -237,11 +240,42 @@ function defer(func) {
     }
 }
 
-function Some(x) {
-    return [0, x];
+function Maybe(x) {
+    this[0] = x;
 }
 
-var None = [1];
+function Some(x) {
+    var s = new Maybe(0);
+    s[1] = x;
+    return s
+}
+
+var None = new Some(1);
+
+function Maybe_withDefault(self,def){
+    if (def[0] == 0) {
+        return self[1];
+    } else {
+        return def;
+    }
+}
+
+
+function Maybe_map(self,func){
+    if (def[0] == 0) {
+        return Some(func(def[1]));
+    } else {
+        return None;
+    }
+}
+
+Maybe.prototype.withDefault = function(def){
+    return Maybe_withDefault(this,def);
+}
+
+Maybe.prototype.map = function(func){
+    return Maybe_map(this,def);
+}
 
 function sleep(time, callback) {
     setTimeout(callback, time);
@@ -415,7 +449,7 @@ Vector.prototype.toJSON = function() {
 Vector.prototype.indexOf = function(find) {
     var index = -1;
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(find)) {
+        if (this.get(i).op_eq(find)) {
             index += 1;
             return index;
         }
@@ -626,12 +660,12 @@ Vector.prototype.toString = function () {
     return "["+this.join(",")+"]"
 }
 
-Vector.prototype.operator_eq = function (other) {
+Vector.prototype.op_eq = function (other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
     for (var i = 0; i < this.length; i++) {
-        if (!(this.get(i).operator_eq(other.get(i)))) {
+        if (!(this.get(i).op_eq(other.get(i)))) {
             return false;
         }
     }
@@ -705,14 +739,14 @@ function getProperIndex(self, index) {
 
 Vector.prototype.has = function (s) {
     for (var i = 0; i < this.length; i++) {
-        if (this.get(i).operator_eq(s)) {
+        if (this.get(i).op_eq(s)) {
             return true;
         }
     }
     return false;
 }
 
-Vector.prototype.operator_add = function (s) {
+Vector.prototype.op_add = function (s) {
     var newArr = this;
     for (var i = 0; i < s.length; i++) {
         newArr = newArr.append(s.get(i));
@@ -816,19 +850,19 @@ var nil;
         return new_node(node.key, node.val, node.lev, lo, hi);
     };
     with_lo = function(node, lo) {
-        return lo && lo.operator_eq(node.lo) ? node : with_lo_hi(node, lo, node.hi);
+        return lo && lo.op_eq(node.lo) ? node : with_lo_hi(node, lo, node.hi);
     };
     with_hi = function(node, hi) {
         return hi === node.hi ? node : with_lo_hi(node, node.lo, hi);
     };
     go_lo = function(node, key, lt) {
-        return (lt && lt(key, node.key)) || (!lt && key.operator_lt( node.key));
+        return (lt && lt(key, node.key)) || (!lt && key.op_lt( node.key));
     };
 
 
     has = function(node, key, lt) {
         while (node) {
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 return true;
             }
             node = go_lo(node, key, lt) ? node.lo : node.hi;
@@ -847,7 +881,7 @@ var nil;
 
     get = function(node, key, fail, lt) {
         while (node) {
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 return node.val;
             }
             node = go_lo(node, key, lt) ? node.lo : node.hi;
@@ -859,8 +893,8 @@ var nil;
         if (!node) {
             return new_node(key, val, 0);
         }
-        if (key.operator_eq(node.key)) {
-            return val.operator_eq(node.val) ? node : new_node(key, val, node.lev, node.lo, node.hi);
+        if (key.op_eq(node.key)) {
+            return val.op_eq(node.val) ? node : new_node(key, val, node.lev, node.lo, node.hi);
         }
         node = go_lo(node, key, lt) ? skew(node, put(node.lo, key, val, lt)) :
             skew(with_hi(node, put(node.hi, key, val, lt)));
@@ -872,7 +906,7 @@ var nil;
             var lo = node.lo,
                 hi = node.hi,
                 hi_lo, lev = node.lev;
-            if (key.operator_eq(node.key)) {
+            if (key.op_eq(node.key)) {
                 if (!lo || !hi) {
                     return lo || hi;
                 }
@@ -890,7 +924,7 @@ var nil;
                 node = with_hi(node, hi);
             }
             if ((lo && lo.lev < lev - 1) || (hi && hi.lev < lev - 1)) {
-                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .operator_gt( lev) ? with_lev(hi, lev - 1) : hi);
+                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .op_gt( lev) ? with_lev(hi, lev - 1) : hi);
                 node = skew(node);
                 if (node.hi) {
                     node = with_hi(node, skew(node.hi));
@@ -966,90 +1000,5 @@ function dict(obj,lt) {
     map = map.set(res[0], res[1]);
   }
   return map;
-}var main_fs = require("fs");
-var http = require("http");
-
-function server_readFile(f,next) {
-    main_fs.readFile(f,function(e,res){
-        if(e){
-            next([1])
-        } else {
-            next([0,res])
-        }
-    })
 }
-
-function _http_get(url, next) {
-    http.get({path: url}, next);
-}
-
-function server_createServer(func) {
-    return http.createServer(function (req, res) {
-        req.url = decodeURI(req.url);
-
-        func(req, function (_res) {
-            res.writeHead(_res.status, {'Content-Type': _res.contentType});
-            res.end(_res.body, _res.encoding);
-        })
-    })
-}
-
-var _html_changeName = function _html_changeName(event, name) {
-    function hello(x,y,z) {
-        event(x,y,z);
-    }
-    Object.defineProperty(hello, 'name', { writable: true });
-    hello.name = name;
-    return hello;
-}
-
-var _monk_connect = require("monk");
-
-function _monk_get(db, name, decoder) {
-    var tmp = db.get(name);
-    tmp.decoder = decoder;
-    return tmp;
-}
-
-function _monk_find(coll, query, next) {
-    console.log("finding");
-    coll.find(query).catch(function() { console.log("can not connect to database"); })
-    .then(function(i) {
-        next(fromArray(i.map(coll.decoder)));
-    })
-}
-
-function _monk_search(coll, query, search, next) {
-    var q = {$text: {$search: search}}
-    query = Object.assign({}, query, q);
-    console.log("searching");
-    coll.find(query).catch(function() { console.log("can not connect to database"); })
-    .then(function(i) {
-        next(fromArray(i.map(coll.decoder).reverse()));
-    });
-}
-
-function _monk_insert(coll, obj, next) {
-    coll.insert(obj);
-    next()
-}
-
-function server_handleQuery(url, func, next) {
-        var req = url.slice(url.indexOf("/", 2)+1);
-        req = decodeURI(req);
-        req = JSON.parse(req);
-        req[req.length-1] = function something(res) {
-            return {
-                body: JSON.stringify(res),
-                status: 200,
-                contentType: "text",
-            }
-        };
-
-        func(req, next);
-}
-
-function server_isQuery(url) {
-    return url.slice(1, url.indexOf("/", 2)) === "query"
-}
-function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_nodeInit();main__read = server_readFile;main_quit = process.exit;main_server = http_server(main_requestHandler);d=5;return (main_server).listen(http_port,c);case 5:log((((("started web server on port ")+((http_port)).toString()))+("").toString()));;return;}}}()}var main__read;var main_quit;var main_server;function main_read(c,d){var j;var k;var l;var h=0;return function g(f){while(1){switch(h){case 0:h=1;return main__read(c,g);case 1:;return d(function(){var m=f; if (m[0]==0){var n=m[1];return n;} if (m[0]==1){log(("cannot find file, "+c));return main_quit(1);}}());}}}()}function main_requestHandler(c,d){var j;var k;var l;var h=0;return function g(f){while(1){switch(h){case 0:log(("request, "+(c).url));var m=(c).url; if (m=="/"){h=3;return main__read("EC.html",g);}/*case*/h=4;break;/*case*/case 3:f=function(){var n=f; if (n[0]==0){var p=n[1];return core_assign(http_response,{body:p,contentType:"text/html"});} if (n[0]==1){return core_assign(http_response,{status:404});}}();h=2;/*block*/break;/*if*/case 4:/*notif*/ if (1){f=core_assign(http_response,{status:404,body:"404 Page not found"});h=2;/*block*/break;}case 2:;return d(f);}}}()}function http_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:http_response = new http_Response(200,"text/plain","","");http_port = process.env.PORT || 3000;http_server = server_createServer;http_handleQuery = server_handleQuery;http_isQuery = server_isQuery;;return;}}}()}var http_response;var http_port;var http_server;var http_handleQuery;var http_isQuery;function http_Server(c){this.listen=c;}http_Server._fields=["listen"];function http_NodeHTTP(c){this.createServer=c;}http_NodeHTTP._fields=["createServer"];function http_Request(c){this.url=c;}http_Request._fields=["url"];function http_Response(c,d,f){this.status=c;this.contentType=d;this.body=f;}http_Response._fields=["status","contentType","body"];http_Response.prototype.toString=(function(){return http_Response_toString(this)});function http_Response_toString(http_self){;return (((((((((((("Response(")+(((http_self).status)).toString()))+(", ").toString()))+(((http_self).contentType)).toString()))+(", ").toString()))+(((http_self).body)).toString()))+(")").toString());}function http_endResponse(http_x){;return core_assign(http_response,{body:jsonStringify(http_x)});}function http_toUrl(http_expects){;return ("query/"+jsonStringify(http_expects(http_endResponse)));}main_nodeInit();})()
+function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:log((newLens(function(f){return (f).x}, function(g,f){return Object.assign(new g.constructor(), g,{x:f})},''+".x")));;return;}}}()}main_nodeInit();

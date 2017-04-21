@@ -104,7 +104,12 @@ def checkCase(parser, case, typ, first=False):
         for iter in range(len(case.nodes)):
             node = case.nodes[iter]
             checkCase(parser, node, typ.list[iter])
-
+    elif type(case) is Tree.Array:
+        if not type(typ) is Types.Array:
+            case.error("pattern, matches on an array but is supposed to match on "+str(typ))
+        for iter in range(len(case.nodes)):
+            node = case.nodes[iter]
+            checkCase(parser, node, typ.elemT)
     elif type(case) is Tree.Operator and case.kind == "or" and not case.curry and not case.partial:
         typT = case.nodes[0].type
         if typT != case.nodes[1].type:
@@ -117,6 +122,8 @@ def checkCase(parser, case, typ, first=False):
     elif type(case) in [Tree.String, Tree.Int, Tree.Float]:
         if case.type != typ:
             case.error("expecting type "+str(case.type)+", not "+str(typ))
+    elif type(case) is Tree.Operator and case.kind == ".." and not case.curry and not case.partial:
+        checkCase(parser, case.nodes[0], Types.Array(False, typ))
     elif not type(case) is Tree.Under:
         case.error("unknown pattern")
 

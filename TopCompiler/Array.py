@@ -41,17 +41,24 @@ def arrayLiteral(parser, shouldRead= True):
             lastSize = len(parser.currentNode.nodes)
             parser.nextToken()
             continue
+        elif t.token == "\n":
+            endExpr(parser)
         elif parser.thisToken().token == "..":
             endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
-            if init:
-                parseError(parser, "unexpected ..")
 
-            if lastSize != 0:
-                parseError(parser, "unexpected ..")
+            if ExprParser.isUnary(parser, parser.lookBehind()):
+                op = Tree.Operator("..", parser)
+                Parser.Opcode(parser, "..", lambda: operatorPop(parser, op, 1, True))
+            else:
+                if init:
+                    parseError(parser, "unexpected ..")
 
-            rang = True
-            arr.range = rang
+                if lastSize != 0:
+                    parseError(parser, "unexpected ..")
+
+                rang = True
+                arr.range = rang
             parser.nextToken()
             continue
         elif parser.thisToken().token == ":":
@@ -135,3 +142,4 @@ Parser.exprToken["["] = arrayLiteral
 Parser.exprToken["]"] = closeBracket
 Parser.exprToken[".."] = lambda parser: Error.parseError(parser, "unexpected ..")
 Parser.exprType["whiteOpenS"] = lambda parser, token: arrayLiteral(parser, False)
+Parser.precidences[".."] = (True, 1.5)

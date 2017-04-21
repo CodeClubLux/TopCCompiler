@@ -12,6 +12,7 @@ from TopCompiler import MethodParser
 from TopCompiler import Interface
 from TopCompiler import FuncParser
 from TopCompiler import Enum
+from TopCompiler import Alias
 
 class Struct:
     def __init__(self, name, fieldType, actualfields, gen, node, package):
@@ -86,10 +87,12 @@ def typeParser(parser, decl= False):
         gen = FuncParser.generics(parser, name)
 
     if parser.thisToken().token != "=":
-        if parser.thisToken().token in ["with", "either"]:
+        if parser.thisToken().token in ["with", "either", "is"]:
             tmp = parser.currentNode
             if parser.thisToken().token == "either":
                 Enum.enumParser(parser, name, decl, gen)
+            elif parser.thisToken().token == "is":
+                Alias.aliasParser(parser, name, decl, gen)
             else:
                 parser.currentNode = Tree.PlaceHolder(parser)
                 Interface.traitParser(parser, name, decl, gen)
@@ -185,7 +188,7 @@ def initStruct(parser, package= "", shouldRead=True):
 
     while parser.thisToken().token != "}":
 
-        if parser.thisToken().token == ",":
+        if parser.thisToken().token in [",", "\n"]:
             ExprParser.endExpr(parser)
         else: Parser.callToken(parser)
 
@@ -206,30 +209,36 @@ def closeCurly(parser):
     if parser.curly < 0:
         Tree.PlaceHolder(parser).error("unexpected }")
 
-def index(parser):
-    if len(parser.currentNode.nodes) == 0:
+def index(parser, unary=False):
+    if not unary:
+        unary = ExprParser.isUnary(parser, parser.lookBehind())
+
+    if not unary and len(parser.currentNode.nodes) == 0:
         Error.parseError(parser, "unexpected .")
 
     field = parser.nextToken()
 
     if not field.type in ["identifier", "i32"]:
-        Error.parseError(parser, "field name must be an identifer")
+        Error.parseError(parser, "field name must be an identifier")
 
     acess = Tree.Field(0, Types.Null(), parser)
+    acess.unary = unary
     acess.number = field.type == "i32"
 
     field = field.token
 
-    acess.addNode(parser.currentNode.nodes[-1])
     acess.owner = parser.currentNode
-
     acess.field = field
 
-    parser.currentNode.nodes[-1] = acess
+    if not unary:
+        acess.addNode(parser.currentNode.nodes[-1])
+        parser.currentNode.nodes[-1] = acess
+    else:
+        parser.currentNode.addNode(acess)
 
 Parser.exprToken["type"] = typeParser
 Parser.exprToken["."] = index
-
+Parser.exprType["dotS"] = lambda parser, token: index(parser, unary=True)
 
 def offsetsToList(offsets):
     array = [0] * len(offsets)
