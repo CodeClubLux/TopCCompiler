@@ -217,6 +217,13 @@ class Type:
         return id(self)
 
     def __eq__(self, other):
+        if type(self) is Alias:
+            self = self.typ
+        if type(other) is Alias:
+            other = other.typ
+        if type(other) is bool:
+            print("error")
+
         return other.name == self.name
 
     def duckType(self, parser, other, node, mynode, iter):
@@ -451,6 +458,7 @@ class Array(Pointer):
                     Array(False, T("T", All,  "Array")),
                     coll.OrderedDict([("Array.T", All)])
                 ),
+                "remove": FuncPointer([I32()], self),
                 "serial": FuncPointer(
                     [FuncPointer([self.elemT], T("T", All, "Array"), do=True)],
                     Array(False, T("T", All, "Array")),
@@ -539,6 +547,8 @@ class Interface(Type):
         self.generic = obj.generic
         self.normalName = obj.normalName
 
+        return self
+
     def hasMethod(self, parser, field):
         """if field in self.types:
             return self.types[field]
@@ -621,6 +631,7 @@ class T(Type):
 class Enum(Type):
     def __init__(self, package, name, const, generic):
         self.generic = generic
+        self.gen = generic
 
         self.const = const
         self.types = {}
@@ -628,7 +639,9 @@ class Enum(Type):
         self.package = package
         self.normalName = name
 
-        self.remainingGen = generic
+        remaining = remainingT(self)
+
+        self.remainingGen = remaining
         self.methods = {}
 
         gen = self.remainingGen
@@ -639,12 +652,22 @@ class Enum(Type):
 
         self.name = (package + "." if package != "_global" else "") + name + genericS
 
-    def addMethod(self, parser, name, method):
+    def fromObj(self, other):
+        self.remainingGen = other.remainingGen
+        self.generic = other.generic
+        self.gen = other.generic
+        self.methods = other.methods
+        self.name = other.name
+        self.const = other.const
+        self.package = other.package
+        self.normalName = other.normalName
+
+    def addMethod(self, i, parser, name, method):
         package = parser.package
 
         if package in self.methods:
             if name in self.methods[package]:
-                Error.parseError(parser, "method "+self.name+"."+name+" already exists")
+                i.error("Method called "+name+", already exists")
             self.methods[package][name] = method
         else:
             self.methods[package] = {name: method}
@@ -672,7 +695,7 @@ class Enum(Type):
         if self.normalName != other.normalName:
             node.error("expecting type "+self.name+", not "+str(other))
 
-        for name in self.generic:
+        for name in self.remainingGen:
             a = self.generic[name]
             b = other.generic[name]
 
@@ -687,6 +710,7 @@ class Alias(Type):
         self.normalName = name
 
         self.generic = generic
+        self.remainingGen = generic
 
         self.package = package
 
@@ -717,9 +741,7 @@ def isGeneric(t):
         return isGeneric(t.returnType)
     elif type(t) is Array and isGeneric(t.elemT): return True
     elif type(t) is T: return True
-    elif type(t) is Interface: return t.normalName != t.name
-    elif type(t) is Struct: return t.normalName != t.name
-    elif type(t) is Assign: return True
+    elif type(t) in [Interface, Struct, Alias, Enum]: return t.normalName != t.name
     elif type(t) is Tuple:
         for i in t.list:
             if isGeneric(i):
@@ -740,12 +762,15 @@ def remainingT(s):
     elif type(s) is Interface:
         for i in s.types:
             args.update(remainingT(s.types[i]))
-    elif type(s) is Struct:
+    elif type(s) in [Struct, Enum]:
         gen = s.gen
         for i in gen:
-            if ".".join(i.split(".")[:-1]) == s.package+"."+s.normalName:
-                args[i] = gen[i]
-
+            if s.package == "_global":
+                if ".".join(i.split(".")[:-1]) == s.normalName:
+                    args[i] = gen[i]
+            else:
+                if ".".join(i.split(".")[:-1]) == s.package+"."+s.normalName:
+                    args[i] = gen[i]
     elif type(s) is T:
         args[s.name] = s
 
@@ -799,6 +824,9 @@ class Float(Type):
         return self.__types__
 
     def duckType(self, parser, other, node, mynode, iter):
+        if type(other) is Alias:
+            other = other.typ
+
         if not type(other) in [I32,Float]:
             mynode.error("expecting type " + str(self) + ", or "+str(I32())+" and got type " + str(other))
 
@@ -873,8 +901,7 @@ def replaceT(typ, gen, acc={}):
 
         types = {i: replaceT(types[i], gen, acc) for i in types}
 
-        new = Interface(False, types, gen, typ.normalName)
-        c.fromObj(new)
+        c.fromObj(Interface(False, types, gen, typ.normalName))
 
         """
         if len(gen) != 0:
@@ -887,13 +914,22 @@ def replaceT(typ, gen, acc={}):
         const = coll.OrderedDict()
         g = {}
 
+        c = Enum(typ.package, typ.normalName, const, g)
+
+        if acc == {}:
+            acc = {typ: c}
+        else:
+            acc[typ] = c
+
         for name in typ.const:
             const[name] = [replaceT(i, gen, acc) for i in typ.const[name]]
 
         for name in typ.generic:
             g[name] = replaceT(typ.generic[name], gen, acc)
 
-        return Enum(typ.package, typ.normalName, const, g)
+        c.fromObj(Enum(typ.package, typ.normalName, const, g))
+        return c
+
     elif type(typ) is Tuple:
         arr = []
         for i in typ.list:
@@ -979,8 +1015,30 @@ def Lambda(func, vars, typ= False, do= False):
 
             err = False
             try:
-                TypeInference.infer(parser, func.nodes[0])
-                TypeInference.infer(parser, func.nodes[1])
+                TypeInference.infer(parser, func)
+                #func.nodes[0])
+                #TypeInference.infer(parser, func.nodes[1])
+
+                tree = self.tree
+                o_iter = self.o_iter
+                target = func.nodes[1].global_target
+                realT = tree.nodes[o_iter].global_target
+
+                if target != parser.global_target:
+                    root = tree.nodes[o_iter]
+
+                    if type(root) is Tree.FuncBody:
+                        try:
+                            tree.nodes[o_iter - 1].global_target = target
+                            tree.nodes[o_iter - 2].global_target = target
+                        except IndexError:
+                            print("Index Error")
+
+                    root.global_target = target
+
+                elif realT != target and target != "full" and realT != "full":
+                    i.error(
+                        "variable " + i.name + " is of target " + target + ", but being used in a " + realT + " target")
             except EOFError as e:
                 err = str(e)
 
@@ -1022,6 +1080,7 @@ def Lambda(func, vars, typ= False, do= False):
 
     return f
 
+from TopCompiler import topc
 
 class Unknown(Type):
     def __init__(self, index, func):
@@ -1033,7 +1092,15 @@ class Unknown(Type):
         self.func = func
 
     def __eq__(self, other):
-        self.func.check()
+        parser = topc.global_parser
+        if self.index == -1:
+            self.func.type.returnType = other
+        else:
+            self.func.type.args[self.index] = other
+        self.func.type.check(parser)
+
+    def __hash__(self):
+        return id(self)
 
     def duckType(self, parser, other, node, mynode, iter):
         if self.index == -1:

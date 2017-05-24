@@ -13,8 +13,12 @@ Vector.prototype.mask = Vector.prototype.width - 1;
 var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
 
 Vector.prototype.get = function (key) {
+    var o_key = key;
     key = getProperIndex(this, key);
     if (key >= this.length+this.start || key < 0) {
+        console.log(o_key);
+        console.log(key);
+        console.log(this.length);
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -27,6 +31,10 @@ Vector.prototype.get = function (key) {
           node = node[(key >> level) & mask]
     }
     return node[key & mask]
+}
+
+Vector.prototype.remove = function(index) {
+    return this.slice(0, index).op_add(this.slice(index+1, this.length));
 }
 
 Vector.prototype.serial = function (func, next) {
@@ -315,6 +323,11 @@ Vector.prototype.join = function (s) {
 
 Vector.prototype.slice = function (start,end) {
     start = getProperIndex(this, start);
+
+    if (end === 0) {
+        return EmptyVector;
+    }
+
     if (!end) {
         end = this.length;
     } else {

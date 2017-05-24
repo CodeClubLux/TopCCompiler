@@ -43,7 +43,11 @@ def operatorPop(parser, op, takesIn, unary= False):
     pass
    # checkOperator(parser, parser.currentNode.nodes[-1], unary)
 
-def newOperator(kind, precidence, takesIn, func=None, unary= False):
+operators = {}
+
+Parser.exprType["operator"] = lambda parser, token: operators[token](parser)
+
+def newOperator(kind, precidence, takesIn, func=None, unary= False, token=True):
     def f(parser):
         op = Tree.Operator(kind, parser)
 
@@ -58,7 +62,13 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False):
 
     if func == None: func = f
     Parser.precidences[kind] = precidence
-    Parser.exprToken[kind] = lambda parser: Error.parseError(parser, "unexpected operator") if parser.lookBehind().type == "xoperator" else func(parser)
+
+    _f = lambda parser: Error.parseError(parser, "unexpected operator") if parser.lookBehind().type == "xoperator" else func(parser)
+
+    if token:
+        Parser.exprToken[kind] = _f
+    else:
+        operators[kind] = _f
 
 def endExpr(parser, layer= -1):
     for i in reversed(parser.stack[parser.bookmark[layer]:]):
@@ -69,7 +79,7 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "set"] or Parser.selectStmt(parser, lastToken) != None) and\
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool", "lens"]
 
     if fact: return True
@@ -126,7 +136,7 @@ def asOperator(parser):
     else:
         Error.parseError(parser, "unexpected as operator ")
 
-newOperator("set", (2, True), 2, func=set)
+newOperator("set", (2, True), 2, func=set, token=False)
 newOperator("|>", (2, True), 2)
 newOperator(">>", (2, True), 2)
 newOperator("and", (3, True), 2)

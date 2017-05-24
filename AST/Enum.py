@@ -117,9 +117,6 @@ class Fake:
         return self.codegen.createName(a)
 
     def append(self, string):
-        if string.count("{") > 0:
-            print("error")
-
         if self.checking:
             self.check.append(string)
         else:
@@ -190,19 +187,20 @@ class MatchCase(Node):
                         codegen.append(name + "=" + tmp + "[" + str(index + 1) + "];")
             elif type(node) is Tree.Tuple:
                 codegen.append("(")
+                codegen.checking = True
                 iter = 0
                 for (index, i) in enumerate(node):
-                    if type(i) != Tree.ReadVar:
+                    if not (type(i) is Tree.ReadVar and i.name[0].islower()):
                         if iter > 0:
-                            codegen.append("&&")
+                            codegen.check.append("&&")
                         loop(i, tmp + "[" + str(index) + "]")
                         iter += 1
 
-                codegen.append(")")
+                codegen.check.append(")")
                 codegen.checking = False
 
                 for (index, i) in enumerate(node):
-                    if type(i) is Tree.ReadVar:
+                    if type(i) is Tree.ReadVar and i.name[0].islower():
                         if not self.yielding:
                             name = codegen.createName(i.package + "_" + i.name)
                             codegen.append("var ")
@@ -265,6 +263,7 @@ class MatchCase(Node):
                     codegen.append(")")
                 codegen.checking = False
 
+        codegen.checking = True
         tmp = self.owner.tmp
         loop(self.nodes[0], self.owner.tmp)
         codegen.appendToCodegen()

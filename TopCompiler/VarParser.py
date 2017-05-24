@@ -18,6 +18,16 @@ def pattern(name, names, parser, getName):
         if type(node) is Tree.Tuple:
             for i in node:
                 pattern(i, names, parser, getName)
+        elif type(node) is Tree.InitStruct:
+            for i in node:
+                if type(i) is Tree.Assign:
+                    if not type(i.nodes[0]) is Tree.ReadVar:
+                        i.error("Expecting variable name")
+                    pattern(i.nodes[1], names, parser, getName)
+                elif type(i) is Tree.ReadVar:
+                    pattern(i, names, parser, getName)
+                else:
+                    i.error("Expecting variable name")
         return name
     elif type(name) is Tree.ReadVar:
         names.append(name.name)
@@ -27,9 +37,10 @@ def pattern(name, names, parser, getName):
     elif type(name) is Lexer.Token and name.type == "identifier":
         return getName(name)
     else:
-        p = Tree.PlaceHolder(parser)
-        p.token = name
-        p.error("Unexpected token " + name.token)
+        if type(name) is Lexer.Token:
+            Error.parseError(parser, "Unexpected token "+name.token)
+        else:
+            name.error("Unexpected token")
 
 def createParser(parser, name= "", typ= None, check= True, imutable= True, attachTyp= False): # : creation
     if name == "":
@@ -116,14 +127,13 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
     checkIt = False
     attachTyp = False
 
-    if parser.lookInfront().token == ".":
-
+    """if parser.lookInfront().token == ".":
         attachTyp = Types.parseType(parser, _attachTyp= True)
         parser.nextToken()
         if not imutable or not type(node) is Tree.Root:
             Error.parseError(parser, "expecting =, not .")
         parser.nextToken()
-
+    """
 
     name = parser.thisToken()
 
@@ -133,7 +143,11 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
     isPattern = False
 
-    if parser.thisToken().token == "(":
+    t = parser.thisToken()
+    if t.token == "{":
+        Error.parseError(parser, "Expecting space")
+
+    if t.token in ["("] or t.type == "bracketOpenS":
         isPattern = True
         owner = parser.currentNode
         pattern = Tree.PlaceHolder(parser)
@@ -170,13 +184,16 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
 
         if attachTyp:
-            assignParser(parser, name=attachTyp.name+"_"+name.token, package= attachTyp.package, init=True)
+            assignParser(parser, name=parser.package+"_"+attachTyp.normalName+"_"+name.token, package= attachTyp.package, init=True)
+            n.nodes[1].attachName = parser.package+"_"+attachTyp.normalName
+            n.nodes[1].varName = name.token
         else:
             c = name if type(name) is Tree.PlaceHolder else name.token
             assignParser(parser, name= c, init= True)
 
         n.nodes[1].isGlobal = n.nodes[0].isGlobal
         n.nodes[1].createTyp = n.nodes[0].varType
+
 
         parser.currentNode = node
     else:

@@ -14,6 +14,7 @@ class Operator(Node):
         self.partial = False
         self.interface = False
         self.name = False
+        self.opT = Types.Null()
 
 
     def __str__(self):
@@ -195,8 +196,12 @@ class Operator(Node):
 
 
 def checkOperator(self, parser):
-        unary = self.unary
         i = self
+        if type(i.opT) is Types.Alias:
+            i.opT = i.opT.typ
+
+        unary = self.unary
+
 
         if not (i.kind == "<-" and not unary) and i.type == Types.Null():
             i.error("op "+i.kind + " cannot operate on type "+str(i.type))
@@ -256,7 +261,7 @@ def checkOperator(self, parser):
                 i.name = overloads[i.kind]
                 return
 
-            if type(i.opT) in [Types.Struct, Types.Interface, Types.T, Types.Array]:
+            if type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array]:
                 func = i.opT.hasMethod(parser, overloads[i.kind])
                 if not func:
                     try:

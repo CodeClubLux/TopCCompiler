@@ -90,7 +90,7 @@ class Assign(Node):
         if type(self.owner) is Tree.InitStruct:
             self.nodes[1].compileToJS(codegen)
             return
-        if self.init:
+        elif self.init:
             if type(self.name) is Tree.PlaceHolder:
                 name = codegen.getName()
             else:
@@ -112,6 +112,12 @@ class Assign(Node):
                     if type(p) is Tree.Tuple:
                         for (index, i) in enumerate(p):
                             gen(tmp + "[" + str(index) + "]", i)
+                    elif type(p) is Tree.InitStruct:
+                        for i in p:
+                            if type(i) is Tree.Assign:
+                                gen(tmp+"."+i.nodes[0].name, i.nodes[1])
+                            else:
+                                gen(tmp + "."+i.name, i)
                     elif type(p) is Tree.ReadVar:
                         if not p.isGlobal:
                             name = codegen.readName(self.package + "_" + p.name)

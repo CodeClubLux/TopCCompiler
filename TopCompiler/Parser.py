@@ -225,6 +225,7 @@ def selectStmt(parser, token):
         return stmts[token.token]
 
 def callToken(self, lam= False):
+
     s1 = selectStmt(self, self.thisToken())
 
     b = self.thisToken()
@@ -235,7 +236,7 @@ def callToken(self, lam= False):
         s1(self)
         returnBookmark(self)
     else:
-        if not lam and Module.shouldCall(b) and (b.token in ["!", "_", "(", "\\", "$", "decoder", "|"] or not b.type in ["symbol", "operator", "indent", "keyword"]) and not ExprParser.isUnary(self, self.lookBehind()):
+        if not lam and Module.shouldCall(b) and (b.token in ["!", "_", "(", "\\", "|"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and not ExprParser.isUnary(self, self.lookBehind()):
             if b.token == "$":
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
@@ -253,12 +254,12 @@ class Func:
 class Parser:  # all mutable state
     def nextToken(parser):
         parser.iter += 1
-        try:
-            t = parser.thisToken()
-            if t.token == "," and parser.lookBehind().token == ",":
-                Error.parseError(parser, "unexpected ,")
-            return t
-        except IndexError:
+        if parser.iter < len(parser.tokens):
+            return parser.tokens[parser.iter]
+            #if t.token == "," and parser.lookBehind().token == ",":
+            #    Error.parseError(parser, "unexpected ,")
+            #return t
+        else:
             parser.iter -= 1
             if parser.paren > 1:
                 Error.parseError(parser, "unmatched (")
@@ -323,6 +324,7 @@ class Parser:  # all mutable state
             "op_set": FuncPointer([T], Null(), do= True),
             "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True),
             "toString": FuncPointer([], Types.String(0)),
+            "update": FuncPointer([FuncPointer([T], T)], Types.Null(), do=True)
         }, coll.OrderedDict([("Atom.T", T)]), "Atom")
 
         A = Types.T("A", All, "Lens")
@@ -366,7 +368,7 @@ class Parser:  # all mutable state
 
         Maybe.methods["_global"]["map"] = Types.FuncPointer(
             [Types.All, Types.FuncPointer([Maybe_T], Maybe_R)],
-            Types.replaceT(Maybe, {"T": Maybe_R}),
+            Types.replaceT(Maybe, {"Maybe.T": Maybe_R}),
             generic = coll.OrderedDict([("R", Maybe_R)])
         )
 
@@ -478,7 +480,7 @@ class Parser:  # all mutable state
             Tree.transform(self.currentNode)
             validate(self, self.currentNode)
 
-        if self.package == "main" and self.dev:
+        if self.package == "main" and self.dev and self.atomTyp:
             typ = self.atomTyp
             d = Tree.Decoder(self)
             d.shouldBeTyp = typ

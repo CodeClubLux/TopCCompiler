@@ -42,7 +42,7 @@ keywords = [
         'import',
         'def',
         'then', 'do', 'if', 'elif', 'else', 'while',
-        'int', 'float', 'none', 'bool', 'string', 'as',
+        'int', 'float', 'bool', 'string', 'as',
         'break', 'continue',
         'true', 'false',
         'let',
@@ -58,6 +58,7 @@ keywords = [
         "decoder",
         "extension",
     ]
+
 token_specification = [
         ("comment", r"/\*([\s\S]*?)\*/"),
         ("indent", r'\n[ ]*'),
@@ -79,6 +80,8 @@ token_specification = [
         ('assign',  r'='),
         ('whiteOpenS', r' +\['),
         ('bracketOpenS', r' +\{'),
+        ('doubleDot', '\.\.'),
+        ('spaceDoubleDot', ' +\.\.'),
         ('dotS', r' +\.'),
         ('openS', r'\['),
         ('closeS', r'\]'),
@@ -94,7 +97,6 @@ token_specification = [
         ('skip', r'[ \t]'),
         ("single", r"'(?:[^'\\])*'"),
         ("str", r'"(?:\\.|({.*})|[^"\\])*"'),
-        ('doubleDot', '\.\.'),
         ('dot', '\.'),
         ('tab', '\t'),
         ('comma', ','),
@@ -191,7 +193,8 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
                         tokens.append(Token("(", "symbol", line, pos+iter))
 
                         t = tokenize(val[start: iter], filename)
-                        for i in t:
+
+                        for i in t[:-2]:
                             i.line += line
                             i.column += pos+start
                             tokens.append(i)
@@ -210,6 +213,11 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
         elif typ == "single":
             val = mo.group(typ)
             array.append(Token(val, "str", line, pos))
+        elif typ == "spaceDoubleDot":
+            _val = mo.group(typ)
+            val = _val.replace(" ", "")
+            pos = pos + (len(_val) - len(val))
+            array.append(Token(val, "symbol", line, pos))
         elif typ != 'skip' and not typ in ["comment", "commentLine"]:
             val = mo.group(typ)
             if typ == "identifier":

@@ -7,7 +7,7 @@ class InitPack(Node):
     def __init__(self, package, parser):
         Node.__init__(self, parser)
         self.package = package
-        self.target = parser.global_target
+        self.target = parser.output_target
         self.thisPackage = parser.package
 
     def compileToJS(self, codegen):

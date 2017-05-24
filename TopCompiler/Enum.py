@@ -81,9 +81,9 @@ def checkCase(parser, case, typ, first=False):
             case.nodes[-1].error("missing "+str(len(pattern) - (len(case.nodes)-1))+" arguments")
 
         case.type = typ
-    elif type(case) is Tree.ReadVar and not first:
+    elif type(case) is Tree.ReadVar and case.name[0].upper() != case.name[0]:
         Scope.addVar(case, parser, case.name, Scope.Type(True, typ))
-    elif type(case) is Tree.ReadVar and first:
+    elif type(case) is Tree.ReadVar:
         if not (type(typ) is Types.Enum and case.name in typ.const):
             case.error("unknown pattern")
 
@@ -116,7 +116,7 @@ def checkCase(parser, case, typ, first=False):
             case.nodes[1].error("expecting type to be "+str(typ)+" and not "+str(case.nodes[1]))
 
         if typT != typ:
-            case.error("expecting result of or, to be of type "+str(typ))
+            case.error("expecting result of or, to be of type "+str(typ)+" not "+str(typT))
         case.type = Types.Bool()
         case.opT = Types.Bool()
     elif type(case) in [Tree.String, Tree.Int, Tree.Float]:

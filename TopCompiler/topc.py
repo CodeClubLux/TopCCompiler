@@ -50,6 +50,7 @@ def newProj(name):
     "linkCSS": []
 }
         """)
+
         file.close()
 
         os.mkdir(name + "/" + "lib")
@@ -90,17 +91,6 @@ def newPack(name):
         Error.error("directory has no src folder")
 
 
-class FakeParser:
-    def __init__(f, scope, structs, interfaces, allImports, lexed):
-        f.scope = scope
-        f.structs = structs
-
-        print(interfaces)
-
-        f.interfaces = interfaces
-        f.allImports = allImports
-        #f.lexed = lexed
-
 def getCompilationFiles(target):
     try:
         proj = open("src/port.json", mode="r")
@@ -111,7 +101,20 @@ def getCompilationFiles(target):
     file = {}
 
     def getCompFiles(start, dir):
+        linkCSSWithFiles = []
+        linkWithFiles = []
+        clientLinkWithFiles = []
+        nodeLinkWithFiles = []
+
         for root, dirs, files in os.walk(dir, topdown=False):
+            for i in files:
+                if root == start and i != "port.json" and i.endswith(".top"):
+                    package = i[:-4]
+                    print(i)
+                    print(root)
+                    file[package] = [(root, i)]
+                    #file[package].append((root, f + ".top"))
+
             package = root
             if package == start: continue
             package = package[package.find("src/")+len("src/"):]
@@ -136,6 +139,15 @@ def getCompilationFiles(target):
             except json.decoder.JSONDecodeError as e:
                 Error.error("In file port.json, in directory "+package+", "+str(e))
 
+            (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = handleOptions(j,["linkCSS","linkWith","linkWith-client","linkWith-node"])
+            (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [
+                ["src/" + package + "/" + c for c in i] for i in [_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles]]
+
+            linkCSSWithFiles += _linkCSSWithFiles
+            linkWithFiles += _linkWithFiles
+            clientLinkWithFiles += _clientLinkWithFiles
+            nodeLinkWithFiles += _nodeLinkWithFiles
+
             try:
                 transforms[package] = j["transforms"]
             except KeyError:
@@ -146,6 +158,9 @@ def getCompilationFiles(target):
 
             if root[0].lower() != root[0]:
                 Error.error("package name must be lowercase")
+
+        return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles)
+
     try:
         (_, dirs, _) = next(os.walk("packages"))
     except StopIteration:
@@ -167,9 +182,26 @@ def getCompilationFiles(target):
         clientLinkWithFiles += _clientLinkWithFiles
         nodeLinkWithFiles += _nodeLinkWithFiles
 
-        getCompFiles("packages/"+name+"/src/", "packages/"+name+"/src/")
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = getCompFiles("packages/"+name+"/src/", "packages/"+name+"/src/")
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [
+            [(name, "packages/" + name + "/" + c) for c in i] for i in
+            (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
 
-    getCompFiles("src/", "src/")
+
+        linkCSSWithFiles += _linkCSSWithFiles
+        linkWithFiles += _linkWithFiles
+        clientLinkWithFiles += _clientLinkWithFiles
+        nodeLinkWithFiles += _nodeLinkWithFiles
+
+    (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = getCompFiles("src/", "src/")
+    (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [
+        [("", c) for c in i] for i in
+        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
+
+    linkCSSWithFiles += _linkCSSWithFiles
+    linkWithFiles += _linkWithFiles
+    clientLinkWithFiles += _clientLinkWithFiles
+    nodeLinkWithFiles += _nodeLinkWithFiles
 
     return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, file, transforms)
 
@@ -232,6 +264,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             Error.error("must specify compilation target in port.json file")
 
         (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node", "register-transforms"])
+        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = [
+            [("", c) for c in i] for i in(linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles)]
 
         for i in transforms:
             Module.importModule(os.path.abspath(i))
@@ -313,6 +347,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.atomTyp = False
             declarations.outputFile = outputFile
             declarations.jsFiles = [b for (a,b) in clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles]
+            declarations.cssFiles = linkCSSWithFiles
             declarations.transforms = transforms
 
             global_parser = declarations
@@ -338,6 +373,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.externFuncs = {"main": []}
             declarations.filenames_sources = filenames_sources
             declarations.global_target = target
+            declarations.output_target = target
             declarations.didCompile = False
 
             ResolveSymbols.resolve(declarations)
@@ -353,6 +389,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
                 parser.files = files
                 parser.global_target = target
+                parser.output_target = target
                 parser.lexed = lexed
                 parser.filenames = filenames
                 parser.compiled = declarations.compiled
@@ -442,8 +479,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         sour = sources
 
         c = compile(target, sour, fil)
-        return c
 
+        return c
     except (EOFError, ArithmeticError) as e:
         if dev:
             Error.error(str(e))
@@ -487,7 +524,7 @@ def modified(target, files, outputfile, jsFiles=[]):
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-"+target+".js")
         t = datetime.datetime.fromtimestamp(int(t))
-    except:
+    except FileNotFoundError:
         return True
 
     for i in jsFiles:

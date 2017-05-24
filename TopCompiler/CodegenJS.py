@@ -59,12 +59,13 @@ class CodeGen:
         tree._name = self.getName()
         tree._context = self.getName()
 
-        # variable declarations
-        self.inAFunction = True
-        for i in tree.before:
-            self.target = i.global_target
-            i.compileToJS(self)
-        self.inAFunction = False
+        if self.opt > 0:
+            # variable declarations
+            self.inAFunction = True
+            for i in tree.before:
+                self.target = i.global_target
+                i.compileToJS(self)
+            self.inAFunction = False
 
         for i in tree:
             self.target = i.global_target
@@ -174,7 +175,7 @@ class CodeGen:
         if value is None:
             raise Error.error("expecting type string and got none, internal error")
 
-        if self.target == self.global_target:
+        if self.target in [self.global_target, "full"]:
             if self.global_target == "full":
                 if self.inAFunction:
                     self.client_out_parts.append(value)

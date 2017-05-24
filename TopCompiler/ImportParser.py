@@ -23,7 +23,7 @@ def shouldCompile(decl, name, parser, mutated= ()):
                 parser.shouldCompile[name] = True
                 return True
 
-        res = topc.modified(parser.global_target, parser.files[name], name, jsFiles= parser.jsFiles)
+        res = topc.modified(parser.output_target, parser.files[name], name, jsFiles= parser.jsFiles)
         parser.shouldCompile[name] = res
 
         return res
@@ -63,6 +63,10 @@ def importParser(parser, decl= False):
 
             ResolveSymbols.insert(parser, p)
 
+            global_target = parser.global_target
+
+            p.global_target = "full"
+
             sc = shouldCompile(decl, oname, parser)
 
             p.sc = sc
@@ -78,7 +82,9 @@ def importParser(parser, decl= False):
 
             ResolveSymbols.insert(p, parser)
 
+            parser.global_target = global_target
             parser.currentNode.addNode(Tree.InitPack(name, parser))
+
         else:
             if not name in parser.compiled:
                 parser.compiled[name] = (False,)
@@ -112,9 +118,10 @@ def fromParser(parser, decl= False, stage=False):
                     Error.parseError(parser, nameOfVar + " is already a struct")
                 parser.structs[package][nameOfVar] = parser.structs[name][nameOfVar]
             else:
-                Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
+                pass
+                #Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
 
-            names.append((nameOfVar, parser.global_target))
+            names.append((nameOfVar, "full"))
         elif nameOfVar in parser.interfaces[name]:
             if not decl: return
 
@@ -129,6 +136,21 @@ def fromParser(parser, decl= False, stage=False):
             Error.parseError(parser, "Package " + name + " does not have a variable, or type called " + nameOfVar)
 
     token = parser.thisToken()
+
+    if token.token == "all":
+        _names = set()
+        for i in parser.structs[name]:
+            _names.add(i)
+
+        for i in parser.interfaces[name]:
+            _names.add(i)
+
+        for i in parser.scope[name][0]:
+            _names.add(i)
+
+        for i in _names:
+            getName(token, i)
+        return
 
     Parser.callToken(parser)
     elem = parser.currentNode.nodes.pop()

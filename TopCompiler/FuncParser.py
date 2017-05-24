@@ -72,13 +72,13 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         parser.nextToken()
 
         try:
-
             attachTyp = Types.Struct(False, name, parser.structs[parser.package][name]._types, parser.package)
         except KeyError:
             try:
                 attachTyp = parser.interfaces[parser.package][name]
                 if not type(attachTyp) is Types.Enum:
-                    raise EOFError()
+                    Error.parseError(parser, "no attachable data structure found, called "+name)
+
             except KeyError:
                 Error.parseError(parser, "no attachable data structure found, called "+name)
         return funcHead(parser, decl, dontAdd, True, attachTyp)
@@ -337,7 +337,7 @@ def comma(parser):
     parser.fired = True
 
 Parser.stmts["def"] = func
-Parser.exprToken["none"] = lambda parser: Error.parseError(parser, "unexpected type none")
+#Parser.exprToken["none"] = lambda parser: Error.parseError(parser, "unexpected type none")
 Parser.exprToken[","] = comma
 Parser.exprToken["_"] = under
 Parser.exprToken["::"] = genericT

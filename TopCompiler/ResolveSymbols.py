@@ -59,6 +59,10 @@ def resolve(self):
 from TopCompiler import ImportParser
 
 def _resolve(self, tokens, filename, passN= 0 ):
+    target = self.global_target
+    if self.package != "main":
+        self.global_target = "full"
+
     if self.hotswap and not ImportParser.shouldCompile(False, self.package, self):
         return
 
@@ -117,6 +121,8 @@ def _resolve(self, tokens, filename, passN= 0 ):
     self.lineNumber = 1
     self.normalIndent = 0
 
+    self.global_target = target
+
 import copy as _copy
 
 def insert(parser, p, only= False, copy= False):
@@ -155,6 +161,8 @@ def insert(parser, p, only= False, copy= False):
     p.jsFiles = parser.jsFiles
     p.outputFile = parser.outputFile
     p.transforms = parser.transforms
+    p.output_target = parser.output_target
+    p.cssFiles = parser.cssFiles
 
     return p
 

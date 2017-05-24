@@ -19,6 +19,7 @@ def indexOfInRules(rules,searchingFor):
     for (i, (typ,reg)) in enumerate(rules):
         if typ == searchingFor:
             return i
+
 def addLexRule(rule, before=False):
     if not before:
         Lexer.token_specification.append(rule)
@@ -39,7 +40,10 @@ def removeRule(rule):
         del TypeInference.checkTyp[rule]
     if rule in Parser.exprType:
         del Parser.exprType[rule]
-    del rules[indexOfInRules(rules,rule)]
+    try:
+        del rules[indexOfInRules(rules,rule)]
+    except TypeError:
+        pass
 
 def removeKeyword(rule):
     rules = Lexer.token_specification

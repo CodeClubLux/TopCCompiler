@@ -210,6 +210,10 @@ function atom_watch(func, next) {
     next();
 }
 
+function atom_update(func, next) {
+  this.op_set(func(this.arg), next);
+}
+
 function newAtom(arg) {
     return {
         unary_read: unary_read,
@@ -218,6 +222,7 @@ function newAtom(arg) {
         watch: atom_watch,
         events: [],
         toString: function(){return ""},
+        update: atom_update
     }
 }
 
@@ -419,8 +424,12 @@ Vector.prototype.mask = Vector.prototype.width - 1;
 var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
 
 Vector.prototype.get = function (key) {
+    var o_key = key;
     key = getProperIndex(this, key);
     if (key >= this.length+this.start || key < 0) {
+        console.log(o_key);
+        console.log(key);
+        console.log(this.length);
         throw new Error("out of bounds: "+key.toString())
     }
 
@@ -433,6 +442,10 @@ Vector.prototype.get = function (key) {
           node = node[(key >> level) & mask]
     }
     return node[key & mask]
+}
+
+Vector.prototype.remove = function(index) {
+    return this.slice(0, index).op_add(this.slice(index+1, this.length));
 }
 
 Vector.prototype.serial = function (func, next) {
@@ -721,6 +734,11 @@ Vector.prototype.join = function (s) {
 
 Vector.prototype.slice = function (start,end) {
     start = getProperIndex(this, start);
+
+    if (end === 0) {
+        return EmptyVector;
+    }
+
     if (!end) {
         end = this.length;
     } else {
@@ -1053,9 +1071,11 @@ assertEq(t, t.map(function (id) { return id; }))
 assertEq(assign({x: 10, y: 20}, {x: 30}).x, ({x: 30, y: 20}).x)
 
 assertEq(assign([10,20], [30]).toString(), [30,20].toString())
-
+assertEq(newVector(0,1,3).slice(0,0), EmptyVector)
 assertEq(newVector(0,1,2,3,4,5).slice(1,3), newVector(1,2) )
-assertEq(newVector(0,1,2,3).slice(1,0), newVector(1,2,3))
+assertEq(newVector(0,1,2,3).slice(1), newVector(1,2,3))
+assertEq(newVector(0,1,2,3).remove(0), newVector(1,2,3))
+assertEq(newVector(0,1,2,3).remove(1), newVector(0,2,3))
 
 
 function assert(condition) {

@@ -10,7 +10,7 @@ from TopCompiler import Struct
 
 def addMethod(node, parser, attachTyp, name, func, otherNode= False):
     if type(attachTyp) is Types.Struct:
-        parser.structs[attachTyp.package][attachTyp.normalName].addMethod(parser, name,func)
+        parser.structs[attachTyp.package][attachTyp.normalName].addMethod(node, parser, name,func)
     elif type(attachTyp) is Struct.Struct:
         if type(func) is Types.FuncPointer:
             if len(func.args) == 0:
@@ -20,7 +20,7 @@ def addMethod(node, parser, attachTyp, name, func, otherNode= False):
 
         attachTyp.addMethod(parser, name, func)
     elif type(attachTyp) is Types.Enum:
-        parser.interfaces[attachTyp.package][attachTyp.normalName].addMethod(parser, name, func)
+        parser.interfaces[attachTyp.package][attachTyp.normalName].addMethod(node, parser, name, func)
     else:
         node.error("Can't add method to "+str(attachTyp))
 

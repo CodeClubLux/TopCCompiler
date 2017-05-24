@@ -177,6 +177,10 @@ function atom_watch(func, next) {
     next();
 }
 
+function atom_update(func, next) {
+  this.op_set(func(this.arg), next);
+}
+
 function newAtom(arg) {
     return {
         unary_read: unary_read,
@@ -185,6 +189,7 @@ function newAtom(arg) {
         watch: atom_watch,
         events: [],
         toString: function(){return ""},
+        update: atom_update
     }
 }
 

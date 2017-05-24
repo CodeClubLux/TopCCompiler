@@ -318,7 +318,6 @@ function dumpObject(obj, field) {
         socket.on('style', function (data) {
             var name = data.name;
             var content = data.content;
-            console.log("\\n==== reloaded stylesheets ====");
             document.getElementById(name).innerHTML = content;
         });
 

@@ -22,7 +22,7 @@ def infer(parser, tree):
     def loop(n, o_iter):
         count = 0
         for i in n:
-            if type(n) is Tree.Root:
+            if type(n) is type(tree):
                 o_iter += 1
 
             if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
@@ -41,13 +41,12 @@ def infer(parser, tree):
                 if type(i) is Tree.FuncBody:
                     parser.func.append(parser.package+"."+i.name.replace("_", "."))
 
-                if type(i) is Tree.Lambda:
-                    i.type.check(parser)
-
                 if not type(i) is Tree.Lambda:
                     loop(i, o_iter)
                 elif not i.type.already:
                     import copy
+                    i.type.o_iter = o_iter
+                    i.type.tree = tree
                     i.type.scope = [parser.scope[parser.package][0]] + copy.copy(parser.scope[parser.package][1:])
                     i.type.check(parser)
 
@@ -93,16 +92,35 @@ def infer(parser, tree):
             elif type(i) is Tree.CreateAssign:
                 if type(i.nodes[0].name) is Tree.PlaceHolder:
                     p = i.nodes[0].name.nodes[0]
+                    node = i.nodes[1].nodes[0]
 
-                    def recur(node, pattern):
+                    def recur(typ, pattern):
                         if type(pattern) is Tree.Tuple:
-                            for (a,b) in zip(node, pattern):
-                                recur(a,b)
+                            if len(pattern) > len(typ.list):
+                                diff = len(pattern) - len(typ.list)
+                                node.error(diff+" too few values to unpack")
+                            elif len(pattern) < len(typ.list):
+                                diff = len(typ.list) - len(pattern)
+                                node.error(diff+" too many values to unpack")
+
+                            for (index, p) in enumerate(pattern):
+                                recur(typ.list[index],p)
+                        elif type(pattern) is Tree.InitStruct:
+                            for p in pattern:
+                                if type(p) is Tree.Assign:
+                                    name = p.nodes[0].name
+                                    p = p.nodes[1]
+                                else:
+                                    name = p.name
+
+                                if not name in typ.types:
+                                    node.error("Object has no field "+name)
+                                recur(typ.types[name],p)
                         else:
-                            Scope.addVar(node, parser, pattern.name, Scope.Type(True, node.type, i.global_target))
+                            Scope.addVar(node, parser, pattern.name, Scope.Type(True, typ, i.global_target))
                             pattern.isGlobal = Scope.isGlobal(parser, parser.package, pattern.name)
 
-                    recur(i.nodes[1].nodes[0], p)
+                    recur(node.type, p)
                 elif i.nodes[0].varType is None and i.nodes[0].name != "_":
                     if i.extern:
                         i.error("expecting type declaration, for external variable declaration")
@@ -141,6 +159,10 @@ def infer(parser, tree):
 
             elif type(i) is Tree.Create:
                 if not i.varType is None:
+                    #print(i.owner.global_target)
+                    if parser.package != "main" and parser.global_target != "full":
+                        print("should be full")
+
                     Scope.addVar(i, parser, i.name, Scope.Type(i.imutable, i.varType, i.owner.global_target))
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
@@ -155,7 +177,7 @@ def infer(parser, tree):
                 if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct and i.owner.nodes[0] == i):
                     if i.name in parser.imports:
                         if not type(i.owner) is Tree.Field:
-                            i.error("expecting .")
+                            i.error("expecting ., cannot directly mention package name")
                     elif type(i.type) is Tree.Type:
                         i.error("unexpected type "+str(i.type))
 
@@ -168,8 +190,8 @@ def infer(parser, tree):
                     target = Scope.targetOfVar(i, parser, parser.package, self.name)
                     realT = tree.nodes[o_iter].global_target
 
-                    if target != parser.global_target:
-                        root = parser.currentNode.nodes[o_iter]
+                    if target != parser.global_target and (parser.global_target == "full"):
+                        root = tree.nodes[o_iter]
 
                         if type(root) is Tree.FuncBody:
                             try:
@@ -370,12 +392,14 @@ def infer(parser, tree):
                         for c in i.nodes[1:]:
                             if type(c) is Tree.Under:
                                 partial = True
+                            elif startType:
+                                try:
+                                    c.type.duckType(parser, startType, i, c, 0)
+                                    startType = c.type
+                                except EOFError:
+                                    startType.duckType(parser, c.type, c, i, 0)
                             else:
-                                if not partial and c.type != startType:
-                                    c.error("Type mismatch "+str(startType)+" and "+str(c.type))
                                 startType = c.type
-
-
                         i.partial = partial
                         typ = startType
                         if i.kind in ["==", "!=", "not", "and", "or", "<", ">", "<=", ">="]:
@@ -524,6 +548,8 @@ def infer(parser, tree):
                     else:
                         c = arr.nodes[0]
                         if type(c) is Tree.Operator and c.kind == "..":
+                            if not type(c.nodes[0].type) is Types.Array:
+                                c.nodes[0].error("Expecting array")
                             typ = c.nodes[0].type.elemT
                         else:
                             typ = c.type
@@ -535,6 +561,8 @@ def infer(parser, tree):
                             err = False
                             if typ != c.type:
                                 if type(c) is Tree.Operator and c.kind == "..":
+                                    if not type(c.nodes[0].type) is Types.Array:
+                                        c.nodes[0].error("Expecting array")
                                     ctype = c.nodes[0].type.elemT
                                 else:
                                     ctype = c.type
@@ -726,7 +754,7 @@ def validate(parser, tree):
         tree.validate(parser)
 
 def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
-    if type(normalTyp) is Types.T and not (normalTyp.owner in parser.func) and normalTyp != shouldBeTyp:
+    if type(normalTyp) is Types.T and not (normalTyp.owner in parser.func) and normalTyp.name != shouldBeTyp.name:
         if normalTyp.normalName in generics:
             normalTyp = generics[normalTyp.normalName]
         else:
@@ -749,10 +777,13 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
             tmp = generics[shouldBeTyp.normalName]
         else:
             generics[shouldBeTyp.normalName] = normalTyp
-            tmp = shouldBeTyp.type
-            tmp = resolveGen(tmp, normalTyp, generics, parser, myNode, other)
+            if normalTyp.name != shouldBeTyp.name:
+                tmp = shouldBeTyp.type
+                tmp = resolveGen(tmp, normalTyp, generics, parser, myNode, other)
 
-            tmp.duckType(parser, normalTyp, myNode, other, 0)
+                tmp.duckType(parser, normalTyp, myNode, other, 0)
+            else:
+                tmp = shouldBeTyp
 
         return tmp
 

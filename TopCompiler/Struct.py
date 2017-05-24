@@ -37,12 +37,12 @@ class Struct:
 
         self.methods = {}
 
-    def addMethod(self, parser, name, method):
+    def addMethod(self, i, parser, name, method):
         package = parser.package
 
         if package in self.methods:
             if name in self.methods[package]:
-                Error.parseError(parser, "method "+self.name+"."+name+" already exists")
+                i.error("method "+self.name+"."+name+" already exists")
             self.methods[package][name] = method
         else:
             self.methods[package] = {name: method}
@@ -190,7 +190,7 @@ def initStruct(parser, package= "", shouldRead=True):
 
         if parser.thisToken().token in [",", "\n"]:
             ExprParser.endExpr(parser)
-        else: Parser.callToken(parser)
+        if parser.thisToken().token != ",": Parser.callToken(parser)
 
         t = parser.thisToken().token
 
@@ -210,8 +210,10 @@ def closeCurly(parser):
         Tree.PlaceHolder(parser).error("unexpected }")
 
 def index(parser, unary=False):
+
     if not unary:
         unary = ExprParser.isUnary(parser, parser.lookBehind())
+
 
     if not unary and len(parser.currentNode.nodes) == 0:
         Error.parseError(parser, "unexpected .")

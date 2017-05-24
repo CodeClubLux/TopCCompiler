@@ -15,58 +15,69 @@ import threading
 mutex = threading.Lock()
 
 def removeTransforms(parser):
+
     for i in parser.transforms:
         try:
             tr = parser.transforms[i]
         except KeyError:
             tr = []
-    for i in tr:
-        Module.removeModule(i)
+
+        for i in tr:
+            Module.removeModule(i)
 
 def main():
-    error = ""
-    mutex.acquire()
-    while True:
-        try:
-            parser = topc.start(run= True, dev=True)
-            time.sleep(0.2)
-            error = False
-            break
-        except EOFError as e:
-            e = str(e)
-            if error != e:
-                print(e, file=sys.stderr)
-
-            removeTransforms(topc.global_parser)
-
-            error = e
-            time.sleep(0.2)
-
-    mutex.release()
-
-    socketRepl.init()
-    socketRepl.parser = parser
-
-    server = threading.Thread(target=initRepl).start()
-
-    while True:
-        time.sleep(0.2)
+    if True:
+        error = ""
         mutex.acquire()
-        try:
-            parser = topc.start(run= False, dev= True, hotswap= True, cache=parser)
-            if parser.didCompile:
-                socketRepl.socketio.emit("reload", open("bin/"+parser.outputFile+"-client.js").read())
-            error = False
-        except EOFError as e:
-            e = str(e)
-            if error != e:
-                print(e, file=sys.stderr)
-                #socketRepl.socketio.emit("error", "Compile Error\n\n"+str(e))
-                socketRepl.socketio.emit("comp_error", str(e).replace("\t", "    ").replace(" ", "&nbsp;").replace("\n", "<br>"))
-            error = e
-            removeTransforms(topc.global_parser)
-        finally:
-            mutex.release()
+        while True:
+            try:
+                parser = topc.start(run= True, dev=True)
+                time.sleep(0.2)
+                error = False
+                break
+            except EOFError as e:
+                e = str(e)
+                if error != e:
+                    print(e, file=sys.stderr)
+
+                removeTransforms(topc.global_parser)
+
+                error = e
+                time.sleep(0.2)
+
+        mutex.release()
+
+        socketRepl.init()
+        socketRepl.parser = parser
+
+        server = threading.Thread(target=initRepl).start()
+
+        while True:
+            time.sleep(0.2)
+            mutex.acquire()
+            try:
+                parser = topc.start(run= False, dev= True, hotswap= True, cache=parser)
+
+                if parser.didCompile:
+                    reloadCSS(parser.cssFiles, parser.outputFile, parser.global_target)
+                    socketRepl.socketio.emit("reload", open("bin/"+parser.outputFile+"-client.js").read())
+                error = False
+            except EOFError as e:
+                e = str(e)
+                if error != e:
+                    print(e, file=sys.stderr)
+                    #socketRepl.socketio.emit("error", "Compile Error\n\n"+str(e))
+                    socketRepl.socketio.emit("comp_error", str(e).replace("\t", "    ").replace(" ", "&nbsp;").replace("\n", "<br>"))
+                error = e
+                removeTransforms(topc.global_parser)
+            finally:
+                mutex.release()
+
+import datetime
+def reloadCSS(files, outputfile, target):
+    for i in files:
+        content = open(i[1], "r").read()
+        socketRepl.socketio.emit("style", {"name": i[1], "content": content})
 
 def initRepl():
     socketRepl.lock = mutex
@@ -77,4 +88,7 @@ if __name__ == '__main__':
         main()
     except (KeyboardInterrupt, SystemExit):
         import os
-        os.remove("lib/main-node.js")
+        if topc.global_parser.output_target == "client":
+            os.remove("lib/main-client.js")
+        else:
+            os.remove("lib/main-node.js")

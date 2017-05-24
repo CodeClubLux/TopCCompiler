@@ -6,6 +6,8 @@ from TopCompiler import Parser
 from TopCompiler import ResolveSymbols
 from TopCompiler import PackageParser
 from TopCompiler import topc
+import topdev
+
 import AST as Tree
 
 import jsbeautifier
@@ -209,6 +211,8 @@ def handle_message(line):
         parser.filename = parser._filename
 
         socketio.emit("error", str(e))
+
+        topdev.removeTransforms(topc.global_parser)
 
         if lock:
             lock.release()
