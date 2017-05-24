@@ -210,6 +210,10 @@ function atom_watch(func, next) {
     next();
 }
 
+function atom_update(func, next) {
+  this.op_set(func(this.arg), next);
+}
+
 function newAtom(arg) {
     return {
         unary_read: unary_read,
@@ -217,6 +221,8 @@ function newAtom(arg) {
         arg: arg,
         watch: atom_watch,
         events: [],
+        toString: function(){return ""},
+        update: atom_update
     }
 }
 
@@ -1000,5 +1006,276 @@ function dict(obj,lt) {
     map = map.set(res[0], res[1]);
   }
   return map;
+}function _sub_batch(subs) {
+  function diff(other) {
+    if (other.type == "sub") {
+      var new_subs = this.subs.map(function(i, index){
+        return i.diff(other.subs[index]);
+      });
+      return {type: "sub", subs: new_subs, init: init, diff: diff, reset: reset, end: end, count: this.count + 1};
+    } else {
+      other.count += 1;
+      return other;
+    }
+  }
+
+  function reset() {
+    this.count = 0;
+    this.subs.forEach(function(i) {
+      i.reset();
+    });
+  }
+
+  function end() {
+    if (this.count == 0) {
+      this.subs.forEach(function(i) {
+        i.end();
+      })
+    }
+  }
+
+  function init() {
+    this.subs.forEach(function (i) {
+      i.init();
+    });
+  }
+
+  return {type: "sub", reset: reset, diff: diff, subs: subs.toArray(), init: init, end: end, count: 0};
 }
-function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:log((newLens(function(f){return (f).x}, function(g,f){return Object.assign(new g.constructor(), g,{x:f})},''+".x")));;return;}}}()}main_nodeInit();
+
+var _sub_none = (function() {
+    function reset() {}
+    function diff() { return this }
+    function init() {}
+    function end() {}
+
+    return {type: "none", reset: reset, diff: diff, init: init, end: end, count: 0}
+})()
+
+function _sub_register(a, func, next) {
+  a.unary_read(function(i) {
+    var subs = func(i, a);
+    subs.init();
+
+
+    function changed(model, next) {
+      var new_subs = func(model, a);
+      subs.reset();
+      nsubs = subs.diff(new_subs);
+      subs.end();
+      subs = nsubs;
+      nsubs.init();
+
+      return next();
+    };
+
+    a.watch(changed, function(){});
+    next();
+  });
+}
+;function _time_currentDate(next) {
+    var t = new Date();
+    next({
+        hours: t.getHours(),
+        minutes: t.getMinutes(),
+        seconds: t.getSeconds()
+    });
+}
+
+function _time_every(interval, a, func) {
+  function diff(other) {
+    if (other.type == "every" && other.interval == this.interval) {
+      this.count += 1;
+      return this;
+    } else {
+      other.count += 1;
+      return other;
+    }
+  }
+
+  function reset() {
+    this.count = 0;
+  }
+
+  function end() {
+    if (this.count == 0) {
+    if (this.id) {
+      clearInterval(this.id);
+    }
+    };
+  }
+
+  function call() {
+    var self = this;
+    _time_currentDate(function(time) {
+        self.a.update(function(state) { return self.func(state, time) }, function(){});
+    });
+  }
+
+  function init() {
+    if (!this.id) {
+      this.id = setInterval(call.bind(this), this.interval);
+    }
+  }
+
+  return {type: "every", call: call, reset: reset, func: func, a: a, interval: interval, diff: diff, init: init, end: end, count: 0};
+};function _router_onUrlChange(a, func) {
+  function diff(other) {
+    if (other.type == "urlchange") {
+      this.count += 1;
+      return this;
+    } else {
+      other.count += 1;
+      return other;
+    }
+  }
+
+  function reset() {
+    this.count = 0;
+  }
+
+  function end() {
+    if (this.count == 0) {
+    if (this.initialized) {
+      window.removeEventListener("hashchange", call);
+    }
+    };
+  }
+
+  function call() {
+    var self = this;
+    self.a.update(function(state){
+        return self.func(state, window.location.hash);
+    }, function(){})
+  }
+
+  function init() {
+    if (!this.initialized) {
+        this.initialized = true;
+        window.addEventListener("hashchange", call.bind(this));
+    }
+  }
+
+  return {type: "urlchange", call: call, reset: reset, func: func, a: a, diff: diff, init: init, end: end, count: 0};
+}
+
+function new_sub(a, func) {
+    function diff(other) {
+        return (other.type == "urlchange")
+    }
+
+  function end() {
+    if (this.initialized) {
+      window.removeEventListener("hashchange", call);
+    }
+  }
+
+  function call() {
+    var self = this;
+    self.a.update(function(state){
+        return self.func(state, window.location.hash);
+    }, function(){})
+  }
+
+  function init() {
+        this.initialized = true;
+        window.addEventListener("hashchange", call.bind(this));
+  }
+
+  return create_new_sub({type: "urlchange", call: call, func: func, a: a, diff: diff, init: init, end: end});
+}
+
+function _router_getHash(next) {
+    next(window.location.hash);
+}
+
+function _router_changeHash(str, next) {
+    window.location.hash = str;
+    next();
+};var main_fs = require("fs");
+var http = require("http");
+
+function server_readFile(f,next) {
+    main_fs.readFile(f,function(e,res){
+        if(e){
+            next([1])
+        } else {
+            next([0,res])
+        }
+    })
+}
+
+function _http_get(url, next) {
+    http.get({path: url}, next);
+}
+
+function server_createServer(func) {
+    return http.createServer(function (req, res) {
+        req.url = decodeURI(req.url);
+
+        func(req, function (_res) {
+            res.writeHead(_res.status, {'Content-Type': _res.contentType});
+            res.end(_res.body, _res.encoding);
+        })
+    })
+}
+
+var _html_changeName = function _html_changeName(event, name) {
+    function hello(x,y,z) {
+        event(x,y,z);
+    }
+    Object.defineProperty(hello, 'name', { writable: true });
+    hello.name = name;
+    return hello;
+}
+
+var _monk_connect = require("monk");
+
+function _monk_get(db, name, decoder) {
+    var tmp = db.get(name);
+    tmp.decoder = decoder;
+    return tmp;
+}
+
+function _monk_find(coll, query, next) {
+    console.log("finding");
+    coll.find(query).catch(function() { console.log("can not connect to database"); })
+    .then(function(i) {
+        next(fromArray(i.map(coll.decoder)));
+    })
+}
+
+function _monk_search(coll, query, search, next) {
+    var q = {$text: {$search: search}}
+    query = Object.assign({}, query, q);
+    console.log("searching");
+    coll.find(query).catch(function() { console.log("can not connect to database"); })
+    .then(function(i) {
+        next(fromArray(i.map(coll.decoder).reverse()));
+    });
+}
+
+function _monk_insert(coll, obj, next) {
+    coll.insert(obj);
+    next()
+}
+
+function server_handleQuery(url, func, next) {
+        var req = url.slice(url.indexOf("/", 2)+1);
+        req = decodeURI(req);
+        req = JSON.parse(req);
+        req[req.length-1] = function something(res) {
+            return {
+                body: JSON.stringify(res),
+                status: 200,
+                contentType: "text",
+            }
+        };
+
+        func(req, next);
+}
+
+function server_isQuery(url) {
+    return url.slice(1, url.indexOf("/", 2)) === "query"
+}
+function router_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:sub_nodeInit();;router_Sub= typeof sub_Sub=='undefined'||sub_Sub;;;return;}}}()}function sub_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:;sub_register = _sub_register;sub_batch = _sub_batch;sub_nil = _sub_none;;return;}}}()}function sub_Sub(){}sub_Sub._fields=[];function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:router_nodeInit();;main_Sub= typeof router_Sub=='undefined'||router_Sub;;main_nil= typeof sub_nil=='undefined'||sub_nil;main_batch= typeof sub_batch=='undefined'||sub_batch;main_register= typeof sub_register=='undefined'||sub_register;main_Sub= typeof sub_Sub=='undefined'||sub_Sub;;;;log("hello world");;return;}}}()}function main_Attrib(){}main_Attrib._fields=[];function main_Html(){}main_Html._fields=[];function main_h(){;}main_nodeInit();

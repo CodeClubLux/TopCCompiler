@@ -3,32 +3,32 @@ import "http"
 ext node _read: |string| do Maybe[string] = "server_readFile"
 ext node quit: |int| -> string = "process.exit"
 
-def read(path: string) string do
-    match _read path with
-        Some x -> x
-        None ->
-            log "cannot find file, "+path
-            quit 1
-
 def requestHandler(req: http.Request) http.Response do
     log "request, "+req.url
+
+    let not-found = http.response{status= 404, body = "404 Page not found"}
 
     match req.url with
         "/" ->
             match _read "EC.html" with
-                Some content ->
-                    http.response{body = content, content-type = "text/html"}
+                Some c ->
+                    http.response{body = c, content-type = "text/html"}
+
                 None ->
                     http.response{status = 404}
-
+        "/villi.png" ->
+            match (_read "images/villi.png") with
+                Some c ->
+                    http.response{body = c, content-type = "png"}
+                None ->
+                    not-found
         _ ->
-            http.response{status= 404, body = "404 Page not found"}
-
-//ext node port: int = PORT //"process.env.PORT || 3000"
+            not-found
 
 let server = http.server requestHandler
 
 server.listen http.port
+
 
 log "started web server on port {http.port}"
 

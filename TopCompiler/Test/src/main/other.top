@@ -1,25 +1,2 @@
-//import "html"
+let add = |i| i + 1
 
-def map[T, X](func: |T| -> X, x: []T) []X =
-    x.map func
-
-def filter[T](func: |T| -> bool, x: []T, ) []T =
-    x.filter func
-
-def reduce[T](func: |T,T| -> T, x: []T) T =
-    x.reduce func
-
-def zip[T](x: []T, y: []T) [][]T =
-    var newArr: [][]T = []
-
-    var i = 0
-    while i < x.length do
-        newArr = newArr.append ([x[i] , y[i]])
-        i += 1
-
-    newArr
-
-def first[T](x: []T) T =
-    x[0]
-
-//*/
