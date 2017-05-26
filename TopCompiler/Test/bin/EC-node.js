@@ -1093,4 +1093,4 @@ function _router_changeHash(str, next) {
     window.location.hash = str;
     next();
 }
-function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:main_greet = (function(main_i){;return main_i(10);});log(main_greet(op_add.bind(null,1)));;return;}}}()}main_nodeInit();
+function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:main_changeUsername = (function(main_model, main_ev,f){var j=0;return function h(g){while(1){switch(j){case 0:;return f(core_assign(main_model,{username:((main_ev).target).value,incorrect:false}));}}}()});main_model = {username:"",incorrect:true};main_event = {target:{value:"hello world"}};d=1;return main_changeUsername(main_model,main_event,c);case 1:log(((b)).username);;return;}}}()}main_nodeInit();

@@ -14,6 +14,15 @@ class FakeDict:
     def __getitem__(self, item):
         return self.unknown.getProperty(item)
 
+    def __len__(self):
+        class FakeLength:
+            def __lt__(self, other):
+                return False
+
+            def __gt__(self, other):
+                return False
+
+        return FakeLength()
 
 class FakeList:
     def __init__(self, unknown, offset=0):
@@ -224,6 +233,7 @@ class Unknown(Type):
             self.compareType(FuncPointer([], u))
 
             self.returnType = u
+
 
     def isType(self, other):
         if other is Unknown: return True

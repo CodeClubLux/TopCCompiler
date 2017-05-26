@@ -1,6 +1,9 @@
 //def withString[T: Stringable](t : {x: T}) string =
 //    t.x.toString!
 
-let greet = |i| (i 10)
+let change-username = |model, ev| do model{username = ev.target.value, incorrect=false}
 
-log greet 0
+let model = {username="", incorrect=true}
+let event = {target = {value = "hello world"}}
+
+log (change-username model, event).username

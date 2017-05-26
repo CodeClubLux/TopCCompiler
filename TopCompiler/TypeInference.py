@@ -13,6 +13,8 @@ from collections import OrderedDict as ODict
 
 checkTyp = []
 
+len = lambda i: i.__len__()
+
 def infer(parser, tree):
     varTypes = {}
     sc = parser.sc
@@ -75,13 +77,29 @@ def infer(parser, tree):
                 if type(returnTyp) is Types.Unknown and not returnTyp.typ:
                     i.error("Cannot infer return type")
 
+                inReturn = Types.remainingT(returnTyp)
+                processGen = ODict()
+                uselessGen = ODict()
+
+                for c in gen:
+                    if c in inReturn:
+                        processGen[c] = gen[c]
+                    else:
+                        uselessGen[c] = gen[c]
+
+                replaces = {}
+                for c in uselessGen:
+                    replaces[c] = Types.replaceT(uselessGen[c].type, {}, unknown=True)
+
+                gen = processGen
+
                 i.args = []
                 i.returnTyp = 0
-                i.type = Types.replaceT(Types.FuncPointer(args, returnTyp, do=i.do, generic=gen), {}, unknown=True)
+                i.type = Types.replaceT(Types.FuncPointer(args, returnTyp, do=i.do, generic=gen), replaces, unknown=True)
                 i.nodes[1].returnType = i.type.returnType
 
                 i.nodes[1].do = i.do
-                #print(i.type)
+
             elif type(i) is Tree.Match:
                 typ = i.nodes[0].type
                 first = False
@@ -623,7 +641,7 @@ def infer(parser, tree):
                         s = typ
                         assign = False
                         i.paramNames = Struct.offsetsToList(s.offsets)
-                    elif type(typ) is Types.Struct:
+                    elif typ.isType(Types.Interface) or typ.isType(Types.Struct):
                         assign = True
                         s = typ
                     else:
