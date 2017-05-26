@@ -8,6 +8,7 @@ class Lens(Node):
         name = codegen.getName()
         old = codegen.getName()
 
+        self.place.name = name
 
         def loop(n):
             for i in n:
@@ -21,8 +22,6 @@ class Lens(Node):
                     loop(i)
 
         self.nodes[0].newValue = name
-
-        self.place.compileToJS = lambda codegen: codegen.append(name)
         codegen.append("newLens(function("+name+"){return ")
         self.nodes[0].compileToJS(codegen)
         codegen.append("}, function("+old+","+name+"){")
@@ -36,3 +35,13 @@ class Lens(Node):
 
     def __str__(self):
         return "Lens"
+
+class Place(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def __str__(self):
+        return "placeholder"
+
+    def compileToJS(self, codegen):
+        codegen.append(self.name)

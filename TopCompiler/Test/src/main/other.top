@@ -1,2 +1,6 @@
-let add = |i| i + 1
+//def withString[T: Stringable](t : {x: T}) string =
+//    t.x.toString!
 
+let greet = |i| (i 10)
+
+log greet 0

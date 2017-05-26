@@ -11,6 +11,9 @@ class Token:
         self.line = line
         self.column = column + (len(str(token)) // 2)
 
+    def error(self, msg):
+        Error.parseError(topc.global_parser, msg)
+
     def __repr__(self):
         return str((self.token,self.type, self.line, self.column ))
 

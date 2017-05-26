@@ -15,7 +15,7 @@ def parseLens(parser):
     #lensType = Types.parseType(parser)
     Scope.decrScope(parser)
 
-    place = Tree.PlaceHolder(parser)
+    place = Tree.Place(parser)
 
     lens = Tree.Lens(parser)
     lens.place = place
@@ -39,7 +39,7 @@ def parseLens(parser):
     B = Types.T("B", Types.All, "Lens")
 
     def loop(n):
-        if type(n) is Tree.PlaceHolder:
+        if type(n) in [Tree.PlaceHolder, Tree.Place]:
             return B
         elif type(n) is Tree.Field:
             inner = loop(n.nodes[0])

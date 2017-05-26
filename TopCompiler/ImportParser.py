@@ -129,7 +129,7 @@ def fromParser(parser, decl= False, stage=False):
                 Error.parseError(parser, nameOfVar + " is already an interface")
             parser.interfaces[package][nameOfVar] = parser.interfaces[name][nameOfVar]
         elif not decl and nameOfVar in parser.scope[name][0]:
-            token.error = lambda msg: Error.parseError(parser, msg)
+             #can't set lambda
             Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
             names.append((nameOfVar, parser.scope[name][0][nameOfVar].target))
         elif not decl:

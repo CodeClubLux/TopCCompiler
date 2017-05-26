@@ -11,6 +11,9 @@ class Type :
         self.type = type
         self.target = target
 
+    def __repr__(self):
+        return str(self.type)
+
 def incrScope(parser):
     parser.scope[parser.package].append({})
 

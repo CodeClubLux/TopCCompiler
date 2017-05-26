@@ -261,7 +261,7 @@ def checkOperator(self, parser):
                 i.name = overloads[i.kind]
                 return
 
-            if type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array]:
+            if type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Unknown]:
                 func = i.opT.hasMethod(parser, overloads[i.kind])
                 if not func:
                     try:

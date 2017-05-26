@@ -21,7 +21,9 @@ def func(parser):
     while parser.thisToken().token != "|":
         if b.type == "identifier" and parser.lookInfront().token != ":":
             count += 1
-            VarParser.createParser(parser, b, typ= Types.Unknown(count, place), check= False)
+            u = Types.Unknown(parser)
+            u.varName = parser.thisToken().token
+            VarParser.createParser(parser, b, typ= u, check= False)
             b = parser.nextToken()
             continue
         elif parser.thisToken().token == ":":
@@ -40,9 +42,11 @@ def func(parser):
 
     parser.nextToken()
 
+    place.returnTyp = False
     if parser.thisToken().token == "->":
         parser.nextToken()
         typ = Types.parseType(parser)
+        place.returnTyp = True
         parser.nextToken()
 
     body = Tree.FuncBody(parser)
@@ -68,11 +72,10 @@ def func(parser):
         first = False
 
     ExprParser.endExpr(parser)
+    place.args = vars
+    place.returnTyp = typ
 
-    if typ:
-        place.type = Types.Lambda(place, vars, typ = typ, do=do)
-    else:
-        place.type = Types.Lambda(place, vars, do= do)
+    place.do = do
 
     parser.currentNode = place.owner
 

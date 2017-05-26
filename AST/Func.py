@@ -35,7 +35,6 @@ class Lambda(Node):
         self.nodes[1].compileToJS(codegen)
         codegen.append(")")
 
-
 class FuncStart(Node):
     def __init__(self, name, returnType, parser):
         Node.__init__(self, parser)

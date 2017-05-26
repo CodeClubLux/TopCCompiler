@@ -15,6 +15,8 @@ import json
 from TopCompiler import ResolveSymbols
 from TopCompiler import Module
 from optimization import *
+from TopCompiler import VarParser
+from TopCompiler import saveParser
 
 # is class
 
@@ -110,8 +112,6 @@ def getCompilationFiles(target):
             for i in files:
                 if root == start and i != "port.json" and i.endswith(".top"):
                     package = i[:-4]
-                    print(i)
-                    print(root)
                     file[package] = [(root, i)]
                     #file[package].append((root, f + ".top"))
 
@@ -214,6 +214,9 @@ filenames_sources = {}
 global_parser = 0
 
 def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache= False):
+    time1 = time()
+    cache = saveParser.load()
+
     hotswap = dev and not run
     global outputFile
     global didCompile
@@ -323,8 +326,6 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         if not "main" in filenames_sources:
             Error.error("Project must have a main package, from where to start the code for the client")
 
-        time1 = time()
-
         """
         import cProfile
         profile = cProfile.Profile()
@@ -338,7 +339,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         def compile(target, sources, filenames, former = None):
             global global_parser
 
-            lexed = Lexer.lex(target, sources, filenames, files, hotswap, cache.lexed if cache else {}, transforms)
+            lexed = Lexer.lex(target, sources, filenames, files, cache, cache.lexed if cache else {}, transforms)
 
             declarations = Parser.Parser(lexed, filenames)
             declarations.hotswap = False
@@ -359,6 +360,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 declarations.hotswap = hotswap
                 declarations.allImports = cache.allImports
                 declarations.atomTyp = cache.atomTyp
+                declarations.hotswap = True
 
             if former:
                 #print("inserting", target)
@@ -434,6 +436,10 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
                 #print(dill.detect.badobjects(parser.scope))
 
+                compiled = parser.compiled
+                if not dev:
+                    saveParser.save(parser)
+
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))
 
@@ -447,17 +453,19 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                         import webbrowser
                         webbrowser.open("http://127.0.0.1:3000/")
 
-                    l = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
+                    l = CodeGen.link(compiled, outputFile, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
                 else:
                     _link_CSSWithFiles = [] if target != "client" else _linkCSSWithFiles
                     _linkWithFiles = _linkWithFiles + _nodeLinkWithFiles if target == "node" else _linkWithFiles + _clientLinkWithFiles if target == "client" else []
 
-                    l = CodeGen.link(parser.compiled, outputFile,
+                    l = CodeGen.link(compiled, outputFile,
                                      run=run, opt=opt, dev=dev, hotswap= hotswap,
                                      linkWithCSS=_link_CSSWithFiles, linkWith=_linkWithFiles, target=target)
                 didCompile = True
 
                 parser.didCompile = True
+
+
 
                 return parser
             elif run:
@@ -516,10 +524,11 @@ def prepareForHotswap(arg):
 
 import datetime
 def modified(target, files, outputfile, jsFiles=[]):
+    if outputfile == "main":
+        return True
+
     if target == "full":
         target = "node"
-
-    #return True
 
     try:
         t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-"+target+".js")
