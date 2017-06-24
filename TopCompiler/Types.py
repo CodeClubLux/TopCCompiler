@@ -1,6 +1,6 @@
 __author__ = 'antonellacalvia'
 
-import ctypes as c
+
 import AST as Tree
 from .Scope import *
 from .Error import *
@@ -49,7 +49,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             incrScope(parser)
             if parser.lookInfront().token != "]":
                 from TopCompiler import FuncParser
-                gen = FuncParser.generics(parser, "anonymous")
+                gen = FuncParser.generics(parser, "_")
                 if parser.thisToken().token != "|":
                     parseError(parser, "expecting |")
 
@@ -216,6 +216,9 @@ class Type:
     def __hash__(self):
         return id(self)
 
+    def getMethod(self, parser, name):
+        pass
+
     def __eq__(self, other):
         if type(self) is Alias:
             self = self.typ
@@ -225,6 +228,9 @@ class Type:
             print("error")
 
         return other.name == self.name
+
+    def __ne__(self, other):
+        return not self == other
 
     def duckType(self, parser, other, node, mynode, iter):
         if type(other) is Unknown:
@@ -239,14 +245,14 @@ class Type:
 
     def hasMethod(self, parser, field): pass
 
-class EnumT:
+class EnumT(Type):
     def __init__(self):
         self.name = "enumT"
         self.types = {}
 
     def duckType(self, parser, other, node, mynode, iter):
-        if not type(other) is Enum:
-            self.error("type "+str(self)+" is not a enum")
+        if not type(other) in [Enum, EnumT]:
+            node.error("type "+str(other)+" is not an enum")
 
 class Assign(Type):
     def __init__(self, const):
@@ -309,6 +315,7 @@ class FuncPointer(Type):
 
         self.args = argtypes
         self.name = "|"+", ".join([i.name for i in argtypes])+"| " +  ("do " if do else "-> ") +returnType.name
+
         self.returnType = returnType
         self.generic = generic
         self.types = {}
@@ -319,12 +326,10 @@ class FuncPointer(Type):
         pass
 
     def duckType(self, parser, other, node, mynode, iter= 0):
-        
-        
         if not other.isType(FuncPointer):
             mynode.error("expecting function type "+str(self)+" and got type "+str(other))
 
-        if len(other.args) != len(self.args):
+        if other.args.__len__() != len(self.args):
             mynode.error("expecting function type "+str(self)+" and got type "+str(other))
 
         if not self.do and other.do:
@@ -793,6 +798,11 @@ def remainingT(s):
                     args[i] = gen[i]
     elif type(s) is T:
         args[s.name] = s
+        try:
+            s.count += 1
+        except AttributeError:
+            s.count = 1
+
     elif type(s) is Unknown:
         args.update(remainingT(s.typ))
 
@@ -880,7 +890,10 @@ class Underscore(Type):
     normalName = "_"
 
 
-def replaceT(typ, gen, acc={}, unknown=False): #with bool replaces all
+def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
+    if not acc:
+        acc = {}
+
     isGen = isGeneric(typ, unknown)
 
     if typ in acc:
@@ -892,12 +905,13 @@ def replaceT(typ, gen, acc={}, unknown=False): #with bool replaces all
     if type(typ) is T:
         if typ.normalName in gen:
             r = gen[typ.normalName]
+            acc[typ] = r
             if type(r) is Underscore:
                 #if type(typ.type) is Assign:
                 return T(typ.realName, replaceT(typ.type, gen, acc), typ.owner)
                 #return typ
 
-            return r
+            return replaceT(r, gen, acc, unknown)
         else:
             #if type(typ.type) is Assign:
             return T(typ.realName, replaceT(typ.type, gen, acc, unknown), typ.owner)
@@ -957,7 +971,7 @@ def replaceT(typ, gen, acc={}, unknown=False): #with bool replaces all
 
     elif type(typ) is Array and isGen:
         return Array(False, replaceT(typ.elemT, gen, acc, unknown))
-    elif type(typ) is FuncPointer and isGen:
+    elif type(typ) is FuncPointer:
         generics = typ.generic
 
         arr = []
@@ -965,7 +979,8 @@ def replaceT(typ, gen, acc={}, unknown=False): #with bool replaces all
             arr.append(replaceT(i, gen, acc, unknown))
 
         newTyp = replaceT(typ.returnType, gen, acc, unknown)
-        return FuncPointer(arr, newTyp, remainingT(newTyp), do= typ.do)
+        r = FuncPointer(arr, newTyp, remainingT(newTyp), do= typ.do)
+        return r
     else:
         return typ
 

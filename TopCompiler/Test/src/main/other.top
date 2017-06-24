@@ -1,9 +1,51 @@
-//def withString[T: Stringable](t : {x: T}) string =
-//    t.x.toString!
+import "db"
+import "discord"
 
-let change-username = |model, ev| do model{username = ev.target.value, incorrect=false}
+type Bio =
+    server: string
+    username: string
+    bio: string
 
-let model = {username="", incorrect=true}
-let event = {target = {value = "hello world"}}
+let mongo = db.connect "127.0.0.1:27017"
+let bios = db.document mongo, "bios", decoder Bio
 
-log (change-username model, event).username
+let client = discord.client {
+    onMessage = |message: discord.Message| do
+        let server = message.server.id
+
+        let response =
+            if server == "" then
+                "Cannot dm wolf bot."
+            else
+                match message.content with
+                    "!setdesc {bio}" ->
+                        let username = message.author.username
+
+                        db.replaceOne bios, {server = server, username = username}, Bio{server, username, bio}, true
+                        "description was successfully changed."
+
+                    "!desc {username}" ->
+                        let res = db.find bios, {server = server, username = username}
+                        if res.length == 0 then
+                            "{username} has not written a description."
+                        else
+                            "{res[0].bio}."
+
+                    "!desc" ->
+                        let username = message.author.username
+                        let res = db.find bios, {server = server, username = username}
+                        if res.length == 0 then
+                            "You have not written a description."
+                        else
+                            "{res[0].bio}."
+
+                    _ -> ""
+
+        if response != "" then
+            message.reply response
+
+    onReady = || do
+        log "I am ready!"
+}
+
+client.login "MzI4MjQwNzA4Njg1MTM1ODcy.DDBBiA.tMT5kh7-zXtUsosm82kYY2OwXIQ"

@@ -347,17 +347,17 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     if opt == 3:
         linked += "})()"
 
-    #import jsbeautifier
-    #linked = jsbeautifier.beautify(linked)
+    import jsbeautifier
+    linked = jsbeautifier.beautify(linked)
 
     fjs.write(linked)
     fjs.close()
 
     if opt == 3 and target == "client":
-        #args = ["uglifyjs", "--noerr", "--warn" "--compress", "unused,dead_code", "--output", output + ".min-" + target + ".js", "--mangle", "--",
-        #      output + "-" + target + ".js"]
+        args = ["uglifyjs", "--noerr", "--warn" "--compress", "unused,dead_code", "--output", output + ".min-" + target + ".js", "--mangle", "--",
+              output + "-" + target + ".js"]
 
-        args = ["closure-compiler", "--js", "EC-client.js", "--js_output_file", "EC.min-client.js", "--warning_level", "QUIET", "--compilation_level", "ADVANCED"]
+        #args = ["closure-compiler", "--js", output + "-" + target + ".js", "--js_output_file", output + ".min-"+target+ ".js", "--warning_level", "QUIET", "--compilation_level", "ADVANCED"]
 
         subprocess.check_call(args, shell=False, cwd="bin")
         output += ".min"

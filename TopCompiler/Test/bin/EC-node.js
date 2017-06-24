@@ -1,58 +1,157 @@
-function op_add(x,y) {return x.op_add(y)}
-function op_sub(x,y) {return x.op_sub(y)}
-function op_mul(x,y) {return x.op_mul(y)}
-function op_div(x,y) {return x.op_div(y)}
-function op_mod(x,y) {return x.op_mod(y)}
-function op_eq(x,y) {return x.op_eq(y)}
-function op_pow(x,y) {return Math.pow(x,y)}
-function op_lt(x,y) {return x.op_lt(y)}
-function op_gt(x,y) {return x.op_gt(y)}
-function op_or(x,y) {return x || y}
-function op_not(x) {return !x}
-function op_and(x,y) { return x && y }
-function op_ne(x,y) { return x.op_ne(y) }
+function op_add(x, y) {
+    return x.op_add(y)
+}
 
-function unary_add(x) {return x}
-function unary_sub(x) {return -x}
+function op_sub(x, y) {
+    return x.op_sub(y)
+}
 
-Number.prototype.op_add = function (other) { return this + other }
-Number.prototype.op_div = function (other) { return this / other }
-Number.prototype.op_sub = function (other) { return this - other }
-Number.prototype.op_mul = function (other) { return this * other }
-Number.prototype.op_eq = function (other) { return this == other }
-Number.prototype.op_mod = function (other) { return this % other }
-Number.prototype.op_lt = function (other) { return this < other }
-Number.prototype.op_gt = function (other) { return this > other }
-Number.prototype.op_ne = function (other) { return this != other }
+function op_mul(x, y) {
+    return x.op_mul(y)
+}
 
-Number.prototype.toFloat = function () { return this }
-Number.prototype.toInt = function () { return this | 0 }
+function op_div(x, y) {
+    return x.op_div(y)
+}
 
-String.prototype.op_eq = function (other) { return this == other }
-String.prototype.op_ne = function (other) { return this != other }
-String.prototype.op_add = function (other) { return this + other }
+function op_mod(x, y) {
+    return x.op_mod(y)
+}
+
+function op_eq(x, y) {
+    return x.op_eq(y)
+}
+
+function op_pow(x, y) {
+    return Math.pow(x, y)
+}
+
+function op_lt(x, y) {
+    return x.op_lt(y)
+}
+
+function op_gt(x, y) {
+    return x.op_gt(y)
+}
+
+function op_or(x, y) {
+    return x || y
+}
+
+function op_not(x) {
+    return !x
+}
+
+function op_and(x, y) {
+    return x && y
+}
+
+function op_ne(x, y) {
+    return x.op_ne(y)
+}
+
+function unary_add(x) {
+    return x
+}
+
+function unary_sub(x) {
+    return -x
+}
+
+Number.prototype.op_add = function(other) {
+    return this + other
+}
+Number.prototype.op_div = function(other) {
+    return this / other
+}
+Number.prototype.op_sub = function(other) {
+    return this - other
+}
+Number.prototype.op_mul = function(other) {
+    return this * other
+}
+Number.prototype.op_eq = function(other) {
+    return this == other
+}
+Number.prototype.op_mod = function(other) {
+    return this % other
+}
+Number.prototype.op_lt = function(other) {
+    return this < other
+}
+Number.prototype.op_gt = function(other) {
+    return this > other
+}
+Number.prototype.op_ne = function(other) {
+    return this != other
+}
+
+Number.prototype.toFloat = function() {
+    return this
+}
+Number.prototype.toInt = function() {
+    return this | 0
+}
+
+String.prototype.op_eq = function(other) {
+    return this == other
+}
+String.prototype.op_ne = function(other) {
+    return this != other
+}
+String.prototype.op_add = function(other) {
+    return this + other
+}
+
 function toString(s) {
     return s.toString()
 }
 
-function log(s){
+function log(s) {
     console.log(s.toString())
 }
 
-function string_toString(s) {return s}
-function int_toString(s) { return s.toString() }
-function float_toString(s) { return s.toString() }
-function array_toString(s) { return s.toString() }
+function string_toString(s) {
+    return s
+}
 
-function float_toInt(s) { return s | 0 }
-function int_toInt(s) { return s }
+function int_toString(s) {
+    return s.toString()
+}
 
-String.prototype.toInt = function () { return Number(this) | 0 }
-String.prototype.toFloat = function () { return Number(this) }
-String.prototype.op_eq = function(s) { return this == s }
+function float_toString(s) {
+    return s.toString()
+}
 
-function float_toFloat(s) { return s }
-function int_toFloat(s) { return s }
+function array_toString(s) {
+    return s.toString()
+}
+
+function float_toInt(s) {
+    return s | 0
+}
+
+function int_toInt(s) {
+    return s
+}
+
+String.prototype.toInt = function() {
+    return Number(this) | 0
+}
+String.prototype.toFloat = function() {
+    return Number(this)
+}
+String.prototype.op_eq = function(s) {
+    return this == s
+}
+
+function float_toFloat(s) {
+    return s
+}
+
+function int_toFloat(s) {
+    return s
+}
 
 function isOdd(number) {
     return number % 2 != 0
@@ -62,11 +161,11 @@ function isEven(number) {
     return number % 2 == 0
 }
 
-function min(a,b) {
+function min(a, b) {
     return a < b ? a : b
 }
 
-function max(a,b) {
+function max(a, b) {
     return a > b ? a : b
 }
 
@@ -98,8 +197,7 @@ function assign(obj, other) {
             arr.push(obj[i]);
         }
         return arr;
-    }
-    else if (typeof obj == "object") {
+    } else if (typeof obj == "object") {
         return Object.assign(new obj.constructor(), obj, other);
     } else {
         return other
@@ -125,9 +223,7 @@ function toJS(arg) {
 function fromJS(arg) {
     if (arg instanceof Array) {
         return fromArray(arg.map(fromJS));
-    }
-
-    else if (arg instanceof Function) {
+    } else if (arg instanceof Function) {
         return jsFuncWrapper(arg);
     }
 
@@ -135,7 +231,7 @@ function fromJS(arg) {
 }
 
 function funcWrapper(func) {
-    return function () {
+    return function() {
         var x = Array.prototype.slice.call(arguments);
 
         var args = [];
@@ -148,7 +244,7 @@ function funcWrapper(func) {
 }
 
 function jsFuncWrapper(func) {
-    return function () {
+    return function() {
         var x = Array.prototype.slice.call(arguments);
 
         var args = [];
@@ -161,15 +257,15 @@ function jsFuncWrapper(func) {
 }
 
 function toAsync(func) {
-    return function () {
+    return function() {
         var x = Array.prototype.slice.call(arguments);
 
         var args = [];
-        for (var i = 0; i < x.length-1; i++) {
+        for (var i = 0; i < x.length - 1; i++) {
             args.push(x[i]);
         }
 
-        var next = x[x.length-1];
+        var next = x[x.length - 1];
 
         return next(func.apply(null, args));
     }
@@ -178,7 +274,7 @@ function toAsync(func) {
 var _empty_func = function() {}
 
 function toSync(func) {
-    return function () {
+    return function() {
         var x = Array.prototype.slice.call(arguments);
 
         var args = [];
@@ -199,7 +295,7 @@ function unary_read(next) {
 
 function op_set(val, next) {
     this.arg = val;
-    for (var i = 0; i < this.events.length; i++ ) {
+    for (var i = 0; i < this.events.length; i++) {
         this.events[i](val, _empty_func);
     }
     next()
@@ -211,7 +307,7 @@ function atom_watch(func, next) {
 }
 
 function atom_update(func, next) {
-  this.op_set(func(this.arg), next);
+    this.op_set(func(this.arg), next);
 }
 
 function newAtom(arg) {
@@ -221,7 +317,9 @@ function newAtom(arg) {
         arg: arg,
         watch: atom_watch,
         events: [],
-        toString: function(){return ""},
+        toString: function() {
+            return ""
+        },
         update: atom_update
     }
 }
@@ -241,8 +339,10 @@ function newLens(reader, setter, string) {
 }
 
 function defer(func) {
-    return function (x) {
-        return function (callback) { func(x, callback) }
+    return function(x) {
+        return function(callback) {
+            func(x, callback)
+        }
     }
 }
 
@@ -258,7 +358,7 @@ function Some(x) {
 
 var None = new Some(1);
 
-function Maybe_withDefault(self,def){
+function Maybe_withDefault(self, def) {
     if (def[0] == 0) {
         return self[1];
     } else {
@@ -267,7 +367,7 @@ function Maybe_withDefault(self,def){
 }
 
 
-function Maybe_map(self,func){
+function Maybe_map(self, func) {
     if (def[0] == 0) {
         return Some(func(def[1]));
     } else {
@@ -275,12 +375,12 @@ function Maybe_map(self,func){
     }
 }
 
-Maybe.prototype.withDefault = function(def){
-    return Maybe_withDefault(this,def);
+Maybe.prototype.withDefault = function(def) {
+    return Maybe_withDefault(this, def);
 }
 
-Maybe.prototype.map = function(func){
-    return Maybe_map(this,def);
+Maybe.prototype.map = function(func) {
+    return Maybe_map(this, def);
 }
 
 function sleep(time, callback) {
@@ -294,8 +394,8 @@ function parallel(funcs, next) {
     var array = funcs;
 
     for (var i = 0; i < funcs.length; i++) {
-        var f = (function (i) {
-            return function (res) {
+        var f = (function(i) {
+            return function(res) {
                 count++;
                 array = array.set(i, res);
 
@@ -319,7 +419,7 @@ function serial(funcs, next) {
         if (i == funcs.length) {
             next(array);
         } else {
-            funcs.get(i)(function (val) {
+            funcs.get(i)(function(val) {
                 array = array.append(val);
                 i += 1
                 loop()
@@ -347,7 +447,7 @@ function core_json_bool(obj) {
 }
 
 function core_json_string(obj) {
-    return ""+obj;
+    return "" + obj;
 }
 
 function core_json_struct(constr, array) {
@@ -363,7 +463,7 @@ function core_json_struct(constr, array) {
 }
 
 function core_json_interface(array) {
-    return function (realObj) {
+    return function(realObj) {
         var obj = {};
         var len = array.length;
         for (var i = 0; i < len; i++) {
@@ -375,24 +475,24 @@ function core_json_interface(array) {
 }
 
 function core_json_enum(array) {
-    return function (realObj) {
+    return function(realObj) {
         var iter = realObj[0]
         var _enum = [iter];
         for (var i = 1; i < realObj.length; i++) {
-            _enum[i] = array[iter][i-1](realObj[i]);
+            _enum[i] = array[iter][i - 1](realObj[i]);
         }
         return _enum;
     }
 }
 
 function core_json_vector(decoder) {
-    return function (realObj) {
+    return function(realObj) {
         return fromArray(realObj.map(decoder));
     }
 }
 
 function core_json_tuple(decoder) {
-    return function (arr) {
+    return function(arr) {
         var a = [];
         for (var i = 0; i < arr.length; i++) {
             a.push(decoder[i](arr[i]));
@@ -409,12 +509,13 @@ function parseJson(decoder, str) {
 function jsonStringify(i) {
     return JSON.stringify(i);
 }
+
 function Vector(root, len, depth, start) {
     this.shift = (depth - 1) * this.bits;
     this.root = root;
     this.length = len;
     this.depth = depth;
-    this.start= start || 0;
+    this.start = start || 0;
 }
 
 Vector.prototype.bits = 5;
@@ -423,14 +524,14 @@ Vector.prototype.mask = Vector.prototype.width - 1;
 
 var EmptyVector = new Vector(Array(Vector.prototype.width), 0, 1)
 
-Vector.prototype.get = function (key) {
+Vector.prototype.get = function(key) {
     var o_key = key;
     key = getProperIndex(this, key);
-    if (key >= this.length+this.start || key < 0) {
+    if (key >= this.length + this.start || key < 0) {
         console.log(o_key);
         console.log(key);
         console.log(this.length);
-        throw new Error("out of bounds: "+key.toString())
+        throw new Error("out of bounds: " + key.toString())
     }
 
     var node = this.root;
@@ -439,20 +540,20 @@ Vector.prototype.get = function (key) {
     var mask = this.mask;
 
     for (var level = this.shift; level > 0; level -= bits) {
-          node = node[(key >> level) & mask]
+        node = node[(key >> level) & mask]
     }
     return node[key & mask]
 }
 
 Vector.prototype.remove = function(index) {
-    return this.slice(0, index).op_add(this.slice(index+1, this.length));
+    return this.slice(0, index).op_add(this.slice(index + 1, this.length));
 }
 
-Vector.prototype.serial = function (func, next) {
+Vector.prototype.serial = function(func, next) {
     serial(this.map(defer(func)), next);
 }
 
-Vector.prototype.parallel = function (func, next) {
+Vector.prototype.parallel = function(func, next) {
     parallel(this.map(defer(func)), next);
 }
 
@@ -471,7 +572,7 @@ Vector.prototype.indexOf = function(find) {
     return -1;
 }
 
-Vector.prototype.append_m = function (value) {
+Vector.prototype.append_m = function(value) {
     var width = Vector.prototype.width;
 
     if (Math.pow(width, this.depth) === this.length || this.length == 0) {
@@ -502,10 +603,10 @@ Vector.prototype.append_m = function (value) {
     return this;
 }
 
-Vector.prototype.set_m = function (key, value) {
+Vector.prototype.set_m = function(key, value) {
     key = getProperIndex(this, key);
     if (key >= this.length || key < 0) {
-        throw new Error("out of bounds: "+key.toString())
+        throw new Error("out of bounds: " + key.toString())
     }
 
     var node = this.root;
@@ -521,7 +622,7 @@ Vector.prototype.set_m = function (key, value) {
     return this;
 }
 
-Vector.prototype.append = function (value) {
+Vector.prototype.append = function(value) {
     var bits = this.bits;
     var mask = this.mask;
 
@@ -558,17 +659,17 @@ Vector.prototype.append = function (value) {
         n[1] = [];
 
         var u = update(n, this.depth * this.bits, this.length);
-        return new Vector(u, this.length+1, this.depth+1)
+        return new Vector(u, this.length + 1, this.depth + 1)
     } else {
         var u = update(this.root, this.shift, this.length);
-        return new Vector(u, this.length+1, this.depth)
+        return new Vector(u, this.length + 1, this.depth)
     }
 }
 
-Vector.prototype.set = function (key, value) {
+Vector.prototype.set = function(key, value) {
     key = getProperIndex(this, key);
-    if (key >= this.length+this.start || key < 0) {
-        throw new Error("out of bounds: "+key.toString())
+    if (key >= this.length + this.start || key < 0) {
+        throw new Error("out of bounds: " + key.toString())
     }
 
     var bits = this.bits;
@@ -597,10 +698,10 @@ Vector.prototype.set = function (key, value) {
     return new Vector(u, this.length, this.depth);
 }
 
-Vector.prototype.insert = function (key, val) {
+Vector.prototype.insert = function(key, val) {
     key = getProperIndex(this, key);
-    if (key >= this.length+this.start || key < 0) {
-        throw new Error("out of bounds: "+key.toString())
+    if (key >= this.length + this.start || key < 0) {
+        throw new Error("out of bounds: " + key.toString())
     }
 
     var bits = this.bits;
@@ -623,7 +724,7 @@ Vector.prototype.insert = function (key, val) {
             var next = null;
             if (u[1]) {
                 next = u[1];
-                for (var i = pos+1; i < width; i++) {
+                for (var i = pos + 1; i < width; i++) {
                     var u = insert(newNode[i], level - bits, (i << level), next);
                     newNode[i] = u[0];
                     next = u[1];
@@ -638,7 +739,7 @@ Vector.prototype.insert = function (key, val) {
 
     function arrayInsert(arr, index, val) {
         var narr = [];
-        for (var i = 0; i < width-1; i++) {
+        for (var i = 0; i < width - 1; i++) {
             if (index === i) {
                 narr.push(val);
             }
@@ -649,20 +750,20 @@ Vector.prototype.insert = function (key, val) {
             narr.push(val);
         }
 
-        return [narr, arr[width-1]]
+        return [narr, arr[width - 1]]
     }
 
     var width = Vector.prototype.width;
 
     var u = insert(this.root, this.shift, key, val);
     if (u[1]) {
-        return new Vector(u[0], this.length+1, this.depth).append(u[1])
+        return new Vector(u[0], this.length + 1, this.depth).append(u[1])
     } else {
-        return new Vector(u[0], this.length+1, this.depth)
+        return new Vector(u[0], this.length + 1, this.depth)
     }
 }
 
-Vector.prototype.toArray = function () {
+Vector.prototype.toArray = function() {
     var v = [];
     for (var i = 0; i < this.length; i++) {
         v[i] = this.get(i);
@@ -670,11 +771,11 @@ Vector.prototype.toArray = function () {
     return v;
 }
 
-Vector.prototype.toString = function () {
-    return "["+this.join(",")+"]"
+Vector.prototype.toString = function() {
+    return "[" + this.join(",") + "]"
 }
 
-Vector.prototype.op_eq = function (other) {
+Vector.prototype.op_eq = function(other) {
     if (this.length !== other.length) return false;
     if (this === other) return true;
 
@@ -686,7 +787,7 @@ Vector.prototype.op_eq = function (other) {
     return true;
 }
 
-Vector.prototype.map = function (func) {
+Vector.prototype.map = function(func) {
     var newArr = EmptyVector;
     var len = this.length;
     for (var i = 0; i < len; i++) {
@@ -695,7 +796,7 @@ Vector.prototype.map = function (func) {
     return newArr;
 }
 
-Vector.prototype.filter = function (func) {
+Vector.prototype.filter = function(func) {
     var newArr = EmptyVector;
     var len = this.length;
     for (var i = 0; i < len; i++) {
@@ -707,7 +808,7 @@ Vector.prototype.filter = function (func) {
     return newArr;
 }
 
-Vector.prototype.reduce = function (func) {
+Vector.prototype.reduce = function(func) {
     if (this.length == 1) {
         return this.get(0)
     } else if (this.length === 0) {
@@ -722,8 +823,10 @@ Vector.prototype.reduce = function (func) {
     return curr;
 }
 
-Vector.prototype.join = function (s) {
-    if (this.length == 0) { return "" }
+Vector.prototype.join = function(s) {
+    if (this.length == 0) {
+        return ""
+    }
     var string = this.get(0);
     var len = this.length;
     for (var i = 1; i < len; i++) {
@@ -732,7 +835,7 @@ Vector.prototype.join = function (s) {
     return string
 }
 
-Vector.prototype.slice = function (start,end) {
+Vector.prototype.slice = function(start, end) {
     start = getProperIndex(this, start);
 
     if (end === 0) {
@@ -745,7 +848,7 @@ Vector.prototype.slice = function (start,end) {
         end = getProperIndex(this, end);
     }
 
-    return new Vector(this.root, end-start, this.depth, start);
+    return new Vector(this.root, end - start, this.depth, start);
 }
 
 function getProperIndex(self, index) {
@@ -756,7 +859,7 @@ function getProperIndex(self, index) {
     return index;
 }
 
-Vector.prototype.has = function (s) {
+Vector.prototype.has = function(s) {
     for (var i = 0; i < this.length; i++) {
         if (this.get(i).op_eq(s)) {
             return true;
@@ -765,7 +868,7 @@ Vector.prototype.has = function (s) {
     return false;
 }
 
-Vector.prototype.op_add = function (s) {
+Vector.prototype.op_add = function(s) {
     var newArr = this;
     for (var i = 0; i < s.length; i++) {
         newArr = newArr.append(s.get(i));
@@ -773,8 +876,8 @@ Vector.prototype.op_add = function (s) {
     return newArr;
 }
 
-Vector.prototype.shorten = function (number) {
-    return new Vector(this.root, this.length-number, this.depth);
+Vector.prototype.shorten = function(number) {
+    return new Vector(this.root, this.length - number, this.depth);
 }
 
 function newVector() {
@@ -841,8 +944,8 @@ var nil;
         };
 
         this.map = function(func, into) {
-          console.log(node);
-          return map(func, node, into||new Map(nil,nil));
+            console.log(node);
+            return map(func, node, into || new Map(nil, nil));
         }
     }
 
@@ -875,7 +978,7 @@ var nil;
         return hi === node.hi ? node : with_lo_hi(node, node.lo, hi);
     };
     go_lo = function(node, key, lt) {
-        return (lt && lt(key, node.key)) || (!lt && key.op_lt( node.key));
+        return (lt && lt(key, node.key)) || (!lt && key.op_lt(node.key));
     };
 
 
@@ -890,12 +993,12 @@ var nil;
     };
 
     map = function(func, node, a) {
-          if (node) {
-              a = map(func, node.lo, a);
-              a = a.set(node.key, func(node.val));
-              a = map(func, node.hi, a);
-          }
-          return a;
+        if (node) {
+            a = map(func, node.lo, a);
+            a = a.set(node.key, func(node.val));
+            a = map(func, node.hi, a);
+        }
+        return a;
     };
 
     get = function(node, key, fail, lt) {
@@ -943,7 +1046,7 @@ var nil;
                 node = with_hi(node, hi);
             }
             if ((lo && lo.lev < lev - 1) || (hi && hi.lev < lev - 1)) {
-                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev .op_gt( lev) ? with_lev(hi, lev - 1) : hi);
+                node = new_node(node.key, node.val, lev - 1, lo, hi && hi.lev.op_gt(lev) ? with_lev(hi, lev - 1) : hi);
                 node = skew(node);
                 if (node.hi) {
                     node = with_hi(node, skew(node.hi));
@@ -1012,51 +1115,63 @@ var nil;
 
 })();
 
-function dict(obj,lt) {
-  var map = new Map(nil,lt);
-  for (var i = 0; i < obj.length; i++) {
-    var res = obj.get(i);
-    map = map.set(res[0], res[1]);
-  }
-  return map;
-}function _router_onUrlChange(a, func) {
-  function diff(other) {
-    if (other.type == "urlchange") {
-      this.count += 1;
-      return this;
-    } else {
-      other.count += 1;
-      return other;
+function dict(obj, lt) {
+    var map = new Map(nil, lt);
+    for (var i = 0; i < obj.length; i++) {
+        var res = obj.get(i);
+        map = map.set(res[0], res[1]);
     }
-  }
+    return map;
+}
 
-  function reset() {
-    this.count = 0;
-  }
-
-  function end() {
-    if (this.count == 0) {
-    if (this.initialized) {
-      window.removeEventListener("hashchange", call);
+function _router_onUrlChange(a, func) {
+    function diff(other) {
+        if (other.type == "urlchange") {
+            this.count += 1;
+            return this;
+        } else {
+            other.count += 1;
+            return other;
+        }
     }
+
+    function reset() {
+        this.count = 0;
+    }
+
+    function end() {
+        if (this.count == 0) {
+            if (this.initialized) {
+                window.removeEventListener("hashchange", call);
+            }
+        };
+    }
+
+    function call() {
+        var self = this;
+        self.a.update(function(state) {
+            return self.func(state, window.location.hash);
+        }, function() {})
+    }
+
+    function init() {
+        if (!this.initialized) {
+            this.initialized = true;
+            window.addEventListener("hashchange", call.bind(this));
+        }
+    }
+
+    return {
+        type: "urlchange",
+        call: call,
+        reset: reset,
+        func: func,
+        a: a,
+        diff: diff,
+        init: init,
+        end: end,
+        count: 0
     };
-  }
-
-  function call() {
-    var self = this;
-    self.a.update(function(state){
-        return self.func(state, window.location.hash);
-    }, function(){})
-  }
-
-  function init() {
-    if (!this.initialized) {
-        this.initialized = true;
-        window.addEventListener("hashchange", call.bind(this));
-    }
-  }
-
-  return {type: "urlchange", call: call, reset: reset, func: func, a: a, diff: diff, init: init, end: end, count: 0};
 }
 
 function new_sub(a, func) {
@@ -1064,25 +1179,33 @@ function new_sub(a, func) {
         return (other.type == "urlchange")
     }
 
-  function end() {
-    if (this.initialized) {
-      window.removeEventListener("hashchange", call);
+    function end() {
+        if (this.initialized) {
+            window.removeEventListener("hashchange", call);
+        }
     }
-  }
 
-  function call() {
-    var self = this;
-    self.a.update(function(state){
-        return self.func(state, window.location.hash);
-    }, function(){})
-  }
+    function call() {
+        var self = this;
+        self.a.update(function(state) {
+            return self.func(state, window.location.hash);
+        }, function() {})
+    }
 
-  function init() {
+    function init() {
         this.initialized = true;
         window.addEventListener("hashchange", call.bind(this));
-  }
+    }
 
-  return create_new_sub({type: "urlchange", call: call, func: func, a: a, diff: diff, init: init, end: end});
+    return create_new_sub({
+        type: "urlchange",
+        call: call,
+        func: func,
+        a: a,
+        diff: diff,
+        init: init,
+        end: end
+    });
 }
 
 function _router_getHash(next) {
@@ -1092,5 +1215,542 @@ function _router_getHash(next) {
 function _router_changeHash(str, next) {
     window.location.hash = str;
     next();
+};
+
+function _sub_batch(subs) {
+    function diff(other) {
+        if (other.type == "sub") {
+            var new_subs = this.subs.map(function(i, index) {
+                return i.diff(other.subs[index]);
+            });
+            return {
+                type: "sub",
+                subs: new_subs,
+                init: init,
+                diff: diff,
+                reset: reset,
+                end: end,
+                count: this.count + 1
+            };
+        } else {
+            other.count += 1;
+            return other;
+        }
+    }
+
+    function reset() {
+        this.count = 0;
+        this.subs.forEach(function(i) {
+            i.reset();
+        });
+    }
+
+    function end() {
+        if (this.count == 0) {
+            this.subs.forEach(function(i) {
+                i.end();
+            })
+        }
+    }
+
+    function init() {
+        this.subs.forEach(function(i) {
+            i.init();
+        });
+    }
+
+    return {
+        type: "sub",
+        reset: reset,
+        diff: diff,
+        subs: subs.toArray(),
+        init: init,
+        end: end,
+        count: 0
+    };
 }
-function main_nodeInit(){var d=0;return function c(b){while(1){switch (d){case 0:main_changeUsername = (function(main_model, main_ev,f){var j=0;return function h(g){while(1){switch(j){case 0:;return f(core_assign(main_model,{username:((main_ev).target).value,incorrect:false}));}}}()});main_model = {username:"",incorrect:true};main_event = {target:{value:"hello world"}};d=1;return main_changeUsername(main_model,main_event,c);case 1:log(((b)).username);;return;}}}()}main_nodeInit();
+
+var _sub_none = (function() {
+    function reset() {}
+
+    function diff() {
+        return this
+    }
+
+    function init() {}
+
+    function end() {}
+
+    return {
+        type: "none",
+        reset: reset,
+        diff: diff,
+        init: init,
+        end: end,
+        count: 0
+    }
+})()
+
+function _sub_register(func, a, next) {
+    a.unary_read(function(i) {
+        var subs = func(i, a);
+        subs.init();
+
+
+        function changed(model, next) {
+            var new_subs = func(model, a);
+            subs.reset();
+            nsubs = subs.diff(new_subs);
+            subs.end();
+            subs = nsubs;
+            nsubs.init();
+
+            return next();
+        };
+
+        a.watch(changed, function() {});
+        next();
+    });
+};
+
+function _time_currentDate(next) {
+    var t = new Date();
+    next({
+        hours: t.getHours(),
+        minutes: t.getMinutes(),
+        seconds: t.getSeconds()
+    });
+}
+
+function _time_every(interval, a, func) {
+    function diff(other) {
+        if (other.type == "every" && other.interval == this.interval) {
+            this.count += 1;
+            return this;
+        } else {
+            other.count += 1;
+            return other;
+        }
+    }
+
+    function reset() {
+        this.count = 0;
+    }
+
+    function end() {
+        if (this.count == 0) {
+            if (this.id) {
+                clearInterval(this.id);
+            }
+        };
+    }
+
+    function call() {
+        var self = this;
+        _time_currentDate(function(time) {
+            self.a.update(function(state) {
+                return self.func(state, time)
+            }, function() {});
+        });
+    }
+
+    function init() {
+        if (!this.id) {
+            this.id = setInterval(call.bind(this), this.interval);
+        }
+    }
+
+    return {
+        type: "every",
+        call: call,
+        reset: reset,
+        func: func,
+        a: a,
+        interval: interval,
+        diff: diff,
+        init: init,
+        end: end,
+        count: 0
+    };
+};
+var _discord = require("discord.js")
+
+function toTopMessage(message) {
+    message.reply = toAsync(message.reply.bind(message))
+    message.server = message.server || "";
+    return message
+}
+
+function _discord_client(options) {
+    var client = new _discord.Client();
+    var lengthOfOn = 2;
+
+    if (options["onReady"]) {
+        client.on("ready", toSync(options.onReady))
+    }
+
+    if (options["onMessage"]) {
+        client.on("message", function(message) {
+            options.onMessage(toTopMessage(message), _empty_func)
+        })
+    }
+
+    client.login = toAsync(client.login.bind(client))
+
+    return client
+};
+var main_fs = require("fs");
+var http = require("http");
+
+function server_readFile(f, next) {
+    main_fs.readFile(f, function(e, res) {
+        if (e) {
+            next([1])
+        } else {
+            next([0, res])
+        }
+    })
+}
+
+function _http_get(url, next) {
+    http.get({
+        path: url
+    }, next);
+}
+
+function server_createServer(func) {
+    return http.createServer(function(req, res) {
+        req.url = decodeURI(req.url);
+
+        func(req, function(_res) {
+            res.writeHead(_res.status, {
+                'Content-Type': _res.contentType
+            });
+            res.end(_res.body, _res.encoding);
+        })
+    })
+}
+
+var _html_changeName = function _html_changeName(event, name) {
+    function hello(x, y, z) {
+        event(x, y, z);
+    }
+    Object.defineProperty(hello, 'name', {
+        writable: true
+    });
+    hello.name = name;
+    return hello;
+}
+
+var _monk_connect = require("monk");
+
+function _monk_get(db, name, decoder) {
+    var tmp = db.get(name);
+    tmp.decoder = decoder;
+    return tmp;
+}
+
+function _monk_find(coll, query, next) {
+    coll.find(query).catch(function() {
+            console.log("can not connect to database");
+        })
+        .then(function(i) {
+            next(fromArray(i.map(coll.decoder)));
+        })
+}
+
+function _monk_search(coll, query, search, next) {
+    var q = {
+        $text: {
+            $search: search
+        }
+    }
+    query = Object.assign({}, query, q);
+    coll.find(query).catch(function() {
+            console.log("can not connect to database");
+        })
+        .then(function(i) {
+            next(fromArray(i.map(coll.decoder).reverse()));
+        });
+}
+
+function _monk_insert(coll, obj, next) {
+    coll.insert(obj);
+    next()
+}
+
+function _monk_update(coll, query, obj, next) {
+    coll.update(query, obj)
+    next()
+}
+
+function _monk_replaceOne(coll, query, obj, upsert, next) {
+    coll.update(query, obj, {
+        upsert: upsert
+    });
+    next()
+}
+
+function server_handleQuery(url, func, next) {
+    var req = url.slice(url.indexOf("/", 2) + 1);
+    req = decodeURI(req);
+    req = JSON.parse(req);
+    req[req.length - 1] = function something(res) {
+        return {
+            body: JSON.stringify(res),
+            status: 200,
+            contentType: "text",
+        }
+    };
+
+    func(req, next);
+}
+
+function server_isQuery(url) {
+    return url.slice(1, url.indexOf("/", 2)) === "query"
+}
+
+function db_nodeInit() {
+    var d = 0;
+    return function c(b) {
+        while (1) {
+            switch (d) {
+                case 0:
+                    ;;;
+                    db_connect = _monk_connect;
+                    db_document = _monk_get;
+                    db_find = _monk_find;
+                    db_insert = _monk_insert;
+                    db_search = _monk_search;
+                    db_update = _monk_update;
+                    db_replaceOne = _monk_replaceOne;;
+                    return;
+            }
+        }
+    }()
+}
+
+function db_Collections(c) {
+    this[0] = c
+}
+
+function db_Parts(d) {
+    var c = new db_Collections(0);
+    c[1] = d;
+    return c
+}
+
+function db_DB() {}
+db_DB._fields = [];
+
+function db_Collection(c, d) {
+    this.manager = c;
+    this.name = d;
+}
+db_Collection._fields = ["manager", "name"];
+
+function main_nodeInit() {
+    var d = 0;
+    return function c(b) {
+        while (1) {
+            switch (d) {
+                case 0:
+                    db_nodeInit();;
+                    discord_nodeInit();;;
+                    main_mongo = db_connect("127.0.0.1:27017");
+                    main_bios = db_document(main_mongo, "bios", core_json_struct(main_Bio, [
+                        ['server', core_json_string],
+                        ['username', core_json_string],
+                        ['bio', core_json_string],
+                    ]));
+                    main_client = discord_client({
+                        onMessage: (function(main_message, f) {
+                            var main_server;
+                            var main_bio;
+                            var main_username;
+                            var main_username;
+                            var main_res;
+                            var main_username;
+                            var main_res;
+                            var main_response;
+                            var j = 0;
+                            return function h(g) {
+                                while (1) {
+                                    switch (j) {
+                                        case 0:
+                                            main_server = ((main_message).server).id;
+                                            if ((main_server === "")) {
+                                                g = "Cannot dm wolf bot.";
+                                                j = 1; /*block*/
+                                                break;
+                                            } /*if*/
+                                        case 2:
+                                            /*notif*/ {
+                                                var k = (main_message).content;
+                                                if (l = new RegExp('!setdesc (.*)').exec(k)) {
+                                                    main_bio = l[1];
+                                                    main_username = ((main_message).author).username;
+                                                    j = 4;
+                                                    return db_replaceOne(main_bios, {
+                                                        server: main_server,
+                                                        username: main_username
+                                                    }, new main_Bio(main_server, main_username, main_bio, main_bio), true, h);
+                                                } /*case*/
+                                                j = 5;
+                                                break; /*case*/
+                                            } /*case*/
+                                            j = 6;
+                                            break; /*case*/
+                                        case 4:
+                                            g = "description was successfully changed.";
+                                            j = 3; /*block*/
+                                            break; /*if*/
+                                        case 5:
+                                            /*notif*/ if (m = new RegExp('!desc (.*)').exec(k)) {
+                                                main_username = m[1];
+                                                j = 7;
+                                                return db_find(main_bios, {
+                                                    server: main_server,
+                                                    username: main_username
+                                                }, h);
+                                            } /*case*/
+                                            j = 8;
+                                            break; /*case*/
+                                        case 7:
+                                            main_res = g;
+                                            g = (function() {
+                                                if (((main_res).length === 0)) {
+                                                    return ((((("") + ((main_username)).toString())) + (" has not written a description.").toString()));
+                                                } else {
+                                                    return ((((("") + (((main_res.get(0)).bio)).toString())) + (".").toString()));
+                                                }
+                                            })();
+                                            j = 3; /*block*/
+                                            break; /*if*/
+                                        case 8:
+                                            /*notif*/ if (k.op_eq("!desc")) {
+                                                main_username = ((main_message).author).username;
+                                                j = 9;
+                                                return db_find(main_bios, {
+                                                    server: main_server,
+                                                    username: main_username
+                                                }, h);
+                                            } /*case*/
+                                            j = 10;
+                                            break; /*case*/
+                                        case 9:
+                                            main_res = g;
+                                            g = (function() {
+                                                if (((main_res).length === 0)) {
+                                                    return "You have not written a description.";
+                                                } else {
+                                                    return ((((("") + (((main_res.get(0)).bio)).toString())) + (".").toString()));
+                                                }
+                                            })();
+                                            j = 3; /*block*/
+                                            break; /*if*/
+                                        case 10:
+                                            /*notif*/ if (1) {
+                                                g = "";
+                                                j = 3; /*block*/
+                                                break;
+                                            }
+                                        case 3:
+                                            ;
+                                            j = 1; /*block*/
+                                            break;
+                                        case 1:
+                                            main_response = g;
+                                            if ((main_response !== "")) {
+                                                j = 12;
+                                                return (main_message).reply(main_response, h);
+                                            } /*case*/
+                                            j = 11;
+                                            break; /*case*/
+                                        case 12:
+                                            ;
+                                            j = 11; /*block*/
+                                            break;
+                                        case 11:
+                                            ;
+                                            return f();
+                                    }
+                                }
+                            }()
+                        }),
+                        onReady: (function(n) {
+                            var r = 0;
+                            return function q(p) {
+                                while (1) {
+                                    switch (r) {
+                                        case 0:
+                                            log("I am ready!");;
+                                            return n();
+                                    }
+                                }
+                            }()
+                        })
+                    });
+                    d = 14;
+                    return (main_client).login("MzI4MjQwNzA4Njg1MTM1ODcy.DDBBiA.tMT5kh7-zXtUsosm82kYY2OwXIQ", c);
+                case 14:
+                    ;
+                    return;
+            }
+        }
+    }()
+}
+
+function main_Bio(c, d, f) {
+    this.server = c;
+    this.username = d;
+    this.bio = f;
+}
+main_Bio._fields = ["server", "username", "bio"];
+
+function discord_nodeInit() {
+    var d = 0;
+    return function c(b) {
+        while (1) {
+            switch (d) {
+                case 0:
+                    ;;;;;
+                    discord_client = _discord_client;;
+                    return;
+            }
+        }
+    }()
+}
+
+function discord_User(c) {
+    this.username = c;
+}
+discord_User._fields = ["username"];
+
+function discord_Server(c, d, f, g) {
+    this.client = c;
+    this.region = d;
+    this.id = f;
+    this.members = g;
+}
+discord_Server._fields = ["client", "region", "id", "members"];
+
+function discord_Client(c) {
+    this.login = c;
+}
+discord_Client._fields = ["login"];
+
+function discord_Message(c, d, f, g) {
+    this.content = c;
+    this.reply = d;
+    this.author = f;
+    this.server = g;
+}
+discord_Message._fields = ["content", "reply", "author", "server"];
+
+function discord_Options(c, d) {
+    this.onMessage = c;
+    this.onReady = d;
+}
+discord_Options._fields = ["onMessage", "onReady"];
+main_nodeInit();

@@ -8,6 +8,8 @@ from TopCompiler import ExprParser
 import AST as Tree
 import collections as coll
 
+len = lambda i: i.__len__()
+
 def enumParser(parser, name, decl, generic):
     const = coll.OrderedDict()
     enum = Types.Enum(parser.package, name, const, generic)
@@ -63,11 +65,12 @@ from TopCompiler import ElseExpr
 
 def checkCase(parser, case, typ, first=False):
     if type(case) is Tree.FuncCall:
-        if not (type(typ) is Types.Enum and case.nodes[0].name in typ.const):
-            case.nodes[0].error("unknown pattern")
+        if not typ.isType(Types.Enum):
+            case.nodes[0].error("cannot pattern match on type "+str(typ)+", as if it were a ADT")
 
         if not case.nodes[0].name in typ.const:
-            case.nodes[0].error("no such variable "+case.nodes[0].name)
+            case.nodes[0].error("ADT "+str(typ)+", does not have case "+case.nodes[0].name)
+
         pattern = typ.const[case.nodes[0].name]
 
         if len(pattern) < (len(case.nodes) - 1):
@@ -84,12 +87,15 @@ def checkCase(parser, case, typ, first=False):
     elif type(case) is Tree.ReadVar and case.name[0].upper() != case.name[0]:
         Scope.addVar(case, parser, case.name, Scope.Type(True, typ))
     elif type(case) is Tree.ReadVar:
-        if not (type(typ) is Types.Enum and case.name in typ.const):
-            case.error("unknown pattern")
+        if not typ.isType(Types.Enum):
+            case.error("cannot pattern match on type " + str(typ) + ", as if it were a ADT")
+
+        if not case.name in typ.const:
+            case.error("ADT " + str(typ) + ", does not have case " + case.nodes[0].name)
 
         case.type = typ
     elif type(case) is Tree.Operator and case.kind == "concat" and not case.curry and not case.partial:
-        if not type(typ) is Types.String:
+        if not typ.isType(Types.String):
             case.nodes[0].error("unexpected string")
         if type(case.nodes[1]) is Tree.Tuple:
             Scope.addVar(case.nodes[1].nodes[0], parser, case.nodes[1].nodes[0].name, Scope.Type(True, typ))
@@ -101,11 +107,18 @@ def checkCase(parser, case, typ, first=False):
         case.nodes[0].type = typ
         case.nodes[1].type = typ
     elif type(case) is Tree.Tuple:
-        for iter in range(len(case.nodes)):
-            node = case.nodes[iter]
-            checkCase(parser, node, typ.list[iter])
+        if len(case.nodes) == 1:
+            node = case.nodes[0]
+            checkCase(parser, node, typ)
+        else:
+            if not typ.isType(Types.Tuple):
+                case.error("Cannot pattern match on "+str(typ)+", as if it were a tuple")
+
+            for iter in range(len(case.nodes)):
+                node = case.nodes[iter]
+                checkCase(parser, node, typ.list[iter])
     elif type(case) is Tree.Array:
-        if not type(typ) is Types.Array:
+        if not typ.isType(Types.Array):
             case.error("pattern, matches on an array but is supposed to match on "+str(typ))
         for iter in range(len(case.nodes)):
             node = case.nodes[iter]
@@ -150,7 +163,7 @@ def missingPattern(typ, match):
 
             const.append(name)
 
-    if not type(typ) in [Types.Enum] and not under:
+    if not typ.isType(Types.Enum) and not under:
         match.error("missing _ case to match all possibilities")
     elif len(const) < len(typ.const):
         match.error("missing pattern "+", ".join([i for i in typ.const if not i in const]))

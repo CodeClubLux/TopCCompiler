@@ -53,4 +53,4 @@ def login(model: Login, a: Atom[Login]) VNode =
         button [style "color: #2E79B8; font-size: 15px; background: rgba(0,0,0,0); border: 0px;"], "Register"
     ]
 
-app login, new-atom Login{"", "",false}
+start-app login, new-atom Login{"", "",false}

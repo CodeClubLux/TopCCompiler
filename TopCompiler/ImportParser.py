@@ -18,6 +18,9 @@ def shouldCompile(decl, name, parser, mutated= ()):
         if name in parser.shouldCompile:
             return parser.shouldCompile[name]
 
+        if not name in parser.allImports:
+            return True
+
         for i in parser.allImports[name]:
             if shouldCompile(decl, i, parser, mutated):
                 parser.shouldCompile[name] = True

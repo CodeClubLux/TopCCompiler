@@ -157,7 +157,7 @@ def declareOnly(self, noVar=False):
 def maybeEnd(parser):
     if parser.indent[-1] >= parser.indentLevel and parser.paren <= parser.parenBookmark[-1] and parser.bracket <= parser.bracketBookmark[-1]:
         if parser.stack != [] and type(parser.currentNode) in [Tree.FuncBody, Tree.Root]:
-            parser.nodeBookmark.pop()
+            #parser.nodeBookmark.pop()
             ExprParser.endExpr(parser, -2)
         return True
     return False

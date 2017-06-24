@@ -59,7 +59,7 @@ class Match(Node):
         self.tmp = tmp
 
         if not self.yielding:
-            codegen.append("function(){")
+            codegen.append("(function(){")
             codegen.append("var " + tmp + "=")
             self.nodes[0].compileToJS(codegen)
             codegen.append(";")
@@ -67,7 +67,7 @@ class Match(Node):
             for iter in range(1, len(self.nodes)):
                 self.nodes[iter].compileToJS(codegen)
 
-            codegen.append("}()")
+            codegen.append("})()")
         else:
             codegen.count += 1
             self.ending = str(codegen.count)
@@ -113,6 +113,9 @@ class Fake:
     def createName(self, a):
         return self.codegen.createName(a)
 
+    def getName(self):
+        return self.codegen.getName()
+
     def readName(self, a):
         return self.codegen.createName(a)
 
@@ -139,7 +142,7 @@ class MatchCase(Node):
 
             if type(node) is Tree.Operator and node.kind == "concat":
                 arr = codegen.getName()
-                codegen.append("new RegExp('")
+                codegen.append(arr+" = new RegExp('")
                 names = []
 
                 def iterate(n):
@@ -165,7 +168,7 @@ class MatchCase(Node):
                         name = codegen.readName(i.package + "_" + i.name)
                     codegen.append(name + "=" + arr + "[" + str(index + 1) + "];")
 
-            if type(node) is Tree.FuncCall:
+            elif type(node) is Tree.FuncCall:
                 count = list(node.type.const.keys()).index(node.nodes[0].name)
 
                 codegen.append(tmp + "[0]==" + str(count))
@@ -186,27 +189,30 @@ class MatchCase(Node):
                             name = codegen.readName(i.package + "_" + i.name)
                         codegen.append(name + "=" + tmp + "[" + str(index + 1) + "];")
             elif type(node) is Tree.Tuple:
-                codegen.append("(")
-                codegen.checking = True
-                iter = 0
-                for (index, i) in enumerate(node):
-                    if not (type(i) is Tree.ReadVar and i.name[0].islower()):
-                        if iter > 0:
-                            codegen.check.append("&&")
-                        loop(i, tmp + "[" + str(index) + "]")
-                        iter += 1
+                if len(node.nodes) == 1:
+                    loop(node.nodes[0], tmp)
+                else:
+                    codegen.append("(")
+                    codegen.checking = True
+                    iter = 0
+                    for (index, i) in enumerate(node):
+                        if not (type(i) is Tree.ReadVar and i.name[0].islower()):
+                            if iter > 0:
+                                codegen.check.append("&&")
+                            loop(i, tmp + "[" + str(index) + "]")
+                            iter += 1
 
-                codegen.check.append(")")
-                codegen.checking = False
+                    codegen.check.append(")")
+                    codegen.checking = False
 
-                for (index, i) in enumerate(node):
-                    if type(i) is Tree.ReadVar and i.name[0].islower():
-                        if not self.yielding:
-                            name = codegen.createName(i.package + "_" + i.name)
-                            codegen.append("var ")
-                        else:
-                            name = codegen.readName(i.package + "_" + i.name)
-                        codegen.append(name + "=" + tmp + "[" + str(index) + "];")
+                    for (index, i) in enumerate(node):
+                        if type(i) is Tree.ReadVar and i.name[0].islower():
+                            if not self.yielding:
+                                name = codegen.createName(i.package + "_" + i.name)
+                                codegen.append("var ")
+                            else:
+                                name = codegen.readName(i.package + "_" + i.name)
+                            codegen.append(name + "=" + tmp + "[" + str(index) + "];")
             elif type(node) is Tree.Array:
                 iter = 0
                 end = node.nodes[-1] if len(node.nodes) > 0 else False

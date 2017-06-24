@@ -339,6 +339,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
         def compile(target, sources, filenames, former = None):
             global global_parser
 
+            global_parser = cache
+
             lexed = Lexer.lex(target, sources, filenames, files, cache, cache.lexed if cache else {}, transforms)
 
             declarations = Parser.Parser(lexed, filenames)
@@ -447,7 +449,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                     client_linkWithFiles = _linkWithFiles + _clientLinkWithFiles
                     node_linkWithFiles = _linkWithFiles + _nodeLinkWithFiles
 
-                    a = CodeGen.link(parser.compiled, outputFile, hotswap= hotswap, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
+                    a = CodeGen.link(compiled, outputFile, hotswap= hotswap, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
 
                     if run:
                         import webbrowser
@@ -500,58 +502,50 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
     #profile.print_stats("time")
 
-def prepareForHotswap(arg):
-    count = 0
-    for i in arg:
-        if type(i) in [Tree.FuncBody, Tree.FuncBraceOpen, Tree.FuncStart]:
-            count += 1
-            continue
-
-        if type(i) is Tree.FuncCall and i.nodes[0].type.do:
-            print("side effect function")
-            return True
-
-        if type(i) is Tree.Create and i.imutable:
-            return True
-
-        if not i.isEnd():
-            if prepareForHotswap(i) and type(arg) is Tree.Root:
-                del i.owner.nodes[count]
-                return True
-        count += 1
-
-    return False
-
 import datetime
-def modified(target, files, outputfile, jsFiles=[]):
-    if outputfile == "main":
-        return True
+modified_ = {}
+def modified(_target, files, outputfile, jsFiles=[]):
+    def inner():
+        if outputfile == "main":
+            #return True
+            pass
 
-    if target == "full":
-        target = "node"
+        target = _target
+        if target == "full":
+            target = "node"
 
-    try:
-        t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-"+target+".js")
-        t = datetime.datetime.fromtimestamp(int(t))
-    except FileNotFoundError:
-        return True
-
-    for i in jsFiles:
-        file = os.path.getmtime(i)
-        file = datetime.datetime.fromtimestamp(int(file))
-
-        if file > t:
+        try:
+            t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-"+target+".js")
+            t = datetime.datetime.fromtimestamp(int(t))
+        except FileNotFoundError:
             return True
 
-    import time
-    o = compiled
-
-    for i in files:
-        joined = os.path.join(i[0], i[1])
-        file = os.path.getmtime(joined)
-        file = datetime.datetime.fromtimestamp(int(file))
-
-        if file > t:
+        if not outputfile in global_parser.scope or not outputfile in global_parser.usedModules:
             return True
 
-    return False
+        for i in jsFiles:
+            file = os.path.getmtime(i)
+            file = datetime.datetime.fromtimestamp(int(file))
+
+            if file > t:
+                return True
+
+        import time
+        o = compiled
+
+        for i in files:
+            joined = os.path.join(i[0], i[1])
+            file = os.path.getmtime(joined)
+            file = datetime.datetime.fromtimestamp(int(file))
+
+            if file > t:
+                return True
+
+        return False
+
+    if outputfile in modified_:
+        return modified_[outputfile]
+    else:
+        res = inner()
+        modified_[outputfile] = res
+        return res

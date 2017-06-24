@@ -75,7 +75,6 @@ if __name__ == "__main__":
 
 @socketio.on('data')
 def handle_message(line):
-
     global indent
     global parenThing
 

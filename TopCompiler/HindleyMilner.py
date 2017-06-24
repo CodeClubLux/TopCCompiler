@@ -1,4 +1,5 @@
 from .Types import *
+from TopCompiler import Scope
 
 class State:
     pass
@@ -13,6 +14,9 @@ class FakeDict:
 
     def __getitem__(self, item):
         return self.unknown.getProperty(item)
+
+    def keys(self):
+        return self.unknown.typ.const.keys()
 
     def __len__(self):
         class FakeLength:
@@ -74,7 +78,7 @@ constraint = {
     T: 3,
 }
 
-isUnknown = 10
+isUnknown = -1
 
 
 def unificaction(o_self, o_other, parser):
@@ -103,7 +107,7 @@ def unificaction(o_self, o_other, parser):
             if self_c == isUnknown:
                 return newT(parser)
 
-            return self
+            return other
         elif type(self) in [Interface, T] and type(other) in [Interface, T]:
             if type(self) is Interface:
                 return T(other.realName, unificaction(self, other.type, parser), other.owner)
@@ -132,10 +136,9 @@ def unificaction(o_self, o_other, parser):
 
 
 def newT(parser):
-    t = T(string.ascii_uppercase[state.count], All, parser.package + ".anonymous")
+    t = T(string.ascii_uppercase[state.count], All, parser.package + "._")
     state.count += 1
     return t
-
 
 def sync(a, b):
     o_a_callback = a.callback
@@ -174,11 +177,17 @@ class Unknown(Type):
             self.typ = typ
             self.name = typ.name
 
+    def __str__(self):
+        return "unknown"
+
     def lengthOfArgs(self):
         s = self
         class FakeComparison:
             def __lt__(self, other):
                 return False
+
+            def __ne__(self, other):
+                return False #add checks later
 
             def __gt__(self, other):
                 return len(s.typ.args) > other
@@ -186,10 +195,41 @@ class Unknown(Type):
         return FakeComparison()
 
     def contains(self, item):
-        if type(self.typ) in [bool, Interface, T]:
+        if type(self.typ) in [bool, Interface, T, Enum]:
             return True
         else:
             return item in self.typ.types
+
+    def getConst(self, item):
+        if self.typ.normalName != "":
+            return self.typ.const[item]
+
+        def setConst(index):
+            def inner(newTyp):
+                self.typ.const[item][index] = unificaction(self.typ.const[item][index], newTyp, self.parser)
+                typ = self.typ
+                self.typ = Enum(typ.package, typ.name, typ.const, typ.generic)
+                self.name = self.typ.name
+                self.callback(self.typ)
+
+            return inner
+        parser = self.parser
+        c = Scope.typeOfVar(Tree.PlaceHolder(self.parser), parser, parser.package, item)
+
+        if type(c) is FuncPointer:
+            enum = c.returnType
+            args = c.args
+        else:
+            enum = c
+            args = []
+
+        replaces = {}
+        for i in enum.generic:
+            replaces[i] = Unknown(parser, callback=setConst(i), typ=newT(parser))
+
+        r = replaceT(enum, replaces)
+        self.compareType(r)
+        return self.typ.const[item]
 
     def getArg(self, item):
         if type(item) is slice:
@@ -233,15 +273,20 @@ class Unknown(Type):
             self.compareType(FuncPointer([], u))
 
             self.returnType = u
-
+        elif other is Enum:
+            self.const = FakeDict(self)
+            self.const.__len__ = lambda: 0 if self.typ.normalName == "" else len(self.typ.const)
+            self.compareType(Enum("", "", {}, {}))
+        elif other in [I32, Float, String, Bool]:
+            self.compareType(other())
 
     def isType(self, other):
         if other is Unknown: return True
 
-        if not self.typ:
+        if not self.typ or constraint[other] < constraint[type(self.typ)]:
             self.emulate(other)
             return True
-        return False
+        return type(self.typ) is other
 
     def compareType(self, other):
         try:
@@ -250,8 +295,8 @@ class Unknown(Type):
             raise e
 
     def getProperty(self, name):
-        if not type(name) is str:
-            print("error")
+        if type(self.typ) is Enum:
+            return self.getConst(name)
 
         def changeField(newTyp):
             typ = self.typ
@@ -294,8 +339,5 @@ class Unknown(Type):
 
     def duckType(self, parser, other, node, mynode, iter):
         self.compareType(other)
-
-
-
 
 
