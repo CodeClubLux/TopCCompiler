@@ -255,10 +255,12 @@ def funcBody(parser, name, names, types, brace, returnType, do):
     parser.currentNode = body.owner
 
     Scope.decrScope(parser)
+    return body
 
 def func(parser):
     (name, names, types, header, returnType, do) = funcHead(parser)
-    funcBody(parser, name, names, types, header, returnType, do)
+    body = funcBody(parser, name, names, types, header, returnType, do)
+    body.method = parser.currentNode.nodes[-3].method
 
 def funcCallBody(parser, paren):
     parser.nodeBookmark.append(1)

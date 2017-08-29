@@ -119,6 +119,14 @@ function toJS(arg) {
         return funcWrapper(arg);
     }
 
+    if (typeof arg === "object") {
+        var obj = {}
+        for (var key in arg) {
+            obj[key] = toJS(arg[key]);
+        }
+        return obj
+    }
+
     return arg
 }
 
@@ -129,6 +137,12 @@ function fromJS(arg) {
 
     else if (arg instanceof Function) {
         return jsFuncWrapper(arg);
+    } else if (typeof arg === "object") {
+        var obj = {}
+        for (var key in arg) {
+            obj[key] = fromJS(arg[key]);
+        }
+        return obj
     }
 
     return arg
@@ -222,7 +236,8 @@ function newAtom(arg) {
         watch: atom_watch,
         events: [],
         toString: function(){return ""},
-        update: atom_update
+        update: atom_update,
+        op_eq: function(other) { return this === other; }
     }
 }
 
@@ -236,6 +251,9 @@ function newLens(reader, setter, string) {
         },
         toString: function() {
             return string;
+        },
+        op_eq: function(other) {
+            return other.toString() === string;
         }
     }
 }

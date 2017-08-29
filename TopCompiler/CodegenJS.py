@@ -11,7 +11,7 @@ import os
 import copy
 
 class CodeGen:
-    def __init__(self, filename, tree, externFunctions, target, opt, main=True):
+    def __init__(self, order_of_modules, filename, tree, externFunctions, target, opt, main=True):
         self.tree = tree
         self.filename = filename
 
@@ -21,6 +21,8 @@ class CodeGen:
 
         self.out_parts = []
         self.main_parts = []
+
+        self.order_of_modules = order_of_modules
 
         self.global_target = target
         self.target = target
@@ -70,8 +72,8 @@ class CodeGen:
         for i in tree:
             self.target = i.global_target
             i.compileToJS(self)
-            if not type(i) in [Tree.FuncCall,Tree.If,Tree.Match,Tree.FuncBody,Tree.Create,Tree.Assign,Tree.CreateAssign,Tree.Tree.FuncBraceOpen,Tree.FuncStart] and i.type.name == "none":
-                self.append(";")
+            #if not type(i) in [Tree.FuncCall,Tree.If,Tree.Match,Tree.FuncBody,Tree.Create,Tree.Assign,Tree.CreateAssign,Tree.Tree.FuncBraceOpen,Tree.FuncStart] and i.type.name == "none":
+            #    self.append(";")
 
     def toEvalHelp(self):
         tree = self.tree
@@ -103,7 +105,7 @@ class CodeGen:
         return next(self.gen)
 
     def createName(self, name):
-        if self.opt == 0:
+        if True or self.opt == 0:
             self.names[-1][name] = name
             return name
         else:
@@ -225,15 +227,15 @@ class CodeGen:
                 f = open("lib/" + self.filename.replace("/", ".") + "-node.js", mode="w")
                 f.write(node)
                 f.close()
-            except:
-                Error.error("Compilation failed")
+            except Exception as e:
+                Error.error("Compilation failed, " + str(e))
 
             try:
                 f = open("lib/" + self.filename.replace("/", ".") + "-client.js", mode="w")
                 f.write(client)
                 f.close()
-            except:
-                Error.error("Compilation failed")
+            except Exception as e:
+                Error.error("Compilation failed, " + str(e))
         else:
             js = self.toJS(target)
 
@@ -241,8 +243,8 @@ class CodeGen:
                 f = open("lib/" + self.filename.replace("/", ".") + "-"+ target +".js", mode="w")
                 f.write(js)
                 f.close()
-            except:
-                Error.error("Compilation failed")
+            except Exception as e:
+                Error.error("Compilation failed, " + str(e))
 
 
 def getRuntime():
@@ -257,10 +259,10 @@ def getRuntimeNode():
     return file.read()
 
 
-def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswap):
+def link(filenames, output, run, debug, opt, dev, linkWith, linkWithCSS, target, hotswap):
     needSocket = False
 
-    if target == "client" and dev:
+    if target == "client" and debug:
         terminal = open(__file__[0:__file__.rfind("/") + 1] + "terminal/bundle.html").read()
 
         needSocket = True
@@ -278,34 +280,84 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
 
     linked += runtime
 
-    if target == "client" and dev:
-        linked += """log= function(d) {
-            terminal.echo(d);
-        };
+    css = ""
 
-        log_unop = function(data, next) {
-            terminal.echo(data);
-            next();
-        };
+    if target == "client" and debug:
+            linked += """log= function(d) {
+                terminal.echo(d);
+            };
 
-        function newAtom(arg) {
-            previousState = {
-                unary_read: unary_read,
-                op_set: op_set,
-                arg: arg,
-                watch: atom_watch,
-                events: [],
-                toString: function(){ return "" }
-            }
+            log_unop = function(data, next) {
+                terminal.echo(data);
+                next();
+            };
 
-            calledBy.push("init -> ");
-            recordNewValue(arg, function(){});
+            function newAtom(arg) {
+                previousState = {
+                    unary_read: unary_read,
+                    op_set: op_set,
+                    arg: arg,
+                    watch: atom_watch,
+                    events: [],
+                    toString: function(){ return "" }
+                }
 
-            previousState.events.push(recordNewValue);
+                calledBy.push("init -> ");
+                recordNewValue(arg, function(){});
+
+                previousState.events.push(recordNewValue);
 
             return previousState
         }
         """
+    elif target == "client" and (dev and not hotswap):
+        linked += """
+        function newAtom(arg) {
+                previousState = {
+                    unary_read: unary_read,
+                    op_set: op_set,
+                    arg: arg,
+                    watch: atom_watch,
+                    events: [],
+                    toString: function(){ return "" }
+                }
+                return previousState
+        }
+
+        (function() {
+            var socket = io.connect('http://127.0.0.1:9000/');
+            socket.on("connect", function() {
+                socket.emit("new");
+            })
+
+            socket.on('reload', function (data) {
+                log("=== reloaded ===");
+
+                document.getElementById("code").innerHTML = "";
+                document.getElementById("error").innerHTML = "";
+                eval(data);
+            });
+
+            socket.on('comp_error', function (data) {
+                document.getElementById("error").innerHTML = "<br>"+data+"<br>";
+            });
+
+            socket.on('style', function (data) {
+                var name = data.name;
+                var content = data.content;
+                document.getElementById(name).innerHTML = content;
+            });
+
+            socket.on("error", function(err) {
+                isCode = false;
+                terminal.set_prompt("> ");
+                terminal.error(err);
+                isCode = true;
+            })
+            })()
+        """
+
+        css += '<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>'
 
     array = []
     # print("====", target)
@@ -320,7 +372,6 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
         f.close()
 
     linked += ";".join(array)
-    css = ""
 
     if target == "client":
         for i in linkWithCSS:
@@ -347,8 +398,8 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     if opt == 3:
         linked += "})()"
 
-    import jsbeautifier
-    linked = jsbeautifier.beautify(linked)
+    #import jsbeautifier
+    #linked = jsbeautifier.beautify(linked)
 
     fjs.write(linked)
     fjs.close()
@@ -377,7 +428,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     f = open("bin/" + output + ".html", mode="w")
 
     html = """
-<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<!DOCTYPE html">
 <HTML>
     <head>
         <meta charset="UTF-8">
@@ -387,6 +438,7 @@ def link(filenames, output, run, opt, dev, linkWith, linkWithCSS, target, hotswa
     </head>
     <body>
         """ + ('<div id="container" style="padding-top: 50px; margin-top: -10px; padding-bottom: 100px; color: white; margin-right: 10px; position: fixed; display: inline-block; float: left; height: 100%; background-color: black; width: 30%;"><button id="switchMode" style="position: fixed; color: black; z-index: 100000; top: 20; margin-left: 10px;so">Time Travel</button><div id="terminal" style="position: fixed; width: inherit; height: 90%;"></div></div><div id= "code" style= "float: right; width: 70%; position: relative;"></div>' if needSocket else '<div id= "code"></div>') + """
+        """ + ('<div id="error" style="z-index: 10000000; width: 100%; background-color: #42f4eb; position: fixed; bottom: 0; font-family: &quot;Segoe UI&quot;, Frutiger, &quot;Frutiger Linotype&quot;, &quot;Dejavu Sans&quot;, &quot;Helvetica Neue&quot;, Arial, sans-serif; padding-left: calc(50% - 123px);"></div>' if (dev and not hotswap) else "") + """
         """+('<script>' + socket + "</script>"+terminal if needSocket else '') + """
         <script>
         """ + linked + """

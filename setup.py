@@ -12,8 +12,10 @@ setup(name='TopCompiler',
       packages= ["TopCompiler","AST", "optimization"],
       install_requires=[
             "Flask",
+            "Flask-SocketIO"
             "requests",
-            "jsbeautifier"
+            "jsbeautifier",
+            "pypandoc"
       ],
       include_package_data=True
 )

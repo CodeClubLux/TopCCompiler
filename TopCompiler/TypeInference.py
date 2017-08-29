@@ -40,11 +40,15 @@ def infer(parser, tree):
                 Scope.incrScope(parser)
 
             if type(i) is Tree.Lambda:
+                count = Types.state.count
                 Scope.incrScope(parser)
 
             if not (i.isEnd() or type(i) in [Tree.MatchCase, Tree.Lens] or (type(i) is Tree.Block and type(i.owner) is Tree.Match)):
                 if type(i) is Tree.FuncBody:
-                    parser.func.append(parser.package+"."+i.name.replace("_", "."))
+                    if i.method:
+                        parser.func.append(parser.package+"."+i.name[:i.name.find("_")])
+                    else:
+                        parser.func.append(parser.package+"."+i.name.replace("_", "."))
 
                 loop(i, o_iter)
 
@@ -52,7 +56,7 @@ def infer(parser, tree):
                     parser.func.pop()
 
             if type(i) is Tree.Lambda:
-                count = Types.state.count
+
                 if not i.returnTyp:
                     if len(i.nodes) > 0:
                         returnTyp = i.nodes[1].nodes[-1].type
@@ -76,7 +80,7 @@ def infer(parser, tree):
                         args.append(c)
 
                 if type(returnTyp) is Types.Unknown and not returnTyp.typ:
-                    i.error("Cannot infer return type")
+                    i.error("Cannot infer return type of this function")
 
 
                 replaces = {}
@@ -107,6 +111,7 @@ def infer(parser, tree):
                 i.nodes[1].returnType = i.type.returnType
 
                 i.nodes[1].do = i.do
+
 
                 #print(gen)
                 #print(i.type)
@@ -505,11 +510,15 @@ def infer(parser, tree):
                 if not i.nodes[0].type.isType(Types.FuncPointer):
                     i.nodes[0].error("type "+str(i.nodes[0].type)+" is not callable")
 
+                i.nodes[0].type = i.nodes[0].type.toRealType()
+
                 do = i.nodes[0].type.do
                 returnType = i.nodes[0].type.returnType
 
                 args = i.nodes[0].type.args
                 newArgs = []
+
+
 
                 if args.__len__() < len(i.nodes)-1:
                     c = str(len(i.nodes) - 1 - len(args))
@@ -559,7 +568,17 @@ def infer(parser, tree):
 
                 if args.__len__() > len(i.nodes)-1:
                     i.curry = True
-                    i.type = Types.FuncPointer([Types.replaceT(c, generics) for c in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics), do= do)
+
+                    newGenerics = ODict()
+                    for c in i.nodes[0].type.generic:
+                        if c in generics:
+                            newGenerics[c] = generics[c]
+                        else:
+                            newGenerics[c] = i.nodes[0].type.generic[c]
+
+                    i.type = Types.FuncPointer(args[len(i.nodes)-1:], i.nodes[0].type.returnType, generic=newGenerics, do = i.nodes[0].type.do)
+                    #i.type = Types.FuncPointer([Types.replaceT(c, generics) for c in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics),generic= newGenerics, do= do)
+
                 elif not partial:
                     i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
                 else:
@@ -653,7 +672,7 @@ def infer(parser, tree):
                     i.typ = typ
 
                     assign = True
-                    if type(typ) is Struct.Struct:
+                    if typ.isType(Struct.Struct):
                         s = typ
                         assign = False
                         i.paramNames = Struct.offsetsToList(s.offsets)

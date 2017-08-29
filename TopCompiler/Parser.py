@@ -237,7 +237,7 @@ def callToken(self, lam= False):
         s1(self)
         returnBookmark(self)
     else:
-        if not lam and Module.shouldCall(b) and (b.token in ["!", "_", "(", "\\", "|"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and not ExprParser.isUnary(self, self.lookBehind()):
+        if not lam and Module.shouldCall(b) and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and not ExprParser.isUnary(self, self.lookBehind()):
             if b.token == "$":
                 ExprParser.endExpr(self, -2)
             addBookmark(self)

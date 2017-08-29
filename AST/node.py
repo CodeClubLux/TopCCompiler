@@ -152,6 +152,15 @@ class Node(Root):  # partially immutable data structure
     def compileToJS(self, codegen):
         raise NotImplementedError(str(self))
 
+class Place(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def __str__(self):
+        return "placeholder"
+
+    def compileToJS(self, codegen):
+        codegen.append(self.name)
 
 class PlaceHolder(Node):
     def __init__(self, owner= None):

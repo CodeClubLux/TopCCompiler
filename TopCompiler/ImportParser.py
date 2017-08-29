@@ -11,9 +11,14 @@ from TopCompiler import Lexer
 import AST as Tree
 from TopCompiler import Types
 
+ignore = {}
+
 def shouldCompile(decl, name, parser, mutated= ()):
     if not decl and not name in parser.compiled and not name in mutated:
         mutated += (name,)
+
+        if name in ignore:
+            return False
 
         if name in parser.shouldCompile:
             return parser.shouldCompile[name]
@@ -34,6 +39,7 @@ def shouldCompile(decl, name, parser, mutated= ()):
     return False
 
 from TopCompiler import Module
+import datetime
 
 def shouldParse(decl, name, parser):
     return not decl and not name in parser.compiled
@@ -47,18 +53,27 @@ def importParser(parser, decl= False):
 
     oname = name.token[1:-1]
 
-    if not oname in parser.filenames:
+    if not oname in parser.filenames and not oname in ignore:
         Error.parseError(parser, "package "+oname+" not found")
 
     name = os.path.basename(oname)
 
     if not decl:
-        #parser.externFuncs[parser.package] = []
-
         if not parser.hotswap:
             sp = shouldParse(decl, oname, parser)
         else:
             sp = shouldCompile(decl, oname, parser)
+            outputfile = oname
+            try:
+                if parser.global_target == "full":
+                    t = max(os.path.getmtime("lib/" + outputfile.replace("/", ".") + "-client.js"),
+                    os.path.getmtime("lib/" + outputfile.replace("/", ".") + "-client.js"))
+                else:
+                    t = os.path.getmtime("lib/" + outputfile.replace("/", ".") + "-" + parser.global_target + ".js")
+                t = datetime.datetime.fromtimestamp(int(t))
+            except FileNotFoundError:
+                sp = True
+                print("Error ", outputfile)
 
         if sp:
             p = Parser.Parser(parser.lexed[oname], parser.filenames[oname])

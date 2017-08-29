@@ -17,6 +17,7 @@ from TopCompiler import Module
 from optimization import *
 from TopCompiler import VarParser
 from TopCompiler import saveParser
+import datetime
 
 # is class
 
@@ -108,7 +109,7 @@ def getCompilationFiles(target):
         clientLinkWithFiles = []
         nodeLinkWithFiles = []
 
-        for root, dirs, files in os.walk(dir, topdown=False):
+        for root, dirs, files in os.walk(dir, topdown=False, followlinks=True):
             for i in files:
                 if root == start and i != "port.json" and i.endswith(".top"):
                     package = i[:-4]
@@ -127,6 +128,7 @@ def getCompilationFiles(target):
             try:
                 port = open(start+package+"/port.json", mode= "r")
             except:
+                continue
                 Error.error("missing file port.json in package "+package+"")
 
             files = []
@@ -162,7 +164,7 @@ def getCompilationFiles(target):
         return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles)
 
     try:
-        (_, dirs, _) = next(os.walk("packages"))
+        (_, dirs, _) = next(os.walk("packages", followlinks=True))
     except StopIteration:
         dirs = {}
 
@@ -213,9 +215,10 @@ filenames_sources = {}
 
 global_parser = 0
 
-def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache= False):
+def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswap= False, cache= False, debug= False):
+    global modified_
+    modified_ = {}
     time1 = time()
-    cache = saveParser.load()
 
     hotswap = dev and not run
     global outputFile
@@ -247,17 +250,20 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             else:
                 Error.error("unknown argument '" + i + "'.")
 
+        if not _hotswap and opt == 0:
+            cache = saveParser.load()
+
         try:
             port = open("src/port.json")
             data = port.read()
             port.close()
-        except:
+        except FileNotFoundError:
             Error.error("Missing file port.json in folder src")
 
         try:
             jsonLoad = json.loads(data)
-        except:
-            Error.error("invalid json in port.json")
+        except Exception as e:
+            Error.error("invalid json in port.json, "+str(e))
 
         try:
             target = jsonLoad["target"]
@@ -307,7 +313,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                     Error.error("File " + os.path.join(i[0], i[1]) + ", not found")
 
             sources[package] = []
-            if not hotswap or (hotswap and modified(cache.package, cache.files[package], package)):
+            if not hotswap or (hotswap and modified(target, cache.files[package], package)):
                 filenames[package] = []
                 filenames_sources[package] = {}
 
@@ -341,6 +347,8 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
             global_parser = cache
 
+            #print(cache.usedModules)
+
             lexed = Lexer.lex(target, sources, filenames, files, cache, cache.lexed if cache else {}, transforms)
 
             declarations = Parser.Parser(lexed, filenames)
@@ -352,6 +360,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.jsFiles = [b for (a,b) in clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles]
             declarations.cssFiles = linkCSSWithFiles
             declarations.transforms = transforms
+            declarations.usedModules = {}
 
             global_parser = declarations
 
@@ -363,6 +372,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 declarations.allImports = cache.allImports
                 declarations.atomTyp = cache.atomTyp
                 declarations.hotswap = True
+                declarations.usedModules = cache.usedModules
 
             if former:
                 #print("inserting", target)
@@ -380,13 +390,16 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
             declarations.output_target = target
             declarations.didCompile = False
 
+            if (dev and run):
+                clearMain(declarations)
+
             ResolveSymbols.resolve(declarations)
 
             #print("declarations")
 
             #print(declarations.shouldCompile)
 
-            if opt == 3 or doc or (dev and run) or ImportParser.shouldCompile(False, "main", declarations):
+            if opt == 3 or doc or ImportParser.shouldCompile(False, "main", declarations):
                 parser = Parser.Parser(lexed["main"], filenames["main"])
                 parser.package = "main"
                 ResolveSymbols.insert(declarations, parser, only= True)
@@ -421,25 +434,32 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 if doc:
                     return parser
 
-                canStartWith = []
+                canStartWith = ['']
+
+                order_of_modules = []
 
                 for i in parser.compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])
+
                     dir = tmp[tmp.find("packages")+len("packages")+1:tmp.rfind("src")-1]
                     canStartWith.append(dir)
 
                     if parser.compiled[i][0]:
-                        CodeGen.CodeGen(i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
+                        CodeGen.CodeGen(order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
+
+                order_of_modules.append("main")
+
+                for i in parser.lexed:
+                    parser.usedModules[i] = datetime.datetime.now()
 
                 _linkCSSWithFiles = [i for (d, i) in linkCSSWithFiles if d in canStartWith]
                 _clientLinkWithFiles = [i for (d, i) in clientLinkWithFiles if d in canStartWith]
                 _nodeLinkWithFiles = [i for (d, i) in nodeLinkWithFiles if d in canStartWith]
                 _linkWithFiles = [i for (d, i) in linkWithFiles if d in canStartWith]
 
-                #print(dill.detect.badobjects(parser.scope))
+                compiled = order_of_modules #parser.compiled
 
-                compiled = parser.compiled
-                if not dev:
+                if not dev and not _raise:
                     saveParser.save(parser)
 
                 print("\n======== recompiling =========")
@@ -449,20 +469,19 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                     client_linkWithFiles = _linkWithFiles + _clientLinkWithFiles
                     node_linkWithFiles = _linkWithFiles + _nodeLinkWithFiles
 
-                    a = CodeGen.link(compiled, outputFile, hotswap= hotswap, run= False, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
+                    a = CodeGen.link(compiled, outputFile, hotswap= hotswap, run= False, debug = debug, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
 
                     if run:
-                        import webbrowser
-                        webbrowser.open("http://127.0.0.1:3000/")
+                        print("Open website, at", "http://127.0.0.1:3000/")
 
-                    l = CodeGen.link(compiled, outputFile, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
+                    l = CodeGen.link(compiled, outputFile, debug= debug, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
                 else:
                     _link_CSSWithFiles = [] if target != "client" else _linkCSSWithFiles
                     _linkWithFiles = _linkWithFiles + _nodeLinkWithFiles if target == "node" else _linkWithFiles + _clientLinkWithFiles if target == "client" else []
 
                     l = CodeGen.link(compiled, outputFile,
                                      run=run, opt=opt, dev=dev, hotswap= hotswap,
-                                     linkWithCSS=_link_CSSWithFiles, linkWith=_linkWithFiles, target=target)
+                                     linkWithCSS=_link_CSSWithFiles, debug= debug, linkWith=_linkWithFiles, target=target)
                 didCompile = True
 
                 parser.didCompile = True
@@ -472,8 +491,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
                 return parser
             elif run:
                 if target == "full":
-                    import webbrowser
-                    webbrowser.open("http://127.0.0.1:3000/")
+                    print("Open website, at", "http://127.0.0.1:3000/")
 
                     CodeGen.execNode(outputFile, dev)
                 else:
@@ -492,7 +510,7 @@ def start(run= False, dev= False, doc= False, init= False, hotswap= False, cache
 
         return c
     except (EOFError, ArithmeticError) as e:
-        if dev:
+        if dev or _raise:
             Error.error(str(e))
         else:
             print(e, file= sys.stderr)
@@ -506,29 +524,22 @@ import datetime
 modified_ = {}
 def modified(_target, files, outputfile, jsFiles=[]):
     def inner():
-        if outputfile == "main":
-            #return True
-            pass
-
         target = _target
         if target == "full":
             target = "node"
 
-        try:
-            t = os.path.getmtime("lib/"+outputfile.replace("/", ".")+"-"+target+".js")
-            t = datetime.datetime.fromtimestamp(int(t))
-        except FileNotFoundError:
+        if not outputfile in global_parser.usedModules:
             return True
+        else:
+            t = global_parser.usedModules[outputfile]
 
-        if not outputfile in global_parser.scope or not outputfile in global_parser.usedModules:
-            return True
+        if outputfile == "main": #linking is done globally not module specific
+            for i in global_parser.jsFiles:
+                file = os.path.getmtime(i)
+                file = datetime.datetime.fromtimestamp(int(file))
 
-        for i in jsFiles:
-            file = os.path.getmtime(i)
-            file = datetime.datetime.fromtimestamp(int(file))
-
-            if file > t:
-                return True
+                if file > t:
+                    return True
 
         import time
         o = compiled
@@ -549,3 +560,12 @@ def modified(_target, files, outputfile, jsFiles=[]):
         res = inner()
         modified_[outputfile] = res
         return res
+
+def clearMain(parser):
+    try:
+        del parser.usedModules["main"]
+        del parser.scope["main"]
+        del parser.interfaces["main"]
+        del parser.structs["main"]
+    except KeyError:
+        pass

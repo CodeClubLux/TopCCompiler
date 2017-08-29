@@ -50,6 +50,9 @@ class Struct:
     def __str__(self):
         return "'type "+self.package+"."+self.name+"'"
 
+    def isType(self, other):
+        return type(self) is other
+
     def hasMethod(self, parser, name):
         packages = []
         b = None

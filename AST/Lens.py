@@ -35,13 +35,3 @@ class Lens(Node):
 
     def __str__(self):
         return "Lens"
-
-class Place(Node):
-    def __init__(self, parser):
-        Node.__init__(self, parser)
-
-    def __str__(self):
-        return "placeholder"
-
-    def compileToJS(self, codegen):
-        codegen.append(self.name)

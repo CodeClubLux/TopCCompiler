@@ -1,0 +1,14 @@
+from "html" import all
+
+let incr = pure 1+
+let decr = pure _ - 1
+
+def view(model: int, a: Atom[int]) VNode =
+    div [], [
+        h1 [], "Counter"
+        button [onClick incr, a], "+"
+        button [onClick decr, a], "-"
+        model
+    ]
+
+start-app view, new-atom 0

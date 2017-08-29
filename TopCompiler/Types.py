@@ -216,6 +216,9 @@ class Type:
     def __hash__(self):
         return id(self)
 
+    def toRealType(self):
+        return self
+
     def getMethod(self, parser, name):
         pass
 
@@ -329,17 +332,22 @@ class FuncPointer(Type):
         if not other.isType(FuncPointer):
             mynode.error("expecting function type "+str(self)+" and got type "+str(other))
 
+        other = other.toRealType()
         if other.args.__len__() != len(self.args):
             mynode.error("expecting function type "+str(self)+" and got type "+str(other))
 
         if not self.do and other.do:
             mynode.error("Expecting pure function " + str(self) + " and got effectfull function " + str(other))
-        elif self.do and not other.do:
+        elif self.do and not (other.do == True):
             mynode.error("Expecting effectfull function " + str(self) + " and got pure function " + str(other))
 
         count = -1
-        for (a, i) in zip(self.args, other.args):
+        for a in self.args:
             count += 1
+            i = other.args[count]
+            if type(i) is FakeList:
+                print("error")
+
             try:
                 i.duckType(parser, a, mynode, node, iter)
             except EOFError as e:
@@ -740,6 +748,9 @@ class Alias(Type):
 
         self.name = (package + "." if package != "_global" else "") + name + genericS
 
+    def toRealType(self):
+        return self.typ
+
     def hasMethod(self, parser, field):
         self.typ.hasMethod(parser, field)
 
@@ -856,7 +867,7 @@ class Float(Type):
         return self.__types__
 
     def duckType(self, parser, other, node, mynode, iter):
-        if not (other.typeIs(I32) or other.typeIs(Float)):
+        if not (other.isType(I32) or other.isType(Float)):
             mynode.error("expecting type " + str(self) + ", or "+str(I32())+" and got type " + str(other))
 
 class Bool(Type):

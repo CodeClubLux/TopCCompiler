@@ -13,7 +13,6 @@ def save(parser):
     parser.atomTyp = 0
     parser._tokens = 0
     parser.tokens = 0
-    parser.usedModules = list(parser.compiled)
 
     """
     for package in parser.structs:

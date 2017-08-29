@@ -84,7 +84,7 @@ def checkCase(parser, case, typ, first=False):
             case.nodes[-1].error("missing "+str(len(pattern) - (len(case.nodes)-1))+" arguments")
 
         case.type = typ
-    elif type(case) is Tree.ReadVar and case.name[0].upper() != case.name[0]:
+    elif type(case) is Tree.ReadVar and case.name[0].lower() == case.name[0]:
         Scope.addVar(case, parser, case.name, Scope.Type(True, typ))
     elif type(case) is Tree.ReadVar:
         if not typ.isType(Types.Enum):

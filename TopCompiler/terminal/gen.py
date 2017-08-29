@@ -15,5 +15,5 @@ string += '<script type="text/javascript" src="https:/cdnjs.cloudflare.com/ajax/
 string += "<script>" + open(__name__+"terminal.js").read() + "</script>"
 string += "<script>" + open(__name__+"../TopCompiler/runtime.js").read() + "</script>"
 
-d = "<head>" + string + "</head><body>" +
+d = "<head>" + string + "</head><body>"
 

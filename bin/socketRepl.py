@@ -1,4 +1,4 @@
-import js2py
+#import js2py
 
 from TopCompiler import CodegenJS as CodeGen
 from TopCompiler import Lexer

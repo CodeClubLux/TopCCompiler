@@ -104,6 +104,7 @@ class FuncBody(Node):
         Node.__init__(self, parser)
         self.returnType = ""
         self.before = []
+        self.method = False
 
     def __str__(self):
         return "}"
@@ -221,7 +222,7 @@ def yields(i):
 def transform(body):
     outer_scope = [body]
 
-    def loop(node, o_iter, match= False):
+    def loop(node, o_iter, match= False, inTailCallPosition=True):
         iter = -1
         isOuter = type(node) in [Tree.Block, Tree.FuncBody, Tree.Root]
         for i in node:
@@ -234,34 +235,38 @@ def transform(body):
                 outer_scope.append(i)
 
             if not i.isEnd() and not type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
-                x = loop(i, 0 if type(i) in [Tree.Block] else o_iter, True if type(i) is Tree.MatchCase else match)
+                x = loop(i, 0 if type(i) in [Tree.Block] else o_iter, True if type(i) is Tree.MatchCase else match, type(i) in [Tree.Block, Tree.FuncBody])
                 if not type(i) in [Tree.Block]:
                     if isOuter:
                         iter += x - o_iter
                     o_iter = x
 
             if yields(i):
-                i.body = body
-                i.outer_scope = outer_scope[-1]
+                if inTailCallPosition and iter == len(node.nodes)-1 and type(i) is FuncCall and i.nodes[0].name == body.name and body.name != "":
+                    i.tail = True
+                    i.body = body
+                else:
+                    i.body = body
+                    i.outer_scope = outer_scope[-1]
 
-                i.outer_scope.yielding = True
+                    i.outer_scope.yielding = True
 
-                if type(i.outer_scope) in [Tree.Block]:
-                    i.outer_scope.owner.yielding = True
+                    if type(i.outer_scope) in [Tree.Block]:
+                        i.outer_scope.owner.yielding = True
 
-                if not i.owner == outer_scope[-1]:
-                    i.global_target = outer_scope[-1].nodes[o_iter].global_target
-                    outer_scope[-1].nodes.insert(o_iter, i)
+                    if not i.owner == outer_scope[-1]:
+                        i.global_target = outer_scope[-1].nodes[o_iter].global_target
+                        outer_scope[-1].nodes.insert(o_iter, i)
 
-                    c = Context(body, i)
-                    c.type = i.type
-                    c.owner = i.owner
+                        c = Context(body, i)
+                        c.type = i.type
+                        c.owner = i.owner
 
-                    i.owner.nodes[iter] = c
+                        i.owner.nodes[iter] = c
 
-                    i.owner = outer_scope[-1]
+                        i.owner = outer_scope[-1]
 
-                    o_iter += 1
+                        o_iter += 1
 
 
             if type(i) in [Tree.If, Tree.Match] and i.yielding:
@@ -291,7 +296,7 @@ def transform(body):
 
                 i.owner.nodes[iter] = assign
 
-            elif type(i) is Tree.ReadVar and match:
+            elif type(i) is Tree.ReadVar and match and i.name[0].lower() == i.name[0]:
                 r = Tree.Create(i.name, i.type, i)
                 r.package = i.package
                 r.owner = body
@@ -330,12 +335,13 @@ class FuncCall(Node):
     def __init__(self, parser):
         super(FuncCall, self).__init__(parser)
         self.partial = False
+        self.tail = False
 
     def __str__(self):
         return ""
 
     def compileToJS(self, codegen):
-        yilds = yields(self) and not self.inline and not self.partial and not self.curry
+        yilds = yields(self) and not self.inline and not self.partial and not self.curry and not self.tail
         if yilds:
             nextNum = str(codegen.count + 1)
             codegen.count += 1
@@ -375,6 +381,9 @@ class FuncCall(Node):
             self.nodes[0].compileToJS(codegen)
             codegen.append("("+",".join(names)+");}})(")
         else:
+            if self.nodes[0].type.do and self.tail:
+                codegen.append("setTimeout(function(){")
+
             self.nodes[0].compileToJS(codegen)
             if self.curry and len(self.nodes[1:]) == 0:
                 return
@@ -398,11 +407,18 @@ class FuncCall(Node):
         if yilds:
             codegen.append(("," if len(self.nodes) > 1 else "")+self.body._name)
 
+        if self.nodes[0].type.do and self.tail:
+            print("name is " + self.nodes[0].name)
+            codegen.append(("," if len(self.nodes) > 1 else "")+self.body._next)
+
         codegen.append(")")
 
         if yilds:
             codegen.append(";")
             self.outer_scope.case(codegen, nextNum, self)
+
+        if self.nodes[0].type.do and self.tail:
+            codegen.append("; }, 0);")
 
         elif self.type == Types.Null():
             codegen.append(";")

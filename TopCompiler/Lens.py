@@ -56,6 +56,12 @@ def parseLens(parser):
 
     A = Types.T("A", lens_typ, "Lens")
 
+    self = Types.Interface(False, {
+        "query": Types.FuncPointer([A], B),
+        "set": Types.FuncPointer([A, B], A),
+        "toString": Types.FuncPointer([], Types.String(0)),
+    }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]), name="Lens")
+
     Lens = Types.Interface(False, {
         "query": Types.FuncPointer([A], B),
         "set": Types.FuncPointer([A, B], A),

@@ -42,6 +42,9 @@ class FakeList:
         else:
             return self.unknown.getArg(item+self.offset)
 
+    def __iter__(self):
+        return self.iter()
+
 
 class FakeBool:
     def __init__(self, unknown):
@@ -52,7 +55,7 @@ class FakeBool:
 
     def __eq__(self, other):
         self.unknown.switchDo(other)
-
+        return self.unknown.rDo == other
 
 state = State()
 state.count = 0
@@ -66,6 +69,7 @@ def mergeDict(a, b):
 
 constraint = {
     bool: -1,
+    Null: 0,
     Bool: 0,
     FuncPointer: 0,
     String: 0,
@@ -82,6 +86,8 @@ isUnknown = -1
 
 
 def unificaction(o_self, o_other, parser):
+
+
     if type(o_other) is Unknown:
         other = o_other.typ
     else:
@@ -134,6 +140,9 @@ def unificaction(o_self, o_other, parser):
 
     return res
 
+class FakeType:
+    name = ""
+
 
 def newT(parser):
     t = T(string.ascii_uppercase[state.count], All, parser.package + "._")
@@ -172,6 +181,7 @@ class Unknown(Type):
         self.typ = False
         self.callback = callback
         self.types = FakeDict(self)
+        self.type = FakeType()
 
         if typ:
             self.typ = typ
@@ -242,7 +252,7 @@ class Unknown(Type):
             self.callback(self.typ)
 
         if len(self.typ.args) > item:
-            return self.args
+            return self.typ.args[item]
         else:
             u = Unknown(self.parser, changeArgType)
             self.typ.args.append(u)
@@ -255,6 +265,8 @@ class Unknown(Type):
         if not self.rDo:
             self.typ.do = other
             self.rDo = other
+            return True
+        return False
 
     def emulate(self, other):
         if other is FuncPointer:
@@ -323,7 +335,7 @@ class Unknown(Type):
                 self.compareType(Interface(False, {name: u}))
                 return u
         else:
-            if name.startswith("op_"):
+            if name.startswith("op_") and not name in ["op_set", "update", "watch", "unary_read"]:
                 t = All
             else:
                 t = newT(self.parser)
@@ -333,6 +345,14 @@ class Unknown(Type):
 
     def __eq__(self, other):
         parser = self.parser
+
+        """
+        self.compareType(other)
+
+        if self.typ:
+            return self.typ == other
+        """
+
 
     def __hash__(self):
         return id(self)

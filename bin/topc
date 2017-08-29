@@ -20,4 +20,4 @@ if __name__ == "__main__":
         elif sys.argv[1] == "run":
             topc.start(True)
         else:
-            Error.error("invalid option "+sys.argv[1])
+            print("invalid option "+sys.argv[1], file=sys.stderr)
