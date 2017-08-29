@@ -37,6 +37,9 @@ type Server =
     id: string
     members: []User
 
+type Channel =
+    id: string
+
 type Client =
     login: |string| do none
 
@@ -45,6 +48,7 @@ type Message =
     reply: |string| do none
     author: User
     server: Server
+    channel: Channel
 
 type Options =
     onMessage: |Message| do none

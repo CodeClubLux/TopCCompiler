@@ -11,7 +11,9 @@ let bios = db.document mongo, "bios", decoder Bio
 
 let client = discord.client {
     onMessage = |message: discord.Message| do
-        let server = message.server.id
+        let server = message.channel.id
+
+        log "Server id, {server}"
 
         let response =
             if server == "" then

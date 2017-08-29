@@ -2,7 +2,8 @@ var _discord = require("discord.js")
 
 function toTopMessage(message) {
     message.reply = toAsync(message.reply.bind(message))
-    message.server = message.server || "";
+    //message.server = message.server || "";
+    console.log(message.channel.id)
     return message
 }
 

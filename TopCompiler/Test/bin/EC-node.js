@@ -1377,7 +1377,8 @@ var _discord = require("discord.js")
 
 function toTopMessage(message) {
     message.reply = toAsync(message.reply.bind(message))
-    message.server = message.server || "";
+        //message.server = message.server || "";
+    console.log(message.channel.id)
     return message
 }
 
@@ -1510,45 +1511,6 @@ function server_isQuery(url) {
     return url.slice(1, url.indexOf("/", 2)) === "query"
 }
 
-function db_nodeInit() {
-    var d = 0;
-    return function c(b) {
-        while (1) {
-            switch (d) {
-                case 0:
-                    ;;;
-                    db_connect = _monk_connect;
-                    db_document = _monk_get;
-                    db_find = _monk_find;
-                    db_insert = _monk_insert;
-                    db_search = _monk_search;
-                    db_update = _monk_update;
-                    db_replaceOne = _monk_replaceOne;;
-                    return;
-            }
-        }
-    }()
-}
-
-function db_Collections(c) {
-    this[0] = c
-}
-
-function db_Parts(d) {
-    var c = new db_Collections(0);
-    c[1] = d;
-    return c
-}
-
-function db_DB() {}
-db_DB._fields = [];
-
-function db_Collection(c, d) {
-    this.manager = c;
-    this.name = d;
-}
-db_Collection._fields = ["manager", "name"];
-
 function main_nodeInit() {
     var d = 0;
     return function c(b) {
@@ -1559,8 +1521,8 @@ function main_nodeInit() {
                     discord_nodeInit();;;
                     main_mongo = db_connect("127.0.0.1:27017");
                     main_bios = db_document(main_mongo, "bios", core_json_struct(main_Bio, [
-                        ['server', core_json_string],
                         ['username', core_json_string],
+                        ['server', core_json_string],
                         ['bio', core_json_string],
                     ]));
                     main_client = discord_client({
@@ -1578,7 +1540,8 @@ function main_nodeInit() {
                                 while (1) {
                                     switch (j) {
                                         case 0:
-                                            main_server = ((main_message).server).id;
+                                            main_server = ((main_message).channel).id;
+                                            log(((((("Server id, ") + ((main_server)).toString())) + ("").toString())));
                                             if ((main_server === "")) {
                                                 g = "Cannot dm wolf bot.";
                                                 j = 1; /*block*/
@@ -1708,13 +1671,52 @@ function main_Bio(c, d, f) {
 }
 main_Bio._fields = ["server", "username", "bio"];
 
+function db_nodeInit() {
+    var d = 0;
+    return function c(b) {
+        while (1) {
+            switch (d) {
+                case 0:
+                    ;;;
+                    db_connect = _monk_connect;
+                    db_document = _monk_get;
+                    db_find = _monk_find;
+                    db_insert = _monk_insert;
+                    db_search = _monk_search;
+                    db_update = _monk_update;
+                    db_replaceOne = _monk_replaceOne;;
+                    return;
+            }
+        }
+    }()
+}
+
+function db_Collections(c) {
+    this[0] = c
+}
+
+function db_Parts(d) {
+    var c = new db_Collections(0);
+    c[1] = d;
+    return c
+}
+
+function db_DB() {}
+db_DB._fields = [];
+
+function db_Collection(c, d) {
+    this.manager = c;
+    this.name = d;
+}
+db_Collection._fields = ["manager", "name"];
+
 function discord_nodeInit() {
     var d = 0;
     return function c(b) {
         while (1) {
             switch (d) {
                 case 0:
-                    ;;;;;
+                    ;;;;;;
                     discord_client = _discord_client;;
                     return;
             }
@@ -1735,18 +1737,24 @@ function discord_Server(c, d, f, g) {
 }
 discord_Server._fields = ["client", "region", "id", "members"];
 
+function discord_Channel(c) {
+    this.id = c;
+}
+discord_Channel._fields = ["id"];
+
 function discord_Client(c) {
     this.login = c;
 }
 discord_Client._fields = ["login"];
 
-function discord_Message(c, d, f, g) {
+function discord_Message(c, d, f, g, h) {
     this.content = c;
     this.reply = d;
     this.author = f;
     this.server = g;
+    this.channel = h;
 }
-discord_Message._fields = ["content", "reply", "author", "server"];
+discord_Message._fields = ["content", "reply", "author", "server", "channel"];
 
 function discord_Options(c, d) {
     this.onMessage = c;
