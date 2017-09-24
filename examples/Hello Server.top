@@ -1,7 +1,9 @@
 import "http"
 
-(server |req|
-    match req.url with
-        "/" -> http.response{ body = "Hello World!"}
-        _ -> http.response{ status = 404 }
-).listen 8080
+let server = 
+    http.server |req|
+        match req.url with
+            "/" -> http.response{ body = "Hello World!"}
+            _ -> http.response{ status = 404 }
+
+server.listen 8080
