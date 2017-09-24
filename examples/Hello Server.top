@@ -1,7 +1,7 @@
 import "http"
 
 let server = 
-    http.server |req|
+    http.server |req| do
         match req.url with
             "/" -> http.response{ body = "Hello World!"}
             _ -> http.response{ status = 404 }
