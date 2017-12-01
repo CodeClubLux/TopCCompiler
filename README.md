@@ -4,7 +4,11 @@ Transpiler from the Top programming language to javascript, written in python3.5
 
 The Top programming language, also known as Toplang is a functional, staticly-typed and procedural programming language. The language depends on hindley milner type inference to infer most types. Top is aimed at enabling reactive, reusable, reliable web apps running in the browser and the server using the same language.
 
-## Installing topc
+## Installing Top-Lang
+1. If not already downloaded, download python3.
+2. Then type into your terminal 'pip install TopCompiler'
+
+## For the latest copy
 1. Clone this repo
 2. Cd into the downloaded clone
 3. Call 'python3 setup.py install'
