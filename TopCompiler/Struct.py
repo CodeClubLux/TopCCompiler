@@ -121,6 +121,7 @@ def typeParser(parser, decl= False):
     fields = parser.currentNode.nodes
 
     typ.fields = [i.name for i in typ]
+    typ.args = args
 
     typ.nodes = []
     parser.currentNode = tmp

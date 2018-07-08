@@ -38,7 +38,6 @@ def shouldCompile(decl, name, parser, mutated= ()):
 
     return False
 
-from TopCompiler import Module
 import datetime
 
 def shouldParse(decl, name, parser):

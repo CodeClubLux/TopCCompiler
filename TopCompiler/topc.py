@@ -7,13 +7,12 @@ from time import *
 
 from TopCompiler import Lexer
 from TopCompiler import Parser
-from TopCompiler import CodegenJS as CodeGen
+from TopCompiler import CodeGen
 from TopCompiler import ImportParser
 import sys
 import os
 import json
 from TopCompiler import ResolveSymbols
-from TopCompiler import Module
 from optimization import *
 from TopCompiler import VarParser
 from TopCompiler import saveParser
@@ -150,11 +149,6 @@ def getCompilationFiles(target):
             clientLinkWithFiles += _clientLinkWithFiles
             nodeLinkWithFiles += _nodeLinkWithFiles
 
-            try:
-                transforms[package] = j["transforms"]
-            except KeyError:
-                pass
-
             for f in files:
                 file[package].append((root, f+".top"))
 
@@ -267,7 +261,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
         try:
             target = jsonLoad["target"]
-            if not target in ["client", "node", "full"]:
+            if not target in ["osx", "windows"]:
                 Error.error("In global port.json file: unknown compile target, " + target)
         except KeyError:
             Error.error("must specify compilation target in port.json file")
@@ -275,9 +269,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
         (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node", "register-transforms"])
         (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = [
             [("", c) for c in i] for i in(linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles)]
-
-        for i in transforms:
-            Module.importModule(os.path.abspath(i))
 
         (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles, files, transforms) = getCompilationFiles(target)
 
@@ -292,7 +283,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
         filenames = {}
 
         for package in files:
-            #if not hotswap or (hotswap and modified(files[c], c)):
+            #if not hotswap or (hotswap and modified(files[runtime], runtime)):
 
 
             def iterate(i):
@@ -303,7 +294,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     filenames_sources[package][i[1][:-4]] = r
                     sources[package].append(r)
 
-                    if i[1][0].upper() == i[1][0]:
+                    if i[1][0] != i[1][0].lower():
                         Error.error("File name must be lowercase")
 
                     filenames[package].append((i[0], i[1][:-4]))
@@ -438,6 +429,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 order_of_modules = []
 
+                print("\n======== recompiling =========")
+                print("Code Analysis : " + str(time() - time1))
+
                 for i in parser.compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])
 
@@ -445,7 +439,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     canStartWith.append(dir)
 
                     if parser.compiled[i][0]:
-                        CodeGen.CodeGen(order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
+                        CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
 
                 order_of_modules.append("main")
 
@@ -462,43 +456,21 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 if not dev and not _raise:
                     saveParser.save(parser)
 
+                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target)
+
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))
+                print("")
 
-                if target == "full":
-                    client_linkWithFiles = _linkWithFiles + _clientLinkWithFiles
-                    node_linkWithFiles = _linkWithFiles + _nodeLinkWithFiles
+                if run:
+                    CodeGen.exec(outputFile)
 
-                    a = CodeGen.link(compiled, outputFile, hotswap= hotswap, run= False, debug = debug, opt= opt, dev= dev, linkWithCSS= _linkCSSWithFiles, linkWith= client_linkWithFiles, target="client")
-
-                    if run:
-                        print("Open website, at", "http://127.0.0.1:3000/")
-
-                    l = CodeGen.link(compiled, outputFile, debug= debug, hotswap= hotswap, run= run, opt= opt, dev=dev, linkWithCSS=_linkCSSWithFiles, linkWith= node_linkWithFiles, target = "node")
-                else:
-                    _link_CSSWithFiles = [] if target != "client" else _linkCSSWithFiles
-                    _linkWithFiles = _linkWithFiles + _nodeLinkWithFiles if target == "node" else _linkWithFiles + _clientLinkWithFiles if target == "client" else []
-
-                    l = CodeGen.link(compiled, outputFile,
-                                     run=run, opt=opt, dev=dev, hotswap= hotswap,
-                                     linkWithCSS=_link_CSSWithFiles, debug= debug, linkWith=_linkWithFiles, target=target)
                 didCompile = True
 
                 parser.didCompile = True
-
-
-
                 return parser
             elif run:
-                if target == "full":
-                    print("Open website, at", "http://127.0.0.1:3000/")
-
-                    CodeGen.execNode(outputFile, dev)
-                else:
-                    if target == "node":
-                        CodeGen.execNode(outputFile, dev)
-                    else:
-                        CodeGen.exec(outputFile)
+                CodeGen.exec(outputFile)
 
             return declarations
 

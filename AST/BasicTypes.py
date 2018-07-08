@@ -15,6 +15,9 @@ class Int(Node):
     def compileToJS(self, codegen):
         codegen.append(self.number)
 
+    def compileToC(self, codegen):
+        codegen.append(self.number)
+
     def validate(self, parser): pass
 
 class Bool(Node):
@@ -29,6 +32,12 @@ class Bool(Node):
 
     def compileToJS(self, codegen):
         codegen.append(self.bool)
+
+    def compileToC(self, codegen):
+        if self.bool == "true":
+            codegen.append("1")
+        else:
+            codegen.append("0")
 
     def validate(self, parser): pass
 
@@ -46,6 +55,9 @@ class Float(Node):
     def compileToJS(self, codegen):
         codegen.append(self.number)
 
+    def compileToC(self, codegen):
+        codegen.append(self.number)
+
 
 class String(Node):
     def __init__(self, string, parser):
@@ -59,22 +71,14 @@ class String(Node):
         return self.string
 
     def toString(self):
-        #if self.target == "node"
-        if True:
-            return self.string. \
-                replace("\n", "\\n").\
-                replace("\\{", "{"). \
-                replace("\\}", "}")
-        else:
-            return self.string.replace("<", "&lt"). \
-                replace(">", "&gt"). \
-                replace("\\t", "&nbsp" * 4). \
-                replace("\n", ""). \
-                replace("\\{", "{"). \
-                replace("\\}", "}")
+        return self.string. \
+            replace("\n", "\\n").\
+            replace("\\{", "{"). \
+            replace("\\}", "}")
 
-    def compileToJS(self, codegen):
-        codegen.append(self.toString())
+    def compileToC(self, codegen):
+        stringified = self.toString()
+        codegen.append("_global_StringInit(" + str(len(stringified)-2) + "," + stringified + ")")
 
     def validate(self, parser): pass
 

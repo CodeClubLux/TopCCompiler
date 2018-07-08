@@ -11,10 +11,10 @@ class Tuple(Node):
         return "tuple"
 
     def validate(self, parser): pass
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if len(self.nodes) == 1:
             codegen.append("(")
-            self.nodes[0].compileToJS(codegen)
+            self.nodes[0].compileToC(codegen)
             codegen.append(")")
         else:
             codegen.append("[")

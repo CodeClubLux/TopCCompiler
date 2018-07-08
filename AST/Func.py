@@ -16,6 +16,9 @@ class InitArg(Node):
     def compileToJS(self, codegen):
         pass
 
+    def compileToC(self, codegen):
+        pass
+
     def validate(self, parser):
         pass
 
@@ -35,6 +38,9 @@ class Lambda(Node):
         self.nodes[1].compileToJS(codegen)
         codegen.append(")")
 
+    def compileToC(self, codegen):
+        self.error("not implemented yet")
+
 class FuncStart(Node):
     def __init__(self, name, returnType, parser):
         Node.__init__(self, parser)
@@ -45,30 +51,19 @@ class FuncStart(Node):
     def __str__(self):
         return "def "+self.name+"("
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         import AST as Tree
         if not type(self.owner) is Tree.Root:
-            name = codegen.createName(self.package+"_"+self.name)
+            name = codegen.createName(self.package + "_" + self.name)
         else:
-            name = self.package+"_"+self.name
-
-        codegen.incrScope()
+            name = self.package + "_" + self.name
 
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.inFunction()
 
-        if self.method:
+        codegen.append(self.ftype.returnType.toCType() + " " + name + "(")
 
-            attachTyp = self.attachTyp
-            codegen.append(attachTyp.package+"_"+attachTyp.normalName+".prototype."+self.normalName+"=(function(")
-            names = [codegen.getName() for i in self.types]
-            if self.do:
-                names.append(codegen.getName())
-
-            codegen.append(",".join(names)+"){return ")
-            codegen.append(name+"("+",".join(["this"]+names)+")});")
-
-        codegen.append("function "+name+"(")
+        codegen.incrScope()
 
     def validate(self, parser):
         Scope.incrScope(parser)
@@ -80,18 +75,13 @@ class FuncBraceOpen(Node):
     def __str__(self):
         return ")"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         for i in self.nodes[:-1]:
-            i.compileToJS(codegen)
+            i.compileToC(codegen)
             codegen.append(", ")
 
         if len(self.nodes) > 0:
-            self.nodes[-1].compileToJS(codegen)
-
-        if self.body.do:
-            self._next = codegen.getName()
-            self.body._next = self._next
-            codegen.append(("," if len(self.nodes) > 0 else "")+self._next)
+            self.nodes[-1].compileToC(codegen)
 
         codegen.append('){')
 
@@ -112,62 +102,24 @@ class FuncBody(Node):
     def case(self, codegen, number, node):
         codegen.append("case "+str(number)+":")
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if type(self.returnType) is str:
             codegen.append("}")
             return
 
-        if self.do:
-            self.res = codegen.getName()
-            self._name = codegen.getName()
-            self._context = codegen.getName()
-
-            for i in self.before:
-                i.compileToJS(codegen)
-
-            codegen.append("var "+self._context+"=0;")
-            codegen.append("return function "+self._name+"("+self.res+"){")
-            codegen.append("while(1){")
-            codegen.append("switch("+self._context+"){")
-            codegen.append("case 0:")
-
         for i in self.nodes[:-1]:
-            i.compileToJS(codegen)
-            if not type(i) in [Tree.FuncCall,Tree.If,Tree.Match,Tree.FuncBody,Tree.Create,Tree.Assign,Tree.CreateAssign,Tree.Tree.FuncBraceOpen,Tree.FuncStart] and i.type.name == "none":
-                codegen.append(";")
-
-        did = False
-
-        y = False
-        if len(self.nodes) > 0 and self.do:
-            y = yields(self.nodes[-1]) or (type(self.nodes[-1]) in [Tree.If, Tree.Match] and self.nodes[-1].yielding)
+            i.compileToC(codegen)
+            codegen.addSemicolon(i)
 
         if self.returnType != Types.Null():
-            if self.do:
-                if not y:
-                    did = True
-                    codegen.append(";return " + self._next + "(")
-            else:
-                codegen.append(";return ")
+            codegen.append(";return ")
 
         if len(self.nodes) > 0:
-            self.nodes[-1].compileToJS(codegen)
-
-        if self.do:
-            if not did:
-                if self.returnType != Types.Null():
-                    codegen.append(";return " + self._next + "(" + self.res + ")")
-                else:
-                    codegen.append(";return "+self._next + "()")
-            else:
-                codegen.append(")")
-
-        codegen.append(";}")
+            self.nodes[-1].compileToC(codegen)
 
         codegen.decrScope()
 
-        if self.do:
-            codegen.append("}}()}")
+        codegen.append(";}")
 
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.outFunction()
@@ -185,7 +137,6 @@ class FuncBody(Node):
         elif len(self.nodes) > 0:
             if self.nodes[-1].type == Types.Null():
                 actReturnType = Types.Null()
-
             else:
                 actReturnType = self.nodes[-1].type
 
@@ -199,123 +150,7 @@ class FuncBody(Node):
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
 
-        if self.do:
-            transform(self)
-
         Scope.decrScope(parser)
-
-syncFuncs = [
-    "println",
-    "log",
-]
-
-def yields(i):
-    if type(i) is Tree.FuncCall and i.nodes[0].type.do and not (i.curry or i.partial):
-        if not (type(i.nodes[0]) is Tree.ReadVar and i.nodes[0].name in syncFuncs):
-            return True
-    elif type(i) is Tree.Operator and i.kind == "<-":
-        return True
-    elif type(i) in [Tree.If, Tree.Match] and i.yielding:
-        return True
-    return False
-
-def transform(body):
-    outer_scope = [body]
-
-    def loop(node, o_iter, match= False, inTailCallPosition=True):
-        iter = -1
-        isOuter = type(node) in [Tree.Block, Tree.FuncBody, Tree.Root]
-        for i in node:
-            iter += 1
-
-            if type(i) == Tree.Block:
-                i.outer_scope = outer_scope[-1]
-                i.body = body
-
-                outer_scope.append(i)
-
-            if not i.isEnd() and not type(i) in [Tree.FuncStart, Tree.FuncBody, Tree.FuncBraceOpen]:
-                x = loop(i, 0 if type(i) in [Tree.Block] else o_iter, True if type(i) is Tree.MatchCase else match, type(i) in [Tree.Block, Tree.FuncBody])
-                if not type(i) in [Tree.Block]:
-                    if isOuter:
-                        iter += x - o_iter
-                    o_iter = x
-
-            if yields(i):
-                if inTailCallPosition and iter == len(node.nodes)-1 and type(i) is FuncCall and i.nodes[0].name == body.name and body.name != "":
-                    i.tail = True
-                    i.body = body
-                else:
-                    i.body = body
-                    i.outer_scope = outer_scope[-1]
-
-                    i.outer_scope.yielding = True
-
-                    if type(i.outer_scope) in [Tree.Block]:
-                        i.outer_scope.owner.yielding = True
-
-                    if not i.owner == outer_scope[-1]:
-                        i.global_target = outer_scope[-1].nodes[o_iter].global_target
-                        outer_scope[-1].nodes.insert(o_iter, i)
-
-                        c = Context(body, i)
-                        c.type = i.type
-                        c.owner = i.owner
-
-                        i.owner.nodes[iter] = c
-
-                        i.owner = outer_scope[-1]
-
-                        o_iter += 1
-
-
-            if type(i) in [Tree.If, Tree.Match] and i.yielding:
-                i.outer_scope = outer_scope[-1]
-
-                if not i.owner == outer_scope[-1]:
-                    outer_scope[-1].nodes.insert(o_iter, i)
-
-                    c = Context(body, i)
-                    c.type = i.type
-                    c.owner = i.owner
-
-                    i.owner.nodes[iter] = c
-
-                    i.owner = outer_scope[-1]
-
-                    o_iter += 1
-
-            elif type(i) is Tree.CreateAssign:
-                body.before.append(i.nodes[0])
-                i.nodes[0].global_target = i.global_target
-                i.nodes[0].owner = body
-
-                assign = i.nodes[1]
-                assign.global_target = i.global_target
-                assign.owner = i.owner
-
-                i.owner.nodes[iter] = assign
-
-            elif type(i) is Tree.ReadVar and match and i.name[0].lower() == i.name[0]:
-                r = Tree.Create(i.name, i.type, i)
-                r.package = i.package
-                r.owner = body
-                r.global_target = i.global_target
-
-                body.before.append(r)
-
-            if isOuter:
-                o_iter += 1
-
-            if type(i) in [Tree.Block]:
-                if i.yielding:
-                    i.owner.yielding = True
-                outer_scope.pop()
-
-        return o_iter
-
-
-    loop(body, 0)
 
 class Context(Node):
     def __init__(self, body, parser):
@@ -334,124 +169,29 @@ class Context(Node):
 class FuncCall(Node):
     def __init__(self, parser):
         super(FuncCall, self).__init__(parser)
-        self.partial = False
-        self.tail = False
 
     def __str__(self):
         return ""
 
-    def compileToJS(self, codegen):
-        yilds = yields(self) and not self.inline and not self.partial and not self.curry and not self.tail
-        if yilds:
-            nextNum = str(codegen.count + 1)
-            codegen.count += 1
-
-            codegen.append(self.body._context + "=" + nextNum)
-            codegen.append(";return ")
-
-        if self.inline:
-            if type(self.type) != Types.Null():
-                codegen.append("(function(){")
-
-            for i in self.nodes[1:-1]:
-                i.compileToJS(codegen)
-
-            if type(self.type) != Types.Null(): codegen.append("return ")
-            if len(self.nodes) > 0:
-                self.nodes[-1].compileToJS(codegen)
-            if type(self.type) != Types.Null():
-                codegen.append(";})()")
-            return
-
-        if self.partial:
-            names = [codegen.getName() for i in self.nodes[1:]]
-
-            partial = []
-            missing = []
-            for i in range(len(names)):
-                if type(self.nodes[i+1]) is Under:
-                    missing.append(names[i])
-                else:
-                    partial.append(names[i])
-            if self.nodes[0].type.do:
-                names.append(codegen.getName())
-                missing.append(names[-1])
-            codegen.append("(function("+",".join(partial)+"){return function("+",".join(missing)+"){")
-            codegen.append("return ")
-            self.nodes[0].compileToJS(codegen)
-            codegen.append("("+",".join(names)+");}})(")
-        else:
-            if self.nodes[0].type.do and self.tail:
-                codegen.append("setTimeout(function(){")
-
-            self.nodes[0].compileToJS(codegen)
-            if self.curry and len(self.nodes[1:]) == 0:
-                return
-
-            if self.curry:
-                codegen.append(".bind(null,")
-            else:
-                codegen.append("(")
+    def compileToC(self, codegen):
+        self.nodes[0].compileToC(codegen)
+        codegen.append("(")
 
         for iter in range(len(self.nodes[1:-1])):
             iter += 1
             i = self.nodes[iter]
             if not type(i) is Under:
-                i.compileToJS(codegen)
-                if not (iter+2 == len(self.nodes) and type(self.nodes[iter+1]) is Under):
+                i.compileToC(codegen)
+                if not iter+1 == len(self.nodes):
                     codegen.append(",")
 
-        if len(self.nodes) > 1 and not type(self.nodes[-1]) is Under:
-            self.nodes[-1].compileToJS(codegen)
-
-        if yilds:
-            codegen.append(("," if len(self.nodes) > 1 else "")+self.body._name)
-
-        if self.nodes[0].type.do and self.tail:
-            print("name is " + self.nodes[0].name)
-            codegen.append(("," if len(self.nodes) > 1 else "")+self.body._next)
+        if len(self.nodes) > 1:
+            self.nodes[-1].compileToC(codegen)
 
         codegen.append(")")
 
-        if yilds:
-            codegen.append(";")
-            self.outer_scope.case(codegen, nextNum, self)
-
-        if self.nodes[0].type.do and self.tail:
-            codegen.append("; }, 0);")
-
-        elif self.type == Types.Null():
-            codegen.append(";")
 
     def validate(self, parser): pass
-
-class Bind(Node):
-    def __init__(self, func, module, parser):
-        Node.__init__(self, parser)
-        self.addNode(func)
-        self.addNode(module)
-
-    def validate(self, parser): pass
-
-    def compileToJS(self, codegen):
-        codegen.append("(")
-        self.nodes[0].compileToJS(codegen)
-        codegen.append(").bind(null,")
-        self.nodes[1].compileToJS(codegen)
-        codegen.append(")")
-
-class ArrBind(Node):
-    def __init__(self, name, what, parser):
-        Node.__init__(self, parser)
-        self.addNode(what)
-        self.field = name
-
-    def validate(self, parser): pass
-
-    def compileToJS(self, codegen):
-        codegen.append("Vector.prototype."+self.field+".bind(")
-        self.nodes[0].compileToJS(codegen)
-        codegen.append(")")
 
 class Func(Node):
     def __init__(self, parser):
@@ -462,9 +202,9 @@ class Func(Node):
 
     def validate(self, parser): pass
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         for i in self:
-            i.compileToJS(codegen)
+            i.compileToC(codegen)
 
 class Under(Node):
     def __init__(self, parser):
@@ -475,8 +215,8 @@ class Under(Node):
 
     def validate(self, parser): pass
 
-    def compileToJS(self, codegen):
-        codegen.append("null")
+    def compileToC(self, codegen):
+        codegen.append("NULL")
 
 class Generic(Node):
     def __init__(self, parser):
@@ -486,6 +226,9 @@ class Generic(Node):
         return "::[]"
 
     def validate(self, parser): pass
+
+    def compileToC(self, codegen):
+        self.nodes[0].compileToJS(codegen)
 
     def compileToJS(self, codegen):
         self.nodes[0].compileToJS(codegen)

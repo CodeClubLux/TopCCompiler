@@ -14,17 +14,6 @@ import threading
 
 mutex = threading.Lock()
 
-def removeTransforms(parser):
-
-    for i in parser.transforms:
-        try:
-            tr = parser.transforms[i]
-        except KeyError:
-            tr = []
-
-        for i in tr:
-            Module.removeModule(i)
-
 def main():
     debug = False
     if len(sys.argv) > 1:
@@ -48,8 +37,6 @@ def main():
                     e = str(e)
                     if error != e:
                         print(e, file=sys.stderr)
-
-                    removeTransforms(topc.global_parser)
 
                     error = e
                     time.sleep(0.2)

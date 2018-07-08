@@ -17,52 +17,39 @@ class If(Node):
     def __str__(self):
         return "IF"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if self.ternary:
             codegen.append("(")
             for i in self.nodes:
-                i.compileToJS(codegen)
+                i.compileToC(codegen)
             codegen.append(")")
-        elif self.type != Types.Null() and not self.yielding:
+        elif self.type != Types.Null():
+            #@cleanup create seperature function
             codegen.append("(function(){")
             for i in self.nodes:
                 i.compileToJS(codegen)
             codegen.append("})()")
         else:
-            if self.yielding:
-                codegen.count += 1
-                self.ending = str(codegen.count)
-
-                for i in self.nodes[1:]:
-                    i.yielding = True
-
-            next = ""
-
             count = 0
             _l = len(self.nodes)
             while count < _l:
-                if self.yielding and count > 1:
-                    codegen.append("/*if*/")
-                    if self.next == next:
-                        codegen.count += 1
-                        self.next = codegen.count
-
-                    codegen.append("case " + str(self.next) + ":")
-                    next = self.next
-                    codegen.append("/*notif*/")
-
-                self.nodes[count].compileToJS(codegen)
-                self.nodes[count+1].compileToJS(codegen)
+                self.nodes[count].compileToC(codegen)
+                self.nodes[count+1].compileToC(codegen)
 
                 count += 2
-
-            if self.yielding:
-                 codegen.append("case " + str(self.ending) + ":")
 
     def validate(self, parser):
         if self.type != Types.Null():
             if len(self.nodes) <= 2:
                 self.nodes[-1].nodes[-1].error("expecting else")
+
+            couldBeTernary = True
+            for i in range(0, len(self.nodes), 2):
+                if len(self.nodes[i + 1].nodes) > 1:
+                    couldBeTernary = False
+                    break
+
+            self.ternary = couldBeTernary
 
 class IfCondition(Node):
     def __init__(self, parser):
@@ -72,15 +59,15 @@ class IfCondition(Node):
     def __str__(self):
         return "ifCondition"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if self.owner.ternary:
             if self.owner.nodes[0] != self:
                 codegen.append(":(")
-            self.nodes[0].compileToJS(codegen)
+            self.nodes[0].compileToC(codegen)
             codegen.append("?")
         else:
-            codegen.append(""+("else " if self.owner.nodes[0] != self and not self.owner.yielding else "")+"if(")
-            self.nodes[0].compileToJS(codegen)
+            codegen.append(""+("else " if self.owner.nodes[0] != self else "")+"if(")
+            self.nodes[0].compileToC(codegen)
             codegen.append("){")
 
     def validate(self, parser):
@@ -99,10 +86,8 @@ class Else(Node):
     def __str__(self):
         return "else"
 
-    def compileToJS(self, codegen):
-        if self.yielding:
-            codegen.append("{")
-        elif self.owner.ternary:
+    def compileToC(self, codegen):
+        if self.owner.ternary:
             codegen.append(":(")
         else:
             codegen.append("\nelse{")
@@ -116,9 +101,9 @@ class While(Node):
     def __str__(self):
         return "While"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         for i in self.nodes:
-            i.compileToJS(codegen)
+            i.compileToC(codegen)
 
     def validate(self, parser): pass
 
@@ -129,8 +114,8 @@ class WhilePreCondition(Node):
     def __str__(self):
         return "WhilePreCondition"
 
-    def compileToJS(self, codegen):
-        codegen.append("\nwhile(")
+    def compileToC(self, codegen):
+        codegen.append(";while(")
 
     def validate(self, parser): pass
 
@@ -141,7 +126,7 @@ class Break(Node):
     def __str__(self):
         return " break"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         codegen.append("break;")
 
     def validate(self, parser): pass
@@ -153,10 +138,7 @@ class Continue(Node):
     def __str__(self):
         return "continue"
 
-    def compile(self, codegen):
-        return "br label "+self.owner.owner.check+"\n"
-
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         codegen.append(" continue;")
 
     def validate(self, parser): pass
@@ -168,8 +150,8 @@ class WhileCondition(Node):
     def __str__(self):
         return "WhileCondition"
 
-    def compileToJS(self, codegen):
-        self.nodes[0].compileToJS(codegen)
+    def compileToC(self, codegen):
+        self.nodes[0].compileToC(codegen)
         codegen.append("){")
 
     def validate(self, parser):
@@ -183,9 +165,11 @@ class WhileBlock(Node):
     def __str__(self):
         return "block"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         for i in self.nodes:
-            i.compileToJS(codegen)
+            i.compileToC(codegen)
+            if not type(i) in [Tree.FuncBraceOpen, Tree.FuncBody, Tree.FuncStart]:
+                codegen.append(";")
         codegen.append("}")
 
     def validate(self, parser):
@@ -209,63 +193,23 @@ class Block(Node):
     def __str__(self):
         return "block"
 
-    def case(self, codegen, number, node):
-        if not (type(node) is Tree.FuncCall and not node == self.nodes[-1])or self.first:
-            codegen.append("}/*case*/")
-
-        self.first = False
-
-        if len(self.owner.nodes) > (2 if type(self.owner) is If else 3):
-            num = codegen.count + 1
-        else:
-            num = self.owner.ending
-
-        codegen.count += 1
-        codegen.append(self.body._context + "=" + str(num) + ";break;/*case*/")
-
-        self.owner.next = num
-
-        if type(self.outer_scope) is Tree.Block and actuallyYields(self) and self.outer_scope.first:
-            self.outer_scope.first = False
-            self.outer_scope.case(codegen, number, self)
-        else:
-            codegen.append("case " + str(number) + ":")
-
-            #codegen.append("case " + str(number) + ":")
-        self.yielding = True
-
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if not self.noBrackets and self.owner.ternary:
-            self.nodes[0].compileToJS(codegen)
+            self.nodes[0].compileToC(codegen)
             if self == self.owner.nodes[-1]:
                 codegen.append(")")
         elif self.type != Types.Null():
             for i in self.nodes[:-1]:
                 i.compileToJS(codegen)
 
-            if not self.yielding:
-                codegen.append("return ")
-                self.nodes[-1].compileToJS(codegen)
-                codegen.append(";}")
-            else:
-                if not AST.yields(self.nodes[-1]): #type(self.nodes[-1]) is Tree.FuncCall and self.nodes[-1].nodes[0].type.do):
-                    codegen.append(self.body.res+"=")
-
-                self.nodes[-1].compileToJS(codegen)
+            codegen.append("return ")
+            self.nodes[-1].compileToJS(codegen)
+            codegen.append(";}")
         else:
             for i in self.nodes:
-                i.compileToJS(codegen)
+                i.compileToC(codegen)
 
-            if not self.noBrackets and not self.yielding: codegen.append(";}")
-
-        if self.yielding:
-            codegen.append(";"+self.body._context + "=" + self.owner.ending + ";/*block*/break;")
-
-            if len(self.nodes) == 0:
-                codegen.append("}")
-
-            if not actuallyYields(self):
-                codegen.append("}")
+            if not self.noBrackets: codegen.append(";}")
 
     def validate(self, parser):
         checkUseless(self)

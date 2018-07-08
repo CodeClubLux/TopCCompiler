@@ -197,37 +197,11 @@ def infer(parser, tree):
                     else:
                         Scope.addVar(i, parser, i.nodes[0].name, Scope.Type(i.nodes[0].imutable, i.nodes[1].nodes[0].type, i.global_target))
                         i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
-
-                if i.global_target != parser.global_target:
-                    #print(i.nodes[0].name)
-                    Scope.changeTarget(parser, i.nodes[0].name, i.global_target)
-                    #print("this variable can only be used in a specific target", i.global_target)
             elif type(i) is Tree.FuncBody:
                 Scope.decrScope(parser)
-                def check(n, _i):
-                    for c in n:
-                        if type(c) is Tree.FuncCall:
-                            if not _i.do and not c.partial and not c.curry and c.nodes[0].type.do:
-                                c.nodes[0].error("cannot call function with side effects in a pure function")
-
-                        if type(c) is Tree.FuncBody:
-                            pass
-                        #   check(c, c)
-
-                        elif not c.isEnd():
-                            check(c, _i)
-                check(i, i)
-                if i.global_target != parser.global_target:
-                    #print(i.name)
-                    Scope.changeTarget(parser, i.name, i.global_target)
-                    #print("this function can only be used in a specific target", i.global_target)
 
             elif type(i) is Tree.Create:
                 if not i.varType is None:
-                    #print(i.owner.global_target)
-                    if parser.package != "main" and parser.global_target != "full":
-                        print("should be full")
-
                     Scope.addVar(i, parser, i.name, Scope.Type(i.imutable, i.varType, i.owner.global_target))
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
@@ -577,7 +551,7 @@ def infer(parser, tree):
                             newGenerics[c] = i.nodes[0].type.generic[c]
 
                     i.type = Types.FuncPointer(args[len(i.nodes)-1:], i.nodes[0].type.returnType, generic=newGenerics, do = i.nodes[0].type.do)
-                    #i.type = Types.FuncPointer([Types.replaceT(c, generics) for c in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics),generic= newGenerics, do= do)
+                    #i.type = Types.FuncPointer([Types.replaceT(runtime, generics) for runtime in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics),generic= newGenerics, do= do)
 
                 elif not partial:
                     i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
@@ -752,6 +726,7 @@ def infer(parser, tree):
                         #resolveGen(xnormalTyp, myNode.type, gen, parser, myNode, i)
 
                 if not assign:
+                    del i.nodes[0]
                     for c in order:
                         i.nodes[s.offsets[c]] = order[c]
                 i.assign = assign

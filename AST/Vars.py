@@ -21,27 +21,29 @@ class Create(Node):
     def __str__(self):
         return self.name + ": "+str(self.varType)
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if type(self.name) is Tree.PlaceHolder:
             for i in self.names:
                 self.name = i
-                self.compileToJS(codegen)
+                self.compileToC(codegen)
             return
 
         if type(self.owner) is FuncBraceOpen:
-            codegen.append(codegen.createName(self.package+"_"+self.name))
+            codegen.append(self.varType.toCType() + " " + codegen.createName(self.package+"_"+self.name))
             return
 
         inFunc = codegen.inAFunction
 
         if self.attachTyp:
             codegen.inAFunction = True
-            codegen.append("var " + self.attachTyp.package+"_"+self.attachTyp.normalName+"_"+self.name+";")
+
+            codegen.append(self.varType.toCType() + " " + self.attachTyp.package + "_" + self.attachTyp.normalName + "_" + self.name + ";")
             codegen.inAFunction = inFunc
-        elif not self.isGlobal: codegen.append("var "+codegen.createName(self.package+"_"+self.name)+";")
+        elif not self.isGlobal:
+            codegen.append(self.varType.toCType() + " " + codegen.createName(self.package + "_" + self.name) + ";")
         else:
             codegen.inAFunction = True
-            codegen.append("var "+self.package + "_" + self.name+";")
+            codegen.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
             codegen.inAFunction = inFunc
 
     def validate(self, parser): pass
@@ -74,6 +76,16 @@ class CreateAssign(Node):
                 codegen.append(attachTyp.package+"_"+attachTyp.normalName+".prototype."+self.name+"="+
                 attachTyp.package+"_"+attachTyp.normalName+"_"+self.name+";")
 
+    def compileToC(self, codegen):
+        create = self.nodes[0]
+
+        self.nodes[0].compileToC(codegen)
+        self.nodes[1].compileToC(codegen)
+
+        self = self.nodes[0]
+        if self.attachTyp:
+            attachTyp = self.attachTyp
+
     def validate(self, parser): pass
 
 class Assign(Node):
@@ -86,9 +98,9 @@ class Assign(Node):
     def __str__(self):
         return self.name + "="
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         if type(self.owner) is Tree.InitStruct:
-            self.nodes[1].compileToJS(codegen)
+            self.nodes[1].compileToC(codegen)
             return
         elif self.init:
             if type(self.name) is Tree.PlaceHolder:
@@ -102,12 +114,13 @@ class Assign(Node):
                 tmp = self.nodes[0].string.replace("\{", "{").replace("\}", "}")
                 codegen.append(tmp[1:-1])
             else:
-                self.nodes[0].compileToJS(codegen)
+                self.nodes[0].compileToC(codegen)
             codegen.append(";")
 
             if type(self.name) is Tree.PlaceHolder:
                 pattern = self.name
 
+                print("object destructuring isnt supported yet")
                 def gen(tmp, p):
                     if type(p) is Tree.Tuple:
                         for (index, i) in enumerate(p):
@@ -129,9 +142,9 @@ class Assign(Node):
                 gen(name, pattern.nodes[0])
                 return
         else:
-            self.nodes[0].compileToJS(codegen)
+            self.nodes[0].compileToC(codegen)
             codegen.append("=")
-            self.nodes[1].compileToJS(codegen)
+            self.nodes[1].compileToC(codegen)
             codegen.append(";")
 
     def validate(self, parser):
@@ -179,17 +192,10 @@ class ReadVar(Node):
     def __str__(self):
         return "read " + self.name
 
-    def compileToJS(self, codegen):
-        if type(self.owner) is Tree.Field:
-            pass #print(self.name)
-
-        if not (type(self.owner) is Tree.FuncCall and self.owner.nodes[0] == self) and self.name in ["log", "println", "print"]:
-            codegen.append(self.name+"_unop")
-            return
-
+    def compileToC(self, codegen):
         codegen.append(codegen.readName(
             self.package + "_" + self.name) if not self.isGlobal else
-            (self.package+"_"+self.name if self.package != "" else self.name
+            (self.package+"_"+self.name if self.package != "" else "_global_" + self.name
         ))
 
     def validate(self, parser):

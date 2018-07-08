@@ -1,5 +1,0 @@
-{
-  "files": ["discord"],
-  "linkWith": ["wrapper.js"],
-  "nodeModules": ["discord.js"]
-}

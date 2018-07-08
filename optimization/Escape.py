@@ -198,4 +198,4 @@ def escapePass(tree):
 
     findEscaping(connectionGraph)
 
-    #visual(connectionGraph)
+    visual(connectionGraph)

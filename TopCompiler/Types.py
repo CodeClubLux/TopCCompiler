@@ -206,6 +206,8 @@ def parseGeneric(parser, typ):
 class Type:
     name = "type"
     normalName = ""
+    methods = []
+    package = ""
 
     def __str__(self):
         return self.name
@@ -219,8 +221,8 @@ class Type:
     def toRealType(self):
         return self
 
-    def getMethod(self, parser, name):
-        pass
+    def getMethod(self, parser, field):
+        return self.methods[field]
 
     def __eq__(self, other):
         if type(self) is Alias:
@@ -236,17 +238,14 @@ class Type:
         return not self == other
 
     def duckType(self, parser, other, node, mynode, iter):
-        if type(other) is Unknown:
-            other.duckType(parser, self, node, mynode, iter)
-            return
-
         if self != other:
             mynode.error("expecting type "+str(self)+" and got type "+str(other))
     
     def isType(self, other):
         return type(self) is other
 
-    def hasMethod(self, parser, field): pass
+    def hasMethod(self, parser, field):
+        return self.methods[field]
 
 class EnumT(Type):
     def __init__(self):
@@ -262,6 +261,9 @@ class Assign(Type):
         self.const = const
         self.name = str(self.const) + "{}"
         self.types = {}
+
+    def toCType(self):
+        return "void*"
 
     def duckType(self, parser, other, node, mynode, iter):
         
@@ -301,15 +303,25 @@ def newType(n):
 class String(Type):
     def __init__(self, length):
         self.name = "string"
-        self.types = {"toString": FuncPointer([], self), "toInt": FuncPointer([], I32()), "toFloat": FuncPointer([], Float()),
-            "slice": FuncPointer([I32(), I32()], self),
-            "length": I32(),
-            "indexOf": FuncPointer([self], I32()),
-            "replace": FuncPointer([self, self], self),
-            "toLowerCase": FuncPointer([], self),
-            "op_eq": FuncPointer([self], Bool()),
-            "op_add": FuncPointer([self], self)
+        self.normalName = "String"
+        self.types = {"length": I32()}
+
+        self.methods = {
+            "slice": FuncPointer([self, I32(), I32()], self),
+            "indexOf": FuncPointer([self, self], I32()),
+            "replace": FuncPointer([self, self, self], self),
+            "toLowerCase": FuncPointer([self], self),
+            "op_eq": FuncPointer([self, self], Bool()),
+            "op_add": FuncPointer([self, self], self),
+            "toString": FuncPointer([self], self),
+            "toInt": FuncPointer([self], I32()),
+            "toFloat": FuncPointer([self], Float())
         }
+
+    def toCType(self):
+        return "struct _global_String"
+
+import string
 
 class FuncPointer(Type):
     def __init__(self, argtypes, returnType, generic= coll.OrderedDict(), do= False):
@@ -345,8 +357,6 @@ class FuncPointer(Type):
         for a in self.args:
             count += 1
             i = other.args[count]
-            if type(i) is FakeList:
-                print("error")
 
             try:
                 i.duckType(parser, a, mynode, node, iter)
@@ -395,6 +405,9 @@ class Struct(Type):
 
         if m:
             return replaceT(m, self.gen)
+
+    def toCType(self):
+        return "struct " + self.package + "_" + self.normalName
 
     def duckType(self, parser, other, node, mynode, iter=0):
         
@@ -466,6 +479,9 @@ class Array(Type):
         self.mutable = mutable
         self.__types = None
         self.empty = empty
+
+    def toCType(self):
+        return "Array"
 
     @property
     def types(self):
@@ -789,6 +805,9 @@ class Null(Type):
     name = "none"
     types = {}
 
+    def toCType(self):
+        return "void"
+
 def remainingT(s):
     args = coll.OrderedDict()
     if type(s) is FuncPointer:
@@ -814,57 +833,75 @@ def remainingT(s):
         except AttributeError:
             s.count = 1
 
-    elif type(s) is Unknown:
-        args.update(remainingT(s.typ))
-
     return args
 
 class I32(Type):
     def __init__(self):
         Type.__init__(self)
         self.name = "int"
+        self.normalName = "Int"
+        self.types = {}
 
-        self.__types__ = None
+        self.__methods__ = None
+
+    def toCType(self):
+        return "int"
 
     @property
-    def types(self):
-        if self.__types__ is None:
-            self.__types__ = {
-                "toInt": FuncPointer([], self),
-                "toFloat": FuncPointer([], Float()),
-                "toString": FuncPointer([], String(0)),
-                "op_add": FuncPointer([self], self),
-                "op_sub": FuncPointer([self], self),
-                "op_div": FuncPointer([self], self),
-                "op_mul": FuncPointer([self], self),
-                "op_eq": FuncPointer([self], Bool()),
-                "op_gt": FuncPointer([self], Bool()),
-                "op_lt": FuncPointer([self], Bool()),
+    def methods(self):
+        if self.__methods__ is None:
+            self.__methods__ = {
+                "toInt": FuncPointer([self], self),
+                "toFloat": FuncPointer([self], Float()),
+                "toString": FuncPointer([self], String(0)),
+                "op_add": FuncPointer([self, self], self),
+                "op_sub": FuncPointer([self, self], self),
+                "op_div": FuncPointer([self,self], self),
+                "op_mul": FuncPointer([self,self], self),
+                "op_eq": FuncPointer([self,self], Bool()),
+                "op_gt": FuncPointer([self,self], Bool()),
+                "op_lt": FuncPointer([self,self], Bool()),
             }
 
-        return self.__types__
+        return self.__methods__
+
+class Pointer(Type):
+    def __init__(self, pType):
+        self.ptType = pType
+        self.name = "&" + pType
+        self.normalName = "&" + pType
+        self.types = pType.types
+        self.methods = pType.methods
+
+    def toCType(self):
+        return "*" + self.pType.toCType()
 
 class Float(Type):
     def __init__(self):
         Type.__init__(self)
 
         self.name = "float"
-        self.__types__ = None
+        self.normalName = "Float"
+        self.types = {}
+        self.__methods__ = None
+
+    def toCType(self):
+        return "float"
 
     @property
-    def types(self):
-        if self.__types__ is None:
-            self.__types__ = {
-                "toInt": FuncPointer([], I32()),
-                "toFloat": FuncPointer([], self),
-                "toString": FuncPointer([], String(0)),
-                "op_add": FuncPointer([self], self),
-                "op_sub": FuncPointer([self], self),
-                "op_div": FuncPointer([self], self),
-                "op_mul": FuncPointer([self], self)
+    def methods(self):
+        if self.__methods__ is None:
+            self.__methods__ = {
+                "toInt": FuncPointer([self], I32()),
+                "toFloat": FuncPointer([self], self),
+                "toString": FuncPointer([self], String(0)),
+                "op_add": FuncPointer([self,self], self),
+                "op_sub": FuncPointer([self,self], self),
+                "op_div": FuncPointer([self,self], self),
+                "op_mul": FuncPointer([self,self], self)
             }
 
-        return self.__types__
+        return self.__methods__
 
     def duckType(self, parser, other, node, mynode, iter):
         if not (other.isType(I32) or other.isType(Float)):
@@ -872,18 +909,19 @@ class Float(Type):
 
 class Bool(Type):
     name = "bool"
-    normalName = "bool"
+    normalName = "Bool"
+    types = {}
 
-    __types__ = None
+    __methods__ = None
 
     @property
-    def types(self):
-        if self.__types__ is None:
-            self.__types__ = {
+    def methods(self):
+        if self.__methods__ is None:
+            self.__methods__ = {
                 "toString": FuncPointer([], String(0))
             }
 
-        return self.__types__
+        return self.__methods__
 
 package= "_global"
 types = {"toString": FuncPointer([], String(0))}
@@ -997,4 +1035,3 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
 
 from TopCompiler import topc
 
-from .HindleyMilner import *

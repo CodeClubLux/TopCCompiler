@@ -87,7 +87,6 @@ from .ElseExpr import *
 from .FuncParser import *
 from .String import *
 from .ImportParser import *
-from .Lens import *
 import os
 from .ExternParser import *
 from .Array import *
@@ -98,11 +97,10 @@ from .Enum import *
 from .ParseJson import *
 from .Lambda import *
 from .Dict import *
-from TopCompiler import Module
 
 def isEnd(parser):
-    if parser.thisToken().token == "\n" and parser.stack != [] and parser.stack[-1].kind == "<-" and parser.package == "main":
-        print(parser.stack)
+    #if parser.thisToken().token == "\n" and parser.stack != [] and parser.stack[-1].kind == "<-" and parser.package == "main":
+    #    print(parser.stack)
 
     token = parser.thisToken()
 
@@ -110,7 +108,7 @@ def isEnd(parser):
         parser.fired = False
         return True
 
-    if token.token in ["!", "->", "\n", "with"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
+    if token.token in ["!", "->", "\n", "with", "do"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
         if token.token == "!" and len(parser.currentNode.nodes) > 1:
             return False
 
@@ -119,7 +117,7 @@ def isEnd(parser):
             return False
         #"""
 
-        if token.token in ["with"] and type(parser.currentNode) in [Tree.IfCondition, Tree.Match, Tree.PlaceHolder]:
+        if token.token in ["with", "do"] and type(parser.currentNode) in [Tree.IfCondition, Tree.Match, Tree.PlaceHolder]:
             return False
 
         return maybeEnd(parser)
@@ -237,8 +235,16 @@ def callToken(self, lam= False):
         s1(self)
         returnBookmark(self)
     else:
-        if not lam and Module.shouldCall(b) and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and not ExprParser.isUnary(self, self.lookBehind()):
-            if b.token == "$":
+        l = self.lookBehind()
+        isIndentationCall = False
+        if self.iter + 2 < len(self.tokens) and b.token == "\n" and (l.token in [")"] or l.type in ["identifier"]) :
+            if not (self.tokens[self.iter + 2].token == "\n"):
+                if int(self.lookInfront().token) > self.indentLevel:
+                    b = self.tokens[self.iter + 2]
+                    isIndentationCall = True
+
+        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
+            if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
             FuncParser.callFunc(self, False)
@@ -451,14 +457,6 @@ class Parser:  # all mutable state
         self.tokens = tokens
 
     def parse(self):
-        try:
-            tr = self.transforms[self.package]
-        except KeyError:
-            tr = []
-
-        for i in tr:
-            Module.initModule(i)
-
         tokens = self.tokens
         filenames = self.filename
 
@@ -478,7 +476,6 @@ class Parser:  # all mutable state
         self.filename = filenames
 
         if self.sc:
-            Tree.transform(self.currentNode)
             validate(self, self.currentNode)
 
         if self.package == "main" and self.dev and self.atomTyp:
@@ -503,9 +500,6 @@ class Parser:  # all mutable state
             c.addNode(a)
 
             self.currentNode.addNode(c)
-
-        for i in tr:
-            Module.removeModule(i)
 
         return self.currentNode
 
