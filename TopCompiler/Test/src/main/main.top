@@ -1,56 +1,16 @@
-from "animation" import all
-from "html" import all
+type Point =
+    x: int
+    y: int
 
-type Login =
-    username: string
-    password: string
-    incorrect: bool
+def Point.op_add(self, other: Point) Point =
+    Point{
+        self.x + other.x
+        self.y + other.y
+    }
 
-def login-input[T](password: bool, model: string, _place-holder: string, f: |T,Event| do T, a: Atom[T]) VNode =
-    let _password = (kind "password")
-    let nothing = (style "")
+def Point.toString(self) string =
+    "Point({self.x}, {self.y})"
 
-    let isPassword =
-        if password then _password else nothing
-
-    div [], [
-        h2 [style "text-align: left; margin-bottom: 0px; color: #454545"], _place-holder
-        input [
-            class "login-input"
-            on-input f, a
-            value model
-            isPassword
-        ], ""
-        br [], ""
-    ]
-
-let change-username = |model: Login, ev: Event| do model{username = ev.target.value, incorrect=false}
-let change-password = |model: Login, ev: Event| do model{password = ev.target.value, incorrect=false}
-
-let check-login = |model: Login, ev: Event| do model{password="", incorrect=true}
-
-def login(model: Login, a: Atom[Login]) VNode =
-    let isActive = (model.username != "" and model.password != "" and not model.incorrect)
-
-    let toggle = if isActive then "opacity: 1;" else "opacity: 0.5;"
-
-    let incorrect = if model.incorrect then animated + " " +shake else "" //fix if
-
-    div [class "login"], [
-        h1 [style "padding-top: 5px;"], "Login or Register"
-        p [style "text-align: left; color: #454545"], "If you are already have an account, please sign in. Otherwise, enter your desired username and password and Register."
-        div [class incorrect], [
-            login-input false, model.username, "Username", change-username, a
-            login-input true, model.password, "Password", change-password, a
-            br [], ""
-        ]
-        button [
-            class "login-button"
-            style toggle
-            on-click check-login, a
-            disabled (not isActive)
-        ], "Submit"
-        button [style "color: #2E79B8; font-size: 15px; background: rgba(0,0,0,0); border: 0px;"], "Register"
-    ]
-
-start-app login, new-atom Login{"", "",false}
+let pointA = Point{ 10, 20 }
+let pointB = Point{ 30, -15 }
+log (pointA + <-pointB).toString!

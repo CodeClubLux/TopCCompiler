@@ -5,7 +5,7 @@ def getAllCombinations(object_list, n):
     roll = []
     for i in itertools.product([str(j) for j in range(0, n)], repeat=4):
         roll.append(list(map(int, i)))
-        #[int(c) for c in i])
+        #[int(runtime) for runtime in i])
     return roll
 
 def solve(arr):

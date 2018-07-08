@@ -1,1 +1,0 @@
-function other/sub_Init(){document.writeln(("hello world").toString() + "<br>");}

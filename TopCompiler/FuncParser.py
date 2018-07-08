@@ -197,6 +197,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     )
 
     header.do = do
+    header.ftype = func
 
     if method:
         Scope.decrScope(parser)
@@ -216,7 +217,6 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
 
     #parser.func[parser.package][name] = func
 
-    header.ftype = func
     if decl:
         if not dontAdd:
             Scope.addFunc(header, parser, name, func)

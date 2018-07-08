@@ -21,21 +21,10 @@ from TopCompiler import topc
 
 def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
     for c in stream:
-        try:
-            t = transforms[c]
-        except KeyError:
-            t = []
-
-        for i in t:
-            Module.initModule(i)
-
         if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
             lexed[c] = []
             for i in range(len(stream[c])):
                 lexed[c].append(tokenize(stream[c][i], filename[c][i]))
-
-        for i in t:
-            Module.removeModule(i)
 
     return lexed
 
@@ -113,8 +102,6 @@ normalLength = len(token_specification)
 special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub",
                "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS',
                'openS', 'doubleDot', 'semi']
-
-from TopCompiler import Module
 
 def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)

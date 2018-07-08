@@ -1,6 +1,6 @@
 
     {
-        "name": "EC",
-        "target": "node",
+        "name": "FernixGameEngine",
+        "target": "osx",
         "version": 0
     }
