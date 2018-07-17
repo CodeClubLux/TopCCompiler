@@ -33,9 +33,9 @@ def save(parser):
 
     pickle.dump(parser, f)
 
-def load():
-    #return False
+import time
 
+def load():
     try:
         f = open("lib/parser.p", "rb")
         if os.stat("lib/parser.p").st_size == 0:

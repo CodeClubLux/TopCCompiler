@@ -18,6 +18,8 @@ def funcHead(parser):
     (name, names, types, header, returnType, do) = FuncParser.funcHead(parser, True)
     Scope.decrScope(parser)
 
+from time import time
+
 def resolve(self):
     tokens = self.tokens
     filenames = self.filename
@@ -36,7 +38,9 @@ def resolve(self):
         for i in range(len(tokens[c])):
             _resolve(self, tokens[c][i], self._filename[i][1], passN=0)
 
+
     for n in range(1,3):
+        start = time()
         for c in filenames:
             self._filename = self.filenames[c]
             if len(filenames[c]) == 0:

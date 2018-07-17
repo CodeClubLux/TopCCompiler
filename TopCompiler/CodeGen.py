@@ -14,6 +14,8 @@ runtimeFile = open(os.path.dirname(__file__) + "/runtime/runtime.c", "r")
 cRuntimeCode = runtimeFile.read()
 runtimeFile.close()
 
+from TopCompiler import Types
+
 class CodeGen:
     def __init__(self, parser, order_of_modules, filename, tree, externFunctions, target, opt, main=True):
         self.tree = tree
@@ -104,15 +106,17 @@ class CodeGen:
 
     def compile(self, opt):
         beforeOptimization = time()
+        Types.dataTypes = ""
         MemoryOptimizer.simplifyAst(self.parser, self.tree)
         print("Simplifying AST took: ", time() - beforeOptimization)
 
         cCode = cRuntimeCode
         self.toCHelp()
+
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
 
-        cCode += outerCode + "\nint main() {" + mainCode + "; return 0;};"
+        cCode += Types.dataTypes + "\n" + outerCode + "\nint main() {" + mainCode + "; return 0;};"
         #print(cCode)"
 
         f = open("lib/" + self.filename + ".c", mode="w")

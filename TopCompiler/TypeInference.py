@@ -304,16 +304,26 @@ def infer(parser, tree):
                         if type(i.nodes[0].type) is Types.Array:
                             bind()
                     except KeyError:
-                        method = struct.hasMethod(parser, self.field)
+                        if type(typ) is Types.Alias:
+                            method = struct.typ.hasMethod(parser, self.field)
+                            if method:
+                                typ = struct.typ
+                            else:
+                                method = struct.hasMethod(parser, self.field)
+                        else:
+                            method = struct.hasMethod(parser, self.field)
 
                         if not method:
                             self.error("type "+str(typ) + " has no field " + self.field)
 
                         self.type = method
 
-                        r = Tree.ReadVar(typ.normalName + "_" + self.field, self.type, self)
+                        name = typ.normalName + "_" + self.field
+                        package = typ.package if not typ.package == "_global" else ""
+
+                        r = Tree.ReadVar(name, self.type, self)
                         r.type = self.type
-                        r.package = typ.package if not typ.package == "_global" else ""
+                        r.package = package
                         r.owner = self.owner
 
                         if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
@@ -447,6 +457,10 @@ def infer(parser, tree):
                         typ = startType
                         if i.kind in ["==", "!=", "not", "and", "or", "<", ">", "<=", ">="]:
                             typ = Types.Bool()
+                        elif i.kind == "&":
+                            typ = Types.Pointer(startType, False)
+                        elif i.kind == "&mut":
+                            typ = Types.Pointer(startType, True)
 
                         if i.curry or i.partial:
                             normal = (1 if i.unary else 2) - len(i.nodes)
@@ -485,18 +499,15 @@ def infer(parser, tree):
                     i.nodes[0].error("type "+str(i.nodes[0].type)+" is not callable")
 
                 i.nodes[0].type = i.nodes[0].type.toRealType()
-
                 do = i.nodes[0].type.do
                 returnType = i.nodes[0].type.returnType
-
+                fType = i.nodes[0].type
                 args = i.nodes[0].type.args
                 newArgs = []
 
-
-
-                if args.__len__() < len(i.nodes)-1:
-                    c = str(len(i.nodes) - 1 - len(args))
-                    i.error(("1 argument" if c == "1" else c+" arguments")+" too many, expecting "+str(len(args))+" arguments")
+                realNumArgs = len(i.nodes)-1
+                if args.__len__() != realNumArgs:
+                    i.error("Expecting "+len(args)+ " amount of arguments but got "+realNumArgs)
 
                 generics = {}
                 for iter in range(len(i.nodes[1:])):
@@ -539,25 +550,12 @@ def infer(parser, tree):
                     parser.atoms += 1
 
                 i = c
+                i.replaced = {}
+                for key in generics:
+                    if key in fType.generic:
+                        i.replaced[key] = generics[key]
 
-                if args.__len__() > len(i.nodes)-1:
-                    i.curry = True
-
-                    newGenerics = ODict()
-                    for c in i.nodes[0].type.generic:
-                        if c in generics:
-                            newGenerics[c] = generics[c]
-                        else:
-                            newGenerics[c] = i.nodes[0].type.generic[c]
-
-                    i.type = Types.FuncPointer(args[len(i.nodes)-1:], i.nodes[0].type.returnType, generic=newGenerics, do = i.nodes[0].type.do)
-                    #i.type = Types.FuncPointer([Types.replaceT(runtime, generics) for runtime in args[len(i.nodes)-1:]], Types.replaceT(i.nodes[0].type.returnType, generics),generic= newGenerics, do= do)
-
-                elif not partial:
-                    i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
-                else:
-                    i.partial = True
-                    i.type = Types.replaceT(Types.FuncPointer(newArgs, i.nodes[0].type.returnType, do= do), generics)
+                i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
             elif type(i) is Tree.If:
                 ElseExpr.checkIf(parser, i)
             elif type(i) is Tree.Block:

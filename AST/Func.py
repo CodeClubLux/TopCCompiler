@@ -169,6 +169,7 @@ class Context(Node):
 class FuncCall(Node):
     def __init__(self, parser):
         super(FuncCall, self).__init__(parser)
+        self.replaced = {}
 
     def __str__(self):
         return ""

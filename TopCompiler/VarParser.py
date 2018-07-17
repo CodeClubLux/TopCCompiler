@@ -80,6 +80,7 @@ def createParser(parser, name= "", typ= None, check= True, imutable= True, attac
 
 def assignParser(parser, name= "", init= False, package = ""):
     if not init:
+        ExprParser.endExpr(parser, -2)
         i = parser.currentNode.nodes[-1]
         del parser.currentNode.nodes[-1]
 

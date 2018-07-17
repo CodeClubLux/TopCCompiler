@@ -237,13 +237,13 @@ def callToken(self, lam= False):
     else:
         l = self.lookBehind()
         isIndentationCall = False
-        if self.iter + 2 < len(self.tokens) and b.token == "\n" and (l.token in [")"] or l.type in ["identifier"]) :
+        if self.iter + 2 < len(self.tokens) and b.token == "\n" and (l.token in [")"] or l.type == "identifier") :
             if not (self.tokens[self.iter + 2].token == "\n"):
                 if int(self.lookInfront().token) > self.indentLevel:
                     b = self.tokens[self.iter + 2]
                     isIndentationCall = True
 
-        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
+        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "unary_operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
             if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)

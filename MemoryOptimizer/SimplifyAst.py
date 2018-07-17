@@ -55,13 +55,122 @@ def simplifyOperator(operator, iter, parser):
     elif operator.overload:
         overloaded(callMethodCode(operator.nodes[0], operator.name[operator.name.find("_")+1:], operator.type, parser, operator.unary))
 
+import copy
+
+class FuncSpecification:
+    def __init__(self, identifier, funcStart, funcBrace, funcBody, replaced):
+        self.funcStart = funcStart
+        self.funcBrace = funcBrace
+        self.funcBody = funcBody
+        self.replaced = replaced
+
+        self.identifier = identifier
+
+    def replace(self, parser):
+        def loop(ast): #loop will copy
+            newAST = copy.copy(ast)
+            newAST.nodes = []
+            for i in ast.nodes:
+                newAST.addNode(loop(i))
+
+            if Types.isGeneric(newAST.type):
+                newAST.type = Types.replaceT(newAST.type, self.replaced)
+
+            if type(newAST) is Tree.Create and Types.isGeneric(newAST.varType):
+                newAST.varType = Types.replaceT(newAST.varType, self.replaced)
+
+            elif type(newAST) is Tree.FuncStart and Types.isGeneric(newAST.ftype):
+                newAST.ftype = Types.replaceT(newAST.ftype, self.replaced)
+
+            return newAST
+
+        funcStart = copy.copy(self.funcStart)
+        funcBrace = loop(self.funcBrace)
+        funcBody = loop(self.funcBody)
+
+        funcStart.name = self.identifier[self.identifier.find("_")+1:] #remove package as it will be added later
+        simplifyAst(parser, funcBody)
+
+        return (funcStart, funcBrace, funcBody)
+
+def sanitize(str):
+    return str.replace(" ", "_").replace("[", "_").replace("]", "_")
+
+def toUniqueID(package, funcName, replaced):
+    keys = sorted(replaced.keys())
+    joinedKeys = "_".join(replaced[key].name for key in keys)
+    return package + "_" + funcName + "_" + sanitize(joinedKeys)
+
+class Specifications:
+    def __init__(self, root, inImports, genericFuncsFromDifferentPackage):
+        self.funcs = {}
+        self.root = root
+        self.inImports = inImports
+        self.genericFuncs = genericFuncsFromDifferentPackage
+        self.delayed = {}
+
+    def addSpecification(self, package, funcName, replaced, forceFound= False):
+        fullName = package+"_"+funcName
+        id = toUniqueID(package, funcName, replaced)
+
+        if not fullName in self.genericFuncs:
+            if forceFound:
+                raise EOFError("Could not find generic function" + fullName)
+            self.delayed[fullName] = (package, funcName, replaced)
+            return id
+
+        (funcStart, funcBrace, funcBody) = self.genericFuncs[fullName]
+
+        if id in self.inImports:
+            return id
+        if not id in self.funcs:
+            self.funcs[funcName] = FuncSpecification(id, funcStart, funcBrace, funcBody, replaced)
+        return id
+
+    def addGenericFunc(self, package, name, funcStart, funcBrace, funcBody):
+        self.genericFuncs[package+ "_" + name] = (funcStart, funcBrace, funcBody)
+
+    def genAST(self, parser):
+        for (package, funcName, replaced) in self.delayed:
+            self.addSpecification(package, funcName, replaced, forceFound=True)
+
+        for id in self.funcs:
+            specification = self.funcs[id]
+            (funcStart, funcBrace, funcBody) = specification.replace(parser)
+            self.root.addNode(funcStart)
+            self.root.addNode(funcBrace)
+            self.root.addNode(funcBody)
+
+
 def simplifyAst(parser, ast):
+    specifications = Specifications(ast, {}, {}) #@cleanup add support for modules
 
-    def simplify(ast, iter):
-        for (it, i) in enumerate(ast.nodes):
-            simplify(i, it)
+    def simplify(ast, iter, upperDeleteQueue):
+        deleteQueue = []
+        if not (type(ast) is Tree.FuncBody and len(ast.owner.nodes) >= 3 and ast.owner.nodes[iter-2].ftype.generic):
+            for (it, i) in enumerate(ast.nodes):
+                simplify(i, it, deleteQueue)
 
-        if type(ast) == Tree.Operator:
+        if type(ast) is Tree.Operator:
             simplifyOperator(ast, iter, parser)
 
-    simplify(ast, 0)
+        elif type(ast) is Tree.FuncStart and ast.ftype.generic:
+            funcStart = ast
+            funcBrace = ast.owner.nodes[iter+1]
+            funcBody = ast.owner.nodes[iter+2]
+            specifications.addGenericFunc(funcStart.package, funcStart.name, funcStart, funcBrace, funcBody)
+
+            upperDeleteQueue.append(funcStart) #remove funcStart, funcBrace, funcBody, since specialized version is useless
+            upperDeleteQueue.append(funcBrace)
+            upperDeleteQueue.append(funcBody)
+        elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar and ast.nodes[0].type.generic:
+            readVar = ast.nodes[0]
+
+            newName = specifications.addSpecification(readVar.package, ast.nodes[0].name, ast.replaced)
+            readVar.name = newName[newName.find("_")+1:] #remove package which will be added later
+
+        for e in deleteQueue:
+            ast.nodes.remove(e)
+
+    simplify(ast, 0, [])
+    specifications.genAST(parser)

@@ -2,6 +2,7 @@ __author__ = 'antonellacalvia'
 
 from .node import *
 import AST as Tree
+from AST import Vars
 
 class Operator(Node):
     def __init__(self, kind, parser):
@@ -75,7 +76,7 @@ class Operator(Node):
         if self.kind == "^":
             codegen.append("powf(")
 
-        if self.kind in ["+", "-", "*", "/", "<", ">", "<=", ">="]:
+        if self.kind in ["+", "-", "*", "/", "<", ">", "<=", ">=", "&"]:
             op = self.kind
 
         else:
@@ -88,6 +89,7 @@ class Operator(Node):
                 "%": "%",
                 "concat": ")+(",
                 "^": ",",
+                "&mut": "&"
             }
 
             op = translate[self.kind]
@@ -178,7 +180,13 @@ def checkOperator(self, parser):
                 i.name = overloads[i.kind]
                 return
 
-            if type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array]:
+            if i.kind == "&":
+                Vars.canMutate(self, False)
+            elif i.kind == "&mut":
+                Vars.canMutate(self, True)
+            elif type(i.opT) is Types.Pointer and i.kind == "*" and i.unary:
+                i.type = i.opT.pType
+            elif type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Pointer]:
                 func = i.opT.hasMethod(parser, overloads[i.kind])
                 if not func:
                     try:

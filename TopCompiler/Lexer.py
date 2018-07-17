@@ -43,12 +43,10 @@ keywords = [
         'string',
         'var',
         "not", "or", "and",
-        "lens",
         "match",
         "with",
         "from",
         "decoder",
-        "extension",
     ]
 
 token_specification = [
@@ -82,7 +80,8 @@ token_specification = [
         ('assignMul', r'\*='),
         ('assignDiv', r'\/='),
         ('setAtom', '<\-[ ]+'),
-        ('operator',  r'(\|>|>>|<-)|[+*\/\-%><^\\]'),
+        ('operator', r'(\|>|>>|<-|<<|&mut)|[&+*\/\-%><^\\][ ]+'),
+        ('unary_operator', r'(\|>|>>|<-|<<|&mut)|[&+*\/\-%><^\\]'),
         ('line', r'\|'),
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  #[A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
         ('underscore', '_'),
@@ -150,6 +149,10 @@ def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
             array.append(Token(val, "comment", line, pos ))
         elif typ == "setAtom":
             array.append(Token("set", "operator", line, pos))
+        elif typ == "operator":
+            val = mo.group(typ)
+            c = mo.end()
+            array.append(Token(val.replace(" ", ""), "operator", line, pos))
         elif typ in ["str"]:
             template = False
             val = mo.group(typ)

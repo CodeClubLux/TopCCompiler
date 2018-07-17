@@ -21,9 +21,15 @@ def parserMethodGen(parser, gen, struct):
 
     newGen = coll.OrderedDict()
     for a, b in zip(gen, sgen):
-        if gen[a].type != Types.All: Error.parseError(parser, "unexpected :")
-        newGen[a] = sgen[b]
-        Scope.changeType(parser, a, sgen[b])
+        typ = sgen[b]
+
+        aStripped = a[a.rfind(".")+1:]
+
+        if not a in sgen:
+            Error.parseError(parser, "Unknown type parameter " + aStripped + " in "+str(struct))
+        if gen[a].type != Types.All: typ = gen[b].type #@cleanup check if interface is compatible with structs regular generics  Error.parseError(parser, "unexpected :")
+        newGen[a] = typ
+        Scope.changeType(parser, aStripped, typ)
 
     return newGen
 
@@ -76,7 +82,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         except KeyError:
             try:
                 attachTyp = parser.interfaces[parser.package][name]
-                if not type(attachTyp) is Types.Enum:
+                if not type(attachTyp) in [Types.Enum, Types.Alias]:
                     Error.parseError(parser, "no attachable data structure found, called "+name)
 
             except KeyError:
@@ -105,7 +111,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
                 except KeyError:
                     try:
                         tmp = parser.interfaces[parser.package][name]
-                        if not type(tmp) is Types.Enum:
+                        if not type(tmp) in [Types.Enum, Types.Alias]:
                             raise KeyError
 
                         attachTyp = Types.replaceT(tmp, parserMethodGen(parser, g, tmp))

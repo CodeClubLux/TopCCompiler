@@ -50,15 +50,15 @@ Parser.exprType["operator"] = lambda parser, token: operators[token](parser)
 def newOperator(kind, precidence, takesIn, func=None, unary= False, token=True):
     def f(parser):
         op = Tree.Operator(kind, parser)
-
+        actuallyUnary = isUnary(parser, parser.lookBehind())
         if len(parser.currentNode.nodes) != 0:
-            if not unary and isUnary(parser, parser.lookBehind()):
+            if not unary and actuallyUnary:
                 Error.parseError(parser, "unexpected "+kind)
-            elif unary and not isUnary(parser, parser.lookBehind()):
+            elif unary and not actuallyUnary:
                 Error.parseError(parser, "unexpected "+kind)
 
         #parser.nodeBookmark.append(len(parser.currentNode.nodes)-1)
-        Parser.Opcode(parser, kind, lambda: operatorPop(parser, op, takesIn, unary))
+        Parser.Opcode(parser, kind, lambda: operatorPop(parser, op, takesIn, actuallyUnary))
 
     if func == None: func = f
     Parser.precidences[kind] = precidence
@@ -79,13 +79,15 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken):
-    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS", "unary_operator"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool", "lens"]
 
     if fact: return True
     else:
         if parser.thisToken().type in ["operator", "dotS"] or parser.thisToken().token in ["."]:
             return len(parser.currentNode.nodes) == 0
+        elif parser.thisToken().type == "unary_operator":
+            return True
         else:
             return lastToken.type == "indent" or lastToken.token == "\n"
 
@@ -94,6 +96,7 @@ def plus(parser):
 
     node = Tree.Operator("+", parser)
     if isUnary(parser, lastToken):  # unary+
+        node.unary = True
         Parser.precidences["+"] = (100, True)
 
         Parser.Opcode(parser, "+", lambda: operatorPop(parser, node, 1, unary= True))
@@ -113,12 +116,26 @@ def minus(parser):
         Parser.Opcode(parser, "-", lambda:  operatorPop(parser, op, 1, unary= True))
 
         Parser.precidences["-"] = (20, True)
+        op.unary = True
 
     else:
         Parser.Opcode(parser, "-", lambda: operatorPop(parser, op, 2))
 
+def asterix(parser):
+    lastToken = parser.lookBehind()
+
+    op = Tree.Operator("*", parser)
+    if isUnary(parser, lastToken):
+        Parser.precidences["*"] = (100, True)
+        Parser.Opcode(parser, "*", lambda: operatorPop(parser, op, 1, unary=True))
+        Parser.precidences["*"] = (40, True)
+        op.unary = True
+    else:
+        Parser.Opcode(parser, "*", lambda: operatorPop(parser, op, 2))
+
 def read(parser):
     op = Tree.Operator("<-", parser)
+    op.unary = True
     Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 1, unary=True))
 
 def set(parser):
@@ -139,6 +156,7 @@ def asOperator(parser):
 newOperator("set", (2, True), 2, func=set, token=False)
 newOperator("|>", (2, True), 2)
 newOperator(">>", (2, True), 2)
+newOperator("<<", (2, True), 2)
 newOperator("and", (3, True), 2)
 newOperator("or", (4, True), 2)
 newOperator("not", (6, False), 1, unary= True)
@@ -152,10 +170,12 @@ newOperator(">", (10, True), 2)
 newOperator("concat", (20, True), 2)
 newOperator("+", (20, True), 2, func=plus)  # becuase of unary, possiblity
 newOperator("-", (20, True), 2, func=minus)  # becuase of unary, possiblity
-newOperator("*", (40, True), 2)
+newOperator("*", (40, True), 2, func=asterix)
 newOperator("/", (40, True), 2)
 newOperator("%", (40, True), 2)
 newOperator("^", (60, False), 2)
 newOperator('as', (70, True), 1, func= asOperator)
+newOperator("&", (80, True), 1, unary= True)
+newOperator("&mut", (80, True), 1, unary= True)
 
 Parser.exprToken["\\"] = lambda parser: parser.nodeBookmark.append(len(parser.currentNode.owner.nodes))

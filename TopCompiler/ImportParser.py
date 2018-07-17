@@ -31,7 +31,10 @@ def shouldCompile(decl, name, parser, mutated= ()):
                 parser.shouldCompile[name] = True
                 return True
 
-        res = topc.modified(parser.output_target, parser.files[name], name, jsFiles= parser.jsFiles)
+        if name in topc.global_parser.files:
+            res = topc.modified(parser.output_target, parser.files[name], name, jsFiles= parser.jsFiles)
+        else:
+            res = False
         parser.shouldCompile[name] = res
 
         return res

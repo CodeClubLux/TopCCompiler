@@ -54,6 +54,7 @@ def changeType(parser, name, newType):
     for i in parser.scope[parser.package]:
         try:
             i[name].type = newType
+            return
         except: pass
 
 def changeTarget(parser, name, target):

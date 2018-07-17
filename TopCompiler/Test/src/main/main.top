@@ -1,16 +1,21 @@
-type Point =
-    x: int
-    y: int
+/*
+type Vec3 =
+    x: float
+    y: float
+    z: float
 
-def Point.op_add(self, other: Point) Point =
-    Point{
-        self.x + other.x
-        self.y + other.y
-    }
+type Matrix4 is [16]float
 
-def Point.toString(self) string =
-    "Point({self.x}, {self.y})"
+type Transform =
+    position: Vec3
+    rotation: Quat
+    scale: Vec3
 
-let pointA = Point{ 10, 20 }
-let pointB = Point{ 30, -15 }
-log (pointA + <-pointB).toString!
+type Entity =
+    id: int
+*/
+
+def logMessage[T: Stringable](value: T) =
+    log "printed message: {value}"
+
+logMessage 10

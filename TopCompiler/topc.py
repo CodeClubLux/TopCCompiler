@@ -495,6 +495,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 import datetime
 modified_ = {}
 def modified(_target, files, outputfile, jsFiles=[]):
+    return True #while developing incremental compilation sucks
+
+
     def inner():
         target = _target
         if target == "full":

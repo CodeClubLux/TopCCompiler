@@ -88,6 +88,43 @@ class CreateAssign(Node):
 
     def validate(self, parser): pass
 
+def canMutate(self, tryingToMutate):
+    def getReadVar(node):
+        for i in node:
+            if type(i) is Tree.ReadVar:
+                return i
+
+            if not type(i) in [Tree.Field, Tree.ArrRead, Tree.ReadVar]:
+                i.error("expecting variable")
+
+            if len(i.nodes) > 0:
+                return getReadVar(i)
+
+    readVar = getReadVar(self)
+
+    def checkIfImutable(node, createTyp):
+        iter = 0
+        for i in node:
+            if len(i.nodes) > 0:
+                return checkIfImutable(i, createTyp)
+
+            isMutable = not readVar.imutable
+            if type(node.nodes[0].type) is Types.Pointer:
+                createTyp = node.nodes[0].type
+
+            if tryingToMutate:
+                if type(createTyp) is Types.Pointer:
+                    isMutable = createTyp.isMutable()
+                    if not isMutable:
+                        self.nodes[0].error("Variable " + self.nodes[0].nodes[
+                            0].name + ": cannot mutate an immutable reference")
+                else:
+                    if not isMutable:
+                        self.nodes[0].error(
+                            "Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
+
+    checkIfImutable(self, readVar.type)
+
 class Assign(Node):
     def __init__(self, name, parser):
         Node.__init__(self, parser)
@@ -158,15 +195,12 @@ class Assign(Node):
             self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
             createTyp = self.createTyp
         else:
-            if type(self.nodes[0]) is Tree.ReadVar:
-                if self.nodes[0].imutable:
-                    self.nodes[0].error("cannot reassign to immutable variable "+self.nodes[0].name)
-            elif type(self.nodes[0]) in [Tree.Field, Tree.ArrRead]:
-                createTyp = self.nodes[0].nodes[0].type
-                if not Types.isMutable(createTyp):
-                    self.nodes[0].error("type "+str(createTyp)+" is not assignable")
+            varNode = self.nodes[0]
+            if type(varNode) is Tree.Operator and varNode.kind == "*" and varNode.opT.isType(Types.Pointer):
+                if not varNode.opT.mutable:
+                    varNode.error("Cannot mutate an immutable reference")
             else:
-                self.nodes[0].error("invalid syntax")
+                canMutate(self.nodes[0], True)
 
         if len(node.nodes) == 0:
            self.error( "expecting expression")

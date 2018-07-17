@@ -38,16 +38,23 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
                         parseError(parser, "unexpected ,")
                     parser.nextToken()
                     continue
-                args.append(parseType(parser))
+                args.append(parseType(parser, package, mutable, attachTyp, gen))
 
                 parser.nextToken()
 
             return Tuple(args)
         elif token == "enum":
             return EnumT()
+        elif token == "&":
+            mut = False
+            if parser.nextToken().token == "mut":
+                mut = True
+                parser.nextToken()
+            pType = parseType(parser, package, mutable, attachTyp, gen)
+            return Types.Pointer(pType, mut)
         elif token == "[" or parser.thisToken().type == "whiteOpenS":
             incrScope(parser)
-            if parser.lookInfront().token != "]":
+            if parser.lookInfront().token != "]" and parser.lookInfront().type != "i32":
                 from TopCompiler import FuncParser
                 gen = FuncParser.generics(parser, "_")
                 if parser.thisToken().token != "|":
@@ -58,6 +65,13 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
                 decrScope(parser)
 
                 return res
+            elif parser.lookInfront().type == "i32":
+                static = int(parser.nextToken().token)
+                parser.nextToken()
+                parser.nextToken()
+                decrScope(parser)
+                return Array(False, parseType(parser, package), static)
+
             else:
                 parser.nextToken()
                 parser.nextToken()
@@ -172,6 +186,18 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
     else:
         return res
 
+
+from TopCompiler import CodeGen
+info = CodeGen.Info()
+gen = CodeGen.genNames(info)
+dataTypes = ""
+
+def genCType(contents):
+    global dataTypes
+    newName = next(gen)
+    dataTypes += "struct TmpType" + newName + " {" + contents + "};\n"
+    return "struct TmpType" + newName
+
 def parseGeneric(parser, typ):
     generic = []
 
@@ -206,7 +232,7 @@ def parseGeneric(parser, typ):
 class Type:
     name = "type"
     normalName = ""
-    methods = []
+    methods = {}
     package = ""
 
     def __str__(self):
@@ -245,7 +271,10 @@ class Type:
         return type(self) is other
 
     def hasMethod(self, parser, field):
-        return self.methods[field]
+        try:
+            return self.methods[field]
+        except:
+            return None
 
 class EnumT(Type):
     def __init__(self):
@@ -468,7 +497,7 @@ class Tuple(Type):
                 beforeError(e, "Tuple element #" + key + ": ")
 
 class Array(Type):
-    def __init__(self, mutable, elemT, empty=False):
+    def __init__(self, mutable, elemT, empty=False, static=False):
         self.name = "[]"+elemT.name
 
         self.elemT = elemT
@@ -479,6 +508,7 @@ class Array(Type):
         self.mutable = mutable
         self.__types = None
         self.empty = empty
+        self.static = static
 
     def toCType(self):
         return "Array"
@@ -592,6 +622,7 @@ class Interface(Type):
             return self.types[field]
         """
         pass
+
     def duckType(self, parser, other, node, mynode, iter):
         if self.generic != {} and self.name == other.name:
             return
@@ -650,6 +681,7 @@ class T(Type):
         self.type = typ
         self.normalName = owner+"."+name
         self.name = owner+"."+name
+
         self.types = self.type.types
         self.owner = owner
         self.realName = name
@@ -666,10 +698,47 @@ class T(Type):
         #self.type.duckType(parser, other, node, mynode, iter)
 
     def hasMethod(self, parser, name):
-        self.type.hasMethod(parser, name)
+        return self.type.hasMethod(parser, name)
+
+    def getMethod(self, parser, field):
+        return self.type.getMethod(parser, field)
 
     def __repr__(self):
         return self.name+":"+str(self.type)
+
+def addMethodEnum(self, i, parser, name, method):
+    package = parser.package
+
+    if package in self.methods:
+        if name in self.methods[package]:
+            i.error("Method called " + name + ", already exists")
+        self.methods[package][name] = method
+    else:
+        self.methods[package] = {name: method}
+
+def hasMethodEnum(attachTyp, parser, name):
+    self = parser.interfaces[attachTyp.package][attachTyp.normalName]
+
+    packages = []
+    b = None
+    for i in parser.imports + [parser.package, "_global"]:
+        if not i in self.methods: continue
+        if name in self.methods[i]:
+            b = self.methods[i][name]
+            b.package = i
+
+            if not i in packages:
+                packages.append(i)
+
+    if len(packages) > 1:
+        self.node.error(
+            "ambiguous, multiple definitions of the method " + self.name + "." + name + " in packages: " + ", ".join(
+                packages[:-1]) + " and " + packages[-1])
+
+    if not b:
+        return
+
+    return replaceT(b, attachTyp.generic)
 
 class Enum(Type):
     def __init__(self, package, name, const, generic):
@@ -706,37 +775,12 @@ class Enum(Type):
         self.normalName = other.normalName
 
     def addMethod(self, i, parser, name, method):
-        package = parser.package
-
-        if package in self.methods:
-            if name in self.methods[package]:
-                i.error("Method called "+name+", already exists")
-            self.methods[package][name] = method
-        else:
-            self.methods[package] = {name: method}
+        addMethodEnum(self, i, parser, name, method)
 
     def hasMethod(attachTyp, parser, name):
-        self = parser.interfaces[attachTyp.package][attachTyp.normalName]
-
-        packages = []
-        b = None
-        for i in parser.imports+[parser.package]+["_global"]:
-            if not i in self.methods: continue
-            if name in self.methods[i]:
-                b = self.methods[i][name]
-                b.package = i
-
-                if not i in packages:
-                    packages.append(i)
-
-        if len(packages) > 1:
-            self.node.error("ambiguous, multiple definitions of the method "+self.name+"."+name+" in packages: "+", ".join(packages[:-1])+" and "+packages[-1])
-
-        return replaceT(b, attachTyp.generic)
+        hasMethodEnum(attachTyp, parser, name)
 
     def duckType(self, parser, other, node, mynode, iter):
-        
-        
         if self.normalName != other.normalName:
             node.error("expecting type "+self.name+", not "+str(other))
 
@@ -767,17 +811,33 @@ class Alias(Type):
     def toRealType(self):
         return self.typ
 
-    def hasMethod(self, parser, field):
-        self.typ.hasMethod(parser, field)
-
     def isType(self, other):
         return type(self.typ) is other
+
+    def toCType(self):
+        return self.typ.toCType()
 
     def duckType(self, parser, other, node, mynode, iter):
         if other.isType(Alias):
             self.typ.duckType(parser, other.typ, node, mynode, iter)
         else:
             self.typ.duckType(parser, other, node, mynode, iter)
+
+    def addMethod(self, i, parser, name, method):
+        meth = self.typ.hasMethod(parser, name)
+        if meth:
+            i.error("The type alias "+self.name+" is aliasing the type "+self.typ.name+", which already has the method "+name)
+        else:
+            addMethodEnum(self, i, parser, name, method)
+
+    def hasMethod(attachTyp, parser, field):
+        meth = attachTyp.typ.hasMethod(parser, field) #could be problematic since it will call Alias.name
+
+        if meth:
+            return meth
+        else:
+            return hasMethodEnum(attachTyp, parser, field)
+
 
 All = Interface(False, {})
 
@@ -791,8 +851,9 @@ def isGeneric(t, unknown=False):
         for i in t.args:
             if isGeneric(i): return True
         return isGeneric(t.returnType)
-    elif type(t) is Array and isGeneric(t.elemT): return True
+    elif type(t) is Array: return isGeneric(t.elemT)
     elif type(t) is T: return True
+    elif type(t) is Pointer: return isGeneric(t.pType)
     elif type(t) in [Interface, Struct, Alias, Enum]: return t.normalName != t.name
     elif type(t) is Tuple:
         for i in t.list:
@@ -866,15 +927,30 @@ class I32(Type):
         return self.__methods__
 
 class Pointer(Type):
-    def __init__(self, pType):
-        self.ptType = pType
-        self.name = "&" + pType
-        self.normalName = "&" + pType
+    def __init__(self, pType, mutable):
+        self.pType = pType
+        self.name = "&" + ("mut " if mutable else "") + pType.name
+        self.normalName = "&" + pType.name
         self.types = pType.types
         self.methods = pType.methods
+        self.mutable = mutable
 
     def toCType(self):
-        return "*" + self.pType.toCType()
+        return self.pType.toCType() + "*"
+
+    def duckType(self, parser, other, node, mynode, iter):
+        if not other.isType(Pointer):
+            mynode.error("Expecting pointer, not type "+other.name)
+
+        other = other.toRealType()
+        if self.mutable and not other.mutable:
+            mynode.error("Expecting an mutable pointer but instead got an immutable pointer")
+
+    def hasMethod(self, parser, field):
+        return self.pType.hasMethod(parser, field)
+
+    def getMethod(self, parser, field):
+        return self.pType.getMethod(parser, field)
 
 class Float(Type):
     def __init__(self):
@@ -991,6 +1067,9 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
 
         c.fromObj(Interface(False, types, gen, typ.normalName))
         return c
+    elif type(typ) is Pointer:
+        newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.pType.mutable)
+        return newP
     elif type(typ) is Enum:
         const = coll.OrderedDict()
         g = {}
