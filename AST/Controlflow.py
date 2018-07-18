@@ -66,7 +66,9 @@ class IfCondition(Node):
             self.nodes[0].compileToC(codegen)
             codegen.append("?")
         else:
-            codegen.append(""+("else " if self.owner.nodes[0] != self else "")+"if(")
+            s = "else " if self.owner.nodes[0] != self else ""
+
+            codegen.append(f"{s}if(")
             self.nodes[0].compileToC(codegen)
             codegen.append("){")
 

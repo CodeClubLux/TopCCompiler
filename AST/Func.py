@@ -49,7 +49,7 @@ class FuncStart(Node):
         self.method = False
 
     def __str__(self):
-        return "def "+self.name+"("
+        return f"def {self.name}("
 
     def compileToC(self, codegen):
         import AST as Tree
@@ -61,7 +61,7 @@ class FuncStart(Node):
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.inFunction()
 
-        codegen.append(self.ftype.returnType.toCType() + " " + name + "(")
+        codegen.append(f"{self.ftype.returnType.toCType()} {name}(")
 
         codegen.incrScope()
 

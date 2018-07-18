@@ -315,6 +315,31 @@ class Parser:  # all mutable state
         self.sc = True
         self.repl = False
 
+        self.interfaces = {}
+        self.scope = {}
+
+        self.iter = 0
+
+        self.package = "_global"
+        self.opackage = ""
+        self.imports = []
+        self.transforms = []
+
+        self.rootAst = Tree.Root()
+        self.currentNode = self.rootAst
+
+        self.allImports = {}
+
+        self.filename = ""
+        self.tokens = [None]
+
+        self.structs = {"_global": {}}
+        self.func = {"_global": {}}
+
+        self.filename = filename
+        self.tokens = tokens
+
+    def setGlobalData(self):
         All = Types.All
 
         Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringable")
@@ -383,7 +408,8 @@ class Parser:  # all mutable state
 
         parseT = Types.T("T", All, "parseJson")
 
-        self.scope = {"_global": [{
+
+        self.scope["_global"] = [{
             "assign": Scope.Type(True, Types.FuncPointer([assign_T, Types.Assign(assign_T)], assign_T, generic= coll.OrderedDict([("assign.T", assign_T)]))),
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
             "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
@@ -403,33 +429,14 @@ class Parser:  # all mutable state
             "sleep": Scope.Type(True, Types.FuncPointer([Types.Float()], Types.Null(), do= True)),
             "parallel": Scope.Type(True, parallel),
             "serial": Scope.Type(True, serial),
-            "Some": Scope.Type(True, FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
+            "Some": Scope.Type(True, Types.FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
             "None": Scope.Type(True, Maybe),
             "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
             "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
             "jsonStringify": Scope.Type(True, Types.FuncPointer([All], Types.String(0))),
             "parseJson": Scope.Type(True, Types.FuncPointer([Types.FuncPointer([All], parseT), Types.String(0)], parseT)),
             "dict": Scope.Type(True, dictFunc),
-        }]}
-
-        self.iter = 0
-
-        self.package = "_global"
-        self.opackage = ""
-        self.imports = []
-        self.transforms = []
-
-        self.rootAst = Tree.Root()
-        self.currentNode = self.rootAst
-
-        self.allImports = {}
-
-        self.filename = ""
-        self.tokens = [None]
-
-        self.structs = {"_global": {}}
-
-        self.func = {"_global": {}}
+        }]
 
         types = {
             "int": Types.I32(),
@@ -442,8 +449,8 @@ class Parser:  # all mutable state
             i = self.structs["_global"][name]
             i.addMethod(self, "toString", Types.FuncPointer([types[name]], Types.String(0)))
 
-        self.interfaces = {
-            "_global": {
+        self.interfaces["_global"] = (
+            {
                 "Stringable": Stringable,
                 "Atom": Atom,
                 "Lens": Lens,
@@ -451,10 +458,7 @@ class Parser:  # all mutable state
                 "Maybe": Maybe,
                 "Dict": topDict,
             }
-        }
-
-        self.filename = filename
-        self.tokens = tokens
+        )
 
     def parse(self):
         tokens = self.tokens

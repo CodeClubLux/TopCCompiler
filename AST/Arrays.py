@@ -109,18 +109,18 @@ class ArrRead(Node):
 
     def set(self, old, codegen):
         if self.newValue:
-            codegen.append("return "+old+".set(")
+            codegen.append(f"return {old}.set(")
             self.nodes[1].compileToJS(codegen)
-            codegen.append(","+self.newValue+")")
+            codegen.append(f",{self.newValue})")
         else:
             idx = codegen.getName()
 
-            codegen.append("var "+idx+"=")
+            codegen.append(f"var {idx}=")
             self.nodes[1].compileToJS(codegen)
-            codegen.append(";return "+old+".set("+idx+",")
-            codegen.append("(function("+old+"){")
+            codegen.append(f";return {old}.set({idx},")
+            codegen.append("f(function({old}{{")
             self.owner.set(old, codegen)
-            codegen.append("})("+old+".get("+idx+")))")
+            codegen.append(f"}})({old}.get({idx})))")
 
     def validate(self, parser): pass
 

@@ -13,6 +13,19 @@ def save(parser):
     parser.atomTyp = 0
     parser._tokens = 0
     parser.tokens = 0
+    parser.structs["_global"] = {}
+    parser.interfaces["_global"] = {}
+    parser.scope["_global"] = []
+    parser._filename = None
+    parser.bracketBookmark = None
+    parser.cssFiles = None
+    parser.bookmark = None
+    parser.filename = None
+    parser.filenames = None
+    parser.files = None
+    parser.lexed = None
+
+    print("hello bye")
 
     """
     for package in parser.structs:

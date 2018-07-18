@@ -1,7 +1,4 @@
-__author__ = 'antonellacalvia'
-
 import collections
-
 from TopCompiler import Error
 
 class Token:
@@ -9,7 +6,7 @@ class Token:
         self.token = str(token)
         self.type = type
         self.line = line
-        self.column = column + (len(str(token)) // 2)
+        self.column = column
 
     def error(self, msg):
         Error.parseError(topc.global_parser, msg)
@@ -20,7 +17,7 @@ class Token:
 from TopCompiler import topc
 
 def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
-    for c in stream:
+    for c in stream: #@cleanup might not need to reparse if isn't modified
         if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
             lexed[c] = []
             for i in range(len(stream[c])):
@@ -47,61 +44,45 @@ keywords = [
         "with",
         "from",
         "decoder",
+        "is"
     ]
 
-token_specification = [
-        ("comment", r"/\*([\s\S]*?)\*/"),
-        ("indent", r'\n[ ]*'),
-        ('commentLine', r'//.*'),
-        ('newline', r'\n'),
-        ('openB', '{'),
-        ('closeB', '}'),
-        ('openC', '\('),
-        ('closeC', '\)'),
-        ('hex', r'0[xX][0-9a-fA-F]+'),
-        ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f)'),
+def fastacess(value):
+    dictionary = {}
+    for i in value:
+        dictionary[i] = 0
+
+    return dictionary
+
+slSymbols = fastacess([
+    "=",
+    "[","]",
+    "{", "}",
+    "(", ")",
+    ":", ";",
+    "$",
+    "!",
+    "=>", "+=", "-=", "*=", "/=",
+    "_"
+]) #Single length delimeters
+
+mLSymbols = [
+    "::",
+    ":=",
+    ".."
+]
+
+slOperator = fastacess(["+", "-", "*", "/", "%", "|", "<", ">", "&", "^"])
+mlOperators = ["<<", ">>", "<-", "->", "==", "!=", "&mut"]
+
+tokenSpecification = [ #cleanup use loop instead of regex to find it out
+        ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  # [A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
         ('i32', r'\d*[\d_]*(\d+)'),
-        ('arrow', r'->'),
-        ('equal',  r'=='),
-        ('doublecolon', r'::'),
-        ("colon", r":"),
-        ("semi", r";"),
-        ('ne', r'!='),
-        ('assign',  r'='),
-        ('whiteOpenS', r' +\['),
-        ('bracketOpenS', r' +\{'),
-        ('doubleDot', '\.\.'),
-        ('spaceDoubleDot', ' +\.\.'),
-        ('dotS', r' +\.'),
-        ('openS', r'\['),
-        ('closeS', r'\]'),
-        ('assignPlus', r'\+='),
-        ('assignSub', r'\-='),
-        ('assignMul', r'\*='),
-        ('assignDiv', r'\/='),
-        ('setAtom', '<\-[ ]+'),
-        ('operator', r'(\|>|>>|<-|<<|&mut)|[&+*\/\-%><^\\][ ]+'),
-        ('unary_operator', r'(\|>|>>|<-|<<|&mut)|[&+*\/\-%><^\\]'),
-        ('line', r'\|'),
-        ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  #[A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
-        ('underscore', '_'),
-        ('skip', r'[ \t]'),
-        ("single", r"'(?:[^'\\])*'"),
-        ("str", r'"(?:\\.|({.*})|[^"\\])*"'),
-        ('dot', '\.'),
-        ('tab', '\t'),
-        ('comma', ','),
-        ('bang', '!'),
-        ('dollar', '\$'),
-        ('set', '=>'),
+        ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f)'),
+        ('hex', r'0[xX][0-9a-fA-F]+'),
     ]
 
-normalLength = len(token_specification)
-
-special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assign", "assignPlus", "assignSub",
-               "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS',
-               'openS', 'doubleDot', 'semi']
-
+compiledSpecifications = [re.compile(regex) for (group, regex) in tokenSpecification]
 
 import time
 
@@ -114,165 +95,184 @@ def timeit(func):
 
     return inner
 
+class LexerState:
+    def __init__(self, s):
+        self.tok = ""
+        self.tokens = []
+        self.iter = 0
+        self.column = 0
+        self.line = 0
+        self.s = s
+        self.numberOfSInRow = 0
+        self.inComment = False
+        self.inCommentLine = False
+        self.inString = False
+        self.inChar = False
+
+    def pushTok(self):
+        if self.tok == "": return
+        if self.tok in keywords:
+            self.append(Token(self.tok, "keyword", self.line, self.column))
+        else:
+            t = time.time()
+            typ = ""
+            for (it, (group, regex)) in enumerate(tokenSpecification):
+                regex = compiledSpecifications[it]
+                if regex.match(self.tok):
+                    typ = group
+                    break
+
+            if typ == "":
+                print("could not match", self.tok)
+
+            self.append(Token(self.tok, typ, self.line, self.column))
+
+        self.tok = ""
+
+    def append(self, value):
+        if not type(value) is Token:
+            print("what???")
+        self.tokens.append(value)
+
+    def followedByNumSpace(self):
+        lenOfS = len(self.s)
+        num = 0
+        while self.iter+1 < lenOfS and self.s[self.iter+1] == " ":
+            num += 1
+            self.iter += 1
+
+        return num
+
 @timeit
-def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
-    tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
-    get_token = re.compile(tok_regex).match
-    line = 1
+def tokenize(s, filename, spos= 0, sline= 1, scolumn= 0):
+    def notBack(iter):
+        if state.iter == 0: return True
+        if state.s[state.iter - 1] != "\\": return True
+        return not notBack(state.iter - 1)
 
-    pos = spos
-    mo = get_token(s)
+    state = LexerState(s)
+    state.iter = spos
+    state.line = sline
+    state.column = scolumn
 
-    lastIndent = 0
-    lastTyp = None
-    linePos = slinePos
+    state.inBrace = 0
 
-    line = sline
-
-    extension = False
-
-    array = []
-
-    while mo is not None:
-        typ = mo.lastgroup
-
-        next = get_token(s, mo.end())
-
-        if typ == "indent" or typ == "newline":
-            val = mo.group(typ)
-            array.append(Token("\n", "symbol", line, pos))
-            line += 1
-
-            linePos = mo.end()
-
-            if next == None:
-                array.append(Token(0,"indent", line, pos))
-                break
-            if next.lastgroup == "indent":
-                array.append(Token(lastIndent, "indent", line, pos ))
+    lenOfS = len(s)
+    while state.iter < lenOfS:
+        t = state.s[state.iter]
+        completed = True
+        if t == '"' and notBack(state.iter) and not (state.inComment or state.inChar or state.inCommentLine):
+            state.inString = not state.inString
+            if state.inString:
+                state.pushTok()
+                state.tok = '"'
             else:
-                array.append(Token(len(val)-1, "indent", line, pos))
-                lastIndent = len(val)-1
-        elif typ == "comment":
-            val = mo.group(typ)
-            c = mo.end()
-            r = val.rfind("\n")
-            linePos = c + r
-            line += len(val) - len(val.replace("\n", ""))
-            array.append(Token(val, "comment", line, pos ))
-        elif typ == "setAtom":
-            array.append(Token("set", "operator", line, pos))
-        elif typ == "operator":
-            val = mo.group(typ)
-            c = mo.end()
-            array.append(Token(val.replace(" ", ""), "operator", line, pos))
-        elif typ in ["str"]:
-            template = False
-            val = mo.group(typ)
-            def notBack(iter):
-                if iter == 0: return True
-                if val[iter-1] != "\\": return True
-                return not notBack(iter-1)
+                state.tok += '"'
+                state.append(Token(state.tok, "str", state.line, state.column))
+                state.tok = ""
+        elif t == " " and not (state.inString or state.inComment or state.inChar or state.inCommentLine):
+            state.pushTok()
+        elif t == "{" and notBack(state.iter) and state.inString:
+            state.inBrace += 1
+            state.tok += '"'
+            state.append(Token(state.tok, "str", state.line, state.column))
+            state.append(Token("concat", "operator", state.line, state.column))
+            state.append(Token("(", "symbol", state.line, state.column))
 
-            start = 0
-            inBrace = False
-            tokens = []
-            val = val[1:-1]
-            bcount = 0
-            shouldBe = 0
-            v = list(val)
-            for iter in range(len(val)):
-                i = val[iter]
-                if notBack(iter) and i == "{" and not inBrace:
-                    tokens.append(Token('"'+val[start: iter]+'"', "str", line, pos))
-                    inBrace = True
-                    start = iter+1
-                    shouldBe = bcount
-                    template = True
+            state.inString = False
+            state.tok = ""
+        elif t == "}" and state.inBrace:
+            state.inBrace -= 1
+            state.inString = True
+            state.pushTok()
+            state.append(Token(")", "symbol", state.line, state.column))
+            state.append(Token("concat", "operator", state.line, state.column))
+            state.tok = '"'
 
-                if i == "{":
-                    bcount += 1
-                elif notBack(iter) and i == "}":
-                    bcount -= 1
-                    if bcount == shouldBe and inBrace:
-                        tokens.append(Token("concat", "operator", line, pos+iter))
-                        tokens.append(Token("(", "symbol", line, pos+iter))
-
-                        t = tokenize(val[start: iter], filename)
-
-                        for i in t[:-2]:
-                            i.line += line
-                            i.column += pos+start
-                            tokens.append(i)
-                        tokens.append(Token(")", "symbol", line, pos+iter))
-                        tokens.append(Token("concat", "operator", line, pos+iter))
-                        start = iter + 1
-                        inBrace = False
-                elif i == "\n":
-                    line += 1
-
-            tokens.append(Token('"'+val[start:]+'"', "str", line, pos))
-            if template:
-                tokens.insert(0, Token("(", "symbol", line, pos))
-                tokens.append(Token(")", "symbol", line, pos + iter))
-            array += tokens
-        elif typ == "single":
-            val = mo.group(typ)
-            array.append(Token(val, "str", line, pos))
-        elif typ == "spaceDoubleDot":
-            _val = mo.group(typ)
-            val = _val.replace(" ", "")
-            pos = pos + (len(_val) - len(val))
-            array.append(Token(val, "symbol", line, pos))
-        elif typ != 'skip' and not typ in ["comment", "commentLine"]:
-            val = mo.group(typ)
-            if typ == "identifier":
-                def my_replace(match):
-                    match = match.group()
-                    return match[1].upper()
-
-                val = re.sub(r'\-[A-Za-z]', my_replace, val)
-
-            if typ == 'identifier' and val in keywords:
-                if val in ["true", "false"]:
-                    typ = "bool"
-                elif val in ["_"]:
-                    typ = "symbol"
+        elif t == "'" and not (state.inString or state.inComment or state.inCommentLine):
+            state.inChar = not state.inChar
+            if state.inChar:
+                state.pushTok()
+                state.tok = "'"
+            else:
+                state.tok += "'"
+                state.pushTok()
+        elif t == "/" and state.iter+1 < lenOfS and state.s[state.iter + 1] == "*" \
+        and not (state.inString or state.inComment or state.inChar or state.inCommentLine):
+            state.inComment = True
+            state.pushTok()
+            state.iter += 1
+            state.column += 1
+        elif t == "*" and state.iter + 1 < lenOfS and state.s[state.iter + 1] == "/" \
+        and not (state.inString or state.inChar or state.inCommentLine):
+            state.iter += 1
+            state.column += 1
+            state.inComment = False
+            state.append(Token(state.tok, "comment", state.line, state.column))
+            state.tok = ""
+        elif t == "/" and state.iter + 1 < lenOfS and state.s[state.iter + 1] == "/" \
+        and not (state.inString or state.inComment or state.inChar or state.inCommentLine):
+            state.iter += 1
+            state.column += 1
+            state.inCommentLine = True
+            state.pushTok()
+        elif t == "\n":
+            if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
+                state.pushTok()
+            state.append(Token("\n", "symbol", state.line, state.column))
+            state.append(Token(state.followedByNumSpace(), "indent", state.line, state.column))
+            state.column = -1
+            state.inCommentLine = False
+            state.line += 1
+        else:
+            if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
+                if t in slSymbols:
+                    state.pushTok()
+                    state.append(Token(t, "symbol", state.line, state.column))
+                elif t in slOperator:
+                    state.pushTok()
+                    if state.followedByNumSpace() > 0:
+                        state.append(Token(t, "operator", state.line, state.column))
+                    else:
+                        state.append(Token(t, "unary_operator", state.line, state.column))
                 else:
-                    typ = "keyword"
-                    extension = True
+                    for operators in mlOperators:
+                        if state.tok.endswith(operators):
+                            iter = state.iter
+                            state.iter -= len(operators)
+                            state.tok = state.tok[:-len(operators)]
+                            state.pushTok()
 
-            elif typ == "f32":
-                val = val[:-1]+".0" if val[-1] == "f" else val
-            elif typ == "hex":
-                typ = "i32"
+                            if state.followedByNumSpace() > 0:
+                                state.append(Token(operators, "operator", state.line, state.column))
+                            else:
+                                state.append(Token(operators, "unary_operator", state.line, state.column))
+                            state.iter = iter
+                            break
 
-            if typ == "i32" or typ == "f32":
-                val = val.replace("_", "")
+                    for symbols in mLSymbols:
+                        if state.tok.endswith(symbols):
+                            iter = state.iter
+                            state.tok = state.tok[:-len(operators)]
+                            state.pushTok()
+                            state.append(Token(symbols, "symbol", state.line, state.column))
+                            state.iter = iter
+                            break
 
-            elif typ in special:
-                typ = "symbol"
-            elif typ == "equal" or typ == "mut" or typ == "ne":
-                typ = "operator"
+                    completed = False
+            else:
+                completed = False
 
-            if val != " ": array.append(Token(val, typ, line, pos))
-            elif val == "\t":
-                Error.compileError(filename[1], line, "tabs are not allowed")
+        if not completed:
+            state.tok += t
 
-        lastTyp = typ
+        state.iter += 1
+        state.column += 1
 
-        #mo.start() - line_start
+        #print("'" + state.tok + "'", state.inString, state.inCommentLine, state.inComment, state.inChar)
 
-        pos = mo.start() - linePos
-        mo = next
+    state.pushTok()
+    state.append(Token("\n", "symbol", state.line-1, state.column))
+    state.append(Token(0, "indent", state.line, state.column))
 
-    if spos == 0 and sline == 0:
-        array.append(Token("\n", "symbol", line-1, pos))
-        array.append(Token(0, "indent", line, pos))
-
-    return array
-
-
-
-
-
+    return state.tokens

@@ -9,4 +9,4 @@ class Cast(Node):
         self.to = to
 
     def __str__(self):
-        return self.f + " to " + self.to
+        return f"{self.f} to {self.to}"

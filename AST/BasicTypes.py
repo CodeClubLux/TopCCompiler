@@ -78,7 +78,7 @@ class String(Node):
 
     def compileToC(self, codegen):
         stringified = self.toString()
-        codegen.append("_global_StringInit(" + str(len(stringified)-2) + "," + stringified + ")")
+        codegen.append(f"_global_StringInit({(len(stringified)-2)},{stringified})")
 
     def validate(self, parser): pass
 
@@ -96,13 +96,13 @@ class Decoder(Node):
                 codegen.append("core_json_"+typ.name)
             elif type(typ) in [Types.Struct, Types.Interface]:
                 if type(typ) is Types.Struct:
-                    codegen.append("core_json_struct("+typ.package+"_"+typ.normalName+",")
+                    codegen.append(f"core_json_struct{typ.package}_{typ.normalName},")
                 elif type(typ) is Types.Interface:
                     codegen.append("core_json_interface(")
 
                 codegen.append("[")
                 for n in typ.types:
-                    codegen.append("['"+n+"',")
+                    codegen.append(f"['{n}',")
                     loop(typ.types[n])
                     codegen.append("],")
 

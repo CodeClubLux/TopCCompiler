@@ -340,7 +340,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             #print(cache.usedModules)
 
-            lexed = Lexer.lex(target, sources, filenames, files, cache, cache.lexed if cache else {}, transforms)
+            lexed = Lexer.lex(target, sources, filenames, files, cache, {}, transforms)
 
             declarations = Parser.Parser(lexed, filenames)
             declarations.hotswap = False
@@ -367,7 +367,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             if former:
                 #print("inserting", target)
-                ResolveSymbols.insert(former, declarations, only= True, copy= True)
+                ResolveSymbols.insert(former, declarations, only= True, copy= False)
                 #print(declarations.scope["_global"])
 
             declarations.files = files
@@ -380,6 +380,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.global_target = target
             declarations.output_target = target
             declarations.didCompile = False
+
+            declarations.setGlobalData()
 
             if (dev and run):
                 clearMain(declarations)
@@ -496,7 +498,6 @@ import datetime
 modified_ = {}
 def modified(_target, files, outputfile, jsFiles=[]):
     return True #while developing incremental compilation sucks
-
 
     def inner():
         target = _target

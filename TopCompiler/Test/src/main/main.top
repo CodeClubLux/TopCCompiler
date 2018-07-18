@@ -1,20 +1,17 @@
 /*
-type Vec3 =
-    x: float
-    y: float
+type Vec3 = 
+    x: float 
+    y: float 
     z: float
 
-type Matrix4 is [16]float
+  type Matrix4 is [16]float
 
-type Transform =
-    position: Vec3
-    rotation: Quat
-    scale: Vec3
-
-type Entity =
-    id: int
+  type Transform = 
+    position: Vec3 
+    rotation: Quat 
+    scale: Vec3  
+    type Entity =     id: int
 */
-
 def logMessage[T: Stringable](value: T) =
     log "printed message: {value}"
 

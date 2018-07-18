@@ -134,6 +134,7 @@ def insert(parser, p, only= False, copy= False):
         p.files = parser.files
         p.filenames = parser.filenames
         p.lexed = parser.lexed
+        p.opt = parser.opt
 
     if copy:
         scope = {}
@@ -155,7 +156,6 @@ def insert(parser, p, only= False, copy= False):
     #p.func = parser.func
     p.allImports = parser.allImports
     p.compiled = parser.compiled
-    p.opt = parser.opt
     #p.externFuncs = parser.externFuncs
     p.hotswap = parser.hotswap
     p.global_target = parser.global_target

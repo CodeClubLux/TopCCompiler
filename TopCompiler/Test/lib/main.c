@@ -118,7 +118,7 @@ void _global_log(struct _global_String s) {
 };
 
 void main_logMessage_int(int main_value){;
-_global_log((_global_String_op_add(_global_String_op_add(_global_StringInit(17,"printed message: "),_global_Int_toString((main_value))),_global_StringInit(0,""))));}
+_global_log(_global_String_op_add(_global_String_op_add(_global_StringInit(17,"printed message: "),_global_Int_toString((main_value))),_global_StringInit(0,"")));}
 int main() { 
 main_logMessage_int(10);
 ; return 0;};

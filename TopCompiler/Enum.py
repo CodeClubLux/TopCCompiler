@@ -8,8 +8,6 @@ from TopCompiler import ExprParser
 import AST as Tree
 import collections as coll
 
-len = lambda i: i.__len__()
-
 def enumParser(parser, name, decl, generic):
     const = coll.OrderedDict()
     enum = Types.Enum(parser.package, name, const, generic)
