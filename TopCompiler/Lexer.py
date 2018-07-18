@@ -102,6 +102,19 @@ special = ["dollar", "bang", "arrow", "doublecolon", "line", "underscore", "assi
                "assignMul", "assignDiv", 'colon', 'dot', 'openC', 'openB', 'closeC', 'closeB', 'comma', 'closeS',
                'openS', 'doubleDot', 'semi']
 
+
+import time
+
+def timeit(func):
+    def inner(*args, **kwargs):
+        t = time.time()
+        res = func(*args, **kwargs)
+        print(f"Lexing took: {time.time() - t}")
+        return res
+
+    return inner
+
+@timeit
 def tokenize(s, filename, spos= 0, sline= 0, slinePos= 0):
     tok_regex = '|'.join('(?P<%s>%s)' % pair for pair in token_specification)
     get_token = re.compile(tok_regex).match

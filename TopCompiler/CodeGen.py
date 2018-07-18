@@ -4,7 +4,7 @@ import AST as Tree
 from time import *
 from TopCompiler import Error
 
-import MemoryOptimizer
+import PostProcessing
 import os
 import copy
 
@@ -107,23 +107,25 @@ class CodeGen:
     def compile(self, opt):
         beforeOptimization = time()
         Types.dataTypes = ""
-        MemoryOptimizer.simplifyAst(self.parser, self.tree)
-        print("Simplifying AST took: ", time() - beforeOptimization)
+        PostProcessing.simplifyAst(self.parser, self.tree)
 
-        cCode = cRuntimeCode
+
         self.toCHelp()
 
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
 
-        cCode += Types.dataTypes + "\n" + outerCode + "\nint main() {" + mainCode + "; return 0;};"
+        cCode = f"{cRuntimeCode}\n{Types.getGeneratedDataTypes()}\n{outerCode}\nint main() {{ \n{mainCode}; return 0;}};"
+
         #print(cCode)"
 
         f = open("lib/" + self.filename + ".c", mode="w")
         f.write(cCode)
         f.close()
 
-        subprocess.call(["clang", "lib/" + self.filename + ".c", "-Wno-parentheses-equality", "-o", "bin/" + self.filename])
+        print("Backend took  :", time() - beforeOptimization)
+
+        #subprocess.call(["clang", "lib/" + self.filename + ".c", "-Wno-parentheses-equality", "-o", "bin/" + self.filename])
 
 class Info:
     def __init__(self):

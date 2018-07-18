@@ -190,13 +190,29 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
 from TopCompiler import CodeGen
 info = CodeGen.Info()
 gen = CodeGen.genNames(info)
-dataTypes = ""
+dataTypes = []
 
-def genCType(contents):
+from PostProcessing import SimplifyAst
+
+def getTmpName():
+    return next(gen)
+
+def getGeneratedDataTypes():
+    return "".join(dataTypes)
+
+def genCType(name, contents):
     global dataTypes
-    newName = next(gen)
-    dataTypes += "struct TmpType" + newName + " {" + contents + "};\n"
-    return "struct TmpType" + newName
+    dataTypes.append(f"struct {name} {{\n{contents}\n}};\n")
+
+genericTypes = {}
+def genGenericCType(package, structName, contents, replaced):
+    global dataTypes
+    newName = SimplifyAst.toUniqueID(package, structName, replaced)
+    if not newName in genericTypes:
+        genCType(newName, contents)
+        genericTypes[newName] = "struct " + newName
+
+    return "struct " + newName
 
 def parseGeneric(parser, typ):
     generic = []
