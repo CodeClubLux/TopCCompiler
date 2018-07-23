@@ -197,20 +197,58 @@ from PostProcessing import SimplifyAst
 def getTmpName():
     return next(gen)
 
+class TmpCodegen:
+    def __init__(self, array):
+        self.array = array
+
+    def inFunction(self):
+        return
+
+    def outFunction(self):
+        return
+
+    def getName(self):
+        return "mnbvcx"
+
+    def append(self, x):
+        self.array.append(x)
+
 def getGeneratedDataTypes():
+    tmp = TmpCodegen(dataTypes)
+
+    for key in genericTypes:
+        if key in compiledTypes:
+            continue
+        genericTypes[key].compileToC(tmp)
+        compiledTypes[key] = 0
+
     return "".join(dataTypes)
 
+tmpTypes = {}
 def genCType(name, contents):
     global dataTypes
-    dataTypes.append(f"struct {name} {{\n{contents}\n}};\n")
+    if contents in tmpTypes:
+        return tmpTypes[contents]
+    else:
+        dataTypes.append(f"struct {name} {{\n{contents}\n}};\n")
+        tmpTypes[contents] = name
+
+from AST import Struct as S
+from TopCompiler import topc
 
 genericTypes = {}
-def genGenericCType(package, structName, contents, replaced):
+compiledTypes = {}
+def genGenericCType(struct):
+    replaced = struct.gen
+    structName = struct.normalName
+    package = struct.package
+
     global dataTypes
     newName = SimplifyAst.toUniqueID(package, structName, replaced)
     if not newName in genericTypes:
-        genCType(newName, contents)
-        genericTypes[newName] = "struct " + newName
+        s = S.Type(structName, package, topc.global_parser)
+        s.replaceT(struct, newName[newName.find("_")+1:])
+        genericTypes[newName] = s
 
     return "struct " + newName
 
@@ -416,6 +454,11 @@ class FuncPointer(Type):
 def isPart(i, name):
     return ".".join(i.split(".")[:-1]) == name
 
+def strGen(g):
+    if type(g) is T:
+        return str(g)
+    return str(g)
+
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen=coll.OrderedDict()):
         self.types = types
@@ -432,9 +475,7 @@ class Struct(Type):
 
         gen = self.remainingGen
 
-        #print(self.gen)
-
-        genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+        genericS = "[" + ",".join([strGen(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
 
         self.name = package + "." + name + genericS
         #print(self.name)
@@ -452,7 +493,10 @@ class Struct(Type):
             return replaceT(m, self.gen)
 
     def toCType(self):
-        return "struct " + self.package + "_" + self.normalName
+        if self.gen:
+            return genGenericCType(self)
+        else:
+            return "struct " + self.package + "_" + self.normalName
 
     def duckType(self, parser, other, node, mynode, iter=0):
         
@@ -478,6 +522,11 @@ class Struct(Type):
         for name in self.remainingGen:
             a = self.gen[name]
             b = other.gen[name]
+
+            if type(a) is T:
+                a = a.type
+            if type(b) is T:
+                b = b.type
 
             if not (b.isType(T) and b.owner == self.package+"."+self.normalName):
                 try:
@@ -701,6 +750,10 @@ class T(Type):
         self.types = self.type.types
         self.owner = owner
         self.realName = name
+        #self.methods = typ.methods
+
+    def toCType(self):
+        return self.type.toCType()
 
     def duckType(self, parser, other, node, mynode, iter):
         
@@ -795,6 +848,9 @@ class Enum(Type):
 
     def hasMethod(attachTyp, parser, name):
         hasMethodEnum(attachTyp, parser, name)
+
+    def toCType(self):
+        return "struct " + self.package + "_" + self.normalName
 
     def duckType(self, parser, other, node, mynode, iter):
         if self.normalName != other.normalName:
@@ -1040,8 +1096,8 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
     if typ in acc:
         return acc[typ]
 
-    if unknown and type(typ) is Unknown:
-        return replaceT(typ.typ, gen, acc, unknown)
+    if not isGen:
+        return typ
 
     if type(typ) is T:
         if typ.normalName in gen:
@@ -1060,12 +1116,18 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
     elif type(typ) is Struct:
         rem = {}
         for i in typ.remainingGen:
-            rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
+            if i in gen:
+                rem[i] = T(i[i.find(".")+1:], gen[i], i[:i.find(".")])
+            else:
+                rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
         return Struct(False, typ.normalName, typ.types, typ.package, rem)
     elif type(typ) is Alias:
         rem = {}
         for i in typ.generic:
-            rem[i] = replaceT(typ.generic[i], gen, acc)
+            if i in gen:
+                rem[i] = T(i[i.find(".") + 1:], gen[i], i[:i.find(".")])
+            else:
+                rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
         return Alias(typ.package, typ.normalName, replaceT(typ.typ, gen, acc, unknown), rem)
     elif type(typ) is Assign:
         return Assign(replaceT(typ.const, gen, acc, unknown))

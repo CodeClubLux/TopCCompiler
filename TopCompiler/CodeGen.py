@@ -65,6 +65,8 @@ class CodeGen:
         self.names.pop()
 
     def readName(self, name):
+        return name
+
         for i in reversed(self.names):
             try:
                 return i[name]
@@ -76,7 +78,7 @@ class CodeGen:
             self.append(";\n")
 
     def createName(self, name):
-        self.names[-1][name] = name
+        #self.names[-1][name] = name
         return name
 
     def append(self, value):
@@ -105,8 +107,9 @@ class CodeGen:
         return next(self.gen)
 
     def compile(self, opt):
-        beforeOptimization = time()
-        Types.dataTypes = ""
+        t = time()
+        Types.dataTypes = []
+        self.parser.package = self.filename
         PostProcessing.simplifyAst(self.parser, self.tree)
 
 
@@ -115,17 +118,14 @@ class CodeGen:
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
 
-        cCode = f"{cRuntimeCode}\n{Types.getGeneratedDataTypes()}\n{outerCode}\nint main() {{ \n{mainCode}; return 0;}};"
+        cCode = f"{Types.getGeneratedDataTypes()}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
 
-        #print(cCode)"
+        print("To C took :", time() - t)
+
 
         f = open("lib/" + self.filename + ".c", mode="w")
         f.write(cCode)
         f.close()
-
-        print("Backend took  :", time() - beforeOptimization)
-
-        #subprocess.call(["clang", "lib/" + self.filename + ".c", "-Wno-parentheses-equality", "-o", "bin/" + self.filename])
 
 class Info:
     def __init__(self):
@@ -137,10 +137,23 @@ class Info:
         self.pointer = pointer
 
 def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev):
-    pass
+    linkedCode = [cRuntimeCode]
+
+    for c in compiled:
+        f = open("lib/" + c + ".c", mode="r")
+        linkedCode.append(f.read())
+        f.close()
+
+    linkedCode.append("int main() { mainInit(); return 0; };")
+
+    f = open("bin/" + outputFile + ".c", mode="w")
+    f.write("\n".join(linkedCode))
+    f.close()
+
+    subprocess.call(["clang", "bin/" + outputFile + ".c", "-Wno-parentheses-equality", "-o", "bin/" + outputFile])
 
 def exec(outputFile):
-    subprocess.call(["./bin/main"])
+    subprocess.call(["./bin/"+outputFile])
 
 def genNames(info):
     import string

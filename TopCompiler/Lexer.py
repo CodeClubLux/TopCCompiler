@@ -44,7 +44,8 @@ keywords = [
         "with",
         "from",
         "decoder",
-        "is"
+        "is",
+        "either"
     ]
 
 def fastacess(value):
@@ -62,18 +63,20 @@ slSymbols = fastacess([
     ":", ";",
     "$",
     "!",
-    "=>", "+=", "-=", "*=", "/=",
-    "_"
+    "_",
+    ".",
+    ","
 ]) #Single length delimeters
 
 mLSymbols = [
     "::",
     ":=",
-    ".."
+    "..",
+    "=>", "+=", "-=", "*=", "/=",
 ]
 
-slOperator = fastacess(["+", "-", "*", "/", "%", "|", "<", ">", "&", "^"])
-mlOperators = ["<<", ">>", "<-", "->", "==", "!=", "&mut"]
+slOperator = fastacess(["+", "*", "/", "%", "|", "&", "^"])
+mlOperators = ["<<", ">>", "<-", "->", "==", "!=", "<", ">", "-"]
 
 tokenSpecification = [ #cleanup use loop instead of regex to find it out
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  # [A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
@@ -144,7 +147,7 @@ class LexerState:
         return num
 
 @timeit
-def tokenize(s, filename, spos= 0, sline= 1, scolumn= 0):
+def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
     def notBack(iter):
         if state.iter == 0: return True
         if state.s[state.iter - 1] != "\\": return True
@@ -212,13 +215,15 @@ def tokenize(s, filename, spos= 0, sline= 1, scolumn= 0):
             state.tok = ""
         elif t == "/" and state.iter + 1 < lenOfS and state.s[state.iter + 1] == "/" \
         and not (state.inString or state.inComment or state.inChar or state.inCommentLine):
+            state.pushTok()
             state.iter += 1
             state.column += 1
             state.inCommentLine = True
-            state.pushTok()
         elif t == "\n":
             if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
                 state.pushTok()
+            if state.inCommentLine:
+                state.tok = ""
             state.append(Token("\n", "symbol", state.line, state.column))
             state.append(Token(state.followedByNumSpace(), "indent", state.line, state.column))
             state.column = -1
@@ -236,30 +241,52 @@ def tokenize(s, filename, spos= 0, sline= 1, scolumn= 0):
                     else:
                         state.append(Token(t, "unary_operator", state.line, state.column))
                 else:
+                    completed = False
+                    lastLength = 0
+
+                    tok = ""
                     for operators in mlOperators:
-                        if state.tok.endswith(operators):
+                        sameLength = False
+                        lenOfOp = len(operators)
+                        if len(state.tok) == operators:
+                            tok = state.tok
+                            sameLength = True
+
+                        elif lastLength == lenOfOp:
+                            pass #use existing tok
+                        else:
+                            if state.iter + lenOfOp - 1 < lenOfS:
+                                tok = state.s[state.iter: state.iter+lenOfOp]
+
+                        lastLength = lenOfOp
+
+                        if tok.endswith(operators):
+                            state.tok = tok
+                            if not sameLength:
+                                state.iter += lenOfOp - 1
                             iter = state.iter
-                            state.iter -= len(operators)
+                            state.iter -= lenOfOp
                             state.tok = state.tok[:-len(operators)]
                             state.pushTok()
+                            state.iter = iter
 
                             if state.followedByNumSpace() > 0:
                                 state.append(Token(operators, "operator", state.line, state.column))
                             else:
                                 state.append(Token(operators, "unary_operator", state.line, state.column))
-                            state.iter = iter
+                            completed = True
                             break
 
-                    for symbols in mLSymbols:
-                        if state.tok.endswith(symbols):
-                            iter = state.iter
-                            state.tok = state.tok[:-len(operators)]
-                            state.pushTok()
-                            state.append(Token(symbols, "symbol", state.line, state.column))
-                            state.iter = iter
-                            break
-
-                    completed = False
+                    if not completed:
+                        for symbols in mLSymbols:
+                            if state.tok.endswith(symbols):
+                                iter = state.iter
+                                state.tok = state.tok[:-len(operators)]
+                                state.pushTok()
+                                state.append(Token(symbols, "symbol", state.line, state.column))
+                                state.iter = iter
+                                completed = True
+                                break
             else:
                 completed = False
 
@@ -274,5 +301,7 @@ def tokenize(s, filename, spos= 0, sline= 1, scolumn= 0):
     state.pushTok()
     state.append(Token("\n", "symbol", state.line-1, state.column))
     state.append(Token(0, "indent", state.line, state.column))
+
+    #print(state.tokens)
 
     return state.tokens

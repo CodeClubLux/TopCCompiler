@@ -4,6 +4,7 @@ __author__ = 'antonellacalvia'
 from .node import *
 from .Func import *
 from .Operator import *
+from PostProcessing import SimplifyAst
 class InitStruct(Node):
     def __init__(self, parser):
         super(InitStruct, self).__init__(parser)
@@ -40,7 +41,10 @@ class InitStruct(Node):
 
     def compileToC(self, codegen):
         if not self.assign:
-            codegen.append(self.typ.package + "_" + self.typ.normalName + "Init(")
+            if self.replaced:
+                codegen.append(f"{SimplifyAst.toUniqueID(self.typ.package, self.typ.normalName, self.replaced)}Init(")
+            else:
+                codegen.append(self.typ.package + "_" + self.typ.normalName + "Init(")
             for i in range(len(self.nodes)):
                 self.nodes[i].compileToC(codegen)
                 if i != len(self.nodes)-1:
@@ -51,6 +55,8 @@ class InitStruct(Node):
 
     def validate(self, parser): pass
 
+from TopCompiler import Types
+
 class Type(Node):
     def __init__(self, package, name, parser):
         super(Type, self).__init__(parser)
@@ -58,6 +64,7 @@ class Type(Node):
         self.name = name
         self.args = []
         self.fields = []
+        self.generics = {}
 
     def __str__(self):
         return "type "+self.package+"."+self.name
@@ -65,10 +72,18 @@ class Type(Node):
     def compile(self, codegen):
         return ""
 
+    def replaceT(self, structT, newName):
+        self.package = structT.package
+        self.normalName = newName
+        self.args = [Types.replaceT(i, structT.gen) for i in structT.types.values()]
+        self.fields =list(structT.types.keys())
+
     def compileToC(self, codegen):
+        if self.generics:
+            return
         codegen.inFunction()
         #print("compiling struct " + self.package + "." + self.name)
-        names = [codegen.getName() for i in self.fields]
+        names = self.fields
         codegen.append("struct "+self.package+"_"+self.normalName+" {")
         for i in range(len(self.fields)):
             codegen.append(self.args[i].toCType() + " " + self.fields[i]+";")

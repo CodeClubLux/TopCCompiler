@@ -25,8 +25,6 @@ def save(parser):
     parser.files = None
     parser.lexed = None
 
-    print("hello bye")
-
     """
     for package in parser.structs:
         for s in parser.structs[package]:

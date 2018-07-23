@@ -67,11 +67,7 @@ def importParser(parser, decl= False):
             sp = shouldCompile(decl, oname, parser)
             outputfile = oname
             try:
-                if parser.global_target == "full":
-                    t = max(os.path.getmtime("lib/" + outputfile.replace("/", ".") + "-client.js"),
-                    os.path.getmtime("lib/" + outputfile.replace("/", ".") + "-client.js"))
-                else:
-                    t = os.path.getmtime("lib/" + outputfile.replace("/", ".") + "-" + parser.global_target + ".js")
+                t = os.path.getmtime("lib/" + outputfile.replace("/", ".") + ".c")
                 t = datetime.datetime.fromtimestamp(int(t))
             except FileNotFoundError:
                 sp = True
@@ -138,8 +134,7 @@ def fromParser(parser, decl= False, stage=False):
                     Error.parseError(parser, nameOfVar + " is already a struct")
                 parser.structs[package][nameOfVar] = parser.structs[name][nameOfVar]
             else:
-                pass
-                #Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
+                Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
 
             names.append((nameOfVar, "full"))
         elif nameOfVar in parser.interfaces[name]:
@@ -150,8 +145,10 @@ def fromParser(parser, decl= False, stage=False):
             parser.interfaces[package][nameOfVar] = parser.interfaces[name][nameOfVar]
         elif not decl and nameOfVar in parser.scope[name][0]:
              #can't set lambda
-            Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
-            names.append((nameOfVar, parser.scope[name][0][nameOfVar].target))
+            Scope.addAlias(place, package, name, nameOfVar, nameOfVar, parser)
+
+            #Scope.addVar(place, parser, nameOfVar, parser.scope[name][0][nameOfVar])
+            names.append((nameOfVar, ""))
         elif not decl:
             Error.parseError(parser, "Package " + name + " does not have a variable, or type called " + nameOfVar)
 

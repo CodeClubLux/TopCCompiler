@@ -15,6 +15,9 @@ struct _global_String _global_StringInit(unsigned int length, char* data) {
     s.capacity = 0;
     return s;
 };
+struct _global_String _global_String_toString(struct _global_String s) {
+    return s;
+}
 
 struct _global_String _global_String_op_add(struct _global_String a, struct _global_String b) {
     if (a.length == 0) {

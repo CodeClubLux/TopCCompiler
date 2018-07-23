@@ -17,6 +17,7 @@ from optimization import *
 from TopCompiler import VarParser
 from TopCompiler import saveParser
 import datetime
+from PostProcessing import SimplifyAst
 
 # is class
 
@@ -92,6 +93,8 @@ def newPack(name):
     except:
         Error.error("directory has no src folder")
 
+
+global_parser = None
 
 def getCompilationFiles(target):
     try:
@@ -410,6 +413,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 parser.compiled["main"] = (True, (parsed, []))
 
+
                 global_parser = parser
 
                 import AST as Tree
@@ -433,6 +437,11 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 print("\n======== recompiling =========")
                 print("Code Analysis : " + str(time() - time1))
+
+                for i in parser.compiled:
+                    parser.package = i
+                    if parser.compiled[i][0]:
+                        SimplifyAst.resolveGeneric(parser, parser.compiled[i][1][0])
 
                 for i in parser.compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])

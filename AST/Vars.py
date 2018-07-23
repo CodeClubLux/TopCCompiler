@@ -222,6 +222,7 @@ class ReadVar(Node):
         Node.__init__(self, parser)
         self.name = name
         self.isGlobal = isGlobal
+        self.replaced = {}
 
     def __str__(self):
         return "read " + self.name

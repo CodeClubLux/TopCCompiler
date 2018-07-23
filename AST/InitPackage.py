@@ -10,12 +10,8 @@ class InitPack(Node):
         self.target = parser.output_target
         self.thisPackage = parser.package
 
-    def compileToJS(self, codegen):
-        if self.target == "full":
-            codegen.client_main_parts.append(self.package+"_clientInit();")
-            codegen.node_main_parts.append(self.package+"_nodeInit();")
-        else:
-            codegen.append(self.package+"_" + self.target + "Init();")
+    def compileToC(self, codegen):
+        codegen.append(self.package+"Init();")
 
         if not self.package in codegen.order_of_modules:
             codegen.order_of_modules.append(self.package)
@@ -29,18 +25,16 @@ class Import(Node):
         self.thisPackage = thisPackage
         self.names = names
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
+        return
         for (i, target) in self.names:
-            codegen.target = target
             varName = self.package+"_"+i
-
             codegen.append(self.thisPackage+"_"+i+"= typeof "+varName+"=='undefined'||"+varName+";")
 
     def validate(self, parser):
         for (i, target) in self.names:
             c = Vars.Create(i, Types.Null(), self)
             c.package = self.thisPackage;
-            c.target = target
             c.isGlobal = True
 
             self.owner.before.append(c)

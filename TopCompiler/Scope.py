@@ -9,10 +9,32 @@ class Type :
     def __init__(self, imutable, type, target= "full"):
         self.imutable = imutable
         self.type = type
-        self.target = target
 
     def __repr__(self):
         return str(self.type)
+
+class Alias:
+    def __init__(self, newPackage, realPackage, name, parser):
+        self.newPackage = newPackage
+        self.package = realPackage
+        self.name = name
+        self.parser = parser
+
+    @property
+    def imutable(self):
+        return not isMutable(self.parser, self.package, self.name)
+
+    @property
+    def type(self):
+        return typeOfVar(self.parser, self.parser, self.package, self.name)
+
+    @type.setter
+    def type(self, newTyp):
+        changeType(self.parser, self.name, newTyp)
+
+def addAlias(place, newPackage, realPackage, realName, name, parser):
+    a = Alias(newPackage, realPackage, realName, parser)
+    addVar(place, parser, name, a)
 
 def incrScope(parser):
     parser.scope[parser.package].append({})
@@ -57,12 +79,6 @@ def changeType(parser, name, newType):
             return
         except: pass
 
-def changeTarget(parser, name, target):
-    for i in parser.scope[parser.package]:
-        try:
-            i[name].target = target
-        except: pass
-
 def isMutable(parser, package, name):
     if name in parser.imports: return False
     if package == parser.package:
@@ -88,26 +104,19 @@ def typeOfVar(node, parser, package, name):
         except: pass
     node.error("variable "+name+" does not exist")
 
-
-def targetOfVar(node, parser, package, name):
-    if name in parser.imports: return parser.global_target
-    if package == parser.package:
-        for i in parser.scope["_global"]:
-            if name in i:
-                return i[name].target
-
-    for i in parser.scope[package]:
-        try:
-            return i[name].target
-        except: pass
-    node.error("variable "+name+" does not exist")
-
 def packageOfVar(parser, package, name):
     if name in parser.imports: return ""
     if package == parser.package:
         for i in parser.scope["_global"]:
             if name in i:
                 return ""
+
+    for i in parser.scope[package]:
+        try:
+            if type(i[name]) is Alias:
+                return i[name].package
+            return package
+        except: pass
 
     return package
 

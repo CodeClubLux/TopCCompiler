@@ -243,7 +243,7 @@ def callToken(self, lam= False):
                     b = self.tokens[self.iter + 2]
                     isIndentationCall = True
 
-        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "unary_operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
+        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "unary_operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
             if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
@@ -339,10 +339,13 @@ class Parser:  # all mutable state
         self.filename = filename
         self.tokens = tokens
 
+        self.opt = 0
+        self.specifications = {}
+
     def setGlobalData(self):
         All = Types.All
 
-        Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringable")
+        Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringer")
         self.Stringable = Stringable
 
         Lengthable = Types.Interface(False, {"length": Types.I32()})
@@ -420,7 +423,7 @@ class Parser:  # all mutable state
             "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32())),
             "toInt": Scope.Type(True, Types.FuncPointer([Intable], Types.I32())),
             "toFloat": Scope.Type(True, Types.FuncPointer([Floatable], Types.Float())),
-            "Stringable": Stringable,
+            "Stringer": Stringable,
             "Atom": Scope.Type(True, Atom),
             "Lens": Scope.Type(True, Lens),
             "All": Scope.Type(True, All),
@@ -431,10 +434,6 @@ class Parser:  # all mutable state
             "serial": Scope.Type(True, serial),
             "Some": Scope.Type(True, Types.FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
             "None": Scope.Type(True, Maybe),
-            "println": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
-            "print": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(),do=True), "client"),
-            "jsonStringify": Scope.Type(True, Types.FuncPointer([All], Types.String(0))),
-            "parseJson": Scope.Type(True, Types.FuncPointer([Types.FuncPointer([All], parseT), Types.String(0)], parseT)),
             "dict": Scope.Type(True, dictFunc),
         }]
 
@@ -451,7 +450,7 @@ class Parser:  # all mutable state
 
         self.interfaces["_global"] = (
             {
-                "Stringable": Stringable,
+                "Stringer": Stringable,
                 "Atom": Atom,
                 "Lens": Lens,
                 "Any": All,
@@ -459,6 +458,7 @@ class Parser:  # all mutable state
                 "Dict": topDict,
             }
         )
+
 
     def parse(self):
         tokens = self.tokens

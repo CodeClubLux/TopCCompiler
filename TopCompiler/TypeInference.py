@@ -206,13 +206,6 @@ def infer(parser, tree):
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
 
             elif type(i) is Tree.ReadVar:
-                if i.name == "newAtom":
-                    if not (type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i and not i.owner.curry and not i.owner.partial):
-                        i.error("expecting function call, with no currying or partial application")
-
-                    if parser.atoms > 0:
-                        i.error("can only have one atom per application")
-
                 if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct and i.owner.nodes[0] == i):
                     if i.name in parser.imports:
                         if not type(i.owner) is Tree.Field:
@@ -225,24 +218,6 @@ def infer(parser, tree):
                     self.imutable = not Scope.isMutable(parser, self.package, self.name)
                     self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
                     self.package = Scope.packageOfVar(parser, parser.package, self.name)
-
-                    target = Scope.targetOfVar(i, parser, parser.package, self.name)
-                    realT = tree.nodes[o_iter].global_target
-
-                    if target != parser.global_target and (parser.global_target == "full"):
-                        root = tree.nodes[o_iter]
-
-                        if type(root) is Tree.FuncBody:
-                            try:
-                                tree.nodes[o_iter-1].global_target = target
-                                tree.nodes[o_iter-2].global_target = target
-                            except IndexError:
-                                pass
-
-                        root.global_target = target
-
-                    elif realT != target and target != "full" and realT != "full":
-                        i.error("variable "+i.name+" is of target "+target + ", but being used in a "+realT+" target")
 
             elif type(i) is Tree.Field:
                 if i.unary:
@@ -277,18 +252,6 @@ def infer(parser, tree):
                 if type(typ) is Types.Package:
                     i.indexPackage = True
                     i.type = Scope.typeOfVar(i, parser, i.nodes[0].name, i.field)
-
-                    target = Scope.targetOfVar(i, parser, i.nodes[0].name, i.field)
-
-                    if target != parser.global_target:
-                        root = parser.currentNode.nodes[o_iter]
-
-                        if type(root) is Tree.FuncBody:
-                            tree.nodes[o_iter-1].global_target = target
-                            tree.nodes[o_iter-2].global_target = target
-
-                        root.global_target = target
-
                     i.nodes[0].package = i.nodes[0].name
                     i.nodes[0].name = ""
                 else:
@@ -300,12 +263,9 @@ def infer(parser, tree):
                     self = i
                     try:
                         i.type = struct.types[self.field]
-
-                        if type(i.nodes[0].type) is Types.Array:
-                            bind()
                     except KeyError:
                         if type(typ) is Types.Alias:
-                            method = struct.typ.hasMethod(parser, self.field)
+                            method = struct.typ.hasMethod(parser, self.field) #has method should check if t can be upcasted
                             if method:
                                 typ = struct.typ
                             else:
@@ -316,21 +276,9 @@ def infer(parser, tree):
                         if not method:
                             self.error("type "+str(typ) + " has no field " + self.field)
 
-                        self.type = method
-
-                        name = typ.normalName + "_" + self.field
-                        package = typ.package if not typ.package == "_global" else ""
-
-                        r = Tree.ReadVar(name, self.type, self)
-                        r.type = self.type
-                        r.package = package
-                        r.owner = self.owner
-
-                        if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
-                            self.owner.nodes[0] = r
-                            self.owner.nodes.insert(1, self.nodes[0])
-                            count += 1
-                        else: bind()
+                        newMethod = copy.copy(method)
+                        newMethod.args = newMethod.args[1:]
+                        self.type = newMethod
 
             elif type(i) is Tree.Operator:
                 if i.kind == "|>" or i.kind == ">>":
@@ -507,7 +455,7 @@ def infer(parser, tree):
 
                 realNumArgs = len(i.nodes)-1
                 if args.__len__() != realNumArgs:
-                    i.error("Expecting "+len(args)+ " amount of arguments but got "+realNumArgs)
+                    i.error("Expecting "+str(len(args))+ " amount of arguments but got "+str(realNumArgs))
 
                 generics = {}
                 for iter in range(len(i.nodes[1:])):
@@ -738,7 +686,7 @@ def infer(parser, tree):
                 else:
                     package = parser.structs[i.package][name].package
                     i.type = Types.Struct(i.mutable, name, s._types, package, gen)
-
+                i.replaced = gen
             elif type(i) is Tree.ArrRead:
                 if len(i.nodes) == 2:
                     typ = i.nodes[0].type

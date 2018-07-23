@@ -1,18 +1,13 @@
-/*
-type Vec3 = 
-    x: float 
-    y: float 
-    z: float
+type Nullable either
+    Value(int)
+    Null
 
-  type Matrix4 is [16]float
+let s = Value 10
 
-  type Transform = 
-    position: Vec3 
-    rotation: Quat 
-    scale: Vec3  
-    type Entity =     id: int
-*/
-def logMessage[T: Stringable](value: T) =
-    log "printed message: {value}"
 
-logMessage 10
+match s with
+    Value x ->
+        log x.toString !
+
+    Null ->
+        log "null"

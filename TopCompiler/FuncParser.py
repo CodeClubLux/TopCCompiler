@@ -27,7 +27,8 @@ def parserMethodGen(parser, gen, struct):
 
         if not a in sgen:
             Error.parseError(parser, "Unknown type parameter " + aStripped + " in "+str(struct))
-        if gen[a].type != Types.All: typ = gen[b].type #@cleanup check if interface is compatible with structs regular generics  Error.parseError(parser, "unexpected :")
+        if gen[a].type != Types.All:
+            typ = gen[b] #@cleanup check if interface is compatible with structs regular generics  Error.parseError(parser, "unexpected :")
         newGen[a] = typ
         Scope.changeType(parser, aStripped, typ)
 

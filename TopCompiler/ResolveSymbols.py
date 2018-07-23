@@ -168,6 +168,7 @@ def insert(parser, p, only= False, copy= False):
     p.output_target = parser.output_target
     p.cssFiles = parser.cssFiles
     p.usedModules = parser.usedModules
+    p.specifications  = parser.specifications
 
     return p
 

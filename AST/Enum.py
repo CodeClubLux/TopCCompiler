@@ -9,38 +9,81 @@ class Enum(Node):
         self.package = parser.package
         self.normalName = normalName
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         count = 0
         codegen.inFunction()
 
-        tmp = codegen.getName()
+        """ 
+        struct Maybe_int_Some {
+            int value;
+        };
+        
+        union Maybe_int_cases {
+            struct Maybe_int_Some some;
+        };
+        
+        struct Maybe_int {
+            unsigned short tag;
+            union Maybe_int_cases cases;
+        };
+        """
 
-        codegen.append("function " + self.package + "_" + self.normalName + "(" + tmp + "){this[0]=" + tmp + "}")
+        cType = f"struct {self.package}_{self.normalName}"
+
         for name in self.const:
             args = self.const[name]
-            names = [codegen.getName() for _ in args]
 
-            if len(names) > 0:
-                codegen.append("function " + self.package + "_" + name + "(")
-                codegen.append(",".join(names))
-                codegen.append("){")
-                codegen.append("var " + tmp + " = new "+self.package + "_" + self.normalName+"("+str(count)+");")
+            if len(args) > 0:
+                codegen.append(f"struct {self.package}_{self.normalName}_{name} {{\n")
+                names = ["field" + str(iter) for iter in range(len(args))]
 
-                c = 0
-                for i in names:
-                    c += 1
-                    codegen.append(tmp + "[" + str(c) + "]=" + i + ";")
+                for i in range(len(args)):
+                    codegen.append(f"{args[i].toCType()} field{i};\n")
+                codegen.append("\n};")
 
-                codegen.append("return " + tmp + "}")
+        numCases = len(self.const)
+
+        tag = ""
+        sizes = ["char", "short", "int", "long"]
+        for (iter, size) in enumerate(sizes):
+            if numCases < 2 ^ ((iter+1) * 8):
+                tag = size
+                break
+
+        tag += " tag;"
+
+        codegen.append(f"struct {self.package}_{self.normalName} {{\n {tag}\n")
+        codegen.append(f"union {{\n")
+        for name in self.const:
+            if len(self.const[name]) > 0:
+                codegen.append(f"struct {self.package}_{self.normalName}_{name} {name};\n")
+        codegen.append("\n};};\n")
+
+
+        for (iter, name) in enumerate(self.const):
+            args = self.const[name]
+            if len(args) > 0:
+
+                codegen.append(f"{cType} {self.package}_{name}(")
+                vars = [codegen.getName() for i in args]
+                types = [i.toCType() for i in args]
+                codegen.append(",".join(a + " " + b for (a,b) in zip(types, vars)))
+                codegen.append("){\n")
+
+                tmp = codegen.getName()
+                codegen.append(f"{cType} {tmp};\n")
+
+                for (c, i) in enumerate(vars):
+                    codegen.append(tmp + "." + name + ".field" + str(c) + " = " + i + ";")
+                codegen.append(f"{tmp}.tag = {iter};\n")
+                codegen.append("return " + tmp + ";}\n")
             else:
-                codegen.append("var " + self.package + "_" + name + "= new "+self.package + "_" + self.normalName+"("+str(count)+");")
+                codegen.append(f"{cType} {self.package}_{name};\n")
 
-                c = 0
-                for i in names:
-                    c += 1
-                    codegen.append(self.package + "_" + name + "[" + c + "]=" + i + ";")
+                codegen.outFunction()
 
-            count += 1
+                codegen.append(f"{self.package}_{name}.tag = {iter}")
+
         codegen.outFunction()
 
     def validate(self, parser):
@@ -50,15 +93,15 @@ class Match(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.ternary = False
-        self.yielding = False
         self.next = ""
         self.ending = ""
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         tmp = codegen.getName()
         self.tmp = tmp
 
-        if not self.yielding:
+        if not type(self.type) is Types.Null:
+            print("not implemented yet")
             codegen.append("(function(){")
             codegen.append("var " + tmp + "=")
             self.nodes[0].compileToJS(codegen)
@@ -69,33 +112,12 @@ class Match(Node):
 
             codegen.append("})()")
         else:
-            codegen.count += 1
-            self.ending = str(codegen.count)
-
-            for i in self.nodes[1:]:
-                i.yielding = True
-
-            codegen.append("var " + tmp + "=")
-            self.nodes[0].compileToJS(codegen)
+            codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
+            self.nodes[0].compileToC(codegen)
             codegen.append(";")
-
-            next = self.next
-
-            for iter in range(1, len(self.nodes), 2):
-                if iter > 2:
-                    codegen.append("/*if*/")
-                    if self.next == next:
-                        codegen.count += 1
-                        self.next = codegen.count
-
-                    codegen.append("case " + str(self.next) + ":")
-                    next = self.next
-                    codegen.append("/*notif*/")
-
-                self.nodes[iter].compileToJS(codegen)
-                self.nodes[iter + 1].compileToJS(codegen)
-
-            codegen.append("case " + str(self.ending) + ":")
+            for iter in range(1, len(self.nodes)):
+                self.nodes[iter].compileToC(codegen)
+                codegen.addSemicolon(self.nodes[iter])
 
     def validate(self, parser):
         pass
@@ -134,7 +156,7 @@ class MatchCase(Node):
         Node.__init__(self, parser)
         self.yielding = False
 
-    def compileToJS(self, _codegen):
+    def compileToC(self, _codegen):
         codegen = Fake(_codegen)
 
         def loop(node,tmp):
@@ -170,24 +192,23 @@ class MatchCase(Node):
 
             elif type(node) is Tree.FuncCall:
                 count = list(node.type.const.keys()).index(node.nodes[0].name)
+                nameOfCase = node.nodes[0].name
 
-                codegen.append(tmp + "[0]==" + str(count))
+                codegen.append(tmp + ".tag==" + str(count))
 
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) != Tree.ReadVar:
                         codegen.append("&&")
-                        loop(i, tmp + "[" + str(index + 1) + "]")
+                        loop(i, f"{tmp}.{nameOfCase}.field{index}")
 
                 codegen.checking = False
 
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) is Tree.ReadVar:
-                        if not self.yielding:
-                            name = codegen.createName(i.package + "_" + i.name)
-                            codegen.append("var ")
-                        else:
-                            name = codegen.readName(i.package + "_" + i.name)
-                        codegen.append(name + "=" + tmp + "[" + str(index + 1) + "];")
+                        name = codegen.createName(i.package + "_" + i.name)
+                        typ = node.type.const[nameOfCase][index]
+                        codegen.append(f"{typ.toCType()} {name}")
+                        codegen.append(f" = {tmp}.{nameOfCase}.field{index};\n")
             elif type(node) is Tree.Tuple:
                 if len(node.nodes) == 1:
                     loop(node.nodes[0], tmp)
@@ -248,7 +269,7 @@ class MatchCase(Node):
 
             elif type(node) is Tree.ReadVar:
                 count = list(node.type.const.keys()).index(node.name)
-                codegen.append(tmp + "[0]==" + str(count))
+                codegen.append(tmp + ".tag==" + str(count))
                 codegen.checking = False
             elif type(node) is Tree.Under:
                 codegen.append("1")
