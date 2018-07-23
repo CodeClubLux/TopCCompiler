@@ -1,8 +1,8 @@
 # Top Compiler <img src="https://github.com/CodeClubLux/TopCompiler/blob/master/arrow.png" width="40" height="40"> 
 
-Transpiler from the Top programming language to javascript, written in python3.5.
+Compiler for the Top programming language to C, written in python3.6.
 
-The Top programming language, also known as Toplang is a functional, staticly-typed and procedural programming language. The language depends on hindley milner type inference to infer most types. Top is aimed at enabling reactive, reusable, reliable web apps running in the browser and the server using the same language.
+The Top programming language, also known as Toplang is a imperative programming language with functional features such as pattern matching and ADT. It is designed to be low level while having clean syntax and being aimed at rapid development. They key being able to hotswap the code just by saving the file. It implements performant features without increasing friction such as context based allocation, allowing code not caring about allocations to easily switch to efficient allocators. The default allocator being a linear allocator that just deletes all data at the end of the frame, which means most of the time freeing memory is necessary. In addition, it will have the ability to easily switch between AOS and SOA as well as have relative pointers and lightweight fibers and go like concurrency.  
 
 ## Installing Top-Lang
 1. If not already downloaded, download python3.
