@@ -24,6 +24,8 @@ def infer(parser, tree):
     def loop(n, o_iter):
         count = 0
         for i in n:
+            parser.on(i)
+
             if type(n) is type(tree):
                 o_iter += 1
 
@@ -264,14 +266,17 @@ def infer(parser, tree):
                     try:
                         i.type = struct.types[self.field]
                     except KeyError:
-                        if type(typ) is Types.Alias:
-                            method = struct.typ.hasMethod(parser, self.field) #has method should check if t can be upcasted
-                            if method:
-                                typ = struct.typ
+                        try:
+                            if type(typ) is Types.Alias:
+                                method = struct.typ.hasMethod(parser, self.field) #has method should check if t can be upcasted
+                                if method:
+                                    typ = struct.typ
+                                else:
+                                    method = struct.hasMethod(parser, self.field)
                             else:
                                 method = struct.hasMethod(parser, self.field)
-                        else:
-                            method = struct.hasMethod(parser, self.field)
+                        except EOFError as e:
+                            Error.beforeError(e, str(struct)+"."+self.field+" only operates: ")
 
                         if not method:
                             self.error("type "+str(typ) + " has no field " + self.field)
@@ -478,24 +483,6 @@ def infer(parser, tree):
                             normalTyp = xnormalTyp
 
                         normalTyp.duckType(parser, myTyp, i, myNode, iter + 1)
-
-                if i.nodes[0].name == "newAtom":
-                    i = i.nodes[0]
-                    if parser.dev and parser.hotswap and parser.atomTyp:
-                        parser.atomTyp.duckType(parser, i.owner.nodes[1].type, i.owner.nodes[1], i, 0)
-
-                        f = Tree.Field(0, i.owner.nodes[1].type, i)
-                        f.field = "arg"
-                        f.type = parser.atomTyp
-                        r = Tree.ReadVar("previousState", True, i)
-                        r.package = ""
-                        f.addNode(r)
-
-                        i.owner.nodes[1] = f
-                        f.owner = i.owner
-
-                    parser.atomTyp = i.owner.nodes[1].type
-                    parser.atoms += 1
 
                 i = c
                 i.replaced = {}

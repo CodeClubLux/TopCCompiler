@@ -88,7 +88,12 @@ class FuncSpecification:
         funcBrace = loop(self.funcBrace)
         funcBody = loop(self.funcBody)
 
-        funcStart.name = self.identifier[self.identifier.find("_")+1:] #remove package as it will be added later
+        n = self.identifier[self.identifier.find("_")+1:] #remove package as it will be added later
+
+        funcStart.name = n
+        funcBody.name = n
+        if funcBody.method:
+            funcBody.types = [Types.replaceT(i, self.replaced) for i in funcBody.types]
 
         owner = funcBody.owner
         p = Tree.PlaceHolder(funcBody)
@@ -102,8 +107,19 @@ class FuncSpecification:
 
         return (funcStart, funcBrace, funcBody)
 
-def sanitize(str):
-    return str.replace(" ", "_").replace("[", "_").replace("]", "_")
+
+import re
+
+#credit to mmj, https://stackoverflow.com/questions/6116978/how-to-replace-multiple-substrings-of-a-string
+
+
+def multiple_replace(rep_dict):
+    pattern = re.compile("|".join([re.escape(k) for k in sorted(rep_dict,key=len,reverse=True)]), flags=re.DOTALL)
+    def replace(string):
+        return pattern.sub(lambda x: rep_dict[x.group(0)], string)
+    return replace
+
+sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_"})
 
 def stringify(typ):
     if type(typ) is Types.T:
@@ -123,6 +139,7 @@ class Specifications:
         self.inImports = inImports
         self.genericFuncs = genericFuncsFromDifferentPackage
         self.delayed = {}
+        self.funcsToBeProcessed = {}
 
     def addSpecification(self, package, funcName, replaced, forceFound= False):
         fullName = package+"_"+funcName
@@ -140,6 +157,7 @@ class Specifications:
             return id
         if not id in self.funcs:
             self.funcs[id] = FuncSpecification(id, funcStart, funcBrace, funcBody, replaced)
+            self.funcsToBeProcessed[id] = self.funcs[id]
         return id
 
     def addGenericFunc(self, package, name, funcStart, funcBrace, funcBody):
@@ -150,17 +168,28 @@ class Specifications:
             (package, funcName, replaced) = self.delayed[key]
             self.addSpecification(package, funcName, replaced, forceFound=True)
 
-        for id in self.funcs:
-            specification = self.funcs[id]
+        _keys = list(self.funcsToBeProcessed.keys())
+        for id in _keys:
+            specification = self.funcsToBeProcessed[id]
+            del self.funcsToBeProcessed[id]
             (funcStart, funcBrace, funcBody) = specification.replace(parser)
             self.root.addNode(funcStart)
             self.root.addNode(funcBrace)
             self.root.addNode(funcBody)
 
-        self.funcs = {}
+def isGenericMethod(ast):
+    if ast.method:
+        t = ast.ftype.args[0]
+        if type(t) is Types.Pointer:
+            return t.pType.gen
+        else:
+            return t.gen
+
+    return False
+
 
 def isGenericFunc(ast):
-    return ast.ftype.generic or (ast.method and ast.ftype.args[0].gen)
+    return ast.ftype.generic or isGenericMethod(ast) #pass by reference
 
 def resolveGeneric(parser, root):
     specifications = Specifications(root, {}, {}) #@cleanup add support for modules
@@ -207,17 +236,23 @@ def simplifyAst(parser, ast, specifications=None):
             upperDeleteQueue.append(funcBody)
         elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar:
             readVar = ast.nodes[0]
-            if readVar.type.generic:
+            if readVar.replaced: #for method calls
+                if readVar.name.endswith("ByValue"):
+                    newName = specifications.addSpecification(readVar.package, readVar.name[:-7], {**readVar.replaced, **ast.replaced})
+                    readVar.name = newName[newName.find("_") + 1:] + "ByValue"  # remove package which will be added later
+                else:
+                    newName = specifications.addSpecification(readVar.package, readVar.name, {**readVar.replaced, **ast.replaced})
+                    readVar.name = newName[newName.find("_")+1:] #remove package which will be added later
+                    print(readVar.name)
+            elif readVar.type.generic:
                 newName = specifications.addSpecification(readVar.package, readVar.name, ast.replaced)
                 readVar.name = newName[newName.find("_") + 1:]  # remove package which will be added later
-            elif readVar.replaced: #for method calls
-                newName = specifications.addSpecification(readVar.package, readVar.name, readVar.replaced)
-                readVar.name = newName[newName.find("_")+1:] #remove package which will be added later
         elif type(ast) is Tree.Field:
             typ = ast.nodes[0].type
             struct = typ
             self = ast
             i = ast
+
             if type(typ) is Types.Alias:
                 method = struct.typ.hasMethod(parser, self.field)
                 if method:
@@ -229,7 +264,6 @@ def simplifyAst(parser, ast, specifications=None):
 
             if method:
                 self.type = method
-
                 name = typ.normalName + "_" + self.field
                 package = typ.package if not typ.package == "_global" else ""
 
@@ -237,6 +271,9 @@ def simplifyAst(parser, ast, specifications=None):
                 r.type = self.type
                 r.package = package
                 r.owner = self.owner
+
+                if not type(self.nodes[0].type) is Types.Pointer:
+                    r.name += "ByValue"
 
                 if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
                     self.owner.nodes[0] = r

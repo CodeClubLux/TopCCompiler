@@ -3,6 +3,7 @@ __author__ = 'antonellacalvia'
 from .node import *
 import AST as Tree
 from AST import Vars
+from AST import Cast
 
 class Operator(Node):
     def __init__(self, kind, parser):
@@ -29,9 +30,7 @@ class Operator(Node):
             codegen.append(")")
             return
         elif self.kind == "as":
-            codegen.append("(" + self.type.toCType() + ")")
-            self.nodes[0].compileToC(codegen)
-            return
+            return Cast.castFrom(self.nodes[0].type, self.type, self.nodes[0], codegen)
         elif self.kind == ">>":
             a = self.nodes[0].type
             b = self.nodes[1].type

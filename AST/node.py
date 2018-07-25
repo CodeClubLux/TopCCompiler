@@ -111,7 +111,7 @@ def checkUseless(self):
 def toStr(array):  # turn names list into something for llvm
     return ", ".join(array)
 
-class Node(Root):  # partially immutable data structure
+class Node(Root):
     def __init__(self, parser):
         Root.__init__(self)
         self.owner = None

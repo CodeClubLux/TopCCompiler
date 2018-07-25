@@ -1,6 +1,7 @@
 
 {
     "name": "TopRuntime",
+    "target": "osx",
     "version": 0.0,
     "link": [],
     "linkCSS": []

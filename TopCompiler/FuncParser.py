@@ -69,10 +69,12 @@ def generics(parser, fname):
     parser.nextToken()
     return generic
 
-def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = False):
+def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = False, interfaceMethod=False):
     Scope.incrScope(parser)
 
     if parser.tokens[parser.iter+2].token == ".":
+        if interfaceMethod:
+            Error.parseError(parser, "unexpected .")
         if attachTyp: Error.parseError(parser, "unexpected .")
         parser.nextToken()
         name = parser.thisToken().token
@@ -100,6 +102,9 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     g = {}
     if parser.thisToken().token != "(":
         if parser.thisToken().token == "[":
+            if interfaceMethod:
+                Error.parseError(parser, "interfaces can't have generic functions") #not sure about this one
+
             g = generics(parser, (attachTyp.normalName+"." if method else "")+name)
             if parser.thisToken().token == ".":
                 if attachTyp: Error.parseError(parser, "unexpected .")
@@ -120,7 +125,6 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
                         Error.parseError(parser, "no attachable data structure found, called " + name)
 
                 return funcHead(parser, decl, dontAdd, True, attachTyp)
-
 
         if parser.thisToken().token != "(":
             Error.parseError(parser, "expecting (")
@@ -143,11 +147,20 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     if method:
         typ = attachTyp
         self = parser.nextToken()
-        if self.type != "identifier": Error.parseError(parser, "binding name must be identifier not "+self.type)
+        if not self.token in ["&", "&mut"]:
+            Error.parseError(parser, "expecting & followed by binding name, not "+self.type)
+
+        self = parser.nextToken()
+        if not self.type == "identifier":
+            Error.parseError(parser, "expecting binding name which is an identifier, not "+str(self.type))
+
         self = self.token
 
-        selfNode = Tree.Create(self, typ, parser)
+        pType = Types.Pointer(typ, True)
+
+        selfNode = Tree.Create(self, pType, parser)
         selfNode.package = parser.package
+
         selfNode.imutable = True
 
         parser.currentNode.addNode(selfNode)
@@ -205,6 +218,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
 
     header.do = do
     header.ftype = func
+    brace.ftype = func
 
     if method:
         Scope.decrScope(parser)
@@ -236,6 +250,7 @@ def funcBody(parser, name, names, types, brace, returnType, do):
     body.returnType = returnType
     body.package = parser.package
     body.do = do
+    body.types = types
 
     brace.body = body
 

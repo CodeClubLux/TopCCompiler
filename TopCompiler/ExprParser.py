@@ -149,7 +149,7 @@ def asOperator(parser):
         op = Tree.Operator("as", parser)
         parser.nextToken()
         op.type = Types.parseType(parser)
-        operatorPop(parser, op, 1)
+        Parser.Opcode(parser, "as", lambda: operatorPop(parser, op, 1, unary=True))
     else:
         Error.parseError(parser, "unexpected as operator ")
 

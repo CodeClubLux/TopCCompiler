@@ -24,6 +24,8 @@ def save(parser):
     parser.filenames = None
     parser.files = None
     parser.lexed = None
+    parser._token = None
+    parser.__filename = None
 
     """
     for package in parser.structs:

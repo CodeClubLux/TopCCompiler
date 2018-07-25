@@ -41,9 +41,6 @@ class CodeGen:
         self.nameCount = 0
 
         self.info = Info()
-        self._level = []
-        self._pointer = 0
-
         self.gen = genNames(self.info)
 
         self.indent = 0
@@ -56,7 +53,7 @@ class CodeGen:
 
     def outFunction(self):
         self.inAFunction = False
-
+        self.info.reset([0], 0)
 
     def incrScope(self):
         self.names.append({})
@@ -107,11 +104,10 @@ class CodeGen:
         return next(self.gen)
 
     def compile(self, opt):
-        t = time()
+        #t = time()
         Types.dataTypes = []
         self.parser.package = self.filename
         PostProcessing.simplifyAst(self.parser, self.tree)
-
 
         self.toCHelp()
 
@@ -120,7 +116,7 @@ class CodeGen:
 
         cCode = f"{Types.getGeneratedDataTypes()}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
 
-        print("To C took :", time() - t)
+        #print("To C took :", time() - t)
 
 
         f = open("lib/" + self.filename + ".c", mode="w")

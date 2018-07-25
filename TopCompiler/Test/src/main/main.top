@@ -1,13 +1,29 @@
+type Animal with
+    def makeNoise() = //function types will have to be exact and not use interfaces
+
+type Duck =
+    name: string
+
+def Duck.makeNoise(&self) =
+    log self.name
+
+//-syntax doesn't work
+
+//def Duck.makeNoise(&self) =
+//    log self.name
+
+let d = Duck{ "hello world!"}
+let i = &d as Animal
+i.makeNoise!
+
 type Nullable either
     Value(int)
     Null
 
 let s = Value 10
 
-
 match s with
     Value x ->
         log x.toString !
-
     Null ->
         log "null"

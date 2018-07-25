@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 struct _global_String {
     unsigned int length;
@@ -15,11 +16,15 @@ struct _global_String _global_StringInit(unsigned int length, char* data) {
     s.capacity = 0;
     return s;
 };
-struct _global_String _global_String_toString(struct _global_String s) {
+struct _global_String _global_String_toStringByValue(struct _global_String s) {
     return s;
 }
 
-struct _global_String _global_String_op_add(struct _global_String a, struct _global_String b) {
+struct _global_String _global_String_toString(struct _global_String* s) {
+    return *s;
+}
+
+struct _global_String _global_String_op_addByValue(struct _global_String a, struct _global_String b) {
     if (a.length == 0) {
         return b;
     } else if (b.length == 0) {
@@ -34,9 +39,11 @@ struct _global_String _global_String_op_add(struct _global_String a, struct _glo
     return newString;
 };
 
+struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b) {
+    return _global_String_op_addByValue(*a, b);
+}
 
-
-struct _global_String _global_String_append(struct _global_String self, struct _global_String other) {
+struct _global_String _global_String_appendByValue(struct _global_String self, struct _global_String other) {
     if (other.length == 0) {
         return self;
     }
@@ -59,6 +66,10 @@ struct _global_String _global_String_append(struct _global_String self, struct _
     memcpy(newString.data + self.length, other.data, sizeof(char) * (other.length + 1));
     return newString;
 };
+
+struct _global_String _global_String_append(struct _global_String* self, struct _global_String other) {
+    return _global_String_appendByValue(*self, other);
+}
 
 void _reverse_string(struct _global_String * self) {
     unsigned int half_length = self->length / 2;
@@ -89,7 +100,7 @@ void _itoa(int value, char* str, int base) {
 	// Reverse string
 }
 
-struct _global_String _global_Int_toString(int number) {
+struct _global_String _global_Int_toStringByValue(int number) {
     unsigned int length = 1;
     unsigned int divisor = 10;
 
@@ -114,6 +125,10 @@ struct _global_String _global_Int_toString(int number) {
     _reverse_string(&newString);
 
     return newString;
+}
+
+struct _global_String _global_Int_toString(int* n) {
+    return _global_Int_toStringByValue(*n);
 }
 
 void _global_log(struct _global_String s) {

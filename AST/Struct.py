@@ -75,7 +75,8 @@ class Type(Node):
     def replaceT(self, structT, newName):
         self.package = structT.package
         self.normalName = newName
-        self.args = [Types.replaceT(i, structT.gen) for i in structT.types.values()]
+        self.args = list(structT.types.values())
+        #Types.replaceT(i, structT.gen) for i in structT.types.values()]
         self.fields =list(structT.types.keys())
 
     def compileToC(self, codegen):
@@ -111,10 +112,12 @@ class Type(Node):
         #codegen.append(self.package+"_"+self.normalName+"._fields=[")
         #codegen.append(",".join('"'+i+'"' for i in self.fields))
         #codegen.append("];")
-        #codegen.outFunction()
+        codegen.outFunction()
 
 
     def validate(self, parser): pass
+
+from PostProcessing import SimplifyAst
 
 class Field(Node):
     def __init__(self, offset, sType, parser):
@@ -138,16 +141,37 @@ class Field(Node):
             field = "get"+self.field[0].upper()+self.field[1:]
             codegen.append("(function get"+self.field+"("+tmp+"){return "+tmp+"."+self.field+"})")
             return
+        if not self.indexPackage:
+            def getFieldOfInterface(iType, pointer=False):
+                n = SimplifyAst.sanitize(iType.name)
+                codegen.append(f"*{n}_{self.field}(")
+                if pointer:
+                    codegen.append("*(")
+                self.nodes[0].compileToC(codegen)
+                if pointer:
+                    codegen.append(")")
+                codegen.append(")")
+
+            typ = self.nodes[0].type
+            if typ.isType(Types.Pointer) and typ.pType.isType(Types.Interface):
+                getFieldOfInterface(typ.pType, True)
+            elif typ.isType(Types.Interface):
+                getFieldOfInterface(typ, False)
+            return
 
         if not self.indexPackage:
             if self.number:
                 raise Exception("not implemented yet")
                 codegen.append("array_op_index")
             codegen.append("(")
+
         self.nodes[0].compileToC(codegen)
 
         if not self.number:
-            codegen.append(("" if self.indexPackage else ").") +self.field)
+            if self.nodes[0].type.isType(Types.Pointer):
+                codegen.append(("" if self.indexPackage else ")->") + self.field)
+            else:
+                codegen.append(("" if self.indexPackage else ").") +self.field)
         else:
             codegen.append(")")
 

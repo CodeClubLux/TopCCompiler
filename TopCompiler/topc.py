@@ -435,8 +435,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 order_of_modules = []
 
-                print("\n======== recompiling =========")
-                print("Code Analysis : " + str(time() - time1))
+                timeForCodeAnalysis = time() - time1
 
                 for i in parser.compiled:
                     parser.package = i
@@ -469,6 +468,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target)
 
+                print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))
                 print("")

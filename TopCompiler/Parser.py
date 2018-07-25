@@ -277,6 +277,13 @@ class Parser:  # all mutable state
                 Error.parseError(parser, "unmatched {")
             Error.parseError(parser, "EOF")
 
+    def on(self, ast):
+        self.__filename = ast.filename
+        self._token = ast.token
+
+    def error(self, message):
+        Error.errorAst(message, self.package, self.__filename, self._token)
+
     def lookBehind(parser):
         return parser.tokens[parser.iter - 1]
 
@@ -345,12 +352,12 @@ class Parser:  # all mutable state
     def setGlobalData(self):
         All = Types.All
 
-        Stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringer")
+        Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringer")
         self.Stringable = Stringable
 
-        Lengthable = Types.Interface(False, {"length": Types.I32()})
-        Intable = Types.Interface(False, {"toInt": Types.FuncPointer([], Types.I32() )})
-        Floatable = Types.Interface(False, {"toFloat": Types.FuncPointer([], Types.Float())})
+        Lengthable = Types.Interface(False, {}, methods={"length": Types.I32()})
+        Intable = Types.Interface(False,{}, methods= {"toInt": Types.FuncPointer([], Types.I32() )})
+        Floatable = Types.Interface(False, {}, methods={"toFloat": Types.FuncPointer([], Types.Float())})
 
         T = Types.T("T", Types.All, "Atom")
 

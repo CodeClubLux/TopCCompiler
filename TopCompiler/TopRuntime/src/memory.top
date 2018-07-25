@@ -2,4 +2,3 @@ ext _ = '#include <string.h>'
 ext memcpy: |&none, &none, size-t| -> &none = 'memcpy'
 ext c-alloc: |size-t| -> &none = 'malloc'
 ext c-free: |&none-t| -> none = 'free'
-

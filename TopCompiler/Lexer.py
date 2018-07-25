@@ -27,7 +27,14 @@ def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
 
 import re
 
-keywords = [
+def fastacess(value):
+    dictionary = {}
+    for i in value:
+        dictionary[i] = 0
+
+    return dictionary
+
+keywords = fastacess([
         'import',
         'def',
         'then', 'do', 'if', 'elif', 'else', 'while',
@@ -45,15 +52,10 @@ keywords = [
         "from",
         "decoder",
         "is",
-        "either"
-    ]
+        "either",
+        "uint"
+    ])
 
-def fastacess(value):
-    dictionary = {}
-    for i in value:
-        dictionary[i] = 0
-
-    return dictionary
 
 slSymbols = fastacess([
     "=",
@@ -127,6 +129,7 @@ class LexerState:
 
             if typ == "":
                 print("could not match", self.tok)
+                print(self.filename)
 
             self.append(Token(self.tok, typ, self.line, self.column))
 
@@ -146,7 +149,7 @@ class LexerState:
 
         return num
 
-@timeit
+#@timeit
 def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
     def notBack(iter):
         if state.iter == 0: return True
@@ -156,6 +159,7 @@ def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
     state = LexerState(s)
     state.iter = spos
     state.line = sline
+    state.filename = filename
     state.column = scolumn
 
     state.inBrace = 0
@@ -167,6 +171,15 @@ def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
         if t == '"' and notBack(state.iter) and not (state.inComment or state.inChar or state.inCommentLine):
             state.inString = not state.inString
             if state.inString:
+                state.pushTok()
+                state.tok = '"'
+            else:
+                state.tok += '"'
+                state.append(Token(state.tok, "str", state.line, state.column))
+                state.tok = ""
+        elif t == "'" and notBack(state.iter) and not (state.inComment or state.inString or state.inCommentLine):
+            state.inChar = not state.inChar
+            if state.inChar:
                 state.pushTok()
                 state.tok = '"'
             else:

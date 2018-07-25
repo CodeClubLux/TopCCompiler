@@ -65,6 +65,7 @@ class CreateAssign(Node):
 
         self = self.nodes[0]
         if self.attachTyp:
+            raise Error("got rid of this feature, legacy code")
             attachTyp = self.attachTyp
 
             if self.owner.nodes[1].type is Types.FuncPointer:

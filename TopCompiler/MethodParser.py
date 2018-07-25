@@ -23,7 +23,6 @@ def addMethod(node, parser, attachTyp, name, func, otherNode= False):
         parser.interfaces[attachTyp.package][attachTyp.normalName].addMethod(node, parser, name, func)
     else:
         node.error("Can't add method to "+str(attachTyp))
-
 def checkIfOperator(parser, attachTyp, name, func):
     operators = {
         "add": Types.FuncPointer([attachTyp, attachTyp], attachTyp),

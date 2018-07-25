@@ -119,7 +119,27 @@ class FuncBody(Node):
 
         codegen.decrScope()
 
-        codegen.append(";}")
+        codegen.append(";}\n")
+
+        if self.method:
+            codegen.append(f"static inline {self.returnType.toCType()} {self.package}_{self.name}ByValue(")
+            names = []
+            for (iter, i) in enumerate(self.types):
+                n = codegen.getName()
+                names.append(n)
+                if iter == 0:
+                    codegen.append(f"{i.pType.toCType()} {n}")
+                else:
+                    codegen.append(f"{i.toCType()} {n}")
+                if iter + 1 < len(self.types):
+                    codegen.append(",")
+
+            codegen.append("){\n")
+            if self.returnType != Types.Null():
+                codegen.append("return ")
+            codegen.append(f"{self.package}_{self.name}(&")
+            codegen.append(",".join(names))
+            codegen.append(");\n}")
 
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.outFunction()
