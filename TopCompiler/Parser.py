@@ -350,6 +350,7 @@ class Parser:  # all mutable state
         self.specifications = {}
 
     def setGlobalData(self):
+        global Stringable
         All = Types.All
 
         Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringer")
@@ -422,7 +423,7 @@ class Parser:  # all mutable state
         self.scope["_global"] = [{
             "assign": Scope.Type(True, Types.FuncPointer([assign_T, Types.Assign(assign_T)], assign_T, generic= coll.OrderedDict([("assign.T", assign_T)]))),
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
-            "log": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
+            "log": Scope.Type(True, Types.FuncPointer([Types.String(0)], Types.Null(), do= True)),
             "toString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
 
             "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),

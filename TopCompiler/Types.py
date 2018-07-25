@@ -219,7 +219,9 @@ class TmpCodegen:
         self.array.append(x)
 
 def getGeneratedDataTypes():
-    tmp = TmpCodegen(dataTypes)
+    global dataTypes
+    namedDataTypes = []
+    tmp = TmpCodegen(namedDataTypes)
 
     while True:
         keys = list(genericTypes.keys())
@@ -230,17 +232,18 @@ def getGeneratedDataTypes():
             compiledTypes[key] = 0
         if len(genericTypes) == len(keys):
             break
-
+    dataTypes += namedDataTypes
     return "".join(dataTypes)
 
 tmpTypes = {}
-def genCType(name, contents):
+def genCType(header, genContents):
     global dataTypes
-    if contents in tmpTypes:
-        return tmpTypes[contents]
+    if header in tmpTypes:
+        return tmpTypes[header]
     else:
-        dataTypes.append(f"struct {name} {{\n{contents}\n}};\n")
-        tmpTypes[contents] = name
+        dataTypes.append(f"{header} {genContents()};\n")
+        tmpTypes[header] = 0
+    return header
 
 from AST import Struct as S
 from TopCompiler import topc
@@ -443,7 +446,13 @@ class FuncPointer(Type):
         pass
 
     def toCType(self):
-        
+        def genContents():
+            return ""
+
+        name = SimplifyAst.sanitize(self.name)
+        funcP = f"typedef {self.returnType.toCType()}(*{name})(" + ",".join(i.toCType() for i in self.args) + ")"
+        genCType(funcP, genContents)
+        return name
 
     def duckType(self, parser, other, node, mynode, iter= 0):
         if not other.isType(FuncPointer):
@@ -710,6 +719,8 @@ class Interface(Type):
         self.types = obj.types
         self.generic = obj.generic
         self.normalName = obj.normalName
+        self.types = obj.types
+        self.package = obj.package
 
         return self
 
@@ -1198,8 +1209,9 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
             acc[typ] = c
 
         types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
+        methods = {i: replaceT(typ.methods[i], gen, acc, unknown) for i in typ.methods}
 
-        c.fromObj(Interface(False, types, gen, typ.normalName))
+        c.fromObj(Interface(False, types, gen, typ.normalName, methods=methods))
         return c
     elif type(typ) is Pointer:
         newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.pType.mutable)

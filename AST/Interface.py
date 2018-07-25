@@ -16,7 +16,7 @@ class Interface(Node):
         for field in iType.types:
             codegen.append(f"unsigned short field_{field};\n") #just store offset, should be long enough let's see
         for field in iType.methods:
-            codegen.append(f"{iType.methods[field].toCType()} method_{field}")
+            codegen.append(f"{iType.methods[field].toCType()} method_{field};\n")
         codegen.append("};")
 
         #helper function from struct to interface
@@ -27,9 +27,10 @@ class Interface(Node):
             codegen.append(f", short {n}")
             names.append(n)
 
-        for field in iType.types:
+        for field in iType.methods:
             n = codegen.getName()
-            codegen.append(f", {iType.types[field].toCType()} {n}")
+            codegen.append(f", {iType.methods[field].toCType()} {n}")
+            names.append(n)
         codegen.append("){ \n")
 
         tmp = codegen.getName()
@@ -50,9 +51,9 @@ class Interface(Node):
             codegen.append("\n};")
 
         #helper function to call methods
-        for field in iType.types:
-            typ = iType.types[field].toCType()
-            codegen.append(f"static inline {typ.returnTyp} {self.name}_{field}(struct {self.name}* {tmp}")
+        for field in iType.methods:
+            typ = iType.methods[field]
+            codegen.append(f"static inline {typ.returnType.toCType()} {self.name}_{field}(struct {self.name}* {tmp}")
             names = []
             for i in typ.args:
                 n = codegen.getName()
@@ -60,21 +61,21 @@ class Interface(Node):
                 codegen.append(f",{i.toCType()} {n}")
 
             codegen.append(f"){{\n")
-            codegen.append(f"return ({tmp}.method_{field}({tmp},")
+            codegen.append(f"return {tmp}->method_{field}({tmp}->data")
             for i in names:
                 codegen.append(f",{n}")
-            codegen.append(")")
+            codegen.append(");")
             codegen.append("\n};")
 
-            codegen.append(f"static inline {typ.returnTyp} {self.name}_{field}ByValue(struct {self.name} {tmp}")
+            codegen.append(f"static inline {typ.returnType.toCType()} {self.name}_{field}ByValue(struct {self.name} {tmp}")
             for (iter, i) in enumerate(typ.args):
                 codegen.append(f",{i.toCType()} {names[i]}")
             codegen.append(f"){{\n")
             data = codegen.getName()
-            codegen.append(f"return ({tmp}.method_{field}(&{tmp},")
+            codegen.append(f"return {tmp}.method_{field}({tmp}.data")
             for i in names:
                 codegen.append(f",{n}")
-            codegen.append(")")
+            codegen.append(");")
             codegen.append("\n};")
 
 

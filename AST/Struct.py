@@ -155,9 +155,10 @@ class Field(Node):
             typ = self.nodes[0].type
             if typ.isType(Types.Pointer) and typ.pType.isType(Types.Interface):
                 getFieldOfInterface(typ.pType, True)
+                return
             elif typ.isType(Types.Interface):
                 getFieldOfInterface(typ, False)
-            return
+                return
 
         if not self.indexPackage:
             if self.number:

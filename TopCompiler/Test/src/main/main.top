@@ -5,7 +5,7 @@ type Duck =
     name: string
 
 def Duck.makeNoise(&self) =
-    log self.name
+    log "{self.name}\n"
 
 //-syntax doesn't work
 
@@ -24,6 +24,6 @@ let s = Value 10
 
 match s with
     Value x ->
-        log x.toString !
+        log x.toString!
     Null ->
         log "null"

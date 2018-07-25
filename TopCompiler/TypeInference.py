@@ -358,7 +358,7 @@ def infer(parser, tree):
                         #    i.nodes[0].error("Type " + str(i.nodes[0].type) + ", missing method op_set")
 
                 elif i.kind == "concat":
-                    stringable = Types.Interface(False, {"toString": Types.FuncPointer([], Types.String(0))})
+                    stringable = Parser.Stringable #Types.Interface(False, {}, meth {"toString": Types.FuncPointer([], Types.String(0))})
                     for c in i:
                         stringable.duckType(parser,c.type,i,i,0)
                     i.type = Types.String(0)

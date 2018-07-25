@@ -44,11 +44,14 @@ class Enum(Node):
         numCases = len(self.const)
 
         tag = ""
-        sizes = ["char", "short", "int", "long"]
-        for (iter, size) in enumerate(sizes):
-            if numCases < 2 ^ ((iter+1) * 8):
-                tag = size
-                break
+        if numCases <= 2:
+            tag = "_Bool"
+        else:
+            sizes = ["char", "short", "int", "long"]
+            for (iter, size) in enumerate(sizes):
+                if numCases < 2 ^ ((iter+1) * 8):
+                    tag = size
+                    break
 
         tag += " tag;"
 

@@ -35,7 +35,7 @@ def simplifyOperator(operator, iter, parser):
         func = Tree.FuncCall(operator)
 
         if operator.kind == "concat":
-            func.addNode(Tree.ReadVar("String_op_add", True, parser))
+            func.addNode(Tree.ReadVar("String_op_addByValue", True, parser))
             func.nodes[0].package = "_global"
 
             for node in operator.nodes:
@@ -119,7 +119,7 @@ def multiple_replace(rep_dict):
         return pattern.sub(lambda x: rep_dict[x.group(0)], string)
     return replace
 
-sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_"})
+sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "_", "->": "_"})
 
 def stringify(typ):
     if type(typ) is Types.T:
@@ -267,15 +267,17 @@ def simplifyAst(parser, ast, specifications=None):
                 name = typ.normalName + "_" + self.field
                 package = typ.package if not typ.package == "_global" else ""
 
-                r = Tree.ReadVar(name, self.type, self)
-                r.type = self.type
-                r.package = package
-                r.owner = self.owner
-
-                if not type(self.nodes[0].type) is Types.Pointer:
-                    r.name += "ByValue"
-
                 if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
+                    if i.field == "name":
+                        print("name calling method")
+                    r = Tree.ReadVar(name, self.type, self)
+                    if not type(self.nodes[0].type) is Types.Pointer:
+                        r.name += "ByValue"
+
+                    r.type = self.type
+                    r.package = package
+                    r.owner = self.owner
+
                     self.owner.nodes[0] = r
                     self.owner.nodes.insert(1, self.nodes[0])
                     if type(typ) in [Types.Struct, Types.Alias, Types.Enum]:

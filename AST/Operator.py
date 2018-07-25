@@ -18,7 +18,6 @@ class Operator(Node):
         self.name = False
         self.opT = Types.Null()
 
-
     def __str__(self):
         return self.kind
 
@@ -67,7 +66,7 @@ class Operator(Node):
         if self.kind == "concat":
             codegen.append("_global_String_append_tmp")
         if self.kind == "+" and type(self.type ) is Types.String:
-            codegen.append("_global_String_op_add")
+            codegen.append("_global_String_op_addByValue")
 
         #codegen.append("(")
 
