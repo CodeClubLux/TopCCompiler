@@ -3,9 +3,11 @@
 #include <string.h>
 #include <stddef.h>
 
+#define Context struct _global_Context* context
+#define alloc main_Allocator_allocByValue
+
 struct _global_String {
     unsigned int length;
-    unsigned int capacity;
     char* data;
 };
 
@@ -13,18 +15,17 @@ struct _global_String _global_StringInit(unsigned int length, char* data) {
     struct _global_String s;
     s.data = data;
     s.length = length;
-    s.capacity = 0;
     return s;
 };
-struct _global_String _global_String_toStringByValue(struct _global_String s) {
+struct _global_String _global_String_toStringByValue(struct _global_String s, Context) {
     return s;
 }
 
-struct _global_String _global_String_toString(struct _global_String* s) {
+struct _global_String _global_String_toString(struct _global_String* s, Context) {
     return *s;
 }
 
-struct _global_String _global_String_op_addByValue(struct _global_String a, struct _global_String b) {
+struct _global_String _global_String_op_addByValue(struct _global_String a, struct _global_String b, Context) {
     if (a.length == 0) {
         return b;
     } else if (b.length == 0) {
@@ -33,45 +34,16 @@ struct _global_String _global_String_op_addByValue(struct _global_String a, stru
 
     struct _global_String newString;
     newString.length = a.length + b.length;
-    newString.data = malloc(sizeof(char) * (newString.length+1));
+    newString.data = alloc(context->allocator, sizeof(char) * (newString.length+1), context);
     memcpy(newString.data, a.data, sizeof(char) * a.length);
     memcpy(newString.data + a.length, b.data, sizeof(char) * (b.length + 1));
     return newString;
 };
 
-struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b) {
-    return _global_String_op_addByValue(*a, b);
+struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b, Context) {
+    return _global_String_op_addByValue(*a, b, context);
 }
 
-struct _global_String _global_String_appendByValue(struct _global_String self, struct _global_String other) {
-    if (other.length == 0) {
-        return self;
-    }
-
-    struct _global_String newString;
-    newString.length = self.length + other.length;
-    if (self.capacity < newString.length) {
-        if (self.capacity != 0) {
-            free(newString.data);
-        }
-
-        newString.capacity = newString.length * 2; //double capacity
-        newString.data = malloc(sizeof(char) * (newString.capacity+1));
-        memcpy(newString.data, self.data, sizeof(char) * self.length);
-    } else {
-        newString.capacity = self.capacity;
-        newString.data = self.data;
-    }
-
-    memcpy(newString.data + self.length, other.data, sizeof(char) * (other.length + 1));
-    return newString;
-};
-
-struct _global_String _global_String_append(struct _global_String* self, struct _global_String other) {
-    return _global_String_appendByValue(*self, other);
-}
-
-/*
 void _reverse_string(struct _global_String * self) {
     unsigned int half_length = self->length / 2;
     for (unsigned int i = 0; i < half_length; i++) {
@@ -80,10 +52,8 @@ void _reverse_string(struct _global_String * self) {
         self->data[self->length - 1 - i] = tmp;
     }
 }
-*/
 
-/*
-void _itoa(int value, char* str, int base) {
+void itoa(int value, char* str, int base) {
 	static char num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 	char* wstr=str;
 
@@ -102,9 +72,8 @@ void _itoa(int value, char* str, int base) {
 	*wstr='\0';
 	// Reverse string
 }
-*/
 
-struct _global_String _global_Int_toStringByValue(int number) {
+struct _global_String _global_Int_toStringByValue(int number, Context) {
     unsigned int length = 1;
     unsigned int divisor = 10;
 
@@ -122,23 +91,34 @@ struct _global_String _global_Int_toStringByValue(int number) {
         length++;
     }
 
-    struct _global_String newString = _global_StringInit(length, malloc(sizeof(char) * (length + 1)));
-    newString.capacity = newString.length;
+    char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
+
+    printf("%p\n", memory);
+
+    struct _global_String newString = _global_StringInit(length, memory);
 
     itoa(number, newString.data, 10);
-    //_reverse_string(&newString);
+    _reverse_string(&newString);
 
     return newString;
 }
 
-struct _global_String _global_Int_toString(int* n) {
-    return _global_Int_toStringByValue(*n);
+struct _global_String _global_Uint_toStringByValue(unsigned int number, Context) {
+    return _global_Int_toStringByValue(number, context);
 }
 
-void _global_log(struct _global_String s) {
+struct _global_String _global_Int_toString(int* n, Context) {
+    return _global_Int_toStringByValue(*n, context);
+}
+
+struct _global_String _global_Uint_toString(unsigned int* n, Context) {
+    return _global_Int_toStringByValue(*n, context);
+}
+
+void _global_log(struct _global_String s, Context) {
     printf("%s", s.data);
 };
 
-static inline void* _global_offsetPtr(void* ptr, unsigned int offset) {
+static inline void* _global_offsetPtr(void* ptr, unsigned int offset, Context) {
     return ((char*)ptr) + offset;
 }

@@ -45,7 +45,14 @@ class Create(Node):
         else:
             codegen.inAFunction = True
             if self.extern:
-                codegen.append(f"\n#define {self.package}_{self.name} ")
+                if self.varType.isType(Types.FuncPointer):
+                    codegen.append(f"\n#define {self.package}_{self.name}(")
+                    names = [codegen.getName() for i in range(len(self.varType.args)+1)]
+                    codegen.append(",".join(names))
+                    codegen.append(") ")
+                    self.names = names
+                else:
+                    codegen.append(f"\n#define {self.package}_{self.name} ")
             else:
                 codegen.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
             codegen.inAFunction = inFunc
@@ -126,8 +133,21 @@ class Assign(Node):
             if self.extern:
                 func = codegen.inAFunction
                 codegen.inAFunction = True
+                create = self.owner.nodes[0]
                 tmp = self.nodes[0].string.replace("\{", "{").replace("\}", "}")
-                codegen.append(tmp[1:-1])
+                tmp = tmp[1:-1]
+                if create.varType.isType(Types.FuncPointer):
+                    codegen.append(tmp)
+                    codegen.append("(")
+                    iter = 0
+                    for i in create.names[:-1]:
+                        iter += 1
+                        codegen.append(i)
+                        if iter + 1 < len(create.names):
+                            codegen.append(",")
+                    codegen.append(")")
+                else:
+                    codegen.append(tmp)
                 codegen.append("\n")
 
                 codegen.inAFunction = func

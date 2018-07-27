@@ -421,6 +421,19 @@ class Parser:  # all mutable state
 
         parseT = Types.T("T", All, "parseJson")
 
+        self.contextType = {}
+        self.contextFields = {}
+
+        tmp = self.tokens
+        self.tokens= [0]
+        self._filename = ""
+
+        self.structs["_global"] = {
+            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "_global")
+        }
+
+        self.tokens = tmp
+        self.structs["_global"]["Context"]._types = self.contextType
 
         self.scope["_global"] = [{
             "assign": Scope.Type(True, Types.FuncPointer([assign_T, Types.Assign(assign_T)], assign_T, generic= coll.OrderedDict([("assign.T", assign_T)]))),
@@ -445,7 +458,8 @@ class Parser:  # all mutable state
             "Some": Scope.Type(True, Types.FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
             "None": Scope.Type(True, Maybe),
             "dict": Scope.Type(True, dictFunc),
-            "offsetPtr": Scope.Type(True, Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32(unsigned=True)], Types.Pointer(Types.Null(), True)))
+            "offsetPtr": Scope.Type(True, Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32(unsigned=True)], Types.Pointer(Types.Null(), True))),
+            "context": Scope.Type(True, Types.Pointer(Types.Struct(True, "Context", self.contextType, "_global"), True))
         }]
 
         types = {
@@ -454,10 +468,6 @@ class Parser:  # all mutable state
             "float": Types.Float(),
             "string": Types.String(0)
         }
-
-        for name in self.structs["_global"]:
-            i = self.structs["_global"][name]
-            i.addMethod(self, "toString", Types.FuncPointer([types[name]], Types.String(0)))
 
         self.interfaces["_global"] = (
             {
@@ -469,22 +479,6 @@ class Parser:  # all mutable state
                 "Dict": topDict,
             }
         )
-
-        self.contextType = {}
-        self.contextFields = {}
-
-        tmp = self.tokens
-        self.tokens= [0]
-        self._filename = ""
-
-        self.structs["_global"] = {
-            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "_global")
-        }
-
-        self.tokens = tmp
-
-
-        self.structs["_global"]["Context"]._types = self.contextType
 
     def parse(self):
         tokens = self.tokens

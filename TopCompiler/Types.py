@@ -447,8 +447,10 @@ class FuncPointer(Type):
         def genContents():
             return ""
 
+        contextTyp = ",struct _global_Context*"
+
         name = SimplifyAst.sanitize(self.name)
-        funcP = f"typedef {self.returnType.toCType()}(*{name})(" + ",".join(i.toCType() for i in self.args) + ")"
+        funcP = f"typedef {self.returnType.toCType()}(*{name})(" + ",".join(i.toCType() for i in self.args) + contextTyp + ")"
         genCType(funcP, genContents)
         return name
 

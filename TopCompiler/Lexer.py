@@ -77,7 +77,7 @@ mLSymbols = [
 ]
 
 slOperator = fastacess(["|", "^"])
-mlOperators = [":=", ":", "<<", ">>", "<-", "->", "==", "!=", "<=", "=>", "<", ">", "-", "&", "+=", "-=", "*=", "/=", "=", "+", "*", "/", "%"]
+mlOperators = [":=", ":", "<<", ">>", "<-", "->", "==", "!=", "<=", ">=", "<", ">", "-", "&", "+=", "-=", "*=", "/=", "=", "+", "*", "/", "%"]
 
 tokenSpecification = [ #cleanup use loop instead of regex to find it out
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  # [A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*

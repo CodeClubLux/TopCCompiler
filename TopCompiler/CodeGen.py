@@ -110,20 +110,29 @@ class CodeGen:
         for field in self.contextType:
             types[field] = self.contextType[field].toCType()
 
-        self.out_parts.append(Types.getGeneratedDataTypes())
 
-        self.append("struct global_Context {\n")
+        string = []
+        string.append(Types.getGeneratedDataTypes())
+
+        string.append("struct _global_Context {\n")
         for field in self.contextType:
-            self.append(f"{types[field]} {field};")
-        self.append("};")
-        self.append(f"struct global_Context {context};")
+            string.append(f"{types[field]} {field};")
+        string.append("};")
+
+        self.append(f"struct _global_Context {context};")
 
         self.contexts.append("(&" + context + ")")
         Types.genericTypes = {}
         Types.dataTypes = []
 
+        return "".join(string)
+
     def compile(self, opt):
-        self.buildContext()
+        cCode = ""
+        if self.filename == "main":
+            cCode = self.buildContext()
+            cCode += "\n"
+            cCode += cRuntimeCode
 
         self.parser.package = self.filename
         PostProcessing.simplifyAst(self.parser, self.tree)
@@ -135,7 +144,7 @@ class CodeGen:
 
         generatedTypes = Types.getGeneratedDataTypes()
 
-        cCode = f"{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
+        cCode += f"{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
@@ -153,7 +162,7 @@ class Info:
         self.pointer = pointer
 
 def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev): #Add Option to change compiler
-    linkedCode = [cRuntimeCode]
+    linkedCode = []
 
     for c in compiled:
         f = open("lib/" + c + ".c", mode="r")
@@ -166,7 +175,7 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev): #Add
     f.write("\n".join(linkedCode))
     f.close()
 
-    subprocess.call(["gcc", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types"])
+    subprocess.call(["gcc", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types", "-Wno-visibility"])
 
 def exec(outputFile):
     try:

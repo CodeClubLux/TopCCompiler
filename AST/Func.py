@@ -78,13 +78,14 @@ class FuncBraceOpen(Node):
         return ")"
 
     def compileToC(self, codegen):
-        for i in self.nodes[:-1]:
+        for i in self.nodes:
             i.compileToC(codegen)
             codegen.append(", ")
 
-        if len(self.nodes) > 0:
-            self.nodes[-1].compileToC(codegen)
+        context = codegen.getName()
+        codegen.contexts.append(context)
 
+        codegen.append("struct global_Context* " + context)
         codegen.append('){')
 
     def validate(self, parser):
@@ -129,21 +130,23 @@ class FuncBody(Node):
                 n = codegen.getName()
                 names.append(n)
                 if iter == 0:
-                    codegen.append(f"{i.pType.toCType()} {n}")
+                    codegen.append(f"{i.pType.toCType()} {n},")
                 else:
-                    codegen.append(f"{i.toCType()} {n}")
-                if iter + 1 < len(self.types):
-                    codegen.append(",")
+                    codegen.append(f"{i.toCType()} {n},")
+            codegen.append(f"struct _global_Context* {codegen.getContext()}")
 
             codegen.append("){\n")
             if self.returnType != Types.Null():
                 codegen.append("return ")
             codegen.append(f"{self.package}_{self.name}(&")
             codegen.append(",".join(names))
+            codegen.append(f",{codegen.getContext()}")
             codegen.append(");\n}")
 
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.outFunction()
+
+        codegen.contexts.pop()
 
     def validate(self, parser):
         checkUseless(self)
@@ -197,17 +200,10 @@ class FuncCall(Node):
         self.nodes[0].compileToC(codegen)
         codegen.append("(")
 
-        for iter in range(len(self.nodes[1:-1])):
-            iter += 1
-            i = self.nodes[iter]
-            if not type(i) is Under:
-                i.compileToC(codegen)
-                if not iter+1 == len(self.nodes):
-                    codegen.append(",")
-
-        if len(self.nodes) > 1:
-            self.nodes[-1].compileToC(codegen)
-
+        for i in self.nodes[1:]:
+            i.compileToC(codegen)
+            codegen.append(",")
+        codegen.append(codegen.getContext())
         codegen.append(")")
 
 

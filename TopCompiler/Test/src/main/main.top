@@ -9,7 +9,9 @@ type TemporaryStorage =
     data: &none
     maxSize: SizeT
 
+
 def new_TemporaryStorage(maxSize: SizeT) TemporaryStorage =
+    log "calling new temporary storage\n"
     TemporaryStorage{
         occupied = 0
         data = c_alloc maxSize
@@ -17,11 +19,13 @@ def new_TemporaryStorage(maxSize: SizeT) TemporaryStorage =
     }
 
 def TemporaryStorage.alloc(&self, size: SizeT) &none =
+    log "calling allocator\n"
+
     self.data = offsetPtr self.data, size
     self.occupied += size
 
-    if self.occupied <= self.maxSize then
-        log "used more temporary memory than available"
+    if self.occupied >= self.maxSize then
+        log "used more temporary memory than available\n"
 
     self.data
 
@@ -31,8 +35,8 @@ def TemporaryStorage.resetTo(&self, occupied: SizeT) =
     self.data = offsetPtr self.data, occupied - self.occupied
     self.occupied = occupied
 
-    if self.occupied <= self.maxSize then
-        log "used more temporary memory than available"
+    if self.occupied >= self.maxSize then
+        log "used more temporary memory than available\n"
 
 def TemporaryStorage.clear(&self) =
     self.resetTo 0
@@ -58,6 +62,4 @@ mallocWrapper := MallocWrapper{}
 #addToContext allocator := &temporary_storage as Allocator
 #addToContext longterm_storage := &mallocWrapper as Allocator
 
-
-
-log "hello world!"
+log 10.toString!

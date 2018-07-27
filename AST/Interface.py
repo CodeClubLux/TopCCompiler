@@ -7,7 +7,7 @@ class Interface(Node):
 
     def compileToC(self, codegen):
         iType = self.iType
-
+        context = codegen.getName()
         methods = {}
 
         pNone = Types.Pointer(Types.Null(), True)
@@ -57,7 +57,7 @@ class Interface(Node):
         #helper function to access fields
         for field in iType.types:
             typ = iType.types[field].toCType()
-            codegen.append(f"static inline {typ}* {self.name}_{field}(struct {self.name} {tmp}){{\n")
+            codegen.append(f"static inline {typ}* {self.name}_{field}(struct {self.name} {tmp}, struct _global_Context* {context}){{\n")
             codegen.append(f"return ({typ}*)({tmp}.data + {tmp}.field_{field});")
             codegen.append("\n};")
 
@@ -70,22 +70,27 @@ class Interface(Node):
                 n = codegen.getName()
                 names.append(n)
                 codegen.append(f",{i.toCType()} {n}")
+            codegen.append(f",struct _global_Context* {context}")
 
             codegen.append(f"){{\n")
             codegen.append(f"return {tmp}->method_{field}({tmp}->data")
             for i in names:
                 codegen.append(f",{n}")
+            codegen.append(f",{context}")
             codegen.append(");")
             codegen.append("\n};")
 
             codegen.append(f"static inline {typ.returnType.toCType()} {self.name}_{field}ByValue(struct {self.name} {tmp}")
             for (iter, i) in enumerate(typ.args[1:]):
                 codegen.append(f",{i.toCType()} {names[iter]}")
+            codegen.append(f",struct _global_Context* {context}")
             codegen.append(f"){{\n")
+
             data = codegen.getName()
             codegen.append(f"return {tmp}.method_{field}({tmp}.data")
             for i in names:
                 codegen.append(f",{n}")
+            codegen.append(f",{context}")
             codegen.append(");")
             codegen.append("\n};")
 
