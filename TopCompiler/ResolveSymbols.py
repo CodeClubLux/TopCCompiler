@@ -140,18 +140,24 @@ def insert(parser, p, only= False, copy= False):
         scope = {}
         interfaces = {}
         structs = {}
+        contextFields = {}
         for package in parser.scope:
             scope[package] = [_copy.copy(parser.scope[package][0])]
             interfaces[package] = _copy.copy(parser.interfaces[package])
             structs[package] = _copy.copy(parser.structs[package])
+            contextFields[package] = _copy.copy(parser.contextFields[package])
 
         p.scope = scope
         p.interfaces = interfaces
         p.structs = structs
+        p.contextFields = contextFields
+        p.contextType = parser.contextType
     else:
         p.scope = parser.scope
         p.structs = parser.structs
         p.interfaces = parser.interfaces
+        p.contextFields = parser.contextFields
+        p.contextType = parser.contextType
 
     #p.func = parser.func
     p.allImports = parser.allImports

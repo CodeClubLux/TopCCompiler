@@ -22,6 +22,8 @@ class CodeGen:
         self.filename = filename
         self.parser = parser
 
+        self.contextType = parser.contextType
+
         self.opt = opt
 
         self.out = ""
@@ -38,6 +40,7 @@ class CodeGen:
 
         self.inAFunction = False
         self.names = [{}]
+        self.contexts = []
         self.nameCount = 0
 
         self.info = Info()
@@ -103,9 +106,25 @@ class CodeGen:
     def getName(self):
         return next(self.gen)
 
+    def getContext(self):
+        return self.contexts[-1]
+
+    def buildContext(self):
+        # build context data type
+        context = self.getName()
+        typesGeneratedByContext = ""
+
+        self.append("struct global_Context {\n")
+        for field in self.contextType:
+            print(self.contextType)
+            self.append(f"{self.contextType[field].toCType()} {field};")
+        self.out_parts.insert(0, Types.getGeneratedDataTypes())
+
+        self.contexts.append(context)
+
     def compile(self, opt):
-        #t = time()
-        Types.dataTypes = []
+        self.buildContext()
+
         self.parser.package = self.filename
         PostProcessing.simplifyAst(self.parser, self.tree)
 

@@ -125,6 +125,7 @@ def checkOperator(self, parser):
 
         ops = {
             "int": ["+", "-", "%", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
+            "uint": ["+", "-", "%", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
             "float": ["+", "-", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
             "string": ["+", "==", "!=", "<", ">"],
             "bool": ["==", "not", "and", "or", "!="]
@@ -143,6 +144,13 @@ def checkOperator(self, parser):
         ]
 
         if i.kind in ["|>", ">>", "concat", "as", ".."] : return
+
+        if i.kind == "&":
+            Vars.canMutate(self, False)
+            return
+        elif i.kind == "&mut":
+            Vars.canMutate(self, True)
+            return
 
         if not i.opT.name in ops:
             if unary:
@@ -177,11 +185,6 @@ def checkOperator(self, parser):
                 i.interface = True
                 i.name = overloads[i.kind]
                 return
-
-            if i.kind == "&":
-                Vars.canMutate(self, False)
-            elif i.kind == "&mut":
-                Vars.canMutate(self, True)
             elif type(i.opT) is Types.Pointer and i.kind == "*" and i.unary:
                 i.type = i.opT.pType
             elif type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Pointer]:

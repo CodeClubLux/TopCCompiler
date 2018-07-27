@@ -37,6 +37,9 @@ class Struct:
 
         self.methods = {}
 
+    def toCType(self):
+        Error.error("no type introspection yet")
+
     def addMethod(self, i, parser, name, method):
         package = parser.package
 

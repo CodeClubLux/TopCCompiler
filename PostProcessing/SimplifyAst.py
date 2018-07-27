@@ -2,6 +2,9 @@ import AST as Tree
 from TopCompiler import Types
 
 def callMethodCode(node, name, type, parser, unary):
+    if not node.type.isType(Types.Pointer):
+        name += "ByValue"
+
     length = 1 if unary else 2
     if type.isType(Types.Interface):
         field = Tree.Field(node)
@@ -119,7 +122,7 @@ def multiple_replace(rep_dict):
         return pattern.sub(lambda x: rep_dict[x.group(0)], string)
     return replace
 
-sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "_", "->": "_"})
+sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "pipe", "->": "_", "&": "ref"})
 
 def stringify(typ):
     if type(typ) is Types.T:
@@ -223,7 +226,8 @@ def simplifyAst(parser, ast, specifications=None):
         if not (type(ast) is Tree.FuncBody and len(ast.owner.nodes) >= 3 and isGenericFunc(ast.owner.nodes[iter-2])):
             for (it, i) in enumerate(ast.nodes):
                 simplify(i, it, deleteQueue)
-
+            if type(ast) is Tree.FuncBody:
+                ast.validate(parser)
         if type(ast) is Tree.Operator:
             simplifyOperator(ast, iter, parser)
 

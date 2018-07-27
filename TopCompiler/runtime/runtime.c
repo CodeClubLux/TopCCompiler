@@ -134,3 +134,7 @@ struct _global_String _global_Int_toString(int* n) {
 void _global_log(struct _global_String s) {
     printf("%s", s.data);
 };
+
+static inline void* global_offsetPtr(void* ptr, unsigned int offset) {
+    return ((char*)ptr) + offset;
+}

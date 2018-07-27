@@ -7,7 +7,7 @@ class Int(Node):
         Node.__init__(self, parser)
         self.number = number
 
-        self.type = Types.I32()
+        self.type = Types.I32(unsigned=True)
 
     def __str__(self):
         return "int " + self.number

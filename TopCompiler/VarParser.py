@@ -38,7 +38,10 @@ def pattern(name, names, parser, getName):
         return getName(name)
     else:
         if type(name) is Lexer.Token:
-            Error.parseError(parser, "Unexpected token "+name.token)
+            if name.type == "indent":
+                Error.parseError(parser, "Expecting identifier")
+            else:
+                Error.parseError(parser, "Unexpected token "+name.token)
         else:
             name.error("Unexpected token")
 
@@ -123,7 +126,7 @@ def assignParser(parser, name= "", init= False, package = ""):
 def createAndAssignParser(parser, imutable= True): # let i assignment
     node = parser.currentNode
 
-    parser.nextToken() #get current token to position of =
+
 
     checkIt = False
     attachTyp = False
@@ -136,33 +139,22 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         parser.nextToken()
     """
 
-    name = parser.thisToken()
+    isPattern = False
+    pattern = False
+    if imutable:
+        name = parser.nextToken()
+    else:
+        r = parser.currentNode.nodes[-1]
+        del parser.currentNode.nodes[-1]
+        name = r
+        parser.iter -= 1
+        isPattern = True
+        pattern = True
 
     typ = None
     create = False
-    pattern = False
-
-    isPattern = False
 
     t = parser.thisToken()
-    if t.token == "{":
-        Error.parseError(parser, "Expecting space")
-
-    if t.token in ["("] or t.type == "bracketOpenS":
-        isPattern = True
-        owner = parser.currentNode
-        pattern = Tree.PlaceHolder(parser)
-        parser.currentNode = pattern
-
-        Parser.callToken(parser)
-
-        paren = parser.paren
-        while parser.paren > paren:
-            parser.nextToken()
-            Parser.callToken(parser)
-
-        parser.currentNode = owner
-        name = pattern
 
     if parser.nextToken().token == ":":
         checkIt = True
@@ -174,7 +166,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
         if parser.thisToken().token != "=":
             create = True
-    elif parser.thisToken().token != "=":
+    elif imutable and parser.thisToken().token != "=":
         Error.parseError(parser, "expecting =, not "+parser.thisToken().token)
 
     if not create:
@@ -189,7 +181,9 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
             n.nodes[1].attachName = parser.package+"_"+attachTyp.normalName
             n.nodes[1].varName = name.token
         else:
-            c = name if type(name) is Tree.PlaceHolder else name.token
+            if type(name) is Tree.ReadVar:
+                name = name.token
+            c = name if not type(name) is Lexer.Token else name.token
             assignParser(parser, name= c, init= True)
 
         n.nodes[1].isGlobal = n.nodes[0].isGlobal
@@ -201,7 +195,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
 
 Parser.stmts["let"] = createAndAssignParser
-Parser.stmts["var"] = lambda parser: createAndAssignParser(parser, imutable= False)
+Parser.stmts[":="] = lambda parser: createAndAssignParser(parser, imutable= False)
 Parser.stmts["="] = assignParser
 Parser.stmts[":"] = createParser
 

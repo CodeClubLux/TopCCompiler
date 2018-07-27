@@ -97,6 +97,8 @@ from .Enum import *
 from .ParseJson import *
 from .Lambda import *
 from .Dict import *
+from .ContextParser import *
+from TopCompiler import Struct
 
 def isEnd(parser):
     #if parser.thisToken().token == "\n" and parser.stack != [] and parser.stack[-1].kind == "<-" and parser.package == "main":
@@ -128,7 +130,7 @@ def declareOnly(self, noVar=False):
     s1 = selectStmt(self, self.thisToken())
     s2 = selectStmt(self, self.lookInfront())
 
-    declaration = ["var", ":", "(", ")", ",", "\n"]
+    declaration = ["var", ":", "(", ")", ",", "\n", ":="]
     if noVar:
         declaration = declaration[1:]
 
@@ -443,6 +445,7 @@ class Parser:  # all mutable state
             "Some": Scope.Type(True, Types.FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
             "None": Scope.Type(True, Maybe),
             "dict": Scope.Type(True, dictFunc),
+            "offsetPtr": Scope.Type(True, Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32(unsigned=True)], Types.Pointer(Types.Null(), True)))
         }]
 
         types = {
@@ -467,6 +470,21 @@ class Parser:  # all mutable state
             }
         )
 
+        self.contextType = {}
+        self.contextFields = {}
+
+        tmp = self.tokens
+        self.tokens= [0]
+        self._filename = ""
+
+        self.structs["_global"] = {
+            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "_global")
+        }
+
+        self.tokens = tmp
+
+
+        self.structs["_global"]["Context"]._types = self.contextType
 
     def parse(self):
         tokens = self.tokens

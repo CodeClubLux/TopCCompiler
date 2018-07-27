@@ -10,6 +10,7 @@ from TopCompiler import MethodParser
 from TopCompiler import Struct
 from TopCompiler import Enum
 from collections import OrderedDict as ODict
+from TopCompiler import ContextParser
 
 checkTyp = []
 
@@ -38,7 +39,7 @@ def infer(parser, tree):
                     Scope.addVar(i, parser, i.name, Scope.Type(True, i.ftype))
                 Scope.incrScope(parser)
 
-            elif type(i) in [Tree.Block, Tree.While]:
+            elif type(i) in [Tree.Block, Tree.While, Tree.AddToContext]:
                 Scope.incrScope(parser)
 
             if type(i) is Tree.Lambda:
@@ -516,6 +517,10 @@ def infer(parser, tree):
                     i.type = Types.Tuple([c.type for c in i])
                 else:
                     i.type = i.nodes[0].type
+
+            elif type(i) is Tree.AddToContext:
+                ContextParser.typecheckAddToContext(parser, i)
+
             elif type(i) is Tree.Array:
                 arr = i
 
@@ -728,7 +733,7 @@ def infer(parser, tree):
                     if checkTyp[c](i):
                         break
 
-            if type(i) in [Tree.Block, Tree.While]:
+            if type(i) in [Tree.Block, Tree.While, Tree.AddToContext]:
                 Scope.decrScope(parser)
 
             count += 1

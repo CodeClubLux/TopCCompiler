@@ -25,6 +25,7 @@ def traitParser(parser, name, decl, generic):
                 Error.parseError(parser, "Method " + methodName + ", already defined")
             meth[methodName] = brace.ftype
             parser.currentNode = currentNode
+            parser.nextToken()
         else:
             Parser.declareOnly(parser, noVar=True)
 

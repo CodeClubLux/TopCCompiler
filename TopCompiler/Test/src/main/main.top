@@ -1,29 +1,62 @@
-type Animal with
-    def makeNoise() = //function types will have to be exact and not use interfaces
+type SizeT is uint //should really be unsigned long
 
-type Duck =
-    name: string
+//malloc wrapper
+ext c_alloc: |SizeT| -> &none = "malloc"
+ext c_free: |&none| -> none = "free"
 
-def Duck.makeNoise(&self) =
-    log "{self.name}\n"
+type TemporaryStorage =
+    occupied: SizeT
+    data: &none
+    maxSize: SizeT
 
-//-syntax doesn't work
+def new_TemporaryStorage(maxSize: SizeT) TemporaryStorage =
+    TemporaryStorage{
+        occupied = 0
+        data = c_alloc maxSize
+        maxSize = maxSize
+    }
 
-//def Duck.makeNoise(&self) =
-//    log self.name
+def TemporaryStorage.alloc(&self, size: SizeT) &none =
+    self.data = offsetPtr self.data, size
+    self.occupied += size
 
-let d = Duck{ "hello world!"}
-let i = &d as Animal
-i.makeNoise!
+    if self.occupied <= self.maxSize then
+        log "used more temporary memory than available"
 
-type Nullable either
-    Value(int)
-    Null
+    self.data
 
-let s = Value 10
+def TemporaryStorage.dealloc(&self) =
 
-match s with
-    Value x ->
-        log x.toString!
-    Null ->
-        log "null"
+def TemporaryStorage.resetTo(&self, occupied: SizeT) =
+    self.data = offsetPtr self.data, occupied - self.occupied
+    self.occupied = occupied
+
+    if self.occupied <= self.maxSize then
+        log "used more temporary memory than available"
+
+def TemporaryStorage.clear(&self) =
+    self.resetTo 0
+
+type Allocator with
+    def alloc(SizeT) &none
+    def dealloc(&none)
+    def clear()
+
+type MallocWrapper =
+
+def MallocWrapper.alloc(&self, size: SizeT) &none =
+    c_alloc size
+
+def MallocWrapper.dealloc(&self, pointer: &none) =
+    c_free pointer
+
+def MallocWrapper.clear(&self) =
+
+let temporary_storage = new_TemporaryStorage
+
+#addToContext allocator := temporary_storage as Allocator
+#addToContext longterm_storage := MallocWrapper as Allocator
+
+
+
+log "hello world!"

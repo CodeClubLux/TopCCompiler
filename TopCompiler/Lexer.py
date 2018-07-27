@@ -15,13 +15,14 @@ class Token:
         return str((self.token,self.type, self.line, self.column ))
 
 from TopCompiler import topc
+import os
 
 def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
     for c in stream: #@cleanup might not need to reparse if isn't modified
         if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
             lexed[c] = []
             for i in range(len(stream[c])):
-                lexed[c].append(tokenize(stream[c][i], filename[c][i]))
+                lexed[c].append(tokenize(c, filename[c][i][0], stream[c][i]))
 
     return lexed
 
@@ -53,38 +54,38 @@ keywords = fastacess([
         "decoder",
         "is",
         "either",
-        "uint"
+        "uint",
+        "#addToContext",
+        "#pushContext",
     ])
 
 
 slSymbols = fastacess([
-    "=",
     "[","]",
     "{", "}",
     "(", ")",
-    ":", ";",
+    ";",
     "$",
     "!",
-    "_",
     ".",
-    ","
+    ",",
 ]) #Single length delimeters
 
 mLSymbols = [
     "::",
-    ":=",
     "..",
-    "=>", "+=", "-=", "*=", "/=",
+    "+=", "-=", "*=", "/=",
 ]
 
-slOperator = fastacess(["+", "*", "/", "%", "|", "&", "^"])
-mlOperators = ["<<", ">>", "<-", "->", "==", "!=", "<", ">", "-"]
+slOperator = fastacess(["+", "*", "/", "%", "|", "^"])
+mlOperators = [":=", ":", "<<", ">>", "<-", "->", "==", "!=", "<=", "=>", "<", ">", "-", "&", "="]
 
 tokenSpecification = [ #cleanup use loop instead of regex to find it out
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  # [A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
         ('i32', r'\d*[\d_]*(\d+)'),
         ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f)'),
         ('hex', r'0[xX][0-9a-fA-F]+'),
+        ('symbol', r'_')
     ]
 
 compiledSpecifications = [re.compile(regex) for (group, regex) in tokenSpecification]
@@ -99,6 +100,8 @@ def timeit(func):
         return res
 
     return inner
+
+from TopCompiler import Error
 
 class LexerState:
     def __init__(self, s):
@@ -128,16 +131,13 @@ class LexerState:
                     break
 
             if typ == "":
-                print("could not match", self.tok)
-                print(self.filename)
+                Error.errorAst("Unexpected token", self.package, self.filename, Token(self.tok, "", self.line, self.column))
 
             self.append(Token(self.tok, typ, self.line, self.column))
 
         self.tok = ""
 
     def append(self, value):
-        if not type(value) is Token:
-            print("what???")
         self.tokens.append(value)
 
     def followedByNumSpace(self):
@@ -150,7 +150,7 @@ class LexerState:
         return num
 
 #@timeit
-def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
+def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
     def notBack(iter):
         if state.iter == 0: return True
         if state.s[state.iter - 1] != "\\": return True
@@ -161,6 +161,7 @@ def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
     state.line = sline
     state.filename = filename
     state.column = scolumn
+    state.package = package
 
     state.inBrace = 0
 
@@ -274,19 +275,22 @@ def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
                         lastLength = lenOfOp
 
                         if tok.endswith(operators):
-                            state.tok = tok
+                            #state.tok = tok
                             if not sameLength:
                                 state.iter += lenOfOp - 1
                             iter = state.iter
                             state.iter -= lenOfOp
-                            state.tok = state.tok[:-len(operators)]
+                            state.tok = state.tok[: len(state.tok)+1 - len(operators)]
                             state.pushTok()
                             state.iter = iter
 
-                            if state.followedByNumSpace() > 0:
-                                state.append(Token(operators, "operator", state.line, state.column))
+                            if operators in [":=", "=", ":"]:
+                                state.append(Token(operators, "symbol", state.line, state.column))
                             else:
-                                state.append(Token(operators, "unary_operator", state.line, state.column))
+                                if state.followedByNumSpace() > 0:
+                                    state.append(Token(operators, "operator", state.line, state.column))
+                                else:
+                                    state.append(Token(operators, "unary_operator", state.line, state.column))
                             completed = True
                             break
 
@@ -314,7 +318,5 @@ def tokenize(s, filename, spos= 0, sline= 0, scolumn= 0):
     state.pushTok()
     state.append(Token("\n", "symbol", state.line-1, state.column))
     state.append(Token(0, "indent", state.line, state.column))
-
-    #print(state.tokens)
 
     return state.tokens

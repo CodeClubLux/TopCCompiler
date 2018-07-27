@@ -22,7 +22,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
         if token == "i32":
             return I32()
         elif token == "uint":
-            return I32()
+            return I32(unsigned= True)
         elif token == "float":
             return Float()
         elif token == "string":
@@ -47,11 +47,9 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             return Tuple(args)
         elif token == "enum":
             return EnumT()
-        elif token == "&":
+        elif token in ["&", "&mut"]:
             mut = False
-            if parser.nextToken().token == "mut":
-                mut = True
-                parser.nextToken()
+            parser.nextToken()
             pType = parseType(parser, package, mutable, attachTyp, gen)
             return Types.Pointer(pType, mut)
         elif token == "[" or parser.thisToken().type == "whiteOpenS":
@@ -1056,6 +1054,7 @@ class I32(Type):
         return self.__methods__
 
     def duckType(self, parser, other, node, mynode, iter):
+        other = other.toRealType()
         if not type(other) is I32:
             node.error("Expecting "+self.name+", not "+str(other))
 
@@ -1081,9 +1080,9 @@ class Pointer(Type):
         if not other.isType(Pointer):
             mynode.error("Expecting pointer, not type "+other.name)
 
-        other = other.toRealType()
-        if self.mutable and not other.mutable:
-            mynode.error("Expecting an mutable pointer but instead got an immutable pointer")
+        #other = other.toRealType()
+        #if self.mutable and not other.mutable:
+        #    mynode.error("Expecting an mutable pointer but instead got an immutable pointer")
 
     def hasMethod(self, parser, field):
         return self.pType.hasMethod(parser, field)

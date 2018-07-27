@@ -132,6 +132,7 @@ def addPackage(parser, name):
         parser.func[name] = {}
         parser.structs[name] = {}
         parser.interfaces[name] = {}
+        parser.contextFields[name] = {}
 
 
 

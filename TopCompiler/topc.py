@@ -386,6 +386,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             declarations.setGlobalData()
 
+
+
             if (dev and run):
                 clearMain(declarations)
 
@@ -407,6 +409,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 parser.filenames = filenames
                 parser.compiled = declarations.compiled
                 parser.compiled["main"] = None
+                parser.contextFields["main"] = {}
                 parser.dev = dev
 
                 parsed = parser.parse()

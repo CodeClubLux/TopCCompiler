@@ -43,7 +43,10 @@ class Create(Node):
             codegen.append(self.varType.toCType() + " " + codegen.createName(self.package + "_" + self.name) + ";")
         else:
             codegen.inAFunction = True
-            codegen.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
+            if self.extern:
+                codegen.append(f"\n#define {self.package}_{self.name} ")
+            else:
+                codegen.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
             codegen.inAFunction = inFunc
 
     def validate(self, parser): pass
@@ -57,28 +60,10 @@ class CreateAssign(Node):
     def __str__(self):
         return "CreateAssign "
 
-    def compileToJS(self, codegen):
-        create = self.nodes[0]
-
-        self.nodes[0].compileToJS(codegen)
-        self.nodes[1].compileToJS(codegen)
-
-        self = self.nodes[0]
-        if self.attachTyp:
-            raise Error("got rid of this feature, legacy code")
-            attachTyp = self.attachTyp
-
-            if self.owner.nodes[1].type is Types.FuncPointer:
-                codegen.append(attachTyp.package+"_"+attachTyp.normalName+".prototype."+self.name+"=(function(")
-                names = [codegen.getName() for i in self.owner.nodes[1].nodes[0].type.args]
-                codegen.append(",".join(names)+"){return ")
-                codegen.append(self.package + "_" + self.attachTyp.name+"_"+self.name+"("+",".join(["this"]+names)+")});")
-            else:
-                codegen.append(attachTyp.package+"_"+attachTyp.normalName+".prototype."+self.name+"="+
-                attachTyp.package+"_"+attachTyp.normalName+"_"+self.name+";")
-
     def compileToC(self, codegen):
         create = self.nodes[0]
+
+        self.nodes[0].extern = self.extern
 
         self.nodes[0].compileToC(codegen)
         self.nodes[1].compileToC(codegen)
@@ -106,24 +91,15 @@ def canMutate(self, tryingToMutate):
     def checkIfImutable(node, createTyp):
         iter = 0
         for i in node:
-            if len(i.nodes) > 0:
-                return checkIfImutable(i, createTyp)
-
             isMutable = not readVar.imutable
             if type(node.nodes[0].type) is Types.Pointer:
                 createTyp = node.nodes[0].type
+            elif tryingToMutate:
+                if not isMutable:
+                    self.nodes[0].error(
+                        "Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
 
-            if tryingToMutate:
-                if type(createTyp) is Types.Pointer:
-                    isMutable = createTyp.isMutable()
-                    if not isMutable:
-                        self.nodes[0].error("Variable " + self.nodes[0].nodes[
-                            0].name + ": cannot mutate an immutable reference")
-                else:
-                    if not isMutable:
-                        self.nodes[0].error(
-                            "Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
-
+            return
     checkIfImutable(self, readVar.type)
 
 class Assign(Node):
@@ -146,14 +122,18 @@ class Assign(Node):
             else:
                 name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
 
-            codegen.append(name + " = ")
-
             if self.extern:
+                func = codegen.inAFunction
+                codegen.inAFunction = True
                 tmp = self.nodes[0].string.replace("\{", "{").replace("\}", "}")
                 codegen.append(tmp[1:-1])
+                codegen.append("\n")
+
+                codegen.inAFunction = func
             else:
+                codegen.append(name + " = ")
                 self.nodes[0].compileToC(codegen)
-            codegen.append(";")
+                codegen.append(";")
 
             if type(self.name) is Tree.PlaceHolder:
                 pattern = self.name
@@ -197,11 +177,7 @@ class Assign(Node):
             createTyp = self.createTyp
         else:
             varNode = self.nodes[0]
-            if type(varNode) is Tree.Operator and varNode.kind == "*" and varNode.opT.isType(Types.Pointer):
-                if not varNode.opT.mutable:
-                    varNode.error("Cannot mutate an immutable reference")
-            else:
-                canMutate(self.nodes[0], True)
+            canMutate(self.nodes[0], True)
 
         if len(node.nodes) == 0:
            self.error( "expecting expression")

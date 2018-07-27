@@ -89,6 +89,3 @@ class Interface(Node):
         
         
         """
-
-def castToInterface(codegen, previosType, interfaceType):
-    print("attempting to cast")

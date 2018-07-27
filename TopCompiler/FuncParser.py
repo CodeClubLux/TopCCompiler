@@ -147,7 +147,8 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     if method:
         typ = attachTyp
         self = parser.nextToken()
-        if not self.token in ["&", "&mut"]:
+        mut = False
+        if not self.token == "&":
             Error.parseError(parser, "expecting & followed by binding name, not "+self.type)
 
         self = parser.nextToken()
@@ -156,7 +157,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
 
         self = self.token
 
-        pType = Types.Pointer(typ, True)
+        pType = Types.Pointer(typ, mut)
 
         selfNode = Tree.Create(self, pType, parser)
         selfNode.package = parser.package
@@ -188,21 +189,27 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
             continue
         elif b == "(":
             Error.parseError(parser, "unexpected (")
-        Parser.declareOnly(parser)
-        parser.nextToken()
+
+        if interfaceMethod:
+            typ = Types.parseType(parser, parser.package)
+            parser.nextToken()
+            c = Tree.Create("", typ, parser)
+            parser.currentNode.addNode(c)
+        else:
+            Parser.declareOnly(parser)
+            parser.nextToken()
 
     t = parser.thisToken()
     do = False
 
-    if t.token != "=" and t.token != "do":
-        returnType = Types.parseType(parser)
+    if t.token != "=" or interfaceMethod:
+        if not (t.token == "\n" and interfaceMethod):
+            returnType = Types.parseType(parser)
 
-        t = parser.nextToken()
-        if t.token != "=" and t.token != "do":
-            Error.parseError(parser, "expecting = or do")
-
-    if t.token == "do":
-        do = True
+        if not interfaceMethod:
+            t = parser.nextToken()
+            if t.token != "=" and t.token != "do":
+                Error.parseError(parser, "expecting = or do")
 
     parser.currentNode = brace.owner
 
@@ -309,7 +316,8 @@ def funcCallBody(parser, paren):
     parser.nodeBookmark.pop()
 
 def callFunc(parser,paren):
-
+    if len(parser.currentNode.nodes) == 0:
+        Error.parseError(parser, "Expecting identifier")
     tail = Tree.FuncCall(parser)
 
     tail.addNode(parser.currentNode.nodes[-1])
