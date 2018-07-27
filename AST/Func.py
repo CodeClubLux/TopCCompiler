@@ -90,25 +90,6 @@ class FuncBraceOpen(Node):
     def validate(self, parser):
         pass
 
-def checkIfHasSideEffects(parser, funcbody):
-    def loop(ast):
-        for i in ast:
-            loop(i)
-        i = ast
-        if type(i) is Tree.ReadVar:
-            isGlobal = Scope.isGlobal(parser, i.package, i.name)
-            isMutable = Scope.isMutable(parser, i.package, i.name)
-            if isGlobal and isMutable:
-                i.error("Pure function can't use mutable global variable")
-        elif type(i) is Tree.InitArg and not i.imutable:
-            i.error("Can't use mutable arguments, in a pure function")
-        elif type(i) is Tree.FuncCall and i.nodes[0].type.do:
-            i.error("Can't call non pure function in pure function")
-
-    loop(funcbody)
-
-
-
 class FuncBody(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
@@ -189,9 +170,6 @@ class FuncBody(Node):
             returnType.duckType(parser,actReturnType,self, self.nodes[-1] if len(self.nodes) > 0 else Tree.Under(self),0)
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
-
-        if not self.do:
-            checkIfHasSideEffects(parser, self)
 
 class Context(Node):
     def __init__(self, body, parser):

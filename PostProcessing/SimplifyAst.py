@@ -122,7 +122,7 @@ def multiple_replace(rep_dict):
         return pattern.sub(lambda x: rep_dict[x.group(0)], string)
     return replace
 
-sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "pipe", "->": "_", "&": "ref"})
+sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "p", "->": "_", "&": "r", ",": "c"})
 
 def stringify(typ):
     if type(typ) is Types.T:
@@ -272,8 +272,6 @@ def simplifyAst(parser, ast, specifications=None):
                 package = typ.package if not typ.package == "_global" else ""
 
                 if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
-                    if i.field == "name":
-                        print("name calling method")
                     r = Tree.ReadVar(name, self.type, self)
                     if not type(self.nodes[0].type) is Types.Pointer:
                         r.name += "ByValue"

@@ -9,7 +9,7 @@ class AddToContext(Node):
     def compileToC(self, codegen):
         inFunc = codegen.inAFunction
 
-        codegen.outFunction()
+        codegen.inAFunction = False
 
         createAssign = self.nodes[0]
         create = createAssign.nodes[0]
@@ -17,9 +17,7 @@ class AddToContext(Node):
         codegen.append(codegen.getContext() + "->" + create.name)
         codegen.append(" = ")
 
-        codegen.inAFunction = True
-        assign.isGlobal = False
-        assign.compileToC()
+        assign.nodes[0].compileToC(codegen)
 
         codegen.inAFunction = inFunc
 

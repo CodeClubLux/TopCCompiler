@@ -162,7 +162,7 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         selfNode = Tree.Create(self, pType, parser)
         selfNode.package = parser.package
 
-        selfNode.imutable = True
+        selfNode.imutable = False
 
         parser.currentNode.addNode(selfNode)
 

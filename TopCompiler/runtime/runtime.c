@@ -71,6 +71,7 @@ struct _global_String _global_String_append(struct _global_String* self, struct 
     return _global_String_appendByValue(*self, other);
 }
 
+/*
 void _reverse_string(struct _global_String * self) {
     unsigned int half_length = self->length / 2;
     for (unsigned int i = 0; i < half_length; i++) {
@@ -79,7 +80,9 @@ void _reverse_string(struct _global_String * self) {
         self->data[self->length - 1 - i] = tmp;
     }
 }
+*/
 
+/*
 void _itoa(int value, char* str, int base) {
 	static char num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 	char* wstr=str;
@@ -99,6 +102,7 @@ void _itoa(int value, char* str, int base) {
 	*wstr='\0';
 	// Reverse string
 }
+*/
 
 struct _global_String _global_Int_toStringByValue(int number) {
     unsigned int length = 1;
@@ -121,8 +125,8 @@ struct _global_String _global_Int_toStringByValue(int number) {
     struct _global_String newString = _global_StringInit(length, malloc(sizeof(char) * (length + 1)));
     newString.capacity = newString.length;
 
-    _itoa(number, newString.data, 10);
-    _reverse_string(&newString);
+    itoa(number, newString.data, 10);
+    //_reverse_string(&newString);
 
     return newString;
 }
@@ -135,6 +139,6 @@ void _global_log(struct _global_String s) {
     printf("%s", s.data);
 };
 
-static inline void* global_offsetPtr(void* ptr, unsigned int offset) {
+static inline void* _global_offsetPtr(void* ptr, unsigned int offset) {
     return ((char*)ptr) + offset;
 }

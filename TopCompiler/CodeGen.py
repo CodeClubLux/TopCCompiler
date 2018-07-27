@@ -90,14 +90,6 @@ class CodeGen:
     def toCHelp(self, tree=None, isGlobal=True):
         if tree is None:
             tree = self.tree
-        out = ""
-
-        if self.opt > 0:
-            # variable declarations
-            self.inAFunction = True
-            for i in tree.before:
-                i.compileToC(self)
-            self.inAFunction = False
 
         for i in tree:
             i.compileToC(self)
@@ -114,13 +106,21 @@ class CodeGen:
         context = self.getName()
         typesGeneratedByContext = ""
 
+        types = {}
+        for field in self.contextType:
+            types[field] = self.contextType[field].toCType()
+
+        self.out_parts.append(Types.getGeneratedDataTypes())
+
         self.append("struct global_Context {\n")
         for field in self.contextType:
-            print(self.contextType)
-            self.append(f"{self.contextType[field].toCType()} {field};")
-        self.out_parts.insert(0, Types.getGeneratedDataTypes())
+            self.append(f"{types[field]} {field};")
+        self.append("};")
+        self.append(f"struct global_Context {context};")
 
-        self.contexts.append(context)
+        self.contexts.append("(&" + context + ")")
+        Types.genericTypes = {}
+        Types.dataTypes = []
 
     def compile(self, opt):
         self.buildContext()
@@ -133,10 +133,11 @@ class CodeGen:
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
 
-        cCode = f"{Types.getGeneratedDataTypes()}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
+        generatedTypes = Types.getGeneratedDataTypes()
+
+        cCode = f"{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
-
 
         f = open("lib/" + self.filename + ".c", mode="w")
         f.write(cCode)
@@ -151,7 +152,7 @@ class Info:
         self.array = lastArr
         self.pointer = pointer
 
-def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev):
+def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev): #Add Option to change compiler
     linkedCode = [cRuntimeCode]
 
     for c in compiled:
@@ -165,10 +166,13 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev):
     f.write("\n".join(linkedCode))
     f.close()
 
-    subprocess.call(["clang", "bin/" + outputFile + ".c", "-Wno-parentheses-equality", "-o", "bin/" + outputFile])
+    subprocess.call(["gcc", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types"])
 
 def exec(outputFile):
-    subprocess.call(["./bin/"+outputFile])
+    try:
+        subprocess.call(["./bin/"+outputFile])
+    except:
+        Error.error("running .exe failed")
 
 def genNames(info):
     import string

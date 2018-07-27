@@ -23,7 +23,6 @@ def addToContext(parser):
     Parser.callToken(parser)
 
     if not type(node.nodes[0]) is Tree.CreateAssign:
-        print(type(node.nodes[0]))
         parser.iter = iter
         parser.lineNumber = line
         Error.parseError(parser, "Expecting :=")

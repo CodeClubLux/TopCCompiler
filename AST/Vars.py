@@ -32,6 +32,7 @@ class Create(Node):
             codegen.append(self.varType.toCType() + " " + codegen.createName(self.package+"_"+self.name))
             return
 
+
         inFunc = codegen.inAFunction
 
         if self.attachTyp:

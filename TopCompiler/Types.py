@@ -266,7 +266,7 @@ def genInterface(interface):
     newName = SimplifyAst.sanitize(interface.name)
     global genericTypes
 
-    if not newName in genericTypes:
+    if not newName in genericTypes and not newName in compiledTypes:
         s = Tree.Interface(interface, newName)
         genericTypes[newName] = s
 
@@ -1065,10 +1065,11 @@ class Pointer(Type):
     def __init__(self, pType, mutable):
         self.pType = pType
         self.name = "&" + ("mut " if mutable else "") + pType.name
-        self.normalName = "&" + pType.name
+        self.normalName = pType.normalName
         self.types = pType.types
         self.methods = pType.methods
         self.mutable = mutable
+        self.package = pType.package
 
     def isMutable(self):
         return self.mutable

@@ -45,7 +45,7 @@ def pattern(name, names, parser, getName):
         else:
             name.error("Unexpected token")
 
-def createParser(parser, name= "", typ= None, check= True, imutable= True, attachTyp= False): # : creation
+def createParser(parser, name= "", typ= None, check= True, imutable= False, attachTyp= False): # : creation
     if name == "":
         name = parser.lookBehind()
 
@@ -217,18 +217,15 @@ def equalAnd(parser, operator, package= ""):
     if package == "": package = parser.package
     assignParser(parser, "", init= False, package= package)
 
-    name = parser.currentNode.nodes[-1].nodes[0].name
+    readVar =  parser.currentNode.nodes[-1].nodes[0]
+    name = readVar.name
 
     node = parser.currentNode.nodes[-1]
 
     add = Tree.Operator(operator, parser)
+    add.isUnary = False
+    add.addNode(readVar)
     add.addNode(node.nodes[1])
-
-    r = Tree.ReadVar(name, False, parser)
-    r.package = node.package
-    r.type = node.nodes[0].type
-    add.nodes.insert(0, r)
-    r.owner = add
 
     add.owner = node
 

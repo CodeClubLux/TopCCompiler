@@ -25,7 +25,7 @@ def TemporaryStorage.alloc(&self, size: SizeT) &none =
 
     self.data
 
-def TemporaryStorage.dealloc(&self) =
+def TemporaryStorage.dealloc(&self, p: &none) =
 
 def TemporaryStorage.resetTo(&self, occupied: SizeT) =
     self.data = offsetPtr self.data, occupied - self.occupied
@@ -52,10 +52,11 @@ def MallocWrapper.dealloc(&self, pointer: &none) =
 
 def MallocWrapper.clear(&self) =
 
-let temporary_storage = new_TemporaryStorage
+temporary_storage := new_TemporaryStorage 16384
+mallocWrapper := MallocWrapper{}
 
-#addToContext allocator := temporary_storage as Allocator
-#addToContext longterm_storage := MallocWrapper as Allocator
+#addToContext allocator := &temporary_storage as Allocator
+#addToContext longterm_storage := &mallocWrapper as Allocator
 
 
 
