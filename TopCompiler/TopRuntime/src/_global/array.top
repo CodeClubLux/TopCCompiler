@@ -1,0 +1,80 @@
+type Array[T] =
+    length: uint
+    capacity: uint
+    allocator: Maybe[Allocator]
+    data: Maybe[&T]
+
+def make_array() =
+    Array {
+        length = 0
+        capacity = 0
+        allocator = None
+        data = None
+    }
+
+def Array[T].op_get(&self, index: uint) T =
+    assert index < self.length, "Out of bounds"
+
+    *(indexPtr self.data.unwrap!, index)
+
+def Array[T].op_set(&self, index: uint, value: T) =
+    assert index < self.length, "Out of bounds"
+
+    p := (indexPtr self.data.unwrap!, index) cast &T
+    *p = value
+
+def Array[T].reserve(&self, newSize: uint) =
+    allocator := self.allocator.default context.allocator
+
+    self.capacity = newSize
+    self.data = match self.data with
+        Some data ->
+            assert newSize >= self.length, "Truncating array"
+
+            newData := (allocator.alloc self.capacity * sizeof T) cast &T
+            memcpy newData, data, self.length * sizeof T
+
+            allocator.dealloc data
+
+            Some newData
+
+        None ->
+            Some (allocator.alloc sizeof T) cast &T
+
+def Array[T].append(&self, value: T) =
+    newLength := self.length + 1
+    if newLength > self.capacity then
+        self.reserve self.capacity * 2
+
+    *(indexPtr self.data.unwrap!, self.length) = value
+    self.length = newLength
+
+def Array[T: Stringer].join(&self, delimiter: string) string =
+    match self.length with
+        0 -> ""
+        1 -> toString self[0]
+        _ ->
+            s := ""
+            i := 0
+            while i < self.length - 1 do
+                s += "{self[i]}{delimiter}"
+                i++
+
+            s + toString self[-1]
+
+def Array[T].iterator(&self) =
+    ArrayIterator{ self, 0, self.length }
+
+def Array[T: Stringer].toString(&self) =
+    "[ {self.join ", "} ]"
+
+type ArrayIterator[T] =
+    array: &Array[T]
+    it: uint
+    length: uint
+
+//#inline
+def ArrayIterator[T].next(&self) Maybe[T] =
+    if self.it >= self.length then None
+    else Some self.array[self.it++]
+

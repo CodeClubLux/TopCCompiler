@@ -1,0 +1,3 @@
+{
+    "files": ["memory", "string", "logger", "maybe", "array"]
+}

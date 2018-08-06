@@ -86,6 +86,8 @@ def isMutable(parser, package, name):
             if name in i:
                 return i[name].imutable
 
+    if package == "": package = "_global"
+
     for i in parser.scope[package]:
         try:
             return not i[name].imutable
@@ -97,6 +99,8 @@ def typeOfVar(node, parser, package, name):
         for i in parser.scope["_global"]:
             if name in i:
                 return i[name].type
+
+    if package == "": package = "_global"
 
     for i in parser.scope[package]:
         try:
@@ -124,6 +128,8 @@ def isGlobal(parser, package, name):
     if name in parser.imports: return True
     if package == parser.package:
         if name in parser.scope["_global"][0]: return True
+
+    if package == "": package = "_global"
     return name in parser.scope[package][0]
 
 def addPackage(parser, name):
@@ -133,6 +139,8 @@ def addPackage(parser, name):
         parser.structs[name] = {}
         parser.interfaces[name] = {}
         parser.contextFields[name] = {}
+
+
 
 
 

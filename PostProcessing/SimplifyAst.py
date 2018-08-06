@@ -84,7 +84,12 @@ class FuncSpecification:
 
             elif type(newAST) is Tree.FuncStart and Types.isGeneric(newAST.ftype):
                 newAST.ftype = Types.replaceT(newAST.ftype, self.replaced)
-
+            elif type(newAST) is Tree.Sizeof and Types.isGeneric(newAST.typ):
+                newAST.typ = Types.replaceT(newAST.ftype, self.replaced)
+            elif type(newAST) is Tree.Cast: #@cleanup add for cast which is an operator for some reason
+                newAST.f = Types.replaceT(newAST.f, self.replaced)
+                newAST.to =  Types.replaceT(newAST.to, self.replaced)
+                newAST.type = newAST.to
             return newAST
 
         funcStart = copy.copy(self.funcStart)
@@ -122,7 +127,7 @@ def multiple_replace(rep_dict):
         return pattern.sub(lambda x: rep_dict[x.group(0)], string)
     return replace
 
-sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "p", "->": "_", "&": "r", ",": "c"})
+sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", ".": "_", "|": "p", "->": "_", "&": "r", ",": "c", "{": "b", "}": "b"})
 
 def stringify(typ):
     if type(typ) is Types.T:

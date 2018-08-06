@@ -1,8 +1,9 @@
-import pickle
+import _pickle as pickle
 import os
 import pprint
+import AST as Tree
 
-def save(parser):
+def save(parser, runtimeBuild):
     #return
 
     f = open("lib/parser.p", "wb")
@@ -13,9 +14,11 @@ def save(parser):
     parser.atomTyp = 0
     parser._tokens = 0
     parser.tokens = 0
-    parser.structs["_global"] = {}
-    parser.interfaces["_global"] = {}
-    parser.scope["_global"] = []
+
+    if not runtimeBuild:
+        parser.structs["_global"] = {}
+        parser.interfaces["_global"] = {}
+        parser.scope["_global"] = []
     parser._filename = None
     parser.bracketBookmark = None
     parser.cssFiles = None
@@ -44,17 +47,54 @@ def save(parser):
     print("sizes")
     """
 
+    def removeRedundantProperties(ast):
+        ast._filename = None
+        if type(ast) in [Tree.FuncBody, Tree.FuncBraceOpen, Tree.FuncStart]:
+            ast.owner = None
+        ast.token = None
+
+        for node in ast.nodes:
+            removeRedundantProperties(node)
+
+    for package in parser.specifications:
+        for funcName in parser.specifications[package].genericFuncs:
+            (funcStart, funcBrace, funcBody) = parser.specifications[package].genericFuncs[funcName]
+            removeRedundantProperties(funcStart)
+            removeRedundantProperties(funcBrace)
+            removeRedundantProperties(funcBody)
+
     pickle.dump(parser, f)
 
 import time
 
-def load():
+def load(runtimeBuild):
     try:
         f = open("lib/parser.p", "rb")
         if os.stat("lib/parser.p").st_size == 0:
             return False
 
         res = pickle.load(f)
+
+        if runtimeBuild:
+            res.scope["_global"]= [{}]
+            res.interfaces["_global"] = {}
+            res.structs["_global"] = {}
         return res
     except FileNotFoundError:
         return False
+
+import os
+from TopCompiler import Error
+
+runtimeData = os.path.dirname(__file__) + "/TopRuntime/lib/parser.p"
+
+def loadRuntimeTypeData():
+    try:
+        f = open(runtimeData, "rb")
+        if os.stat(runtimeData).st_size == 0:
+            Error.error("Runtime type data is empty, please recompile runtime")
+
+        res = pickle.load(f)
+        return res
+    except FileNotFoundError:
+        Error.error("Could not locate runtime")

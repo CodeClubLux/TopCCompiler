@@ -72,7 +72,6 @@ exprToken = {"\n": newLine, "(": parenOpen, ")": parenClose}  # depends on parse
 stmts = {}  # for all statements
 
 from .Types import *
-
 from .Lexer import *
 import AST as Tree
 from .Error import *
@@ -99,6 +98,10 @@ from .Lambda import *
 from .Dict import *
 from .ContextParser import *
 from TopCompiler import Struct
+from TopCompiler import Sizeof
+from TopCompiler import saveParser
+
+runtimeParser = None
 
 def isEnd(parser):
     #if parser.thisToken().token == "\n" and parser.stack != [] and parser.stack[-1].kind == "<-" and parser.package == "main":
@@ -208,6 +211,7 @@ def returnBookmark(parser):
     parser.bracketBookmark.pop()
     parser.curlyBookmark.pop()
 
+
 def selectExpr(parser, token):
     addBookmark(parser)
 
@@ -245,7 +249,7 @@ def callToken(self, lam= False):
                     b = self.tokens[self.iter + 2]
                     isIndentationCall = True
 
-        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "unary_operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
+        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "unary_operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
             if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
@@ -351,12 +355,52 @@ class Parser:  # all mutable state
         self.opt = 0
         self.specifications = {}
 
-    def setGlobalData(self):
+    def setGlobalData(self, compileRuntime):
+        global runtimeParser
+        self.contextType = {}
+        self.contextFields = {}
+
+        if not compileRuntime:
+            if not runtimeParser:
+                runtimeParser = saveParser.loadRuntimeTypeData()  # data containing runtime
+
+            self.interfaces["_global"] = runtimeParser.interfaces["_global"]
+            self.structs["_global"] = runtimeParser.structs["_global"]
+            self.scope["_global"] = runtimeParser.scope["_global"]
+            self.contextFields["_global"] = runtimeParser.contextFields["_global"]
+            self.contextType = runtimeParser.contextType
+
         global Stringable
         All = Types.All
 
         Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringer")
         self.Stringable = Stringable
+
+
+        tmp = self.tokens
+        self.tokens = [0]
+        self._filename = ""
+
+        self.structs["_global"] = {
+            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "")
+        }
+
+        self.tokens = tmp
+        self.structs["_global"]["Context"]._types = self.contextType
+
+        if not "_global" in self.scope or len(self.scope["_global"]) == 0:
+            self.scope["_global"] = [{}]
+
+        self.interfaces["_global"] = {"Stringer": Stringable, "Any": All}
+        self.contextFields["_global"] = {}
+        self.scope["_global"][0]["log"] =  Scope.Type(True, Types.FuncPointer([Types.String(0)], Types.Null(), do=True))
+        self.scope["_global"][0]["offsetPtr"] = Scope.Type(True,Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32()],
+                                                      Types.Pointer(Types.Null(), True)))
+        self.scope["_global"][0]["context"] = Scope.Type(True,
+                                  Types.Pointer(Types.Struct(True, "Context", self.contextType, "_global"), True))
+        self.scope["_global"][0]["Stringer"] =  Scope.Type(True, Stringable)
+
+        """ 
 
         Lengthable = Types.Interface(False, {}, methods={"length": Types.I32()})
         Intable = Types.Interface(False,{}, methods= {"toInt": Types.FuncPointer([], Types.I32() )})
@@ -421,20 +465,6 @@ class Parser:  # all mutable state
 
         parseT = Types.T("T", All, "parseJson")
 
-        self.contextType = {}
-        self.contextFields = {}
-
-        tmp = self.tokens
-        self.tokens= [0]
-        self._filename = ""
-
-        self.structs["_global"] = {
-            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "_global")
-        }
-
-        self.tokens = tmp
-        self.structs["_global"]["Context"]._types = self.contextType
-
         self.scope["_global"] = [{
             "assign": Scope.Type(True, Types.FuncPointer([assign_T, Types.Assign(assign_T)], assign_T, generic= coll.OrderedDict([("assign.T", assign_T)]))),
             "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
@@ -458,7 +488,7 @@ class Parser:  # all mutable state
             "Some": Scope.Type(True, Types.FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
             "None": Scope.Type(True, Maybe),
             "dict": Scope.Type(True, dictFunc),
-            "offsetPtr": Scope.Type(True, Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32(unsigned=True)], Types.Pointer(Types.Null(), True))),
+            "offsetPtr": Scope.Type(True, Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32()], Types.Pointer(Types.Null(), True))),
             "context": Scope.Type(True, Types.Pointer(Types.Struct(True, "Context", self.contextType, "_global"), True))
         }]
 
@@ -479,6 +509,7 @@ class Parser:  # all mutable state
                 "Dict": topDict,
             }
         )
+        """
 
     def parse(self):
         tokens = self.tokens

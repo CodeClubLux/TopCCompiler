@@ -28,9 +28,10 @@ def resolve(self):
         self._filename = self.filenames[c]
         PackageParser.packDec(self, c, pack=True)
         if self.hotswap and ImportParser.shouldCompile(False, self.package, self):
-            self.scope[self.package] = [{}]
-            self.structs[self.package] = {}
-            self.interfaces[self.package] = {}
+            if self.package != "_global":
+                self.scope[self.package] = [{}]
+                self.structs[self.package] = {}
+                self.interfaces[self.package] = {}
 
         if not c in self.allImports:
             self.allImports[c] = []

@@ -190,7 +190,7 @@ class Context(Node):
 
 class FuncCall(Node):
     def __init__(self, parser):
-        super(FuncCall, self).__init__(parser)
+        Node.__init__(self, parser)
         self.replaced = {}
 
     def __str__(self):
@@ -208,6 +208,15 @@ class FuncCall(Node):
 
 
     def validate(self, parser): pass
+
+class Return(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def compileToC(self, codegen):
+        codegen.append("return ")
+        self.nodes[0].compileToC(codegen)
+        codegen.append(";")
 
 class Func(Node):
     def __init__(self, parser):

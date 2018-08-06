@@ -129,3 +129,18 @@ class Decoder(Node):
                 codegen.append("function(arg) { return arg }")
 
         loop(typ)
+
+class Sizeof(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def compileToC(self, codegen):
+        codegen.append("sizeof(" + self.typ.toCType() + ")")
+
+class CastToType(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def compileToC(self, codegen):
+        codegen.append("(" + self.type.toCType() + ")")
+        self.nodes[0].compileToC()

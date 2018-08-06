@@ -73,6 +73,19 @@ class CreateAssign(Node):
 
         self.nodes[0].extern = self.extern
 
+        if self.extern and self.nodes[0].name == "_":
+            tmp = self.nodes[1].nodes[0].string.replace("\{", "{").replace("\}", "}")
+            tmp = tmp[1:-1]
+            func = codegen.inAFunction
+            codegen.inFunction()
+            codegen.append(tmp)
+            codegen.inAFunction = func
+            return
+        elif self.nodes[0].name == "_":
+            self.nodes[1].nodes[0].compileToC(codegen)
+            return
+
+
         self.nodes[0].compileToC(codegen)
         self.nodes[1].compileToC(codegen)
 
@@ -84,15 +97,19 @@ class CreateAssign(Node):
 
 def canMutate(self, tryingToMutate):
     def getReadVar(node):
-        for i in node:
-            if type(i) is Tree.ReadVar:
-                return i
+        i = node
+        if type(i) is Tree.FuncCall:
+            return
 
-            if not type(i) in [Tree.Field, Tree.ArrRead, Tree.ReadVar]:
-                i.error("expecting variable")
+        if not type(i) in [Tree.Field, Tree.ArrRead, Tree.ReadVar, Tree.Tuple] and not (type(i) is Tree.Operator and i.kind in ["*", "&"]):
+            print("expecting")
+            print(type(i))
+            i.error("expecting variable")
 
-            if len(i.nodes) > 0:
-                return getReadVar(i)
+        if type(node) is Tree.ReadVar:
+            return node
+        for i in node.nodes:
+            return getReadVar(i)
 
     readVar = getReadVar(self)
 
@@ -108,7 +125,9 @@ def canMutate(self, tryingToMutate):
                         "Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
 
             return
-    checkIfImutable(self, readVar.type)
+
+    if readVar:
+        checkIfImutable(self, readVar.type)
 
 class Assign(Node):
     def __init__(self, name, parser):
@@ -215,6 +234,12 @@ class Assign(Node):
         if typ == Types.Null():
             self.nodes[0].error("cannot assign nothing")
 
+def getVar(self, codegen):
+    return codegen.readName(
+            self.package + "_" + self.name) if not self.isGlobal else \
+            (self.package+"_"+self.name if self.package != "" else "_global_" + self.name
+        )
+
 class ReadVar(Node):
     def __init__(self, name, isGlobal, parser):
         Node.__init__(self, parser)
@@ -226,10 +251,13 @@ class ReadVar(Node):
         return "read " + self.name
 
     def compileToC(self, codegen):
-        codegen.append(codegen.readName(
-            self.package + "_" + self.name) if not self.isGlobal else
-            (self.package+"_"+self.name if self.package != "" else "_global_" + self.name
-        ))
+        if type(self.type) is Types.Enum:
+            self.type.toCType()
+
+        if self.package == "": self.package = "_global"
+        if self.name == "context" and self.package in ["_global"]:
+            return codegen.append(codegen.getContext())
+        codegen.append(getVar(self, codegen))
 
     def validate(self, parser):
         pass

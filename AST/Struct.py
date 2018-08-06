@@ -50,6 +50,7 @@ class InitStruct(Node):
                 if i != len(self.nodes)-1:
                     codegen.append(",")
             codegen.append(")")
+            self.type.toCType()
         else:
             self.compileAssign(codegen)
 
@@ -75,6 +76,7 @@ class Type(Node):
     def replaceT(self, structT, newName):
         self.package = structT.package
         self.normalName = newName
+
         self.args = list(structT.types.values())
         #Types.replaceT(i, structT.gen) for i in structT.types.values()]
         self.fields =list(structT.types.keys())
@@ -82,12 +84,17 @@ class Type(Node):
     def compileToC(self, codegen):
         if self.generics:
             return
+
         codegen.inFunction()
         #print("compiling struct " + self.package + "." + self.name)
         names = self.fields
         codegen.append("struct "+self.package+"_"+self.normalName+" {")
         for i in range(len(self.fields)):
-            codegen.append(self.args[i].toCType() + " " + self.fields[i]+";")
+            if self.name == "Array":
+                typ = self.args[i].toCType()
+            else:
+                typ = self.args[i].toCType()
+            codegen.append(typ + " " + self.fields[i]+";")
         codegen.append("};")
 
         codegen.append("static inline struct " + self.package+"_"+self.normalName+" " + self.package+"_"+self.normalName + "Init(")

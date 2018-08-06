@@ -1,0 +1,40 @@
+/*
+type StringBuffer is []char
+
+def StringBuffer.make(maxLength: uint) StringBuffer =
+    array := [maxLength: _]
+    array.allocator = Some context.temporary_storage
+    array.resize size
+
+    StringBuffer{ array }
+
+def StringBuffer.append(&self, s: string) =
+    self.length + s.toArray!
+
+def StringBuffer.copy(&self) string =
+
+
+type String =
+    data: &char
+    length: uint
+
+def String.toString(&self) String =
+    *self
+
+def String.op_add(&self, other: String) String =
+    if self.length == 0 then
+        other
+    elif other.length == 0 then
+        *self
+    else
+        newLength := self.length + other.length
+        newData := context.allocator.alloc sizeof char * (newLength + 1) //keep null-terminated
+
+        memcpy newData, self.data, sizeof char * a.length
+        memcpy (indexPtr newData, a.length), other.data, sizeof char * (b.length + 1)
+
+        String{ newData, newLength }
+
+def String.multiply(&self, times: uint) String =
+    buffer :=
+*/

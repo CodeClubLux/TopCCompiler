@@ -1,0 +1,70 @@
+type SizeT is uint
+
+ext _ = '#include <string.h>'
+ext memcpy: |&none, &none, SizeT| -> none = 'memcpy'
+ext c_alloc: |SizeT| -> &none = 'malloc'
+ext c_free: |&none| -> none = 'free'
+
+type TemporaryStorage =
+    occupied: SizeT
+    highest: SizeT
+    data: &none
+    maxSize: SizeT
+
+def new_TemporaryStorage(maxSize: SizeT) TemporaryStorage =
+    TemporaryStorage{
+        occupied = 0
+        highest = 0
+        data = c_alloc maxSize
+        maxSize = maxSize
+    }
+
+def TemporaryStorage.alloc(&self, size: SizeT) &none =
+    self.occupied = size
+
+    if self.occupied > self.highest then
+        self.highest = self.occupied
+
+    if self.occupied >= self.maxSize then
+        log "used more temporary memory than available"
+
+    offsetPtr self.data, self.occupied
+
+def TemporaryStorage.dealloc(&self, p: &none) =
+
+def TemporaryStorage.resetTo(&self, occupied: SizeT) =
+    self.occupied = occupied
+
+    if self.occupied >= self.maxSize then
+        log "used more temporary memory than available"
+
+def TemporaryStorage.clear(&self) =
+    self.resetTo 0
+
+type Allocator with
+    def alloc(SizeT) &none
+    def dealloc(&none)
+    def clear()
+
+type MallocWrapper =
+
+def MallocWrapper.alloc(&self, size: SizeT) &none =
+    c_alloc size
+
+def MallocWrapper.dealloc(&self, pointer: &none) =
+    c_free pointer
+
+def MallocWrapper.clear(&self) =
+
+temporary_storage := new_TemporaryStorage 16384
+mallocWrapper := MallocWrapper{}
+
+#addToContext allocator := &temporary_storage as Allocator
+#addToContext longterm_storage := &mallocWrapper as Allocator
+
+def indexPtr[T](pType: &T, offset: int) &T =
+    (offsetPtr pType, offset * sizeof T) cast &T
+
+def alloc[T]() &T =
+    (context.allocator.alloc sizeof T) cast &T
+

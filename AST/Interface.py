@@ -6,6 +6,8 @@ class Interface(Node):
         self.name = name
 
     def compileToC(self, codegen):
+        codegen.inFunction()
+
         iType = self.iType
         context = codegen.getName()
         methods = {}
@@ -18,7 +20,7 @@ class Interface(Node):
             methods[methName] = f
 
         #interface as c struct
-        codegen.append("struct " + self.name + "{\n")
+        codegen.append("struct " + self.name + " {\n")
         codegen.append("void* type; /* is always null, for now */ \n") #@cleanup change to real type once type introspection is possible
         codegen.append("void* data;\n")
 
@@ -93,6 +95,8 @@ class Interface(Node):
             codegen.append(f",{context}")
             codegen.append(");")
             codegen.append("\n};")
+
+        codegen.outFunction()
 
 
         """

@@ -1,6 +1,7 @@
 #Jonathan Blow style allocators passed through context
 
 from .node import *
+from AST import Vars
 
 class AddToContext(Node):
     def __init__(self, parser):
@@ -26,8 +27,10 @@ class PushContext(Node):
         Node.__init__(self, parser)
 
     def compileToC(self, codegen):
-        codegen.contexts.append(self.nodes[0].name)
+        codegen.contexts.append("&" + Vars.getVar(self.nodes[0], codegen))
+
         for i in self.nodes[1:]:
             i.compileToC(codegen)
+            codegen.addSemicolon(i)
 
         codegen.contexts.pop()

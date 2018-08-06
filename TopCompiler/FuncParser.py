@@ -40,7 +40,7 @@ def generics(parser, fname):
     while parser.thisToken().token != "]":
         name = parser.nextToken().token
 
-        typ = Types.T(name, Types.All, parser.package+"."+fname)
+        typ = Types.T(name, Types.All, parser.package+"."+fname if parser.package != "_global" else fname)
         if parser.thisToken().type != "identifier":
             Error.parseError(parser, "type name must be an identifier")
 
@@ -54,7 +54,7 @@ def generics(parser, fname):
             if not type(interface) in [Types.Interface, Types.EnumT, Types.Assign]:
                 Error.parseError(parser, "Type variable "+name+", must either be a interface or enumT, not "+str(interface))
 
-            typ = Types.T(name, interface, parser.package+"."+fname)
+            typ = Types.T(name, interface, parser.package+"."+fname if parser.package != "_global" else fname)
 
             if parser.lookInfront().token != "]":
                 parser.nextToken()
@@ -368,7 +368,28 @@ def under(parser):
 def comma(parser):
     parser.fired = True
 
+def returnF(parser):
+    previous = parser.currentNode
+
+    if type(previous) is Tree.Root:
+        Error.parseError(parser, "Can only return from function")
+
+    returnAST = Tree.Return(parser)
+    previous.addNode(returnAST)
+
+    parser.currentNode = returnAST
+
+    while not Parser.isEnd(parser):
+        parser.nextToken()
+        Parser.callToken(parser)
+
+    if len(returnAST.nodes) > 1:
+        Error.parseError(parser, "Expecting single expression not "+str(len(returnAST.nodes)))
+
+    parser.currentNode = previous
+
 Parser.stmts["def"] = func
+Parser.stmts["return"] = returnF
 #Parser.exprToken["none"] = lambda parser: Error.parseError(parser, "unexpected type none")
 Parser.exprToken[","] = comma
 Parser.exprToken["_"] = under

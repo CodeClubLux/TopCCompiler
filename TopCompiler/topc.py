@@ -212,7 +212,7 @@ filenames_sources = {}
 
 global_parser = 0
 
-def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswap= False, cache= False, debug= False):
+def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswap= False, cache= False, debug= False, compileRuntime=False):
     global modified_
     modified_ = {}
     time1 = time()
@@ -248,7 +248,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 Error.error("unknown argument '" + i + "'.")
 
         if not _hotswap and opt == 0:
-            cache = saveParser.load()
+            cache = saveParser.load(compileRuntime)
 
         try:
             port = open("src/port.json")
@@ -384,9 +384,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.output_target = target
             declarations.didCompile = False
 
-            declarations.setGlobalData()
-
-
+            declarations.setGlobalData(compileRuntime)
 
             if (dev and run):
                 clearMain(declarations)
@@ -445,6 +443,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     if parser.compiled[i][0]:
                         SimplifyAst.resolveGeneric(parser, parser.compiled[i][1][0])
 
+                contextCCode = CodeGen.buildContext(parser.contextType)
+
                 for i in parser.compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])
 
@@ -467,10 +467,11 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 compiled = order_of_modules #parser.compiled
 
                 if not dev and not _raise:
-                    saveParser.save(parser)
+                    saveParser.save(parser, compileRuntime)
 
-                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target)
+                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 
+                print("Lexed and parsed : " + str(Lexer.linesOfCode))
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))

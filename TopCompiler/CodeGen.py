@@ -101,38 +101,8 @@ class CodeGen:
     def getContext(self):
         return self.contexts[-1]
 
-    def buildContext(self):
-        # build context data type
-        context = self.getName()
-        typesGeneratedByContext = ""
-
-        types = {}
-        for field in self.contextType:
-            types[field] = self.contextType[field].toCType()
-
-
-        string = []
-        string.append(Types.getGeneratedDataTypes())
-
-        string.append("struct _global_Context {\n")
-        for field in self.contextType:
-            string.append(f"{types[field]} {field};")
-        string.append("};")
-
-        self.append(f"struct _global_Context {context};")
-
-        self.contexts.append("(&" + context + ")")
-        Types.genericTypes = {}
-        Types.dataTypes = []
-
-        return "".join(string)
-
     def compile(self, opt):
-        cCode = ""
-        if self.filename == "main":
-            cCode = self.buildContext()
-            cCode += "\n"
-            cCode += cRuntimeCode
+        self.contexts = ["(&_global_context)"]
 
         self.parser.package = self.filename
         PostProcessing.simplifyAst(self.parser, self.tree)
@@ -142,9 +112,9 @@ class CodeGen:
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
 
-        generatedTypes = Types.getGeneratedDataTypes()
+        (generatedTypes, mainC) = Types.getGeneratedDataTypes()
 
-        cCode += f"{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
+        cCode = f"{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
@@ -161,21 +131,55 @@ class Info:
         self.array = lastArr
         self.pointer = pointer
 
-def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev): #Add Option to change compiler
-    linkedCode = []
+def buildContext(contextType):
+    # build context data type
+    context = "_global_context"
+    typesGeneratedByContext = ""
+
+    types = {}
+    for field in contextType:
+        types[field] = contextType[field].toCType()
+
+    string = []
+    (typesGen, mainC) = Types.getGeneratedDataTypes()
+
+    Types.genericTypes = {}
+    Types.dataTypes = []
+
+    string.append(typesGen)
+
+    string.append("struct _global_Context {\n")
+    for field in contextType:
+        string.append(f"{types[field]} {field};")
+    string.append("};\n")
+
+    string.append(f"struct _global_Context {context};")
+
+    return ("".join(string), mainC)
+
+import os
+
+def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev, context, runtimeBuild): #Add Option to change compiler
+    topRuntime = ""
+    (context, mainC) = context
+    if not runtimeBuild:
+        topRuntime = open(os.path.dirname(__file__) + "/TopRuntime/lib/_global.c")
+        topRuntime = topRuntime.read()
+
+    linkedCode = [context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
 
     for c in compiled:
         f = open("lib/" + c + ".c", mode="r")
         linkedCode.append(f.read())
         f.close()
 
-    linkedCode.append("int main() { mainInit(); return 0; };")
+    linkedCode.append(f"int main() {{ \n {mainC}; \n mainInit(); return 0; }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))
     f.close()
 
-    subprocess.call(["gcc", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types", "-Wno-visibility"])
+    subprocess.call(["clang", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types", "-Wno-visibility"])
 
 def exec(outputFile):
     try:

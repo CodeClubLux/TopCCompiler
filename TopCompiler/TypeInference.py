@@ -14,8 +14,6 @@ from TopCompiler import ContextParser
 
 checkTyp = []
 
-len = lambda i: i.__len__()
-
 def infer(parser, tree):
     varTypes = {}
     sc = parser.sc
@@ -58,70 +56,7 @@ def infer(parser, tree):
                 if type(i) is Tree.FuncBody and len(parser.func) > 0:
                     parser.func.pop()
 
-            if type(i) is Tree.Lambda:
-
-                if not i.returnTyp:
-                    if len(i.nodes) > 0:
-                        returnTyp = i.nodes[1].nodes[-1].type
-                    else:
-                        returnTyp = Types.Null()
-                else:
-                    returnTyp = i.returnTyp
-
-                args = []
-                gen = ODict()
-                for c in i.args:
-                    if type(c) is Types.Unknown:
-                        if not c.typ:
-                            c.compareType(Types.newT(parser))
-
-                        args.append(c.typ)
-                        genInC = Types.remainingT(c.typ)
-                        for d in genInC:
-                            gen[d] = genInC[d]
-                    else:
-                        args.append(c)
-
-                if type(returnTyp) is Types.Unknown and not returnTyp.typ:
-                    i.error("Cannot infer return type of this function")
-
-
-                replaces = {}
-
-                #should only replace if only used once
-
-                #"""
-                inReturn = Types.remainingT(returnTyp)
-                processGen = ODict()
-                uselessGen = ODict()
-
-                for c in gen:
-                    if c in inReturn:
-                        processGen[c] = gen[c]
-                    else:
-                        uselessGen[c] = gen[c]
-
-                replaces = {}
-                for c in uselessGen:
-                    replaces[c] = Types.replaceT(uselessGen[c].type, {}, unknown=True)
-
-                gen = processGen
-                #"""
-
-                i.args = []
-                i.returnTyp = 0
-                i.type = Types.replaceT(Types.FuncPointer(args, returnTyp, do=i.do, generic=gen), replaces, unknown = True)
-                i.nodes[1].returnType = i.type.returnType
-
-                i.nodes[1].do = i.do
-
-
-                #print(gen)
-                #print(i.type)
-
-                Types.state.count = count
-
-            elif type(i) is Tree.Match:
+            if type(i) is Tree.Match:
                 typ = i.nodes[0].type
                 first = False
                 for c in range(1,len(i.nodes),2):
@@ -157,6 +92,8 @@ def infer(parser, tree):
                 Enum.missingPattern(typ, i)
                 i.type = first if first else Types.Null()
 
+            elif type(i) is Tree.PushContext:
+                ContextParser.typecheckPushContext(parser, i)
             elif type(i) is Tree.CreateAssign:
                 if type(i.nodes[0].name) is Tree.PlaceHolder:
                     p = i.nodes[0].name.nodes[0]
@@ -329,6 +266,7 @@ def infer(parser, tree):
 
                         self.owner.nodes[count] = f
                 elif i.kind == "as":
+                    #does this create a cast node
                     i.type.duckType(parser, i.nodes[0].type, i, i.nodes[0], 0)
                 elif i.kind == "<-":
                     if i.unary:
@@ -350,6 +288,7 @@ def infer(parser, tree):
 
                         if meth:
                             meth.args[0].duckType(parser, i.nodes[1].type, i.nodes[1], i, 1)
+                            Tree.insertCast(i.nodes[1], fromT= i.nodes[1].type, toT=meth.args[0])
 
                             i.opT = i.nodes[0].type
                         else:
@@ -360,7 +299,7 @@ def infer(parser, tree):
 
                 elif i.kind == "concat":
                     stringable = Parser.Stringable #Types.Interface(False, {}, meth {"toString": Types.FuncPointer([], Types.String(0))})
-                    for c in i:
+                    for (it, c) in enumerate(i):
                         stringable.duckType(parser,c.type,i,i,0)
                     i.type = Types.String(0)
                     i.partial = False
@@ -407,13 +346,15 @@ def infer(parser, tree):
                                     startType.duckType(parser, c.type, c, i, 0)
                             else:
                                 startType = c.type
+
+                        for (_iter, c) in enumerate(i.nodes):
+                            Tree.insertCast(c, c.type, startType, _iter)
+
                         i.partial = partial
                         typ = startType
                         if i.kind in ["==", "!=", "not", "and", "or", "<", ">", "<=", ">="]:
                             typ = Types.Bool()
                         elif i.kind == "&":
-                            typ = Types.Pointer(startType, False)
-                        elif i.kind == "&mut":
                             typ = Types.Pointer(startType, True)
 
                         if i.curry or i.partial:
@@ -484,6 +425,7 @@ def infer(parser, tree):
                             normalTyp = xnormalTyp
 
                         normalTyp.duckType(parser, myTyp, i, myNode, iter + 1)
+                        Tree.insertCast(i.nodes[iter+1], myTyp, normalTyp, iter+1)
 
                 i = c
                 i.replaced = {}
@@ -509,6 +451,7 @@ def infer(parser, tree):
                         myNode = (i.nodes[0] if i.init else i.nodes[1])
 
                         normalTyp.duckType(parser, myNode.type, normalNode, myNode, (0 if i.init else 1))
+                        Tree.insertCast(myNode, myNode.type, normalTyp, (0 if i.init else 1))
 
             elif type(i) is Tree.Tuple:
                 if len(i.nodes) == 0:
@@ -526,12 +469,12 @@ def infer(parser, tree):
 
                 if len(i.nodes) > 0:
                     if arr.init or arr.range:
-                        if arr.nodes[0].type != Types.I32():
-                            arr.nodes[0].error("expecting integer for range start, not "+str(arr.nodes[1].type))
+                        if arr.nodes[0].type != Types.I32(unsigned=True):
+                            arr.nodes[0].error("expecting unsigned integer for range start, not "+str(arr.nodes[1].type))
 
                         if arr.range:
-                            if arr.nodes[1].type != Types.I32():
-                                arr.nodes[1].error("expecting integer for range end, not "+str(arr.nodes[1].type))
+                            if arr.nodes[1].type != Types.I32(unsigned=True):
+                                arr.nodes[1].error("expecting unsigned integer for range end, not "+str(arr.nodes[1].type))
                             typ = Types.I32()
                         else:
                             if len(arr.nodes) > 1:
@@ -571,6 +514,14 @@ def infer(parser, tree):
 
                                 if err:
                                     Error.beforeError(err, "Element type in array: ")
+
+                            count += 1
+
+                        count = 0
+                        for c in arr.nodes[1:]:
+                            err = False
+                            if not type(c) is Tree.Operator and c.kind == "..":
+                                Tree.insertCast(c, c.type, typ, count)
 
                             count += 1
 
@@ -638,13 +589,12 @@ def infer(parser, tree):
                             except KeyError:
                                 i.nodes[iter].nodes[0].error("type "+str(s)+" does not have the field "+ xname)
 
+                        iter = 1
+
                     normalNode = i
 
                     if not unary:
                         xnormalTyp = normalTyp
-
-                        if i.package == "main":
-                            dcx = 90
 
                         isGen = Types.isGeneric(normalTyp)
                         myIsGen = Types.isGeneric(myNode.type)
@@ -660,6 +610,7 @@ def infer(parser, tree):
                                 myTyp = myNode.type
 
                         normalTyp.duckType(parser, myTyp, i, myNode, iter)
+                        Tree.insertCast(myNode, myNode.type, normalTyp, iter)
 
                         #resolveGen(xnormalTyp, myNode.type, gen, parser, myNode, i)
 
@@ -677,27 +628,35 @@ def infer(parser, tree):
                         i.type = typ
                 else:
                     package = parser.structs[i.package][name].package
+                    for name in s.generic:
+                        if not name in gen:
+                            gen[name] = s.generic[name]
+                            print("added " + name)
+
                     i.type = Types.Struct(i.mutable, name, s._types, package, gen)
-                i.replaced = gen
+                i.replaced = i.type.remainingGen
             elif type(i) is Tree.ArrRead:
                 if len(i.nodes) == 2:
                     typ = i.nodes[0].type
                     try:
-                        func = typ.types["get"]
+                        func = typ.types["op_get"]
                     except KeyError:
-                        func = typ.getMethod(parser, "get")
+                        func = typ.hasMethod(parser, "op_get")
                         if not func:
-                            i.nodes[0].error("Type "+str(i.nodes[0].type)+" is not indexable, missing method get")
+                            i.nodes[0].error("Type "+str(i.nodes[0].type)+" is not indexable, missing method op_get")
+                        else:
+                            func = Types.FuncPointer(func.args[1:], func.returnType, generic=func.generic, do=func.do)
 
                     arrRead = i
                     if len(arrRead.nodes) != 2:
                         i.nodes[1].error("expecting single index")
 
                     if len(func.args) != 1:
-                        i.nodes[0].error(str(typ) + " is not indexable, method get should take 1 paramter, not "+len(func.args))
+                        i.nodes[0].error(str(typ) + " is not indexable, method get should take 1 paramter, not "+str(len(func.args)))
 
                     try:
                         func.args[0].duckType(parser, i.nodes[1].type, i.nodes[1], i, 0)
+                        Tree.insertCast(i.nodes[1], i.nodes[0].type, func.args[0], 1)
                     except EOFError as e:
                         Error.beforeError(e, "Index : ")
 
@@ -752,6 +711,7 @@ def validate(parser, tree):
         tree.validate(parser)
 
 def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
+    """
     if type(normalTyp) is Types.T and not (normalTyp.owner in parser.func) and normalTyp.name != shouldBeTyp.name:
         if normalTyp.normalName in generics:
             normalTyp = generics[normalTyp.normalName]
@@ -766,7 +726,7 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
 
             normalTyp.duckType(parser, newTyp, myNode, other, 0)
             normalTyp = newTyp
-
+    """
     if type(shouldBeTyp) is Types.T:
         if shouldBeTyp.normalName in generics:
             tmp = generics[shouldBeTyp.normalName]
@@ -831,7 +791,12 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
                 Error.beforeError(e, "Tuple element #" + str(key) + ": ")
 
         return Types.Tuple(arr)
+    elif type(shouldBeTyp) is Types.Pointer:
+        if not type(normalTyp) is Types.Pointer:
+            return shouldBeTyp
 
+        pType = resolveGen(shouldBeTyp.pType, normalTyp.pType, generics, parser, myNode, other)
+        return Types.Pointer(pType)
     elif type(shouldBeTyp) in [Types.Struct, Types.Enum, Types.Alias]:
         gen = generics
         if not type(normalTyp) is type(shouldBeTyp):

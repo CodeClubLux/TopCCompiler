@@ -6,8 +6,9 @@ from .Scope import *
 from .Error import *
 import collections as coll
 
-def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}):
+E = Tree.Enum
 
+def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}):
     def before():
         if _package == "":
             package = parser.package
@@ -200,38 +201,66 @@ def getTmpName():
 from TopCompiler import CodeGen
 
 class TmpCodegen:
-    def __init__(self, array):
+    def __init__(self, array, initTypes):
+        self.realArray = []
+        self.realInitTypes = []
         self.array = array
+        self.initTypes = initTypes
         self.info = CodeGen.Info()
         self.gen = CodeGen.genNames(self.info)
+        self.inAFunction = True
     def inFunction(self):
-        return
+        self.inAFunction = True
+
+    def completedType(self):
+        self.realArray.append(self.array)
+        self.realInitTypes.append(self.initTypes)
+        self.initTypes = []
+        self.array = []
+
+    def getArrays(self):
+        tmpArray = []
+        tmpInitTypes = []
+        for i in reversed(self.realArray):
+            tmpArray  += i
+        for i in reversed(self.realInitTypes):
+            tmpInitTypes += i
+
+        return (tmpArray, tmpInitTypes)
 
     def outFunction(self):
-        return
+        self.inAFunction = False
 
     def getName(self):
         return next(self.gen)
 
     def append(self, x):
-        self.array.append(x)
+        if self.inAFunction:
+            self.array.append(x)
+        else:
+            self.initTypes.append(x)
 
 def getGeneratedDataTypes():
     global dataTypes
     namedDataTypes = []
-    tmp = TmpCodegen(namedDataTypes)
+    initalizeTypes = []
+    tmp = TmpCodegen(namedDataTypes, initalizeTypes)
 
     while True:
         keys = list(genericTypes.keys())
         for key in keys:
             if key in compiledTypes:
                 continue
+
             genericTypes[key].compileToC(tmp)
             compiledTypes[key] = 0
+            tmp.completedType()
         if len(genericTypes) == len(keys):
             break
+
+    (namedDataTypes, initalizeTypes) = tmp.getArrays()
     dataTypes += namedDataTypes
-    return "".join(dataTypes)
+    return ("".join(dataTypes), "".join(initalizeTypes))
 
 tmpTypes = {}
 def genCType(header, genContents):
@@ -248,22 +277,29 @@ from TopCompiler import topc
 
 genericTypes = {}
 compiledTypes = {}
-def genGenericCType(struct):
-    replaced = struct.gen
+def genGenericCType(struct, func= S.Type):
+    replaced = struct.remainingGen
     structName = struct.normalName
     package = struct.package
 
     global dataTypes
     newName = SimplifyAst.toUniqueID(package, structName, replaced)
+
     if not newName in genericTypes:
-        s = S.Type(structName, package, topc.global_parser)
-        s.replaceT(struct, newName[newName.find("_")+1:])
+        s = func(package, structName, topc.global_parser)
+        if struct.package in ["", "_global"]:
+            s.replaceT(struct, newName.replace("_global_", ""))
+        else:
+            s.replaceT(struct, newName[newName.find("_"):])
         genericTypes[newName] = s
 
     return "struct " + newName
 
 def genInterface(interface):
-    newName = SimplifyAst.sanitize(interface.name)
+    if interface.name == "_global":
+        newName = SimplifyAst.sanitize(interface.name)
+    else:
+        newName = SimplifyAst.sanitize("_global." + interface.name)
     global genericTypes
 
     if not newName in genericTypes and not newName in compiledTypes:
@@ -322,7 +358,10 @@ class Type:
         return self
 
     def getMethod(self, parser, field):
-        return self.methods[field]
+        try:
+            return self.methods[field]
+        except:
+            return
 
     def __eq__(self, other):
         if type(self) is Alias:
@@ -489,21 +528,26 @@ class Struct(Type):
     def __init__(self, mutable, name, types, package, gen=coll.OrderedDict()):
         self.types = types
 
-        self.types = {i: replaceT(types[i], gen) for i in types}
+        if gen:
+            self.types = {i: replaceT(types[i], gen) for i in types}
+        else:
+            self.types = types
 
         self.package = package
 
         self.normalName = name
         self.mutable = mutable
 
+        fullName = package + "." + name if package != "_global" else name
+
         self.gen = gen
-        self.remainingGen = areParts(gen, package+"."+name)
+        self.remainingGen = areParts(gen, fullName)
 
         gen = self.remainingGen
 
         genericS = "[" + ",".join([strGen(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
 
-        self.name = package + "." + name + genericS
+        self.name = fullName + genericS
         #print(self.name)
 
     def hasMethod(self, parser, field):
@@ -525,7 +569,7 @@ class Struct(Type):
             return func
 
     def toCType(self):
-        if self.gen:
+        if self.remainingGen:
             return genGenericCType(self)
         else:
             return "struct " + self.package + "_" + self.normalName
@@ -707,8 +751,13 @@ class Interface(Type):
         self.normalName = ""
         self.package = ""
         if name:
-            self.package = name[:name.find(".")]
-            self.normalName = name[name.find(".")+1:]
+            index = name.find(".")
+            if index >= 0:
+                self.package = name[:name.find(".")]
+                self.normalName = name[index+1:]
+            else:
+                self.package = "_global"
+                self.normalName = name
         if not methods:
             self.methods = []
         else:
@@ -721,6 +770,10 @@ class Interface(Type):
         self.normalName = obj.normalName
         self.types = obj.types
         self.package = obj.package
+        self.methods = obj.methods
+
+        if self.name == ".":
+            print("wierd")
 
         return self
 
@@ -785,7 +838,8 @@ class Interface(Type):
 
     def hasMethod(self, parser, field):
         if field in self.methods:
-            return self.methods[field]
+            meth = self.methods[field]
+            return Types.FuncPointer([Null()] + meth.args, meth.returnType, meth.generic, meth.do)
 
 class T(Type):
     def __init__(self, name, typ, owner):
@@ -813,7 +867,6 @@ class T(Type):
         #self.type.duckType(parser, other, node, mynode, iter)
 
     def hasMethod(self, parser, name):
-        print(self.type)
         return self.type.hasMethod(parser, name)
 
     def getMethod(self, parser, field):
@@ -837,8 +890,8 @@ def hasMethodEnum(attachTyp, parser, name):
 
     packages = []
     b = None
-    for i in parser.imports + [parser.package, "_global"]:
-        if not i in self.methods: continue
+    arr = [parser.package, "_global"] if parser.package != "_global" else ["_global"]
+    for i in parser.imports + arr:
         if name in self.methods[i]:
             b = self.methods[i][name]
             b.package = i
@@ -894,10 +947,13 @@ class Enum(Type):
         addMethodEnum(self, i, parser, name, method)
 
     def hasMethod(attachTyp, parser, name):
-        hasMethodEnum(attachTyp, parser, name)
+        return hasMethodEnum(attachTyp, parser, name)
 
     def toCType(self):
-        return "struct " + self.package + "_" + self.normalName
+        if self.remainingGen:
+            return genGenericCType(self, E)
+        else:
+            return "struct " + self.package + "_" + self.normalName
 
     def duckType(self, parser, other, node, mynode, iter):
         if self.normalName != other.normalName:
@@ -1064,9 +1120,9 @@ class I32(Type):
             node.error("Expecting uint not int")
 
 class Pointer(Type):
-    def __init__(self, pType, mutable):
+    def __init__(self, pType, mutable=False):
         self.pType = pType
-        self.name = "&" + ("mut " if mutable else "") + pType.name
+        self.name = "&" + pType.name
         self.normalName = pType.normalName
         self.types = pType.types
         self.methods = pType.methods
@@ -1130,6 +1186,9 @@ class Bool(Type):
     types = {}
 
     __methods__ = None
+
+    def toCType(self):
+        return "_Bool"
 
     @property
     def methods(self):
@@ -1213,10 +1272,10 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
         types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
         methods = {i: replaceT(typ.methods[i], gen, acc, unknown) for i in typ.methods}
 
-        c.fromObj(Interface(False, types, gen, typ.normalName, methods=methods))
+        c.fromObj(Interface(False, types, gen, typ.package + "." + typ.normalName if typ.normalName else "", methods=methods))
         return c
     elif type(typ) is Pointer:
-        newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.pType.mutable)
+        newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.mutable)
         return newP
     elif type(typ) is Enum:
         const = coll.OrderedDict()

@@ -6,10 +6,10 @@ from TopCompiler import Error
 from TopCompiler import Types
 
 
-Parser.exprType["bool"] = lambda parser, token: parser.currentNode.addNode(Tree.Bool(token, parser))
+Parser.exprToken["true"] = lambda parser: parser.currentNode.addNode(Tree.Bool("true", parser))
+Parser.exprToken["false"] = lambda parser: parser.currentNode.addNode(Tree.Bool("false", parser))
 Parser.exprType["i32"] = lambda parser, token: parser.currentNode.addNode(Tree.Int(token, parser))
 Parser.exprType["f32"] = lambda parser, token: parser.currentNode.addNode(Tree.Float(token, parser))
-
 
 def operatorPop(parser, op, takesIn, unary= False):
     kind = op.kind
@@ -22,20 +22,21 @@ def operatorPop(parser, op, takesIn, unary= False):
     #print(parser.currentNode.nodes[parser.nodeBookmark[-1]:])
     #print("=====")
 
-    nb = parser.nodeBookmark[-1]
+    use = parser.nodeBookmark[-1]
 
-    if len(parser.bookmark) > 1 and len(parser.stack) > parser.bookmark[-2]+1:
-        last = parser.stack[-2].pos
-    else:
-        last = 0
+    #if len(parser.bookmark) > 1 and len(parser.stack) > parser.bookmark[-2]+1:
+    #    last = parser.stack[-2].pos
+    #else:
+    #    last = 0
 
-    use = last if nb < last else nb
+    #use = last if nb < last else nb
 
     for i in parser.currentNode.nodes[use:][min:-1]:
         parser.currentNode.nodes[-1].addNode(i)
         count += 1
 
     if count < takesIn:
+        Error.parseError(parser, "Too few values to operate on for operator " + op.kind)
         op.curry = True
 
     parser.currentNode.nodes = parser.currentNode.nodes[:-1 - len(op.nodes)] + [op]

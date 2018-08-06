@@ -3,7 +3,7 @@ __author__ = 'antonellacalvia'
 from .Parser import *
 from .Types import *
 import AST as Tree
-from .ExprParser import *
+from TopCompiler import ExprParser
 from .Error import *
 
 def isRead(parser):

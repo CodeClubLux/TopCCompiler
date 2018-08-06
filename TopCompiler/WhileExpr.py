@@ -20,7 +20,7 @@ def whileExpr(parser):
     parser.currentNode.addNode(cond)
     parser.currentNode = cond
 
-    while not Parser.isEnd(parser):
+    while not (Parser.isEnd(parser) and not parser.thisToken().token == "do"):
         token = parser.nextToken()
 
         iter = parser.iter
@@ -30,6 +30,8 @@ def whileExpr(parser):
             block = Tree.WhileBlock(parser)
             cond.owner.addNode(block)
             parser.currentNode = block
+
+
 
             continue
 

@@ -1,15 +1,33 @@
 from .node import *
 from TopCompiler import Types
-
+from PostProcessing import SimplifyAst
 
 class Enum(Node):
-    def __init__(self, const, normalName, parser):
+    def __init__(self, const, normalName, parser, generic={}):
         Node.__init__(self, parser)
         self.const = const
         self.package = parser.package
         self.normalName = normalName
+        self.generic = generic
+        self.onlyGenericName = ""
+        self.replaced = False
+
+    def replaceT(self, structT, newName):
+        self.package = structT.package
+        self.normalName = newName
+        self.const = structT.const
+        print(structT.remainingGen)
+        self.onlyGenericName = SimplifyAst.toUniqueID("", "", structT.remainingGen)[1:]
+        self.generic = structT.remainingGen
+        self.replaced = True
+        self.realNormalName = structT.normalName
+        #Types.replaceT(i, structT.gen) for i in structT.types.values()]
 
     def compileToC(self, codegen):
+        if self.generic and not self.replaced:
+
+            return
+
         count = 0
         codegen.inFunction()
 
@@ -67,7 +85,7 @@ class Enum(Node):
             args = self.const[name]
             if len(args) > 0:
 
-                codegen.append(f"{cType} {self.package}_{name}(")
+                codegen.append(f"{cType} {self.package}_{name}{self.onlyGenericName}(")
                 vars = [codegen.getName() for i in args]
                 types = [i.toCType() for i in args]
                 codegen.append(",".join(a + " " + b for (a,b) in zip(types, vars)))
@@ -81,11 +99,19 @@ class Enum(Node):
                 codegen.append(f"{tmp}.tag = {iter};\n")
                 codegen.append("return " + tmp + ";}\n")
             else:
-                codegen.append(f"{cType} {self.package}_{name};\n")
+                noGenericsDefined = True
+                for cName in self.generic:
+                    c = self.generic[cName]
+                    if not (type(c) is Types.T and (c.owner == self.package+"."+self.normalName if self.package != "_global" else c.owner == self.realNormalName)):
+                        noGenericsDefined = False
+                        break
 
-                codegen.outFunction()
+                if not self.generic or noGenericsDefined:
+                    codegen.append(f"{cType} {self.package}_{name};\n")
 
-                codegen.append(f"{self.package}_{name}.tag = {iter}")
+                    codegen.outFunction()
+
+                    codegen.append(f"{self.package}_{name}.tag = {iter};")
 
         codegen.outFunction()
 

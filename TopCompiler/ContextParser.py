@@ -42,6 +42,34 @@ def typecheckAddToContext(parser, i):
     parser.contextType[name] = typ
     parser.contextFields[parser.package][name] = typ
 
+def pushContext(parser):
+    parser.nextToken()
 
+    node = Tree.PushContext(parser)
+    previous = parser.currentNode
+    previous.addNode(node)
+    parser.currentNode = node
+
+    Parser.callToken(parser)
+
+    if len(node.nodes) == 0 or not type(node.nodes[0]) is Tree.ReadVar:
+        Error.parseError(parser, "Expecting identifier")
+
+    if parser.nextToken().token != "do":
+        Error.parseError(parser, "Expecting do")
+
+    while not Parser.isEnd(parser) or parser.thisToken().token == "do":
+        parser.nextToken()
+        Parser.callToken(parser)
+
+    parser.currentNode = previous
+
+
+def typecheckPushContext(parser, i):
+    contextTyp = parser.structs["global"]["Context"]
+
+    contextTyp.duckType(parser,  i.nodes[0].type, i.nodes[0], i.nodes[0], 0)
+    Tree.insertCast(i.nodes[0], i.nodes[0].type, contextTyp, 0)
 
 Parser.stmts["#addToContext"] = addToContext
+Parser.stmts["#pushContext"] = pushContext

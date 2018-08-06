@@ -22,7 +22,7 @@ def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
         if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
             lexed[c] = []
             for i in range(len(stream[c])):
-                lexed[c].append(tokenize(c, filename[c][i][0], stream[c][i]))
+                lexed[c].append(tokenize(c, filename[c][i][1], stream[c][i]))
 
     return lexed
 
@@ -57,6 +57,8 @@ keywords = fastacess([
         "uint",
         "#addToContext",
         "#pushContext",
+        "sizeof",
+        "return"
     ])
 
 
@@ -71,13 +73,25 @@ slSymbols = fastacess([
     ",",
 ]) #Single length delimeters
 
-mLSymbols = [
+mlSymbols = [
     "::",
     "..",
+    ":=", "=", ":"
 ]
 
-slOperator = fastacess(["|", "^"])
-mlOperators = [":=", ":", "<<", ">>", "<-", "->", "==", "!=", "<=", ">=", "<", ">", "-", "&", "+=", "-=", "*=", "/=", "=", "+", "*", "/", "%"]
+slOperator = fastacess(["|", "^", "&"])
+ml2Operators = fastacess([
+    ":=",
+    "::",
+    "<<", ">>",
+    "==", "!=", "<=", ">=",
+    "<-", "->",
+    "+=", "-=", "*=", "/=",
+    ])
+
+ml1Operators = fastacess([
+    ":",  "<", ">", "-",  "=", "+", "*", "/", "%"
+])
 
 tokenSpecification = [ #cleanup use loop instead of regex to find it out
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  # [A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
@@ -148,7 +162,8 @@ class LexerState:
 
         return num
 
-#@timeit
+linesOfCode = 0
+
 def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
     def notBack(iter):
         if state.iter == 0: return True
@@ -242,6 +257,8 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
             state.column = -1
             state.inCommentLine = False
             state.line += 1
+            global linesOfCode
+            linesOfCode += 1
         else:
             if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
                 if t in slSymbols:
@@ -258,32 +275,17 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                     lastLength = 0
 
                     tok = ""
-                    for operators in mlOperators:
-                        sameLength = False
-                        lenOfOp = len(operators)
-                        if len(state.tok) == operators:
-                            tok = state.tok
-                            sameLength = True
 
-                        elif lastLength == lenOfOp:
-                            pass #use existing tok
-                        else:
-                            if state.iter + lenOfOp - 1 < lenOfS:
-                                tok = state.s[state.iter: state.iter+lenOfOp]
-
-                        lastLength = lenOfOp
-
-                        if tok.endswith(operators):
-                            #state.tok = tok
-                            if not sameLength:
-                                state.iter += lenOfOp - 1
-                            iter = state.iter
-                            state.iter -= lenOfOp
-                            state.tok = state.tok[: len(state.tok)+1 - len(operators)]
+                    if state.iter+1 < len(state.s):
+                        end = state.s[state.iter] + state.s[state.iter+1]
+                        if end in ml2Operators:
+                            state.iter -= 1
                             state.pushTok()
-                            state.iter = iter
+                            state.iter += 2
 
-                            if operators in [":=", "=", ":"]:
+                            operators = end
+
+                            if operators in mlSymbols:
                                 state.append(Token(operators, "symbol", state.line, state.column))
                             else:
                                 if state.followedByNumSpace() > 0:
@@ -291,18 +293,21 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                                 else:
                                     state.append(Token(operators, "unary_operator", state.line, state.column))
                             completed = True
-                            break
-
                     if not completed:
-                        for symbols in mLSymbols:
-                            if state.tok.endswith(symbols):
-                                iter = state.iter
-                                state.tok = state.tok[:-len(operators)]
-                                state.pushTok()
-                                state.append(Token(symbols, "symbol", state.line, state.column))
-                                state.iter = iter
-                                completed = True
-                                break
+                        if state.s[state.iter] in ml1Operators:
+                            operators = state.s[state.iter]
+                            state.iter -= 1
+                            state.pushTok()
+                            state.iter += 1
+
+                            if operators in mlSymbols:
+                                state.append(Token(operators, "symbol", state.line, state.column))
+                            else:
+                                if state.followedByNumSpace() > 0:
+                                    state.append(Token(operators, "operator", state.line, state.column))
+                                else:
+                                    state.append(Token(operators, "unary_operator", state.line, state.column))
+                            completed = True
             else:
                 completed = False
 
@@ -317,5 +322,6 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
     state.pushTok()
     state.append(Token("\n", "symbol", state.line-1, state.column))
     state.append(Token(0, "indent", state.line, state.column))
+
 
     return state.tokens

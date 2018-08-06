@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 #define Context struct _global_Context* context
-#define alloc main_Allocator_allocByValue
+#define alloc _global_Allocator_allocByValue
 
 struct _global_String {
     unsigned int length;
@@ -93,8 +93,6 @@ struct _global_String _global_Int_toStringByValue(int number, Context) {
 
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
 
-    printf("%p\n", memory);
-
     struct _global_String newString = _global_StringInit(length, memory);
 
     itoa(number, newString.data, 10);
@@ -116,9 +114,9 @@ struct _global_String _global_Uint_toString(unsigned int* n, Context) {
 }
 
 void _global_log(struct _global_String s, Context) {
-    printf("%s", s.data);
+    printf("%s\n", s.data);
 };
 
-static inline void* _global_offsetPtr(void* ptr, unsigned int offset, Context) {
+static inline void* _global_offsetPtr(void* ptr, int offset, Context) {
     return ((char*)ptr) + offset;
 }
