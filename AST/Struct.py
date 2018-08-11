@@ -41,8 +41,9 @@ class InitStruct(Node):
 
     def compileToC(self, codegen):
         if not self.assign:
+            cType = self.type.toCType()
             if self.replaced:
-                codegen.append(f"{SimplifyAst.toUniqueID(self.typ.package, self.typ.normalName, self.replaced)}Init(")
+                codegen.append(f"{SimplifyAst.toUniqueID(self.typ.package, self.typ.normalName, self.type.remainingGen)}Init(")
             else:
                 codegen.append(self.typ.package + "_" + self.typ.normalName + "Init(")
             for i in range(len(self.nodes)):
@@ -50,7 +51,6 @@ class InitStruct(Node):
                 if i != len(self.nodes)-1:
                     codegen.append(",")
             codegen.append(")")
-            self.type.toCType()
         else:
             self.compileAssign(codegen)
 
@@ -88,14 +88,14 @@ class Type(Node):
         codegen.inFunction()
         #print("compiling struct " + self.package + "." + self.name)
         names = self.fields
-        codegen.append("struct "+self.package+"_"+self.normalName+" {")
+        codegen.append("struct "+self.package+"_"+self.normalName+" {\n")
         for i in range(len(self.fields)):
             if self.name == "Array":
                 typ = self.args[i].toCType()
             else:
                 typ = self.args[i].toCType()
-            codegen.append(typ + " " + self.fields[i]+";")
-        codegen.append("};")
+            codegen.append(typ + " " + self.fields[i]+";\n")
+        codegen.append("};\n")
 
         codegen.append("static inline struct " + self.package+"_"+self.normalName+" " + self.package+"_"+self.normalName + "Init(")
 
@@ -104,16 +104,16 @@ class Type(Node):
             if i < len(self.fields) - 1:
                 codegen.append(",")
 
-        codegen.append("){")
+        codegen.append("){\n")
         name = codegen.getName()
-        codegen.append("struct "+self.package+"_"+self.normalName + " " + name + ";")
+        codegen.append("struct "+self.package+"_"+self.normalName + " " + name + ";\n")
 
         for i in range(len(self.fields)):
             codegen.append(name + "." + self.fields[i] + "=" + names[i])
             codegen.append(";")
 
-        codegen.append("return "+name);
-        codegen.append(";};")
+        codegen.append("return "+name)
+        codegen.append(";\n};\n")
 
         #@cleanup Add Serialization for types
         #codegen.append(self.package+"_"+self.normalName+"._fields=[")

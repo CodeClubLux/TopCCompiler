@@ -4,7 +4,7 @@ type Array[T] =
     allocator: Maybe[Allocator]
     data: Maybe[&T]
 
-def make_array() =
+def make_array[T]() Array[T] =
     Array {
         length = 0
         capacity = 0

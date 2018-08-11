@@ -112,6 +112,10 @@ class Operator(Node):
 
         #codegen.append(")")
 
+    def validate(self, parser):
+        if self.kind == "as":
+            Cast.checkCast(self.nodes[0].type, self.type, self.nodes[0], parser)
+
 def checkOperator(self, parser):
         i = self
         if type(i.opT) is Types.Alias:

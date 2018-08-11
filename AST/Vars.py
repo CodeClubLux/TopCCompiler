@@ -29,33 +29,30 @@ class Create(Node):
             return
 
         if type(self.owner) is FuncBraceOpen:
-            codegen.append(self.varType.toCType() + " " + codegen.createName(self.package+"_"+self.name))
+            typ = self.varType.toCType()
+            codegen.append(typ + " " + codegen.createName(self.package+"_"+self.name, typ))
             return
 
 
         inFunc = codegen.inAFunction
 
         if self.attachTyp:
-            codegen.inAFunction = True
-
-            codegen.append(self.varType.toCType() + " " + self.attachTyp.package + "_" + self.attachTyp.normalName + "_" + self.name + ";")
-            codegen.inAFunction = inFunc
+            codegen.out_parts.append(self.varType.toCType() + " " + self.attachTyp.package + "_" + self.attachTyp.normalName + "_" + self.name + ";")
         elif not self.isGlobal:
-            codegen.append(self.varType.toCType() + " " + codegen.createName(self.package + "_" + self.name) + ";")
+            typ = self.varType.toCType()
+            codegen.append(typ + " " + codegen.createName(self.package + "_" + self.name, typ) + ";")
         else:
-            codegen.inAFunction = True
             if self.extern:
                 if self.varType.isType(Types.FuncPointer):
-                    codegen.append(f"\n#define {self.package}_{self.name}(")
+                    codegen.out_parts.append(f"\n#define {self.package}_{self.name}(")
                     names = [codegen.getName() for i in range(len(self.varType.args)+1)]
-                    codegen.append(",".join(names))
-                    codegen.append(") ")
+                    codegen.out_parts.append(",".join(names))
+                    codegen.out_parts.append(") ")
                     self.names = names
                 else:
-                    codegen.append(f"\n#define {self.package}_{self.name} ")
+                    codegen.out_parts.append(f"\n#define {self.package}_{self.name} ")
             else:
-                codegen.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
-            codegen.inAFunction = inFunc
+                codegen.out_parts.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
 
     def validate(self, parser): pass
 
@@ -76,15 +73,11 @@ class CreateAssign(Node):
         if self.extern and self.nodes[0].name == "_":
             tmp = self.nodes[1].nodes[0].string.replace("\{", "{").replace("\}", "}")
             tmp = tmp[1:-1]
-            func = codegen.inAFunction
-            codegen.inFunction()
-            codegen.append(tmp)
-            codegen.inAFunction = func
+            codegen.out_parts.append(tmp)
             return
         elif self.nodes[0].name == "_":
             self.nodes[1].nodes[0].compileToC(codegen)
             return
-
 
         self.nodes[0].compileToC(codegen)
         self.nodes[1].compileToC(codegen)
@@ -102,8 +95,6 @@ def canMutate(self, tryingToMutate):
             return
 
         if not type(i) in [Tree.Field, Tree.ArrRead, Tree.ReadVar, Tree.Tuple] and not (type(i) is Tree.Operator and i.kind in ["*", "&"]):
-            print("expecting")
-            print(type(i))
             i.error("expecting variable")
 
         if type(node) is Tree.ReadVar:
@@ -156,20 +147,18 @@ class Assign(Node):
                 tmp = self.nodes[0].string.replace("\{", "{").replace("\}", "}")
                 tmp = tmp[1:-1]
                 if create.varType.isType(Types.FuncPointer):
-                    codegen.append(tmp)
-                    codegen.append("(")
+                    codegen.out_parts.append(tmp)
+                    codegen.out_parts.append("(")
                     iter = 0
                     for i in create.names[:-1]:
                         iter += 1
-                        codegen.append(i)
+                        codegen.out_parts.append(i)
                         if iter + 1 < len(create.names):
-                            codegen.append(",")
-                    codegen.append(")")
+                            codegen.out_parts.append(",")
+                    codegen.out_parts.append(")")
                 else:
-                    codegen.append(tmp)
-                codegen.append("\n")
-
-                codegen.inAFunction = func
+                    codegen.out_parts.append(tmp)
+                codegen.out_parts.append("\n")
             else:
                 codegen.append(name + " = ")
                 self.nodes[0].compileToC(codegen)

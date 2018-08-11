@@ -143,4 +143,4 @@ class CastToType(Node):
 
     def compileToC(self, codegen):
         codegen.append("(" + self.type.toCType() + ")")
-        self.nodes[0].compileToC()
+        self.nodes[0].compileToC(codegen)

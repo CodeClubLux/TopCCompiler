@@ -48,10 +48,10 @@ def save(parser, runtimeBuild):
     """
 
     def removeRedundantProperties(ast):
-        ast._filename = None
+        #ast._filename = None
         if type(ast) in [Tree.FuncBody, Tree.FuncBraceOpen, Tree.FuncStart]:
             ast.owner = None
-        ast.token = None
+        #ast.token = None
 
         for node in ast.nodes:
             removeRedundantProperties(node)

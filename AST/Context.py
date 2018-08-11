@@ -10,7 +10,7 @@ class AddToContext(Node):
     def compileToC(self, codegen):
         inFunc = codegen.inAFunction
 
-        codegen.inAFunction = False
+        codegen.outFunction()
 
         createAssign = self.nodes[0]
         create = createAssign.nodes[0]
@@ -20,7 +20,7 @@ class AddToContext(Node):
 
         assign.nodes[0].compileToC(codegen)
 
-        codegen.inAFunction = inFunc
+        codegen.setInAFunction(inFunc)
 
 class PushContext(Node):
     def __init__(self, parser):

@@ -45,9 +45,16 @@ def pattern(name, names, parser, getName):
         else:
             name.error("Unexpected token")
 
-def createParser(parser, name= "", typ= None, check= True, imutable= False, attachTyp= False): # : creation
+def createParser(parser, name= "", typ= None, check= True, imutable= False, attachTyp= False, lookBehind=False): # : creation
     if name == "":
-        name = parser.lookBehind()
+        if lookBehind:
+            name = parser.lookBehind()
+        else:
+            if len(parser.currentNode.nodes) == 0:
+                Error.parseError(parser, "expecting identifier")
+
+            name = parser.currentNode.nodes[-1]
+            del parser.currentNode.nodes[-1]
 
     names = []
 
@@ -85,7 +92,13 @@ def assignParser(parser, name= "", init= False, package = ""):
     if not init:
         ExprParser.endExpr(parser, -2)
         i = parser.currentNode.nodes[-1]
+
+        if type(i) is Tree.Create:
+            createAndAssignParser(parser, False)
+            return
+
         del parser.currentNode.nodes[-1]
+
 
     if package == "": package = parser.package
 
@@ -126,8 +139,6 @@ def assignParser(parser, name= "", init= False, package = ""):
 def createAndAssignParser(parser, imutable= True): # let i assignment
     node = parser.currentNode
 
-
-
     checkIt = False
     attachTyp = False
 
@@ -143,11 +154,14 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
     pattern = False
     if imutable:
         name = parser.nextToken()
+        parser.nextToken()
     else:
+        if len(parser.currentNode.nodes) == 0:
+            Error.parseError(parser, "Unexpected :=")
         r = parser.currentNode.nodes[-1]
         del parser.currentNode.nodes[-1]
         name = r
-        parser.iter -= 1
+        #parser.iter -= 1
         isPattern = True
         pattern = True
 
@@ -156,7 +170,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
     t = parser.thisToken()
 
-    if parser.nextToken().token == ":":
+    if imutable and parser.thisToken().token == ":":
         checkIt = True
 
         parser.nextToken()
@@ -165,8 +179,8 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         parser.nextToken()
 
         if parser.thisToken().token != "=":
-            create = True
-    elif imutable and parser.thisToken().token != "=":
+            Error.parseError(parser, "expecting =, not " + parser.thisToken().token)
+    if imutable and parser.thisToken().token != "=":
         Error.parseError(parser, "expecting =, not "+parser.thisToken().token)
 
     if not create:
@@ -174,7 +188,11 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
         parser.currentNode.addNode(n)
         parser.currentNode = n
 
-        createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
+        if type(name) is Tree.Create:
+            n.addNode(name)
+            parser.nextToken()
+        else:
+            createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
 
         if attachTyp:
             assignParser(parser, name=parser.package+"_"+attachTyp.normalName+"_"+name.token, package= attachTyp.package, init=True)

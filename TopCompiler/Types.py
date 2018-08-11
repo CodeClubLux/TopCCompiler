@@ -156,7 +156,10 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
 
             return parser.interfaces[package][token]
 
-        elif token in parser.structs[package]:
+        elif token in parser.structs[package] or (token in parser.structs["_global"] and parser.package == package):
+            if token in parser.structs["_global"]:
+                package = "_global"
+
             gen = coll.OrderedDict()
             if attachTyp:
                 return parser.structs[package][token]
@@ -171,7 +174,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             t = typeOfVar(Tree.PlaceHolder(parser), parser, package, token)
             if type(t) is T:
                 return t
-            parseError(parser, "unkown type "+token)
+            parseError(parser, "unknown type "+token)
         elif token == "_":
             return Underscore()
         else:
@@ -186,7 +189,6 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
         return Assign(res)
     else:
         return res
-
 
 from TopCompiler import CodeGen
 info = CodeGen.Info()
@@ -252,11 +254,17 @@ def getGeneratedDataTypes():
             if key in compiledTypes:
                 continue
 
+            print(key)
+
             genericTypes[key].compileToC(tmp)
             compiledTypes[key] = 0
-            tmp.completedType()
+            tmp.completedType() #fix cause sometimes it generates types too late
+
+        print("=======")
+
         if len(genericTypes) == len(keys):
             break
+
 
     (namedDataTypes, initalizeTypes) = tmp.getArrays()
     dataTypes += namedDataTypes
@@ -275,8 +283,9 @@ def genCType(header, genContents):
 from AST import Struct as S
 from TopCompiler import topc
 
-genericTypes = {}
-compiledTypes = {}
+genericTypes = coll.OrderedDict()
+compiledTypes = coll.OrderedDict()
+
 def genGenericCType(struct, func= S.Type):
     replaced = struct.remainingGen
     structName = struct.normalName
@@ -291,6 +300,7 @@ def genGenericCType(struct, func= S.Type):
             s.replaceT(struct, newName.replace("_global_", ""))
         else:
             s.replaceT(struct, newName[newName.find("_"):])
+
         genericTypes[newName] = s
 
     return "struct " + newName
@@ -324,7 +334,7 @@ def parseGeneric(parser, typ):
             continue
 
         if parser.thisToken().token == "_":
-            generic.append(genL[count].type)
+            generic.append(genL[count])
         else:
             generic.append(parseType(parser))
         parser.nextToken()
@@ -516,11 +526,15 @@ class FuncPointer(Type):
         except EOFError as e:
             beforeError(e, "Function type return type: ")
 
-def isPart(i, name):
+def isPart(i, name, package):
+    #if package == "_global": return name == i
     return ".".join(i.split(".")[:-1]) == name
 
 def strGen(g):
+    return str(g)
+
     if type(g) is T:
+
         return str(g)
     return str(g)
 
@@ -541,7 +555,7 @@ class Struct(Type):
         fullName = package + "." + name if package != "_global" else name
 
         self.gen = gen
-        self.remainingGen = areParts(gen, fullName)
+        self.remainingGen = areParts(gen, fullName, self.package)
 
         gen = self.remainingGen
 
@@ -727,28 +741,17 @@ def isMutable(typ):
         return typ.mutable
     return False
 
-def areParts(generic, name):
+def areParts(generic, name, package):
     c = coll.OrderedDict()
 
     for i in generic:
-        if isPart(i, name):
+        if isPart(i, name, package):
             c[i] = generic[i]
 
     return c
 
 class Interface(Type):
-    def __init__(self, mutable, args, generic= coll.OrderedDict(), name="", methods=None):
-        generic = areParts(generic, name)
-        if name != "":
-            gen = generic
-            genericS = "[" + ",".join([strGen(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
-            self.name = name+genericS
-        else:
-            self.name = "{"+", ".join([str(i + ": " + str(args[i])) for i in args])+"}"
-        self.mutable = False
-        self.types = args
-        self.generic = generic
-        self.normalName = ""
+    def __init__(self, mutable, args, generic= coll.OrderedDict(), name="", methods={}):
         self.package = ""
         if name:
             index = name.find(".")
@@ -758,6 +761,20 @@ class Interface(Type):
             else:
                 self.package = "_global"
                 self.normalName = name
+
+        generic = areParts(generic, name, self.package)
+        if name != "":
+            gen = generic
+            genericS = "[" + ",".join([strGen(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
+            self.name = name+genericS
+        else:
+            combined = {**args, **methods}
+            self.name = "{"+", ".join([str(i + ": " + str(combined[i])) for i in combined])+"}"
+        self.mutable = False
+        self.types = args
+        self.generic = generic
+        self.fullName = name
+
         if not methods:
             self.methods = []
         else:
@@ -771,9 +788,6 @@ class Interface(Type):
         self.types = obj.types
         self.package = obj.package
         self.methods = obj.methods
-
-        if self.name == ".":
-            print("wierd")
 
         return self
 
@@ -892,6 +906,8 @@ def hasMethodEnum(attachTyp, parser, name):
     b = None
     arr = [parser.package, "_global"] if parser.package != "_global" else ["_global"]
     for i in parser.imports + arr:
+        if not i in self.methods: continue
+
         if name in self.methods[i]:
             b = self.methods[i][name]
             b.package = i
@@ -1231,21 +1247,16 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
         if typ.normalName in gen:
             r = gen[typ.normalName]
             acc[typ] = r
-            if type(r) is Underscore:
-                #if type(typ.type) is Assign:
-                return T(typ.realName, replaceT(typ.type, gen, acc), typ.owner)
-                #return typ
-
             return replaceT(r, gen, acc, unknown)
         else:
             #if type(typ.type) is Assign:
             return T(typ.realName, replaceT(typ.type, gen, acc, unknown), typ.owner)
             #return typ
     elif type(typ) is Struct:
-        rem = {}
+        rem = gen
         for i in typ.remainingGen:
             if i in gen:
-                rem[i] = T(i[i.find(".")+1:], gen[i], i[:i.find(".")])
+                rem[i] = gen[i]  #T(i[i.find(".")+1:], gen[i], i[:i.find(".")])
             else:
                 rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
         return Struct(False, typ.normalName, typ.types, typ.package, rem)
@@ -1253,7 +1264,7 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
         rem = {}
         for i in typ.generic:
             if i in gen:
-                rem[i] = T(i[i.find(".") + 1:], gen[i], i[:i.find(".")])
+                rem[i] = gen[i]  #T(i[i.find(".") + 1:], gen[i], i[:i.find(".")])
             else:
                 rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
         return Alias(typ.package, typ.normalName, replaceT(typ.typ, gen, acc, unknown), rem)
@@ -1272,7 +1283,7 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
         types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
         methods = {i: replaceT(typ.methods[i], gen, acc, unknown) for i in typ.methods}
 
-        c.fromObj(Interface(False, types, gen, typ.package + "." + typ.normalName if typ.normalName else "", methods=methods))
+        c.fromObj(Interface(False, types, gen, typ.fullName, methods=methods))
         return c
     elif type(typ) is Pointer:
         newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.mutable)
@@ -1291,8 +1302,8 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
         for name in typ.const:
             const[name] = [replaceT(i, gen, acc, unknown) for i in typ.const[name]]
 
-        for name in typ.generic:
-            g[name] = replaceT(typ.generic[name], gen, acc, unknown)
+        for name in typ.remainingGen:
+            g[name] = replaceT(typ.remainingGen[name], gen, acc, unknown)
 
         c.fromObj(Enum(typ.package, typ.normalName, const, g))
         return c

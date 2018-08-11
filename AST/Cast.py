@@ -1,6 +1,7 @@
 __author__ = 'antonellacalvia'
 
 from .node import *
+from AST import Func
 
 class Cast(Node):
     def __init__(self, f, to, owner=None):
@@ -13,6 +14,9 @@ class Cast(Node):
 
     def compileToC(self, codegen):
         castFrom(self.f, self.to, self.nodes[0], codegen)
+
+    def validate(self, parser):
+        checkCast(self.f, self.to, self.nodes[0], parser)
 
 from TopCompiler import Types
 from PostProcessing import SimplifyAst
@@ -33,6 +37,11 @@ def notSpecified(self):
         if b.isType(Types.T) and b.owner == (self.package + "." if self.package != "_global" else "") + self.normalName:
             return True
 
+def checkCast(originalType, newType, node, parser):
+    if type(newType) is Types.Interface:
+        if not type(originalType) is Types.Pointer:
+            node.error("Can only upcast to interface from pointer, not "+str(originalType))
+
 def castFrom(originalType, newType, node, codegen):
     if type(newType) is Types.Interface:
         if not type(originalType) is Types.Pointer:
@@ -48,13 +57,34 @@ def castFrom(originalType, newType, node, codegen):
         codegen.append(")")
         return
     elif type(newType) in [Types.Enum, Types.Struct] and notSpecified(originalType):
-        print("we need to implement this")
-        node.compileToC(codegen)
-        print(newType.name)
-        if newType.name == "Maybe[&Array.T]":
-            print("this causes a recursive dependency")
+        funcName = codegen.getName()
+        tmp = codegen.getName()
+        inputT = codegen.getName()
+
+        inFunc = codegen.inAFunction
+        codegen.inGenerateFunction()
+
+        typNewC = newType.toCType()
+
+        codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
+        codegen.append(f"{typNewC} {tmp};")
+
+        if type(newType) is Types.Enum: #@cleanup maybe optimization will cause this not to be valid
+            codegen.append(f"{tmp}.tag = {inputT}.tag;")
+            unionTyp = typNewC.replace("struct", "union", 1) + "_cases"
+            codegen.append(f"{tmp}.cases = *({unionTyp}*) &({inputT}.cases);")
+        else:
+            for field in newType.types: #change this when using comes out
+                codegen.append(f"{tmp}.{field} = {inputT}.{field};")
+
+        codegen.append(f"return {tmp};\n}}\n")
 
         newType.toCType()
+        codegen.setInAFunction(inFunc)
+
+        codegen.append(funcName + "(")
+        node.compileToC(codegen)
+        codegen.append(")")
         return
 
     codegen.append("(" + newType.toCType() + ")")

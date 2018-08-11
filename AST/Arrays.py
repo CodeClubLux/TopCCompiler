@@ -2,6 +2,7 @@ __author__ = 'antonellacalvia'
 
 from .node import *
 from .Struct import *
+from PostProcessing import SimplifyAst
 
 class Array(Node):
     def __init__(self, parser):
@@ -101,26 +102,12 @@ class ArrRead(Node):
     def __str__(self):
         return ".[]"
 
-    def compileToJS(self, codegen):
-        self.nodes[0].compileToJS(codegen)
+    def compileToC(self, codegen): #ignore will be handled by simplify ast
+        method = SimplifyAst.getMethod("op_get")
+        self.nodes[0].compileToC(codegen)
         codegen.append(".get(")
-        self.nodes[1].compileToJS(codegen)
+        self.nodes[1].compileToC(codegen)
         codegen.append(")")
-
-    def set(self, old, codegen):
-        if self.newValue:
-            codegen.append(f"return {old}.set(")
-            self.nodes[1].compileToJS(codegen)
-            codegen.append(f",{self.newValue})")
-        else:
-            idx = codegen.getName()
-
-            codegen.append(f"var {idx}=")
-            self.nodes[1].compileToJS(codegen)
-            codegen.append(f";return {old}.set({idx},")
-            codegen.append("f(function({old}{{")
-            self.owner.set(old, codegen)
-            codegen.append(f"}})({old}.get({idx})))")
 
     def validate(self, parser): pass
 

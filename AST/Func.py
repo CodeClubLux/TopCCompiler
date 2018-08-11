@@ -85,7 +85,7 @@ class FuncBraceOpen(Node):
         context = codegen.getName()
         codegen.contexts.append(context)
 
-        codegen.append("struct global_Context* " + context)
+        codegen.append("struct _global_Context* " + context)
         codegen.append('){')
 
     def validate(self, parser):
@@ -170,7 +170,8 @@ class FuncBody(Node):
         import AST as Tree
 
         try:
-            returnType.duckType(parser,actReturnType,self, self.nodes[-1] if len(self.nodes) > 0 else Tree.Under(self),0)
+            s = self.nodes[-1] if len(self.nodes) > 0 else self
+            returnType.duckType(parser,actReturnType, s, s ,0)
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
 
@@ -253,7 +254,4 @@ class Generic(Node):
     def validate(self, parser): pass
 
     def compileToC(self, codegen):
-        self.nodes[0].compileToJS(codegen)
-
-    def compileToJS(self, codegen):
-        self.nodes[0].compileToJS(codegen)
+        self.nodes[0].compileToC(codegen)

@@ -1,6 +1,7 @@
 from .node import *
 from TopCompiler import Types
 from PostProcessing import SimplifyAst
+from TopCompiler import Scope
 
 class Enum(Node):
     def __init__(self, const, normalName, parser, generic={}):
@@ -16,7 +17,6 @@ class Enum(Node):
         self.package = structT.package
         self.normalName = newName
         self.const = structT.const
-        print(structT.remainingGen)
         self.onlyGenericName = SimplifyAst.toUniqueID("", "", structT.remainingGen)[1:]
         self.generic = structT.remainingGen
         self.replaced = True
@@ -73,13 +73,15 @@ class Enum(Node):
 
         tag += " tag;"
 
-        codegen.append(f"struct {self.package}_{self.normalName} {{\n {tag}\n")
-        codegen.append(f"union {{\n")
+        codegen.append(f"union {self.package}_{self.normalName}_cases {{\n")
         for name in self.const:
             if len(self.const[name]) > 0:
                 codegen.append(f"struct {self.package}_{self.normalName}_{name} {name};\n")
-        codegen.append("\n};};\n")
+        codegen.append("\n};\n")
 
+        codegen.append(f"struct {self.package}_{self.normalName} {{\n {tag}\n")
+        codegen.append(f"union {self.package}_{self.normalName}_cases cases;\n")
+        codegen.append("\n};\n")
 
         for (iter, name) in enumerate(self.const):
             args = self.const[name]
@@ -95,7 +97,7 @@ class Enum(Node):
                 codegen.append(f"{cType} {tmp};\n")
 
                 for (c, i) in enumerate(vars):
-                    codegen.append(tmp + "." + name + ".field" + str(c) + " = " + i + ";")
+                    codegen.append(tmp + ".cases." + name + ".field" + str(c) + " = " + i + ";")
                 codegen.append(f"{tmp}.tag = {iter};\n")
                 codegen.append("return " + tmp + ";}\n")
             else:
@@ -130,16 +132,41 @@ class Match(Node):
         self.tmp = tmp
 
         if not type(self.type) is Types.Null:
-            print("not implemented yet")
-            codegen.append("(function(){")
-            codegen.append("var " + tmp + "=")
-            self.nodes[0].compileToJS(codegen)
-            codegen.append(";")
+            funcName = codegen.getName()
+            inAFunc = codegen.inAFunction
+            codegen.inGenerateFunction()
+
+            vars = []
+            varNames = []
+
+            for scope in codegen.names:
+                for varName in scope:
+                    (typ, var) = scope[varName]
+                    vars.append(f"{typ}* {var},")
+                    varNames.append("&" + var)
+                    if inAFunc != 2:
+                        scope[varName] = (typ, "*" + var)
+
+            vars = "".join(vars)
+            varNames = ",".join(varNames)
+
+            codegen.append(f"static inline {self.type.toCType()} {funcName}({vars} struct _global_Context* {codegen.getContext()}) {{\n")
+            codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
+            self.nodes[0].compileToC(codegen)
+            codegen.append(";\n")
 
             for iter in range(1, len(self.nodes)):
-                self.nodes[iter].compileToJS(codegen)
+                self.nodes[iter].compileToC(codegen)
 
-            codegen.append("})()")
+            if inAFunc != 2:
+                for scope in codegen.names:
+                    for varName in scope:
+                        (typ, var) = scope[varName]
+                        scope[varName] = (typ, var[1:])
+
+            codegen.append("\n}\n")
+            codegen.setInAFunction(inAFunc)
+            codegen.append(f"{funcName}({varNames}, {codegen.getContext()})")
         else:
             codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
             self.nodes[0].compileToC(codegen)
@@ -161,8 +188,8 @@ class Fake:
         self.body = []
         self.codegen = codegen
 
-    def createName(self, a):
-        return self.codegen.createName(a)
+    def createName(self, a, typ):
+        return self.codegen.createName(a, typ)
 
     def getName(self):
         return self.codegen.getName()
@@ -228,16 +255,16 @@ class MatchCase(Node):
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) != Tree.ReadVar:
                         codegen.append("&&")
-                        loop(i, f"{tmp}.{nameOfCase}.field{index}")
+                        loop(i, f"{tmp}.cases.{nameOfCase}.field{index}")
 
                 codegen.checking = False
 
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) is Tree.ReadVar:
-                        name = codegen.createName(i.package + "_" + i.name)
                         typ = node.type.const[nameOfCase][index]
+                        name = codegen.createName(i.package + "_" + i.name, typ)
                         codegen.append(f"{typ.toCType()} {name}")
-                        codegen.append(f" = {tmp}.{nameOfCase}.field{index};\n")
+                        codegen.append(f" = {tmp}.cases.{nameOfCase}.field{index};\n")
             elif type(node) is Tree.Tuple:
                 if len(node.nodes) == 1:
                     loop(node.nodes[0], tmp)
@@ -329,3 +356,9 @@ class MatchCase(Node):
 
     def validate(self, parser):
         pass
+
+def funcIsCase(funcCall):
+    readVar = funcCall.nodes[0]
+    typ = funcCall.type
+
+    return type(typ) is Types.Enum and readVar.name in typ.const

@@ -9,6 +9,7 @@ import os
 import copy
 
 import subprocess
+import collections as coll
 
 runtimeFile = open(os.path.dirname(__file__) + "/runtime/runtime.c", "r")
 cRuntimeCode = runtimeFile.read()
@@ -33,12 +34,13 @@ class CodeGen:
 
         self.out_parts = []
         self.main_parts = []
+        self.func_parts = []
 
         self.main = ""
 
         self.externs = externFunctions
 
-        self.inAFunction = False
+        self.inAFunction = 0
         self.names = [{}]
         self.contexts = []
         self.nameCount = 0
@@ -52,11 +54,24 @@ class CodeGen:
         self.count = 0
 
     def inFunction(self):
-        self.inAFunction = True
+        self.inAFunction = 1
 
     def outFunction(self):
-        self.inAFunction = False
+        self.inAFunction = 0
         self.info.reset([0], 0)
+        self.out_parts.extend(self.func_parts)
+        self.func_parts = []
+
+    def inGenerateFunction(self):
+        self.inAFunction = 2
+
+    def setInAFunction(self, new):
+        if new == 2:
+            self.inGenerateFunction()
+        elif new == 1:
+            self.inFunction()
+        else:
+            self.outFunction()
 
     def incrScope(self):
         self.names.append({})
@@ -65,11 +80,11 @@ class CodeGen:
         self.names.pop()
 
     def readName(self, name):
-        return name
+        #return name
 
         for i in reversed(self.names):
             try:
-                return i[name]
+                return i[name][1]
             except:
                 pass
 
@@ -77,13 +92,15 @@ class CodeGen:
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
             self.append(";\n")
 
-    def createName(self, name):
-        #self.names[-1][name] = name
+    def createName(self, name, typ):
+        self.names[-1][name] = (typ, name)
         return name
 
     def append(self, value):
-        if self.inAFunction:
+        if self.inAFunction == 2:
             self.out_parts.append(value)
+        elif self.inAFunction == 1:
+            self.func_parts.append(value)
         else:
             self.main_parts.append(value)
 
@@ -143,8 +160,7 @@ def buildContext(contextType):
     string = []
     (typesGen, mainC) = Types.getGeneratedDataTypes()
 
-    Types.genericTypes = {}
-    Types.dataTypes = []
+    Types.genericTypes = coll.OrderedDict()
 
     string.append(typesGen)
 

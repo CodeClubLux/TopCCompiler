@@ -7,7 +7,7 @@ from TopCompiler import Scope
 from TopCompiler import VarParser
 
 def externVar(parser):
-    VarParser.createAndAssignParser(parser)
+    VarParser.createAndAssignParser(parser, imutable=True)
     parser.currentNode.nodes[-1].extern = True
     parser.currentNode.nodes[-1].nodes[1].extern = True
 

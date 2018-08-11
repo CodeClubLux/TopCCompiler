@@ -12,6 +12,8 @@ from TopCompiler import Enum
 from collections import OrderedDict as ODict
 from TopCompiler import ContextParser
 
+from collections import OrderedDict
+
 checkTyp = []
 
 def infer(parser, tree):
@@ -429,9 +431,14 @@ def infer(parser, tree):
 
                 i = c
                 i.replaced = {}
+
+                for key in fType.generic:
+                    i.replaced[key] = fType.generic[key]
+
                 for key in generics:
                     if key in fType.generic:
                         i.replaced[key] = generics[key]
+
 
                 i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
             elif type(i) is Tree.If:
@@ -628,12 +635,15 @@ def infer(parser, tree):
                         i.type = typ
                 else:
                     package = parser.structs[i.package][name].package
-                    for name in s.generic:
-                        if not name in gen:
-                            gen[name] = s.generic[name]
-                            print("added " + name)
+                    newGen = OrderedDict()
 
-                    i.type = Types.Struct(i.mutable, name, s._types, package, gen)
+                    for _name in s.generic:
+                        if not _name in gen:
+                            newGen[_name] = s.generic[_name]
+                        else:
+                            newGen[_name] = gen[_name]
+
+                    i.type = Types.Struct(i.mutable, name, s._types, package, newGen)
                 i.replaced = i.type.remainingGen
             elif type(i) is Tree.ArrRead:
                 if len(i.nodes) == 2:
@@ -832,29 +842,32 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
         return Types.Assign(Types.replaceT(const, generics))
     elif type(shouldBeTyp) is Types.Interface:
         types = {}
+        methods = {}
         for i in shouldBeTyp.types:
             try:
                 types[i] = resolveGen(shouldBeTyp.types[i], normalTyp.types[i], generics, parser, myNode, other)
             except EOFError as e:
                 Error.beforeError(e, "Field '" + i + "' in " + str(shouldBeTyp) + ": ")
             except KeyError:
-                try:
-                    meth = normalTyp.hasMethod(parser, i)
-                    if type(meth) is Types.FuncPointer:
-                        types[i] = resolveGen(shouldBeTyp.types[i], Types.FuncPointer(meth.args[1:], meth.returnType, generic= meth.generic, do= meth.do), generics, parser, myNode, other)
-                    elif meth:
-                        types[i] = meth
-                    else:
-                        types[i] = shouldBeTyp.types[i]
-                except AttributeError:
-                    types[i] = shouldBeTyp.types[i]
+                types[i] = shouldBeTyp.types[i]
+
+        for i in shouldBeTyp.methods:
+            try:
+                meth = normalTyp.hasMethod(parser, i)
+                if meth:
+                    methods[i] = resolveGen(shouldBeTyp.methods[i], Types.FuncPointer(meth.args[1:], meth.returnType, generic= meth.generic, do= meth.do), generics, parser, myNode, other)
+                else:
+                    methods[i] = shouldBeTyp.methods[i]
+            except EOFError as e:
+                Error.beforeError(e, "Method '" + i + "' in " + str(shouldBeTyp) + ": ")
+
         gen = ODict()
 
         for key in shouldBeTyp.generic:
             gen[key] = Types.replaceT(shouldBeTyp.generic[key], generics)
 
         #gen = {i: generics[i] for i in generics if ".".join(i.split(".")[:-1]) == shouldBeTyp.normalName}
-        r = Types.Interface(False, types, gen, shouldBeTyp.normalName)
+        r = Types.Interface(False, types, gen, shouldBeTyp.fullName, methods= methods)
 
         return r
     else:

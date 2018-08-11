@@ -202,10 +202,11 @@ class Block(Node):
                 codegen.append(")")
         elif self.type != Types.Null():
             for i in self.nodes[:-1]:
-                i.compileToJS(codegen)
+                i.compileToC(codegen)
+                codegen.addSemicolon(i)
 
             codegen.append("return ")
-            self.nodes[-1].compileToJS(codegen)
+            self.nodes[-1].compileToC(codegen)
             codegen.append(";}")
         else:
             for i in self.nodes:

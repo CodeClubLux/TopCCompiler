@@ -141,6 +141,8 @@ def declareOnly(self, noVar=False):
         if not (token.token in declaration):
             Error.parseError(self, "unexpected  " + token.token)
 
+
+
     tok = self.thisToken().token
 
     if self.thisToken().type == "indent":
@@ -148,7 +150,10 @@ def declareOnly(self, noVar=False):
     elif s1 != None:
         addBookmark(self)
         declare(self.thisToken())
-        s1(self)
+        if s1 is VarParser.createParser:
+            s1(self, lookBehind= True)
+        else:
+            s1(self)
         returnBookmark(self)
     elif s2 != None and self.thisToken().token != ")" and self.thisToken().token != "(":
         declare(self.lookInfront())
@@ -357,7 +362,7 @@ class Parser:  # all mutable state
 
     def setGlobalData(self, compileRuntime):
         global runtimeParser
-        self.contextType = {}
+        self.contextType ={}
         self.contextFields = {}
 
         if not compileRuntime:
@@ -369,6 +374,9 @@ class Parser:  # all mutable state
             self.scope["_global"] = runtimeParser.scope["_global"]
             self.contextFields["_global"] = runtimeParser.contextFields["_global"]
             self.contextType = runtimeParser.contextType
+            self.specifications["_global"] = runtimeParser.specifications["_global"]
+
+            return
 
         global Stringable
         All = Types.All
