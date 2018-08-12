@@ -47,6 +47,7 @@ class FuncStart(Node):
         self.returnType = returnType
         self.name = name
         self.method = False
+        self.generated = False
 
     def __str__(self):
         return f"def {self.name}("
@@ -257,6 +258,9 @@ class Generic(Node):
         self.nodes[0].compileToC(codegen)
 
 def forwardRef(funcStart, funcBrace, funcBody, codegen):
+    if not funcStart.generated:
+        return
+
     inAFunc = codegen.inAFunction
 
     funcStart.compileToC(codegen)
@@ -267,14 +271,14 @@ def forwardRef(funcStart, funcBrace, funcBody, codegen):
     self = funcBody
 
     if self.method:
-        codegen.append(f"static inline {self.returnType.toCType()} {self.package}_{self.name}ByValue(")
+        codegen.append(f"\nstatic inline {self.returnType.toCType()} {self.package}_{self.name}ByValue(")
         for (iter, i) in enumerate(self.types):
             if iter == 0:
                 codegen.append(f"{i.pType.toCType()},")
             else:
                 codegen.append(f"{i.toCType()},")
         codegen.append(f"struct _global_Context* {codegen.getContext()}")
-        codegen.append(");")
+        codegen.append(");\n")
 
     codegen.decrScope()
     codegen.contexts.pop()

@@ -64,19 +64,32 @@ d.cases.Some.field0 = b;d.tag = 0;
 return d;}
 struct _global_Maybe_Maybe_T _global_None;
 
-struct _global_String main_Point_toString(struct main_Point* main_self, struct _global_Context* b);
-static inline struct _global_String main_Point_toStringByValue(struct main_Point,struct _global_Context* b);struct _global_Allocator _global_Maybe_default_Allocator(struct _global_Maybe_Allocator* _global_self, struct _global_Allocator _global_value, struct _global_Context* c);
-static inline struct _global_Allocator _global_Maybe_default_AllocatorByValue(struct _global_Maybe_Allocator,struct _global_Allocator,struct _global_Context* c);struct _global_bb* _global_alloc_rmain_Point(struct _global_Context* c);
+struct _global_Allocator _global_Maybe_default_Allocator(struct _global_Maybe_Allocator* _global_self, struct _global_Allocator _global_value, struct _global_Context* b);
+
+static inline struct _global_Allocator _global_Maybe_default_AllocatorByValue(struct _global_Maybe_Allocator,struct _global_Allocator,struct _global_Context* b);
+struct _global_bb* _global_alloc_rmain_Point(struct _global_Context* c);
 struct main_Point _global_Array_op_get_main_Point(struct _global_Array_main_Point* _global_self, unsigned int _global_index, struct _global_Context* c);
-static inline struct main_Point _global_Array_op_get_main_PointByValue(struct _global_Array_main_Point,unsigned int,struct _global_Context* c);struct _global_String _global_toString_main_Point(struct main_Point _global_s, struct _global_Context* c);
+
+static inline struct main_Point _global_Array_op_get_main_PointByValue(struct _global_Array_main_Point,unsigned int,struct _global_Context* c);
+struct _global_String _global_toString_main_Point(struct main_Point _global_s, struct _global_Context* c);
 void _global_Array_reserve_main_Point(struct _global_Array_main_Point* _global_self, unsigned int _global_newSize, struct _global_Context* c);
-static inline void _global_Array_reserve_main_PointByValue(struct _global_Array_main_Point,unsigned int,struct _global_Context* c);struct main_Point* _global_Maybe_unwrap_main_Point_rmain_Point(struct _global_Maybe_rmain_Point* _global_self, struct _global_Context* c);
-static inline struct main_Point* _global_Maybe_unwrap_main_Point_rmain_PointByValue(struct _global_Maybe_rmain_Point,struct _global_Context* c);struct main_Point* _global_indexPtr_main_Point(struct main_Point* _global_pType, int _global_offset, struct _global_Context* c);
+
+static inline void _global_Array_reserve_main_PointByValue(struct _global_Array_main_Point,unsigned int,struct _global_Context* c);
+struct main_Point* _global_Maybe_unwrap_main_Point_rmain_Point(struct _global_Maybe_rmain_Point* _global_self, struct _global_Context* c);
+
+static inline struct main_Point* _global_Maybe_unwrap_main_Point_rmain_PointByValue(struct _global_Maybe_rmain_Point,struct _global_Context* c);
+struct main_Point* _global_indexPtr_main_Point(struct main_Point* _global_pType, int _global_offset, struct _global_Context* c);
 struct _global_String _global_Array_join_main_Point(struct _global_Array_main_Point* _global_self, struct _global_String _global_delimiter, struct _global_Context* c);
-static inline struct _global_String _global_Array_join_main_PointByValue(struct _global_Array_main_Point,struct _global_String,struct _global_Context* c);struct _global_Array_main_Point _global_make_array_main_Point(struct _global_Context* c);
+
+static inline struct _global_String _global_Array_join_main_PointByValue(struct _global_Array_main_Point,struct _global_String,struct _global_Context* c);
+struct _global_Array_main_Point _global_make_array_main_Point(struct _global_Context* c);
 void _global_Array_append_main_Point(struct _global_Array_main_Point* _global_self, struct main_Point _global_value, struct _global_Context* c);
-static inline void _global_Array_append_main_PointByValue(struct _global_Array_main_Point,struct main_Point,struct _global_Context* c);struct _global_String _global_Array_toString_main_Point(struct _global_Array_main_Point* _global_self, struct _global_Context* c);
-static inline struct _global_String _global_Array_toString_main_PointByValue(struct _global_Array_main_Point,struct _global_Context* c);struct main_Point {
+
+static inline void _global_Array_append_main_PointByValue(struct _global_Array_main_Point,struct main_Point,struct _global_Context* c);
+struct _global_String _global_Array_toString_main_Point(struct _global_Array_main_Point* _global_self, struct _global_Context* c);
+
+static inline struct _global_String _global_Array_toString_main_PointByValue(struct _global_Array_main_Point,struct _global_Context* c);
+struct main_Point {
 int x;
 int y;
 };

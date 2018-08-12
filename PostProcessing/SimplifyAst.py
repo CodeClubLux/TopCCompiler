@@ -145,11 +145,13 @@ class FuncSpecification:
         funcBody = loop(self.funcBody)
         funcBody.returnType = funcStart.ftype.returnType
 
+
         inGlobal = False
 
         (package, n) = splitPackageAndName(self.identifier)
 
         funcStart.name = n
+        funcStart.generated = True
         funcBody.name = n
         if funcBody.method:
             funcBody.types = [Types.replaceT(i, self.replaced) for i in funcBody.types]
