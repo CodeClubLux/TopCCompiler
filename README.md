@@ -199,17 +199,44 @@ p : P = Point{ 10, 20 }
 
 ### Enum or ADT
 ```scala
-type List =
+type Maybe[T] = //maybe in top is used instead of null
+    Some(T)
+    None
     
+def Maybe[T].default(&self, value: T) T =
+    match *self with //pattern matching with match 
+        Some x -> x //if self is Some then the result will be x
+        None -> value //if self is None then the result will be value
     
+type Person =
+    name: Maybe[string]
+    age: Maybe[int]
+    
+def Person.toString(&self) string =
+    name := self.name.default "Anonymous"
+    age := self.age.default "ageless"
+    
+    "{name} is {age}
+ 
+person := Person{
+    name = Some "Luke"
+    age = None
+}
+
+person2 := Person{
+    name = None
+    age = Some 14
+}
+
+log toString person //will print: Luke is ageless
+log toString person2 //will print: Anonymous is 14
 ``
 
 ### Methods
 Methods are functions which are attached to a particular data type. 
 You can attach methods to Structs, Enums and Aliases (only if the alias does not already have that method)
 
-scala
-``` 
+scala``` 
 def Point.toString(&self) string = //this will add the method to Point, self is of type `&Point`
     "Point({self.x}, {self.y})"
     
@@ -226,7 +253,7 @@ log i /*
     Dynamic dispatch requires the data to be the same size which is only possible if it is a pointer
 */
 
-&i.incr!
+&i.incr! //correct way
 
 log i /* this will print Point(10, 0)
 
