@@ -230,7 +230,7 @@ person2 := Person{
 
 log toString person //will print: Luke is ageless
 log toString person2 //will print: Anonymous is 14
-``
+``` 
 
 ### Methods
 Methods are functions which are attached to a particular data type. 
