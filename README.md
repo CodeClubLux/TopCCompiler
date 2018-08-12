@@ -236,7 +236,7 @@ log toString person2 //will print: Anonymous is 14
 Methods are functions which are attached to a particular data type. 
 You can attach methods to Structs, Enums and Aliases (only if the alias does not already have that method)
 
-scala``` 
+```scala
 def Point.toString(&self) string = //this will add the method to Point, self is of type `&Point`
     "Point({self.x}, {self.y})"
     
