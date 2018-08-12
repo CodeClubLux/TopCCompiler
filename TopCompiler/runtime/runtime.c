@@ -25,6 +25,8 @@ struct _global_String _global_String_toString(struct _global_String* s, Context)
     return *s;
 }
 
+void _global_log(struct _global_String, Context);
+
 struct _global_String _global_String_op_addByValue(struct _global_String a, struct _global_String b, Context) {
     if (a.length == 0) {
         return b;
@@ -35,6 +37,7 @@ struct _global_String _global_String_op_addByValue(struct _global_String a, stru
     struct _global_String newString;
     newString.length = a.length + b.length;
     newString.data = alloc(context->allocator, sizeof(char) * (newString.length+1), context);
+
     memcpy(newString.data, a.data, sizeof(char) * a.length);
     memcpy(newString.data + a.length, b.data, sizeof(char) * (b.length + 1));
     return newString;
@@ -46,6 +49,7 @@ struct _global_String _global_String_op_add(struct _global_String* a, struct _gl
 
 void _reverse_string(struct _global_String * self) {
     unsigned int half_length = self->length / 2;
+
     for (unsigned int i = 0; i < half_length; i++) {
         char tmp = self->data[i];
         self->data[i] = self->data[self->length - 1 - i];
@@ -73,7 +77,7 @@ void itoa(int value, char* str, int base) {
 	// Reverse string
 }
 
-struct _global_String _global_Int_toStringByValue(int number, Context) {
+struct _global_String _global_int_toStringByValue(int number, Context) {
     unsigned int length = 1;
     unsigned int divisor = 10;
 
@@ -91,6 +95,7 @@ struct _global_String _global_Int_toStringByValue(int number, Context) {
         length++;
     }
 
+
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
 
     struct _global_String newString = _global_StringInit(length, memory);
@@ -101,16 +106,16 @@ struct _global_String _global_Int_toStringByValue(int number, Context) {
     return newString;
 }
 
-struct _global_String _global_Uint_toStringByValue(unsigned int number, Context) {
-    return _global_Int_toStringByValue(number, context);
+struct _global_String _global_uint_toStringByValue(unsigned int number, Context) {
+    return _global_int_toStringByValue(number, context);
 }
 
-struct _global_String _global_Int_toString(int* n, Context) {
-    return _global_Int_toStringByValue(*n, context);
+struct _global_String _global_int_toString(int* n, Context) {
+    return _global_int_toStringByValue(*n, context);
 }
 
-struct _global_String _global_Uint_toString(unsigned int* n, Context) {
-    return _global_Int_toStringByValue(*n, context);
+struct _global_String _global_uint_toString(unsigned int* n, Context) {
+    return _global_int_toStringByValue(*n, context);
 }
 
 void _global_log(struct _global_String s, Context) {
@@ -119,4 +124,10 @@ void _global_log(struct _global_String s, Context) {
 
 static inline void* _global_offsetPtr(void* ptr, int offset, Context) {
     return ((char*)ptr) + offset;
-}
+};
+
+/*
+void printI(int i) {
+    printf("%i\n", i);
+};
+*/

@@ -254,7 +254,7 @@ def callToken(self, lam= False):
                     b = self.tokens[self.iter + 2]
                     isIndentationCall = True
 
-        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "unary_operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind())):
+        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
             if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
@@ -361,9 +361,15 @@ class Parser:  # all mutable state
         self.specifications = {}
 
     def setGlobalData(self, compileRuntime):
+        global Stringable
         global runtimeParser
         self.contextType ={}
         self.contextFields = {}
+
+        Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0))},
+                                     name="Stringer")
+        All = Types.All
+        self.Stringable = Stringable
 
         if not compileRuntime:
             if not runtimeParser:
@@ -375,14 +381,7 @@ class Parser:  # all mutable state
             self.contextFields["_global"] = runtimeParser.contextFields["_global"]
             self.contextType = runtimeParser.contextType
             self.specifications["_global"] = runtimeParser.specifications["_global"]
-
             return
-
-        global Stringable
-        All = Types.All
-
-        Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0) )}, name= "Stringer")
-        self.Stringable = Stringable
 
 
         tmp = self.tokens

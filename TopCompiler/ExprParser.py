@@ -79,14 +79,19 @@ def endExpr(parser, layer= -1):
     #parser.stack = parser.stack[:parser.bookmark[layer]]
     return
 
-def isUnary(parser, lastToken):
-    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS", "unary_operator"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
+def isUnary(parser, lastToken, onlyFact=False):
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS", "unary_operator"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else", "either"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool", "lens"]
+
+    if onlyFact:
+        if fact: return True
+        return lastToken.type == "indent" or lastToken.token == "\n"
 
     if fact: return True
     else:
         if parser.thisToken().type in ["operator", "dotS"] or parser.thisToken().token in ["."]:
             return len(parser.currentNode.nodes) == 0
+
         elif parser.thisToken().type == "unary_operator":
             return True
         else:

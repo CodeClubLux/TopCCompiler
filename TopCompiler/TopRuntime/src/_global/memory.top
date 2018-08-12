@@ -5,6 +5,13 @@ ext memcpy: |&none, &none, SizeT| -> none = 'memcpy'
 ext c_alloc: |SizeT| -> &none = 'malloc'
 ext c_free: |&none| -> none = 'free'
 
+type Allocator with
+    def alloc(SizeT) &none
+    def dealloc(&none)
+    def clear()
+
+
+
 type TemporaryStorage =
     occupied: SizeT
     highest: SizeT
@@ -19,8 +26,10 @@ def new_TemporaryStorage(maxSize: SizeT) TemporaryStorage =
         maxSize = maxSize
     }
 
+
 def TemporaryStorage.alloc(&self, size: SizeT) &none =
-    self.occupied = size
+    occupied := self.occupied
+    self.occupied += size
 
     if self.occupied > self.highest then
         self.highest = self.occupied
@@ -28,7 +37,7 @@ def TemporaryStorage.alloc(&self, size: SizeT) &none =
     if self.occupied >= self.maxSize then
         log "used more temporary memory than available"
 
-    offsetPtr self.data, self.occupied
+    offsetPtr self.data, occupied
 
 def TemporaryStorage.dealloc(&self, p: &none) =
 
@@ -40,11 +49,6 @@ def TemporaryStorage.resetTo(&self, occupied: SizeT) =
 
 def TemporaryStorage.clear(&self) =
     self.resetTo 0
-
-type Allocator with
-    def alloc(SizeT) &none
-    def dealloc(&none)
-    def clear()
 
 type MallocWrapper =
 

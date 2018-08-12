@@ -222,9 +222,16 @@ def index(parser, unary=False):
     if not unary:
         unary = ExprParser.isUnary(parser, parser.lookBehind())
 
-
     if not unary and len(parser.currentNode.nodes) == 0:
         Error.parseError(parser, "unexpected .")
+    elif unary:
+        Error.parseError(parser, "unexpected .")
+
+    if len(parser.stack) > parser.bookmark[-2]:
+        op = parser.stack[-1]
+        if op.kind == "&":
+            op.func()
+            parser.stack.pop()
 
     field = parser.nextToken()
 

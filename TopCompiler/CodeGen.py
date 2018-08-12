@@ -8,6 +8,8 @@ import PostProcessing
 import os
 import copy
 
+from AST import Func
+
 import subprocess
 import collections as coll
 
@@ -108,6 +110,13 @@ class CodeGen:
         if tree is None:
             tree = self.tree
 
+        for (iter, i) in enumerate(tree):
+            if type(i) is Tree.FuncStart:
+                funcStart = i
+                funcBrace = i.owner.nodes[iter+1]
+                funcBody = i.owner.nodes[iter+2]
+                Func.forwardRef(funcStart, funcBrace, funcBody, self)
+
         for i in tree:
             i.compileToC(self)
             self.addSemicolon(i)
@@ -160,7 +169,8 @@ def buildContext(contextType):
     string = []
     (typesGen, mainC) = Types.getGeneratedDataTypes()
 
-    Types.genericTypes = coll.OrderedDict()
+    Types.compiledTypes = coll.OrderedDict()
+    Types.dataTypes = []
 
     string.append(typesGen)
 
@@ -174,6 +184,8 @@ def buildContext(contextType):
     return ("".join(string), mainC)
 
 import os
+
+
 
 def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev, context, runtimeBuild): #Add Option to change compiler
     topRuntime = ""
@@ -189,13 +201,13 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev, conte
         linkedCode.append(f.read())
         f.close()
 
-    linkedCode.append(f"int main() {{ \n {mainC}; \n mainInit(); return 0; }};")
+    linkedCode.append(f"int main() {{ \n {mainC}; \n_globalInit(); \n mainInit(); return 0; }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))
     f.close()
 
-    subprocess.call(["clang", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types", "-Wno-visibility"])
+    subprocess.call(["clang", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types", "-Wno-visibility", "-Wno-return-type"])
 
 def exec(outputFile):
     try:
@@ -231,4 +243,12 @@ def genNames(info):
 
             yield ("".join((letters[i] for i in info.array)))
             info.array[info.pointer] += 1
+
+global_info = Info()
+global_gen = genNames(global_info)
+
+def genGlobalTmp():
+    tmp = global_gen.__next__()
+
+    return "func" + tmp
 

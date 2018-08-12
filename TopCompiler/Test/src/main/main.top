@@ -1,6 +1,12 @@
-array := make_array::[int]!
+type Point =
+    x: int
+    y: int
 
-&array.append 10
-&array.append 20
+def Point.toString(&self) string =
+    "Point({self.x},{self.y})"
 
-log array.join ","
+array := make_array::[Point]!
+
+&array.append Point{ x = 30, y = 50 }
+
+log &array.toString!

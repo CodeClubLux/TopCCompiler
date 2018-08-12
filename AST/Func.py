@@ -255,3 +255,28 @@ class Generic(Node):
 
     def compileToC(self, codegen):
         self.nodes[0].compileToC(codegen)
+
+def forwardRef(funcStart, funcBrace, funcBody, codegen):
+    inAFunc = codegen.inAFunction
+
+    funcStart.compileToC(codegen)
+    funcBrace.compileToC(codegen)
+
+    codegen.func_parts[-1] = ");\n"
+
+    self = funcBody
+
+    if self.method:
+        codegen.append(f"static inline {self.returnType.toCType()} {self.package}_{self.name}ByValue(")
+        for (iter, i) in enumerate(self.types):
+            if iter == 0:
+                codegen.append(f"{i.pType.toCType()},")
+            else:
+                codegen.append(f"{i.toCType()},")
+        codegen.append(f"struct _global_Context* {codegen.getContext()}")
+        codegen.append(");")
+
+    codegen.decrScope()
+    codegen.contexts.pop()
+
+    codegen.setInAFunction(inAFunc)

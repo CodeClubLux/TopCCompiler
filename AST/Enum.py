@@ -2,6 +2,7 @@ from .node import *
 from TopCompiler import Types
 from PostProcessing import SimplifyAst
 from TopCompiler import Scope
+from TopCompiler import CodeGen
 
 class Enum(Node):
     def __init__(self, const, normalName, parser, generic={}):
@@ -83,23 +84,27 @@ class Enum(Node):
         codegen.append(f"union {self.package}_{self.normalName}_cases cases;\n")
         codegen.append("\n};\n")
 
+        index = 0
         for (iter, name) in enumerate(self.const):
             args = self.const[name]
             if len(args) > 0:
 
                 codegen.append(f"{cType} {self.package}_{name}{self.onlyGenericName}(")
-                vars = [codegen.getName() for i in args]
+                vars = [codegen.getName() for i in args + [0]]
                 types = [i.toCType() for i in args]
+                types.append("struct _global_Context*")
+
                 codegen.append(",".join(a + " " + b for (a,b) in zip(types, vars)))
                 codegen.append("){\n")
 
                 tmp = codegen.getName()
                 codegen.append(f"{cType} {tmp};\n")
 
-                for (c, i) in enumerate(vars):
-                    codegen.append(tmp + ".cases." + name + ".field" + str(c) + " = " + i + ";")
+                for (c, i) in enumerate(vars[:-1]):
+                    codegen.append(tmp + ".cases." + name + ".field" + str(index) + " = " + i + ";")
                 codegen.append(f"{tmp}.tag = {iter};\n")
                 codegen.append("return " + tmp + ";}\n")
+                index += 1
             else:
                 noGenericsDefined = True
                 for cName in self.generic:
@@ -132,7 +137,7 @@ class Match(Node):
         self.tmp = tmp
 
         if not type(self.type) is Types.Null:
-            funcName = codegen.getName()
+            funcName = CodeGen.genGlobalTmp()
             inAFunc = codegen.inAFunction
             codegen.inGenerateFunction()
 
@@ -163,6 +168,9 @@ class Match(Node):
                     for varName in scope:
                         (typ, var) = scope[varName]
                         scope[varName] = (typ, var[1:])
+
+            codegen.inGenerateFunction()
+            codegen.append('printf("oh oh!");')
 
             codegen.append("\n}\n")
             codegen.setInAFunction(inAFunc)
@@ -331,18 +339,20 @@ class MatchCase(Node):
                 codegen.append("1")
             elif type(node) is Tree.Operator and node.kind == "or":
                 codegen.append(tmp + "==")
-                node.nodes[0].compileToJS(codegen)
+                node.nodes[0].compileToC(codegen)
                 codegen.append("||")
                 codegen.append(tmp + "==")
-                node.nodes[1].compileToJS(codegen)
+                node.nodes[1].compileToC(codegen)
                 codegen.checking = False
             else:
-                if node.type in [Types.I32,Types.Float,Types.String,Types.Bool]:
+                if type(node.type) in [Types.I32,Types.Float,Types.String,Types.Bool]:
                     codegen.append(tmp+"==")
-                    node.compileToJS(codegen)
+                    node.compileToC(codegen)
                 else:
+                    raise Exception("not handled yet")
+
                     codegen.append(tmp+".op_eq(")
-                    node.compileToJS(codegen)
+                    node.compileToC(codegen)
                     codegen.append(")")
                 codegen.checking = False
 

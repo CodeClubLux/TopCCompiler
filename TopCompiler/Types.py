@@ -203,32 +203,15 @@ def getTmpName():
 from TopCompiler import CodeGen
 
 class TmpCodegen:
-    def __init__(self, array, initTypes):
-        self.realArray = []
-        self.realInitTypes = []
-        self.array = array
-        self.initTypes = initTypes
+    def __init__(self):
+        self.array = []
+        self.initTypes = []
         self.info = CodeGen.Info()
         self.gen = CodeGen.genNames(self.info)
         self.inAFunction = True
+
     def inFunction(self):
         self.inAFunction = True
-
-    def completedType(self):
-        self.realArray.append(self.array)
-        self.realInitTypes.append(self.initTypes)
-        self.initTypes = []
-        self.array = []
-
-    def getArrays(self):
-        tmpArray = []
-        tmpInitTypes = []
-        for i in reversed(self.realArray):
-            tmpArray  += i
-        for i in reversed(self.realInitTypes):
-            tmpInitTypes += i
-
-        return (tmpArray, tmpInitTypes)
 
     def outFunction(self):
         self.inAFunction = False
@@ -244,31 +227,21 @@ class TmpCodegen:
 
 def getGeneratedDataTypes():
     global dataTypes
-    namedDataTypes = []
-    initalizeTypes = []
-    tmp = TmpCodegen(namedDataTypes, initalizeTypes)
 
-    while True:
-        keys = list(genericTypes.keys())
-        for key in keys:
-            if key in compiledTypes:
-                continue
+    #@cleanup use new way of generating
 
-            print(key)
+    (namedDataTypes, initializeTypes) = (dataTypes, [])
 
-            genericTypes[key].compileToC(tmp)
-            compiledTypes[key] = 0
-            tmp.completedType() #fix cause sometimes it generates types too late
+    for i in compiledTypes:
+        tmpCodegen = genericTypes[i]
 
-        print("=======")
+        #print(tmpCodegen.array[0])
 
-        if len(genericTypes) == len(keys):
-            break
+        namedDataTypes.append("".join(tmpCodegen.array))
+        if len(tmpCodegen.initTypes) > 0:
+            initializeTypes.append("\n".join(tmpCodegen.initTypes))
 
-
-    (namedDataTypes, initalizeTypes) = tmp.getArrays()
-    dataTypes += namedDataTypes
-    return ("".join(dataTypes), "".join(initalizeTypes))
+    return ("".join(namedDataTypes), "".join(initializeTypes))
 
 tmpTypes = {}
 def genCType(header, genContents):
@@ -283,7 +256,7 @@ def genCType(header, genContents):
 from AST import Struct as S
 from TopCompiler import topc
 
-genericTypes = coll.OrderedDict()
+genericTypes = {}
 compiledTypes = coll.OrderedDict()
 
 def genGenericCType(struct, func= S.Type):
@@ -301,7 +274,14 @@ def genGenericCType(struct, func= S.Type):
         else:
             s.replaceT(struct, newName[newName.find("_"):])
 
-        genericTypes[newName] = s
+
+        tmpCodegen = TmpCodegen()
+        genericTypes[newName] = tmpCodegen
+        s.compileToC(tmpCodegen)
+
+        compiledTypes[newName] = genericTypes
+    #elif newName in genericTypes and not newName in compiledTypes:
+    #    print("recursive dependency")
 
     return "struct " + newName
 
@@ -314,7 +294,14 @@ def genInterface(interface):
 
     if not newName in genericTypes and not newName in compiledTypes:
         s = Tree.Interface(interface, newName)
-        genericTypes[newName] = s
+        tmpCodegen = TmpCodegen()
+
+        genericTypes[newName] = tmpCodegen
+        s.compileToC(tmpCodegen)
+
+        compiledTypes[newName] = tmpCodegen
+    #elif newName in genericTypes and not newName in compiledTypes:
+        #print("recursive dependency")
 
     return "struct " + newName
 
@@ -1094,11 +1081,10 @@ class I32(Type):
         Type.__init__(self)
         if unsigned:
             self.name = "uint"
-            self.normalName = "Uint"
+            self.normalName = "uint"
         else:
             self.name = "int"
-            self.normalName = "Int"
-
+            self.normalName = "int"
         self.types = {}
         self.unsigned = unsigned
 

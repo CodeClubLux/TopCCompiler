@@ -2,6 +2,7 @@ __author__ = 'antonellacalvia'
 
 from .node import *
 from AST import Func
+from TopCompiler import CodeGen
 
 class Cast(Node):
     def __init__(self, f, to, owner=None):
@@ -57,7 +58,7 @@ def castFrom(originalType, newType, node, codegen):
         codegen.append(")")
         return
     elif type(newType) in [Types.Enum, Types.Struct] and notSpecified(originalType):
-        funcName = codegen.getName()
+        funcName = CodeGen.genGlobalTmp()
         tmp = codegen.getName()
         inputT = codegen.getName()
 

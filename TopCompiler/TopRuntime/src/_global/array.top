@@ -39,12 +39,15 @@ def Array[T].reserve(&self, newSize: uint) =
             Some newData
 
         None ->
-            Some (allocator.alloc sizeof T) cast &T
+            Some (allocator.alloc self.capacity * sizeof T) cast &T
 
 def Array[T].append(&self, value: T) =
     newLength := self.length + 1
     if newLength > self.capacity then
-        self.reserve self.capacity * 2
+        if self.capacity == 0 then
+            self.reserve 1
+        else
+            self.reserve self.capacity * 2
 
     *(indexPtr self.data.unwrap!, self.length) = value
     self.length = newLength
@@ -58,14 +61,14 @@ def Array[T: Stringer].join(&self, delimiter: string) string =
             i := 0
             while i < self.length - 1 do
                 s += "{self[i]}{delimiter}"
-                i++
+                i += 1
 
-            s + toString self[-1]
+            s + toString self[self.length - 1]
 
 def Array[T].iterator(&self) =
     ArrayIterator{ self, 0, self.length }
 
-def Array[T: Stringer].toString(&self) =
+def Array[T: Stringer].toString(&self) string =
     "[ {self.join ", "} ]"
 
 type ArrayIterator[T] =
@@ -76,5 +79,7 @@ type ArrayIterator[T] =
 //#inline
 def ArrayIterator[T].next(&self) Maybe[T] =
     if self.it >= self.length then None
-    else Some self.array[self.it++]
+    else
+        self.it += 1
+        Some self.array[self.it - 1]
 
