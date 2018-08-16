@@ -5,10 +5,31 @@ from TopCompiler import Parser
 from TopCompiler import Error
 from TopCompiler import Types
 
+def setupIntType(unsigned, size=None):
+    if size is None:
+        name = "int"
+    else:
+        name = ("u" if unsigned else "i") + str(size)
+
+    def func(parser, token):
+        parser.currentNode.addNode(Tree.Int(token.replace(name, ""), parser, unsigned, size))
+
+    Parser.exprType[name] = func
 
 Parser.exprToken["true"] = lambda parser: parser.currentNode.addNode(Tree.Bool("true", parser))
 Parser.exprToken["false"] = lambda parser: parser.currentNode.addNode(Tree.Bool("false", parser))
-Parser.exprType["i32"] = lambda parser, token: parser.currentNode.addNode(Tree.Int(token, parser))
+
+setupIntType(True)
+setupIntType(True, 8)
+setupIntType(True, 16)
+setupIntType(True, 32)
+setupIntType(True, 64)
+
+setupIntType(False, 8)
+setupIntType(False, 16)
+setupIntType(False, 32)
+setupIntType(False, 64)
+
 Parser.exprType["f32"] = lambda parser, token: parser.currentNode.addNode(Tree.Float(token, parser))
 
 def operatorPop(parser, op, takesIn, unary= False):
@@ -182,6 +203,5 @@ newOperator("%", (40, True), 2)
 newOperator("^", (60, False), 2)
 newOperator('as', (70, True), 1, func= asOperator)
 newOperator("&", (80, True), 1, unary= True)
-newOperator("&mut", (80, True), 1, unary= True)
 
 Parser.exprToken["\\"] = lambda parser: parser.nodeBookmark.append(len(parser.currentNode.owner.nodes))

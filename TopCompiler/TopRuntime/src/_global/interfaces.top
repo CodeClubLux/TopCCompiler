@@ -1,0 +1,19 @@
+type Adder[T] with
+    def op_add(T) T
+    def unary_add() T
+
+type Subtracter[T] with
+    def op_sub(T) T
+
+type Multiplier[T] with
+    def op_mul(T) T
+
+type Divider[T] with
+    def op_div(T) T
+
+type Number[T] with
+    def op_add(T) T
+    def op_sub(T) T
+    def unary_add() T
+    def op_div(T) T
+    def toString() string

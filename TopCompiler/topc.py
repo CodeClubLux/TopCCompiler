@@ -217,6 +217,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
     modified_ = {}
     time1 = time()
 
+
     hotswap = dev and not run
     global outputFile
     global didCompile
@@ -248,7 +249,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 Error.error("unknown argument '" + i + "'.")
 
         if not _hotswap and opt == 0:
-            cache = saveParser.load(compileRuntime)
+            #cache = saveParser.load(compileRuntime)
+            pass
+        beforeLoad = time()
 
         try:
             port = open("src/port.json")
@@ -355,6 +358,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.cssFiles = linkCSSWithFiles
             declarations.transforms = transforms
             declarations.usedModules = {}
+            declarations.path = os.path.abspath("")
 
             global_parser = declarations
 
@@ -436,8 +440,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 order_of_modules = []
 
-                timeForCodeAnalysis = time() - time1
-
                 for i in parser.compiled:
                     parser.package = i
                     if parser.compiled[i][0]:
@@ -466,8 +468,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 compiled = order_of_modules #parser.compiled
 
-                if not dev and not _raise:
+                timeForCodeAnalysis = time() - beforeLoad
+                if compileRuntime:   #not dev and not _raise:
                     saveParser.save(parser, compileRuntime)
+                    pass
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 

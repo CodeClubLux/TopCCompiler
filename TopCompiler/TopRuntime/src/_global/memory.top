@@ -66,9 +66,17 @@ mallocWrapper := MallocWrapper{}
 #addToContext allocator := &temporary_storage as Allocator
 #addToContext longterm_storage := &mallocWrapper as Allocator
 
+def alloc(size: SizeT) &none =
+    context.allocator.alloc size
+
 def indexPtr[T](pType: &T, offset: int) &T =
     (offsetPtr pType, offset * sizeof T) cast &T
 
-def alloc[T]() &T =
-    (context.allocator.alloc sizeof T) cast &T
+def new[T](value: T) &T =
+    pointer := (context.allocator.alloc sizeof T) cast &T
+    *pointer = value
 
+    pointer
+
+def free(p: &none) =
+    context.allocator.dealloc p

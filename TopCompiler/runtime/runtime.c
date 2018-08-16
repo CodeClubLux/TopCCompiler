@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define Context struct _global_Context* context
 #define alloc _global_Allocator_allocByValue
@@ -106,17 +107,27 @@ struct _global_String _global_int_toStringByValue(int number, Context) {
     return newString;
 }
 
-struct _global_String _global_uint_toStringByValue(unsigned int number, Context) {
-    return _global_int_toStringByValue(number, context);
+struct _global_String _global_int_toString(int* number, Context) {
+    return _global_int_toStringByValue(*number, context);
 }
 
-struct _global_String _global_int_toString(int* n, Context) {
-    return _global_int_toStringByValue(*n, context);
-}
+#define gen_integer(name, typ) struct _global_String _global_##name##_toString(typ* number, Context) {\
+return _global_int_toStringByValue(*number, context); \
+} \
+struct _global_String _global_##name##_toStringByValue(typ number, Context) {\
+return _global_int_toStringByValue(number, context); \
+} \
 
-struct _global_String _global_uint_toString(unsigned int* n, Context) {
-    return _global_int_toStringByValue(*n, context);
-}
+gen_integer(uint, unsigned int)
+gen_integer(u8, uint8_t)
+gen_integer(u16, uint16_t)
+gen_integer(u32, uint32_t)
+gen_integer(u64, uint64_t)
+
+gen_integer(i8, int8_t)
+gen_integer(i16, int16_t)
+gen_integer(i32, int32_t)
+gen_integer(i64, int64_t)
 
 void _global_log(struct _global_String s, Context) {
     printf("%s\n", s.data);

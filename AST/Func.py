@@ -13,9 +13,6 @@ class InitArg(Node):
     def __str__(self):
         return self.name + " init "
 
-    def compileToJS(self, codegen):
-        pass
-
     def compileToC(self, codegen):
         pass
 
@@ -58,6 +55,9 @@ class FuncStart(Node):
             name = codegen.createName(self.package + "_" + self.name)
         else:
             name = self.package + "_" + self.name
+
+        if self.method and not self.ftype.args[0].isType(Types.Pointer):
+            name += "ByValue"
 
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.inFunction()
@@ -124,14 +124,23 @@ class FuncBody(Node):
 
         codegen.append(";}\n")
 
-        if self.method:
-            codegen.append(f"static inline {self.returnType.toCType()} {self.package}_{self.name}ByValue(")
+        isToString = self.method and self.name.endswith("toString") and self.types[0].isType(Types.Pointer)
+
+        if self.method and (not self.types[0].isType(Types.Pointer) or isToString):
+            codegen.append(f"static inline {self.returnType.toCType()} {self.package}_{self.name}")
+            if isToString:
+                codegen.append("ByValue(")
+            else:
+                codegen.append("(")
             names = []
             for (iter, i) in enumerate(self.types):
                 n = codegen.getName()
                 names.append(n)
                 if iter == 0:
-                    codegen.append(f"{i.pType.toCType()} {n},")
+                    if isToString:
+                        codegen.append(f"{i.pType.toCType()} {n},")
+                    else:
+                        codegen.append(f"{Types.Pointer(i).toCType()} {n},")
                 else:
                     codegen.append(f"{i.toCType()} {n},")
             codegen.append(f"struct _global_Context* {codegen.getContext()}")
@@ -139,10 +148,14 @@ class FuncBody(Node):
             codegen.append("){\n")
             if self.returnType != Types.Null():
                 codegen.append("return ")
-            codegen.append(f"{self.package}_{self.name}(&")
+            if not isToString:
+                codegen.append(f"{self.package}_{self.name}ByValue(*")
+            else:
+                codegen.append(f"{self.package}_{self.name}(&")
             codegen.append(",".join(names))
             codegen.append(f",{codegen.getContext()}")
             codegen.append(");\n}")
+
 
         if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
             codegen.outFunction()
@@ -150,13 +163,7 @@ class FuncBody(Node):
         codegen.contexts.pop()
 
     def validate(self, parser):
-        checkUseless(self)
-
         actReturnType = Types.Null()
-
-        if type(self.returnType) is str:
-            Scope.decrScope(parser)
-            return
 
         if self.returnType == Types.Null(): pass
         elif len(self.nodes) > 0:
@@ -173,6 +180,7 @@ class FuncBody(Node):
         try:
             s = self.nodes[-1] if len(self.nodes) > 0 else self
             returnType.duckType(parser,actReturnType, s, s ,0)
+            Tree.checkCast(actReturnType, returnType, s, s)
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
 
@@ -207,7 +215,6 @@ class FuncCall(Node):
             codegen.append(",")
         codegen.append(codegen.getContext())
         codegen.append(")")
-
 
     def validate(self, parser): pass
 
@@ -270,8 +277,17 @@ def forwardRef(funcStart, funcBrace, funcBody, codegen):
 
     self = funcBody
 
-    if self.method:
-        codegen.append(f"\nstatic inline {self.returnType.toCType()} {self.package}_{self.name}ByValue(")
+    if self.method and not self.types[0].isType(Types.Pointer):
+        codegen.append(f"\nstatic inline {self.returnType.toCType()} {self.package}_{self.name}(")
+        for (iter, i) in enumerate(self.types):
+            if iter == 0:
+                codegen.append(f"{Types.Pointer(i).toCType()},")
+            else:
+                codegen.append(f"{i.toCType()},")
+        codegen.append(f"struct _global_Context* {codegen.getContext()}")
+        codegen.append(");\n")
+    elif self.method and funcStart.name.endswith("toString") and self.types[0].isType(Types.Pointer):
+        codegen.append(f"\nstatic inline {self.returnType.toCType()} {self.package}_{self.name}(")
         for (iter, i) in enumerate(self.types):
             if iter == 0:
                 codegen.append(f"{i.pType.toCType()},")

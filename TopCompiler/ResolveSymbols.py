@@ -176,6 +176,7 @@ def insert(parser, p, only= False, copy= False):
     p.cssFiles = parser.cssFiles
     p.usedModules = parser.usedModules
     p.specifications  = parser.specifications
+    p.path = parser.path
 
     return p
 

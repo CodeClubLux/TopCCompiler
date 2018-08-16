@@ -104,6 +104,36 @@ def isUseless(i):
     except AttributeError:
         pass
 
+def checkOther(self, parser, function, block):
+    if type(self) in [Tree.FuncStart, Tree.FuncBraceOpen]: return
+    for i in self.nodes:
+        if type(self) in [Tree.While, Tree.For]:
+            checkOther(i, parser, function, self)
+        elif type(self) is Tree.FuncBody:
+            checkOther(i, parser, self, block)
+        else:
+            checkOther(i, parser, function, block)
+    if type(self) in [Tree.Continue, Tree.Break] and not block in [Tree.While, Tree.For]:
+        statement  = "continue" if type(i) is Tree.Continue else "break"
+        self.error(f"unexpected {statement}, outside of a loop")
+    elif type(self) is Tree.Return:
+        if not function:
+            self.error(f"unexpected return statement, outside of a function")
+        try:
+
+            actReturnType = self.nodes[0].type
+            function.returnType.duckType(parser,actReturnType, self, self ,0)
+
+            Tree.checkCast(actReturnType, function.returnType, self, self)
+        except EOFError as e:
+            Error.beforeError(e, "Return Type: ")
+    else:
+        self.validate(parser)
+
+def validate(parser, self, function=None, block=None):
+    checkUseless(self)
+    checkOther(self, parser, None, None)
+
 def checkUseless(self):
     for i in self.nodes[:-1]:
         isUseless(i)
@@ -121,6 +151,7 @@ class Node(Root):
         self.opackage = parser.opackage
 
         self._filename = parser._filename
+        self.path = parser.path
 
         try:
             self.filename = [a + "/" + parser.filename for (a, b) in parser._filename if b == parser.filename][0]
@@ -136,6 +167,9 @@ class Node(Root):
     def error(self, message):
         Error.errorAst(message, self.selfpackage, self.filename, self.token)
 
+    def fullFilePath(self):
+        return self.path + "/" + self.filename
+
     def __str__(self):
         "root"
 
@@ -149,7 +183,7 @@ class Node(Root):
         pass
         #raise NotImplementedError(str(self))
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         raise NotImplementedError(str(self))
 
 class Place(Node):
@@ -159,7 +193,7 @@ class Place(Node):
     def __str__(self):
         return "placeholder"
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         codegen.append(self.name)
 
 class PlaceHolder(Node):
@@ -175,5 +209,5 @@ class PlaceHolder(Node):
     def validate(self, parser):
         pass
 
-    def compileToJS(self, codegen):
+    def compileToC(self, codegen):
         pass

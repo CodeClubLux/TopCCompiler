@@ -91,6 +91,7 @@ from .ExternParser import *
 from .Array import *
 from .MethodParser import *
 from .Struct import *
+from .ForParser import *
 from .TypeInference import *
 from .Enum import *
 from .ParseJson import *
@@ -252,6 +253,7 @@ def callToken(self, lam= False):
             if not (self.tokens[self.iter + 2].token == "\n"):
                 if int(self.lookInfront().token) > self.indentLevel:
                     b = self.tokens[self.iter + 2]
+                    self.iter += 2
                     isIndentationCall = True
 
         if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
@@ -286,6 +288,8 @@ class Parser:  # all mutable state
             if parser.curly > 0:
                 print(parser.curly)
                 Error.parseError(parser, "unmatched {")
+
+
             Error.parseError(parser, "EOF")
 
     def on(self, ast):
@@ -406,117 +410,6 @@ class Parser:  # all mutable state
         self.scope["_global"][0]["context"] = Scope.Type(True,
                                   Types.Pointer(Types.Struct(True, "Context", self.contextType, "_global"), True))
         self.scope["_global"][0]["Stringer"] =  Scope.Type(True, Stringable)
-
-        """ 
-
-        Lengthable = Types.Interface(False, {}, methods={"length": Types.I32()})
-        Intable = Types.Interface(False,{}, methods= {"toInt": Types.FuncPointer([], Types.I32() )})
-        Floatable = Types.Interface(False, {}, methods={"toFloat": Types.FuncPointer([], Types.Float())})
-
-        T = Types.T("T", Types.All, "Atom")
-
-        Atom = Types.Interface(False, {
-            "unary_read": FuncPointer([], T, do= True),
-            "op_set": FuncPointer([T], Null(), do= True),
-            "watch": FuncPointer([FuncPointer([T], Types.Null(), do= True)], Types.Null(), do= True),
-            "toString": FuncPointer([], Types.String(0)),
-            "update": FuncPointer([FuncPointer([T], T)], Types.Null(), do=True)
-        }, coll.OrderedDict([("Atom.T", T)]), "Atom")
-
-        A = Types.T("A", All, "Lens")
-        B = Types.T("B", All, "Lens")
-
-        Lens = Types.Interface(False, {
-            "query": Types.FuncPointer([A], B),
-            "set": Types.FuncPointer([A, B], A),
-            "toString": Types.FuncPointer([], Types.String(0))
-        }, coll.OrderedDict([("Lens.A", A), ("Lens.B", B)]), name="Lens")
-
-        defer_T = Types.T("T", All, "defer")
-        defer_X = Types.T("X", All, "defer")
-
-        defer = Types.FuncPointer([Types.FuncPointer(
-            [defer_T], defer_X, do= True)], Types.FuncPointer([defer_T], Types.FuncPointer([], defer_X, do= True))
-        , generic= coll.OrderedDict([("defer.T", defer_T), ("defer.X", defer_X)]))
-
-        parallel_T = Types.T("T", All, "parallel")
-
-        parallel = Types.FuncPointer([Types.Array(False,
-            Types.FuncPointer([], parallel_T, do=True)
-        )], Types.Array(False, parallel_T), do= True, generic=coll.OrderedDict([("parallel.T", parallel_T)]))
-
-        serial_T = Types.T("T", All, "serial")
-
-        serial = Types.FuncPointer([Types.Array(False,
-            Types.FuncPointer([], serial_T, do=True)
-        )], Types.Array(False, serial_T), do=True, generic=coll.OrderedDict([("serial.T", serial_T)]))
-        Maybe_T = Types.T("T", All, "Maybe")
-        Maybe_R = Types.T("R", All, "Maybe")
-
-        Maybe_gen = coll.OrderedDict([("Maybe.T", Maybe_T)])
-
-        Maybe = Types.Enum("_global", "Maybe", coll.OrderedDict([("Some", [Maybe_T]), ("None", [])]), generic=Maybe_gen)
-        Maybe.methods["_global"] = {}
-        Maybe.methods["_global"]["withDefault"] = Types.FuncPointer(
-            [Types.All, Maybe_T],
-            Maybe_T
-        )
-
-        Maybe.methods["_global"]["map"] = Types.FuncPointer(
-            [Types.All, Types.FuncPointer([Maybe_T], Maybe_R)],
-            Types.replaceT(Maybe, {"Maybe.T": Maybe_R}),
-            generic = coll.OrderedDict([("R", Maybe_R)])
-        )
-
-        assign_T = Types.T("T", All, "assign")
-
-        parseT = Types.T("T", All, "parseJson")
-
-        self.scope["_global"] = [{
-            "assign": Scope.Type(True, Types.FuncPointer([assign_T, Types.Assign(assign_T)], assign_T, generic= coll.OrderedDict([("assign.T", assign_T)]))),
-            "alert": Scope.Type(True, Types.FuncPointer([Stringable], Types.Null(), do= True)),
-            "log": Scope.Type(True, Types.FuncPointer([Types.String(0)], Types.Null(), do= True)),
-            "toString": Scope.Type(True, Types.FuncPointer([Stringable], Types.String(0))),
-
-            "isEven": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
-            "isOdd": Scope.Type(True, Types.FuncPointer([Types.I32()], Types.Bool)),
-            "len": Scope.Type(True, Types.FuncPointer([Lengthable], Types.I32())),
-            "toInt": Scope.Type(True, Types.FuncPointer([Intable], Types.I32())),
-            "toFloat": Scope.Type(True, Types.FuncPointer([Floatable], Types.Float())),
-            "Stringer": Stringable,
-            "Atom": Scope.Type(True, Atom),
-            "Lens": Scope.Type(True, Lens),
-            "All": Scope.Type(True, All),
-            "newAtom": Scope.Type(True, Types.FuncPointer([T], Atom, coll.OrderedDict([("Atom.T", T)]))),
-            "defer": Scope.Type(True, defer),
-            "sleep": Scope.Type(True, Types.FuncPointer([Types.Float()], Types.Null(), do= True)),
-            "parallel": Scope.Type(True, parallel),
-            "serial": Scope.Type(True, serial),
-            "Some": Scope.Type(True, Types.FuncPointer([Maybe_T], Maybe, generic= Maybe_gen)),
-            "None": Scope.Type(True, Maybe),
-            "dict": Scope.Type(True, dictFunc),
-            "offsetPtr": Scope.Type(True, Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32()], Types.Pointer(Types.Null(), True))),
-            "context": Scope.Type(True, Types.Pointer(Types.Struct(True, "Context", self.contextType, "_global"), True))
-        }]
-
-        types = {
-            "int": Types.I32(),
-            "vector": Types.Array(False, Types.I32()),
-            "float": Types.Float(),
-            "string": Types.String(0)
-        }
-
-        self.interfaces["_global"] = (
-            {
-                "Stringer": Stringable,
-                "Atom": Atom,
-                "Lens": Lens,
-                "Any": All,
-                "Maybe": Maybe,
-                "Dict": topDict,
-            }
-        )
-        """
 
     def parse(self):
         tokens = self.tokens

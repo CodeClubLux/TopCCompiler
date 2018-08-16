@@ -225,6 +225,9 @@ def infer(parser, tree):
                         newMethod.args = newMethod.args[1:]
                         self.type = newMethod
 
+                        if not type(self.owner) is Tree.FuncCall:
+                            self.error("Binding method function not supported")
+
             elif type(i) is Tree.Operator:
                 if i.kind == "|>" or i.kind == ">>":
                     self = i
@@ -382,6 +385,9 @@ def infer(parser, tree):
                             else:
                                 typ = Types.FuncPointer([startType] * normal, typ)
 
+                        realT = typ.toRealType()
+                        if i.kind == "-" and type(realT) is Types.I32 and realT.unsigned:
+                            i.type = Types.I32(size= realT.size, unsigned=True)
                         i.type = typ
                         i.opT = startType
 
@@ -578,7 +584,8 @@ def infer(parser, tree):
                         i.nodes[iter].error("expecting =")
 
                     if not randomOrder:
-                        order[i.paramNames[iter-1]] = i.nodes[iter]
+                        nameInOrder = i.paramNames[iter-1]
+                        order[nameInOrder] = i.nodes[iter]
                         myNode = i.nodes[iter]
                         normalTyp = s.fieldType[iter-1]
                     else:
@@ -586,7 +593,8 @@ def infer(parser, tree):
                             i.nodes[iter].error("positional argument follows keyword argument")
                         if i.nodes[iter].nodes[0].name in order:
                             i.nodes[iter].nodes[0].error("duplicate parameter")
-                        order[i.nodes[iter].nodes[0].name] = i.nodes[iter]
+                        nameInOrder = i.nodes[iter].nodes[0].name
+                        order[nameInOrder] = i.nodes[iter]
                         myNode = i.nodes[iter].nodes[1]
                         xname = i.nodes[iter].nodes[0].name
 
@@ -613,14 +621,12 @@ def infer(parser, tree):
 
                             if myIsGen:
                                 myTyp = Types.replaceT(myNode.type, gen)
-                            else:
-                                myTyp = myNode.type
 
                         normalTyp.duckType(parser, myTyp, i, myNode, iter)
+
                         Tree.insertCast(myNode, myNode.type, normalTyp, iter)
-
+                        order[nameInOrder] = i.nodes[iter]
                         #resolveGen(xnormalTyp, myNode.type, gen, parser, myNode, i)
-
                 if not assign:
                     del i.nodes[0]
                     for c in order:
@@ -709,16 +715,7 @@ def infer(parser, tree):
 
     loop(tree, -1)
 
-def validate(parser, tree):
-    for i in tree:
-        if type(i) is Tree.Lambda:
-            Scope.incrScope(parser)
-        if not i.isEnd():
-            validate(parser, i)
-        i.validate(parser)
-
-    if type(tree) is Tree.Root:
-        tree.validate(parser)
+validate = Tree.validate
 
 def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
     """
@@ -853,7 +850,12 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
 
         for i in shouldBeTyp.methods:
             try:
-                meth = normalTyp.hasMethod(parser, i)
+                try:
+                    meth = normalTyp.hasMethod(parser, i, isP=True)
+                except EOFError as e:
+                    Error.beforeError(e, "type " + str(normalTyp) + "." + i + ", to be upcasted to " + str(
+                        shouldBeTyp) + ", only operates: ")
+
                 if meth:
                     methods[i] = resolveGen(shouldBeTyp.methods[i], Types.FuncPointer(meth.args[1:], meth.returnType, generic= meth.generic, do= meth.do), generics, parser, myNode, other)
                 else:

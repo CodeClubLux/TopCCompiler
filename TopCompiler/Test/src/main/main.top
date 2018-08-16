@@ -5,8 +5,14 @@ type Point =
 def Point.toString(&self) string =
     "Point({self.x},{self.y})"
 
-array := make_array::[Point]!
+def Point.free(&self) =
+    log "freed!"
 
-&array.append Point{ x = 30, y = 50 }
+array := [0,1,2,3,4,5]
 
-log &array.toString!
+i := 0
+while i < 10 do
+    array.append Point{ i, 0 }
+    i += 1
+
+log array.toString!

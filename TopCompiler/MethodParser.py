@@ -24,37 +24,43 @@ def addMethod(node, parser, attachTyp, name, func, otherNode= False):
     else:
         node.error("Can't add method to "+str(attachTyp))
 def checkIfOperator(parser, attachTyp, name, func):
-    operators = {
-        "add": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "sub": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "mul": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "div": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "eq": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
-        "ne": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
-        "mod": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "pow": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-        "gt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
-        "lt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
-        "set": Types.FuncPointer([attachTyp, Types.All], Types.Null(), do=True),
-    }
+    attachTyp = func.args[0]
 
-    unary = {
-        "add": Types.FuncPointer([attachTyp], attachTyp),
-        "sub": Types.FuncPointer([attachTyp], attachTyp),
-        "mul": Types.FuncPointer([attachTyp], attachTyp),
-        "read": Types.FuncPointer([attachTyp], Types.All, do= True),
-    }
+    if name.startswith("op_"):
+        try:
+            operators = {
+                "add": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "sub": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "mul": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "div": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "eq": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
+                "ne": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
+                "mod": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "pow": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "gt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
+                "lt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
+                "set": Types.FuncPointer([attachTyp, func.args[1]], Types.Null()),
+                "get": Types.FuncPointer([attachTyp, func.args[1]], func.returnType)
+            }
+        except IndexError:
+            Error.parseError(parser, "Operator overload: Function has to have two arguments")
 
-    if name.startswith("operator_"):
-        op = name[len("operator_"):]
+        op = name[len("op_"):]
+
         if not op in operators:
-            Error.parseError(parser, "overload not found for operator_"+op)
+            Error.parseError(parser, "overload not found for op_"+op)
 
         try:
-            func.duckType(parser, operators[op], Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
+            operators[op].duckType(parser, func, Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
         except EOFError as e:
             Error.beforeError(e, "Operator overload: ")
     elif name.startswith("unary_"):
+        unary = {
+            "add": Types.FuncPointer([Types.All], attachTyp),
+            "sub": Types.FuncPointer([Types.All], attachTyp),
+            "read": Types.FuncPointer([Types.All], Types.All, do=True),
+        }
+
         op = name[len("unary_"):]
         if not op in unary:
             Error.parseError(parser, "overload not found for unary_"+op)

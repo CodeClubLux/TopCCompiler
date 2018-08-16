@@ -47,6 +47,8 @@ def generics(parser, fname):
         if not parser.nextToken().token in [":", ",", "]"]:
             Error.parseError(parser, "expecting ,")
 
+        Scope.addVar(Tree.PlaceHolder(parser), parser, name, Scope.Type(False, typ))
+
         if parser.thisToken().token == ":":
             parser.nextToken()
             interface = Types.parseType(parser)
@@ -54,12 +56,11 @@ def generics(parser, fname):
             if not type(interface) in [Types.Interface, Types.EnumT, Types.Assign]:
                 Error.parseError(parser, "Type variable "+name+", must either be a interface or enumT, not "+str(interface))
 
-            typ = Types.T(name, interface, parser.package+"."+fname if parser.package != "_global" else fname)
+            typ.fromObj(Types.T(name, interface, parser.package+"."+fname if parser.package != "_global" else fname))
 
             if parser.lookInfront().token != "]":
                 parser.nextToken()
 
-        Scope.addVar(Tree.PlaceHolder(parser), parser, name, Scope.Type(False, typ))
         generic[typ.name] = typ
 
         if parser.lookInfront().token == "]":
@@ -147,17 +148,20 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     if method:
         typ = attachTyp
         self = parser.nextToken()
-        mut = False
-        if not self.token == "&":
-            Error.parseError(parser, "expecting & followed by binding name, not "+self.type)
+        pointer = False
+        if self.token == "&":
+            self = parser.nextToken()
+            pointer = True
 
-        self = parser.nextToken()
         if not self.type == "identifier":
             Error.parseError(parser, "expecting binding name which is an identifier, not "+str(self.type))
 
         self = self.token
 
-        pType = Types.Pointer(typ, mut)
+        if pointer:
+            pType = Types.Pointer(typ)
+        else:
+            pType = typ
 
         selfNode = Tree.Create(self, pType, parser)
         selfNode.package = parser.package

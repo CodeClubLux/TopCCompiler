@@ -1,4 +1,4 @@
-import _pickle as pickle
+import pickle
 import os
 import pprint
 import AST as Tree

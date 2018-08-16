@@ -54,6 +54,7 @@ class CodeGen:
 
         self.out_scopes = []
         self.count = 0
+        self.deferred = []
 
     def inFunction(self):
         self.inAFunction = 1
@@ -78,6 +79,20 @@ class CodeGen:
     def incrScope(self):
         self.names.append({})
 
+    def getDeferred(self):
+        return self.deferred[-1]
+
+    def outputDeferred(self):
+        for i in self.getDeferred():
+            i()
+
+    def incrDeferred(self):
+        self.deferred.append([])
+
+    def decrDeferred(self):
+        self.outputDeferred()
+        self.deferred.pop()
+
     def decrScope(self):
         self.names.pop()
 
@@ -90,25 +105,32 @@ class CodeGen:
             except:
                 pass
 
+    def getParts(self):
+        if self.inAFunction == 2:
+            return self.out_parts
+        elif self.inAFunction == 1:
+            return self.func_parts
+        else:
+            return self.main_parts
+
     def addSemicolon(self, ast):
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
             self.append(";\n")
+            return
+            self.append(f';\n#line {ast.token.line+2} "{ast.fullFilePath()}.top"\n')
 
     def createName(self, name, typ):
         self.names[-1][name] = (typ, name)
         return name
 
     def append(self, value):
-        if self.inAFunction == 2:
-            self.out_parts.append(value)
-        elif self.inAFunction == 1:
-            self.func_parts.append(value)
-        else:
-            self.main_parts.append(value)
+        self.getParts().append(value)
 
     def toCHelp(self, tree=None, isGlobal=True):
         if tree is None:
             tree = self.tree
+
+        self.incrDeferred()
 
         for (iter, i) in enumerate(tree):
             if type(i) is Tree.FuncStart:
@@ -120,6 +142,8 @@ class CodeGen:
         for i in tree:
             i.compileToC(self)
             self.addSemicolon(i)
+
+        self.decrDeferred()
 
     def getName(self):
         return next(self.gen)

@@ -45,20 +45,21 @@ keywords = fastacess([
         'let',
         'ext',
         'type',
-        'string',
-        'var',
         "not", "or", "and",
         "match",
         "with",
         "from",
-        "decoder",
         "is",
         "either",
         "uint",
         "#addToContext",
         "#pushContext",
         "sizeof",
-        "return"
+        "return",
+        "defer",
+        "i32", "i8", "i16", "i32", "i64",
+        "u32", "u8", "u16", "i32", "i64",
+        "for"
     ])
 
 
@@ -87,19 +88,37 @@ ml2Operators = fastacess([
     "==", "!=", "<=", ">=",
     "<-", "->",
     "+=", "-=", "*=", "/=",
+    "++",
     ])
 
 ml1Operators = fastacess([
-    ":",  "<", ">", "-",  "=", "+", "*", "/", "%"
+    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+"
 ])
 
-tokenSpecification = [ #cleanup use loop instead of regex to find it out
+def intRegex(ending):
+    return r'\d*[\d_]*(\d+)_?' + ending
+
+def addEnding(arr):
+    new = []
+    for (group, regex) in arr:
+        new.append( (group,   "^" + regex + "$"))
+    return new
+
+tokenSpecification = addEnding([ #cleanup use loop instead of regex to find it out
         ('identifier', r'[^\d\W](\w|(-[^\d\W]))*'),  # [A-Za-z0-9_$]*([A-Za-z0-9_$]*-[A-Za-z_$]+)*
-        ('i32', r'\d*[\d_]*(\d+)'),
-        ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f)'),
-        ('hex', r'0[xX][0-9a-fA-F]+'),
-        ('symbol', r'_')
-    ]
+        ('int', r'\d*[\d_]*(\d+)'),
+        ('u8', intRegex('u8')),
+        ('symbol', r'_'),
+        ('i32', intRegex('i32')),
+        ('f32', r'\d*[\d_]*\d+(\.\d*[\d_]*(\d+)|f|_f)'),
+        ('i8', intRegex('i8')),
+        ('i16', intRegex('i16')),
+        ('i64', intRegex('i64')),
+        ('u16', intRegex('u16')),
+        ('u32', intRegex('u32')),
+        ('u64', intRegex('u64')),
+        ('hex', r'0[xX][0-9a-fA-F_]+'),
+    ])
 
 compiledSpecifications = [re.compile(regex) for (group, regex) in tokenSpecification]
 
@@ -137,16 +156,22 @@ class LexerState:
         else:
             t = time.time()
             typ = ""
+            match = None
             for (it, (group, regex)) in enumerate(tokenSpecification):
                 regex = compiledSpecifications[it]
-                if regex.match(self.tok):
+                match = regex.match(self.tok)
+                if match:
                     typ = group
                     break
-
             if typ == "":
-                Error.errorAst("Unexpected token", self.package, self.filename, Token(self.tok, "", self.line, self.column))
+                Error.errorAst("Unexpected token " + self.tok, self.package, self.filename, Token(self.tok, "", self.line, self.column))
 
-            self.append(Token(self.tok, typ, self.line, self.column))
+            if not typ == "identifier"  :
+                tok = self.tok.replace("_", "")
+            else:
+                tok = self.tok
+
+            self.append(Token(tok, typ, self.line, self.column))
 
         self.tok = ""
 
@@ -253,8 +278,9 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
             if state.inCommentLine:
                 state.tok = ""
             state.append(Token("\n", "symbol", state.line, state.column))
-            state.append(Token(state.followedByNumSpace(), "indent", state.line, state.column))
-            state.column = -1
+            spaces = state.followedByNumSpace()
+            state.append(Token(spaces, "indent", state.line, state.column))
+            state.column = -2 + spaces
             state.inCommentLine = False
             state.line += 1
             global linesOfCode
@@ -322,6 +348,7 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
     state.pushTok()
     state.append(Token("\n", "symbol", state.line-1, state.column))
     state.append(Token(0, "indent", state.line, state.column))
-
+    state.append(Token("\n", "symbol", state.line, state.column))
+    state.append(Token(0, "indent", state.line, state.column))
 
     return state.tokens

@@ -251,7 +251,7 @@ def index(parser, unary=False):
         acess.addNode(parser.currentNode.nodes[-1])
         parser.currentNode.nodes[-1] = acess
     else:
-        parser.currentNode.addNode(acess)
+        Error.parseError(parser, "unexpected .")
 
 Parser.exprToken["type"] = typeParser
 Parser.exprToken["."] = index

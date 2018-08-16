@@ -3,17 +3,14 @@ __author__ = 'antonellacalvia'
 from .node import *
 from TopCompiler import Types
 class Int(Node):
-    def __init__(self, number, parser):
+    def __init__(self, number, parser, unsigned=True, size=None):
         Node.__init__(self, parser)
         self.number = number
 
-        self.type = Types.I32(unsigned=True)
+        self.type = Types.I32(unsigned=unsigned, size=size)
 
     def __str__(self):
         return "int " + self.number
-
-    def compileToJS(self, codegen):
-        codegen.append(self.number)
 
     def compileToC(self, codegen):
         codegen.append(self.number)
@@ -29,9 +26,6 @@ class Bool(Node):
 
     def __str__(self):
         return "bool " + self.bool
-
-    def compileToJS(self, codegen):
-        codegen.append(self.bool)
 
     def compileToC(self, codegen):
         if self.bool == "true":
@@ -49,15 +43,12 @@ class Float(Node):
         self.type = Types.Float()
 
     def __str__(self):
-        return "double " + self.number
+        return "float " + self.number
 
     def validate(self, parser): pass
-    def compileToJS(self, codegen):
-        codegen.append(self.number)
 
     def compileToC(self, codegen):
         codegen.append(self.number)
-
 
 class String(Node):
     def __init__(self, string, parser):

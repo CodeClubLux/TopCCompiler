@@ -31,7 +31,7 @@ def insertCast(ast, fromT, toT, iter):
         c.addNode(ast)
 
 def notSpecified(self):
-    generics = self.generic
+    generics = self.remainingGen
 
     for genName in generics:
         b = generics[genName]
@@ -44,7 +44,9 @@ def checkCast(originalType, newType, node, parser):
             node.error("Can only upcast to interface from pointer, not "+str(originalType))
 
 def castFrom(originalType, newType, node, codegen):
-    if type(newType) is Types.Interface:
+    if originalType.isType(Types.FuncPointer):
+        return node.compileToC(codegen)
+    elif type(newType) is Types.Interface:
         if not type(originalType) is Types.Pointer:
             node.error("Can only upcast to interface from pointer, not "+str(originalType))
         originalType = originalType.pType

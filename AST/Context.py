@@ -34,3 +34,28 @@ class PushContext(Node):
             codegen.addSemicolon(i)
 
         codegen.contexts.pop()
+
+class Defer(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def compileToC(self, codegen):
+        names = []
+        funcCall = self.nodes[0]
+        for i in funcCall.nodes[1:]:
+            n = codegen.getName()
+            names.append(n)
+            codegen.append(f"{i.type.toCType()} {n} = ")
+            i.compileToC(codegen)
+            codegen.addSemicolon(i)
+
+        names.append(codegen.getContext())
+
+        def func():
+            funcCall.nodes[0].compileToC(codegen)
+            codegen.append("(")
+            codegen.append(",".join(names))
+            codegen.append(")")
+            codegen.addSemicolon(self)
+
+        codegen.getDeferred().append(func)

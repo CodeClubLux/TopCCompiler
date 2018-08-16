@@ -1,6 +1,7 @@
 __author__ = 'antonellacalvia'
 
 from .node import *
+from AST import Enum
 from TopCompiler import IfExpr
 
 class If(Node):
@@ -24,11 +25,11 @@ class If(Node):
                 i.compileToC(codegen)
             codegen.append(")")
         elif self.type != Types.Null():
-            #@cleanup create seperature function
-            codegen.append("(function(){")
-            for i in self.nodes:
-                i.compileToJS(codegen)
-            codegen.append("})()")
+            def compileInner():
+                for i in self.nodes:
+                    i.compileToC(codegen)
+
+            Enum.genFunction(compileInner, codegen, self.type)
         else:
             count = 0
             _l = len(self.nodes)
@@ -196,6 +197,7 @@ class Block(Node):
         return "block"
 
     def compileToC(self, codegen):
+        codegen.incrDeferred()
         if not self.noBrackets and self.owner.ternary:
             self.nodes[0].compileToC(codegen)
             if self == self.owner.nodes[-1]:
@@ -211,8 +213,11 @@ class Block(Node):
         else:
             for i in self.nodes:
                 i.compileToC(codegen)
+                codegen.addSemicolon(i)
 
             if not self.noBrackets: codegen.append(";}")
+
+        codegen.decrDeferred()
 
     def validate(self, parser):
         checkUseless(self)

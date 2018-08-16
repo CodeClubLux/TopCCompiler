@@ -21,9 +21,23 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
 
         token = parser.thisToken().token
         if token == "i32":
-            return I32()
+            return I32(size=32)
+        elif token == "i64":
+            return I32(size=64)
+        elif token == "i16":
+            return I32(size=16)
+        elif token == "i8":
+            return I32(size=8)
         elif token == "uint":
             return I32(unsigned= True)
+        elif token == "u8":
+            return I32(unsigned=True, size=8)
+        elif token == "u16":
+            return I32(unsigned=True, size=16)
+        elif token == "u32":
+            return I32(unsigned=True, size=32)
+        elif token == "u64":
+            return I32(unsigned=True, size=64)
         elif token == "float":
             return Float()
         elif token == "string":
@@ -380,7 +394,7 @@ class Type:
     def isType(self, other):
         return type(self) is other
 
-    def hasMethod(self, parser, field):
+    def hasMethod(self, parser, field, isP= False):
         try:
             return self.methods[field]
         except:
@@ -551,22 +565,21 @@ class Struct(Type):
         self.name = fullName + genericS
         #print(self.name)
 
-    def hasMethod(self, parser, field):
+    def hasMethod(self, parser, field, isP= False):
         try:
             m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
         except KeyError:
-            try:
-                m = parser.interfaces[self.package][self.normalName].types[field]
-            except KeyError:
-                m = False
+            return False
+            # m = parser.interfaces[self.package][self.normalName].types[field]
 
         if m:
             func = replaceT(m, self.gen)
-            firstArg = m.args[0].pType
-            try:
-                firstArg.duckType(parser, self, parser, parser)
-            except EOFError as e:
-                beforeError(e, "")
+            m = replaceT(m, self.gen)
+            firstArg = m.args[0]
+
+            if isP:
+                self = Types.Pointer(self)
+            firstArg.duckType(parser, self, parser, parser)
             return func
 
     def toCType(self):
@@ -760,6 +773,7 @@ class Interface(Type):
         self.mutable = False
         self.types = args
         self.generic = generic
+        self.remainingGen = generic
         self.fullName = name
 
         if not methods:
@@ -817,10 +831,10 @@ class Interface(Type):
             inMethod = True
             for field in self.methods:
                 try:
-                    meth = isStruct.hasMethod(parser, field)
+                    meth = isStruct.hasMethod(parser, field, isP= True)
                 except EOFError as e:
                     notInField = True
-                    beforeError(e, "type "+str(other)+"."+field+", needed to be upcasted to " + str(self) + ", only operates: ")
+                    beforeError(e, "type "+str(other)+"."+field+", to be upcasted to " + str(self) + ", only operates: ")
                 if meth:
                     if meth.isType(FuncPointer):
                         self.methods[field].duckType(parser, FuncPointer(meth.args[1:], meth.returnType, do= meth.do, generic=meth.generic), node, mynode, iter)
@@ -837,10 +851,10 @@ class Interface(Type):
                 beforeError(e, ("Method" if inMethod else "Field")  +" '" + field + "' in " + str(other) + ": ")
 
 
-    def hasMethod(self, parser, field):
+    def hasMethod(self, parser, field, isP=False):
         if field in self.methods:
             meth = self.methods[field]
-            return Types.FuncPointer([Null()] + meth.args, meth.returnType, meth.generic, meth.do)
+            return Types.FuncPointer([Types.Pointer(self)] + meth.args, meth.returnType, meth.generic, meth.do)
 
 class T(Type):
     def __init__(self, name, typ, owner):
@@ -853,11 +867,18 @@ class T(Type):
         self.realName = name
         #self.methods = typ.methods
 
+    def fromObj(self, other):
+        self.name = other.name
+        self.normalName = other.normalName
+        self.type = other.type
+        self.types = other.types
+        self.owner = other.owner
+        self.realName = other.realName
+
     def toCType(self):
         return self.type.toCType()
 
     def duckType(self, parser, other, node, mynode, iter):
-        
         if self.name == other.name:
             return True
 
@@ -867,11 +888,14 @@ class T(Type):
         Type.duckType(self, parser, other, node, mynode, iter)
         #self.type.duckType(parser, other, node, mynode, iter)
 
-    def hasMethod(self, parser, name):
-        return self.type.hasMethod(parser, name)
-
-    def getMethod(self, parser, field):
-        return self.type.getMethod(parser, field)
+    def hasMethod(self, parser, name, isP= False):
+        meth = self.type.hasMethod(parser, name, isP= isP)
+        if meth:
+            if not isP and self.type.isType(Interface):
+                parser.error("on pointer")
+            if not isP and meth.args[0].isType(Types.Pointer):
+                parser.error("on pointer")
+            return meth
 
     def __repr__(self):
         return self.name+":"+str(self.type)
@@ -886,7 +910,7 @@ def addMethodEnum(self, i, parser, name, method):
     else:
         self.methods[package] = {name: method}
 
-def hasMethodEnum(attachTyp, parser, name):
+def hasMethodEnum(attachTyp, parser, name, isP=False):
     self = parser.interfaces[attachTyp.package][attachTyp.normalName]
 
     packages = []
@@ -907,10 +931,14 @@ def hasMethodEnum(attachTyp, parser, name):
             "ambiguous, multiple definitions of the method " + self.name + "." + name + " in packages: " + ", ".join(
                 packages[:-1]) + " and " + packages[-1])
 
-    if not b:
-        return
+    if b:
+        m = replaceT(b, attachTyp.generic)
+        firstArg = m.args[0]
 
-    return replaceT(b, attachTyp.generic)
+        if isP:
+            attachTyp = Types.Pointer(attachTyp)
+        firstArg.duckType(parser, attachTyp, parser, parser, 0)
+        return m
 
 class Enum(Type):
     def __init__(self, package, name, const, generic):
@@ -1032,7 +1060,16 @@ def isGeneric(t, unknown=False):
     elif type(t) is Array: return isGeneric(t.elemT)
     elif type(t) is T: return True
     elif type(t) is Pointer: return isGeneric(t.pType)
-    elif type(t) in [Interface, Struct, Alias, Enum]: return t.normalName != t.name
+    elif type(t) in [Interface, Struct, Alias, Enum]:
+        if len(t.remainingGen) == 0: return False
+
+        if t.normalName != t.name:
+            for i in t.remainingGen:
+                if not type(t.remainingGen[i]) is T: return False
+            return True
+        else:
+            return False
+
     elif type(t) is Tuple:
         for i in t.list:
             if isGeneric(i):
@@ -1076,24 +1113,50 @@ def remainingT(s):
 
     return args
 
+intTypeToString = {
+    (None,True): "uint",
+    (None,False): "int",
+    (8, False): "i8",
+    (16, False): "i16",
+    (32, False): "i32",
+    (64, False): "i64",
+    (8, True): "u8",
+    (16, True): "u16",
+    (32, True): "u32",
+    (64, True): "u64",
+}
+
 class I32(Type):
-    def __init__(self, unsigned=False):
+    def __init__(self, unsigned=False, size=None):
         Type.__init__(self)
-        if unsigned:
-            self.name = "uint"
-            self.normalName = "uint"
-        else:
-            self.name = "int"
-            self.normalName = "int"
+
+        self.name = intTypeToString[(size, unsigned)]
+        self.normalName = self.name
+
+        if not size:
+            size = 32
+
         self.types = {}
         self.unsigned = unsigned
 
         self.__methods__ = None
+        self.size = size
 
     def toCType(self):
-        if self.unsigned:
-            return "unsigned int"
-        return "int"
+        nameToC = {
+            "int": "int",
+            "uint": "unsigned int",
+            "i8": "int8_t",
+            "i16": "int16_t",
+            "i32": "int32_t",
+            "i64": "int64_t",
+            "u8": "uint8_t",
+            "u16": "uint16_t",
+            "u32": "uint32_t",
+            "u64": "uint64_t",
+        }
+
+        return nameToC[self.name]
 
     @property
     def methods(self):
@@ -1121,12 +1184,18 @@ class I32(Type):
         if self.unsigned and not other.unsigned:
             node.error("Expecting uint not int")
 
+        if self.size < other.size:
+            node.error("Truncating "+str(other)+" to "+str(self))
+
 class Pointer(Type):
     def __init__(self, pType, mutable=False):
         self.pType = pType
         self.name = "&" + pType.name
         self.normalName = pType.normalName
-        self.types = pType.types
+        if not pType.isType(Pointer):
+            self.types = pType.types
+        else:
+            self.types = {}
         self.methods = pType.methods
         self.mutable = mutable
         self.package = pType.package
@@ -1137,19 +1206,17 @@ class Pointer(Type):
     def toCType(self):
         return self.pType.toCType() + "*"
 
-    def duckType(self, parser, other, node, mynode, iter):
+    def duckType(self, parser, other, node, mynode, iter=0):
         if not other.isType(Pointer):
             mynode.error("Expecting pointer, not type "+other.name)
 
-        #other = other.toRealType()
-        #if self.mutable and not other.mutable:
-        #    mynode.error("Expecting an mutable pointer but instead got an immutable pointer")
+        if self.name == "&none":
+            return
+        Type.duckType(self, parser, other, node, mynode, iter)
 
-    def hasMethod(self, parser, field):
-        return self.pType.hasMethod(parser, field)
-
-    def getMethod(self, parser, field):
-        return self.pType.getMethod(parser, field)
+    def hasMethod(self, parser, field, isP= False):
+        if self.pType.isType(Pointer): return
+        return self.pType.hasMethod(parser, field, isP= True)
 
 class Float(Type):
     def __init__(self):

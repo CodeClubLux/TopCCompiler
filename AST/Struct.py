@@ -50,6 +50,9 @@ class InitStruct(Node):
                 self.nodes[i].compileToC(codegen)
                 if i != len(self.nodes)-1:
                     codegen.append(",")
+
+                if self.typ.normalName == "Range":
+                    print(self.nodes[i])
             codegen.append(")")
         else:
             self.compileAssign(codegen)

@@ -46,6 +46,7 @@ def pattern(name, names, parser, getName):
             name.error("Unexpected token")
 
 def createParser(parser, name= "", typ= None, check= True, imutable= False, attachTyp= False, lookBehind=False): # : creation
+    noName = False
     if name == "":
         if lookBehind:
             name = parser.lookBehind()
@@ -55,6 +56,7 @@ def createParser(parser, name= "", typ= None, check= True, imutable= False, atta
 
             name = parser.currentNode.nodes[-1]
             del parser.currentNode.nodes[-1]
+        noName = True
 
     names = []
 
@@ -87,6 +89,11 @@ def createParser(parser, name= "", typ= None, check= True, imutable= False, atta
         typ = Types.parseType(parser)
 
         node.varType = typ
+
+    if noName and parser.lookInfront().token != "=":
+        if not type(node.owner) in [Tree.FuncBraceOpen, Tree.Type]:
+            parser.nextToken()
+            Error.parseError(parser, "Uninitialized variable")
 
 def assignParser(parser, name= "", init= False, package = ""):
     if not init:
@@ -190,7 +197,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
         if type(name) is Tree.Create:
             n.addNode(name)
-            parser.nextToken()
+            #parser.nextToken()
         else:
             createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)
 

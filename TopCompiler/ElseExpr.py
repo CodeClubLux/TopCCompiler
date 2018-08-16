@@ -29,11 +29,14 @@ def checkIf(parser, i):
                 typ = thisTyp
             except EOFError:
                 Error.beforeError(e, "Type mismatch in arms of if ")
-
         #if iter.type != typ:
         #    (iter.nodes[-1] if len(iter.nodes) > 0 else iter).error("type mismatch in arms of if, "+str(iter.type)+" and "+str(typ))
 
-    i.type = i.nodes[1].type
+    i.type = typ
+
+    for it in i.nodes[3:][::2]:
+        if len(it.nodes) > 0:
+            Tree.insertCast(it.nodes[-1], it.type, typ, -1)
 
 def elseExpr(parser):
     toplevel = Tree.Else(parser)

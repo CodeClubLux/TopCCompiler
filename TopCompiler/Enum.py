@@ -233,6 +233,9 @@ def match(parser):
         if parser.thisToken().token == "->":
             parser.iter -= 1
 
+    if len(self.nodes) % 2 == 0:
+        Error.parseError(parser, "Expecting ->")
+
     parser.currentNode = self.owner
 
 Parser.exprToken["match"] = match

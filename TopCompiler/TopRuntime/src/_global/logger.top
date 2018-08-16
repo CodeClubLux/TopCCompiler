@@ -6,4 +6,4 @@ def assert(b: bool, message: string) =
         panic "Assertion failed: {message}"
 
 def toString[T: Stringer](s: T) string =
-    s.toString!
+    &s.toString!

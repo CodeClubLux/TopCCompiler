@@ -125,6 +125,40 @@ class Enum(Node):
     def validate(self, parser):
         pass
 
+def genFunction(compileNodes, codegen, returnType):
+    funcName = CodeGen.genGlobalTmp()
+    inAFunc = codegen.inAFunction
+    codegen.inGenerateFunction()
+
+    vars = []
+    varNames = []
+
+    for scope in codegen.names:
+        for varName in scope:
+            (typ, var) = scope[varName]
+            vars.append(f"{typ}* {var},")
+            varNames.append("&" + var)
+            if inAFunc != 2:
+                scope[varName] = (typ, "*" + var)
+
+    vars = "".join(vars)
+    varNames = ",".join(varNames)
+
+    codegen.append(
+        f"static inline {returnType.toCType()} {funcName}({vars} struct _global_Context* {codegen.getContext()}) {{\n")
+
+    compileNodes()
+
+    if inAFunc != 2:
+        for scope in codegen.names:
+            for varName in scope:
+                (typ, var) = scope[varName]
+                scope[varName] = (typ, var[1:])
+
+    codegen.append("\n}\n")
+    codegen.setInAFunction(inAFunc)
+    codegen.append(f"{funcName}({varNames}, {codegen.getContext()})")
+
 class Match(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
@@ -137,44 +171,15 @@ class Match(Node):
         self.tmp = tmp
 
         if not type(self.type) is Types.Null:
-            funcName = CodeGen.genGlobalTmp()
-            inAFunc = codegen.inAFunction
-            codegen.inGenerateFunction()
+            def genNodes():
+                codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
+                self.nodes[0].compileToC(codegen)
+                codegen.append(";\n")
 
-            vars = []
-            varNames = []
+                for iter in range(1, len(self.nodes)):
+                    self.nodes[iter].compileToC(codegen)
 
-            for scope in codegen.names:
-                for varName in scope:
-                    (typ, var) = scope[varName]
-                    vars.append(f"{typ}* {var},")
-                    varNames.append("&" + var)
-                    if inAFunc != 2:
-                        scope[varName] = (typ, "*" + var)
-
-            vars = "".join(vars)
-            varNames = ",".join(varNames)
-
-            codegen.append(f"static inline {self.type.toCType()} {funcName}({vars} struct _global_Context* {codegen.getContext()}) {{\n")
-            codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
-            self.nodes[0].compileToC(codegen)
-            codegen.append(";\n")
-
-            for iter in range(1, len(self.nodes)):
-                self.nodes[iter].compileToC(codegen)
-
-            if inAFunc != 2:
-                for scope in codegen.names:
-                    for varName in scope:
-                        (typ, var) = scope[varName]
-                        scope[varName] = (typ, var[1:])
-
-            codegen.inGenerateFunction()
-            codegen.append('printf("oh oh!");')
-
-            codegen.append("\n}\n")
-            codegen.setInAFunction(inAFunc)
-            codegen.append(f"{funcName}({varNames}, {codegen.getContext()})")
+            genFunction(genNodes, codegen, self.type)
         else:
             codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
             self.nodes[0].compileToC(codegen)

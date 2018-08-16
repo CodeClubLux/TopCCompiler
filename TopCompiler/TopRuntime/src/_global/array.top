@@ -17,11 +17,13 @@ def Array[T].op_get(&self, index: uint) T =
 
     *(indexPtr self.data.unwrap!, index)
 
+/*
 def Array[T].op_set(&self, index: uint, value: T) =
     assert index < self.length, "Out of bounds"
 
     p := (indexPtr self.data.unwrap!, index) cast &T
     *p = value
+*/
 
 def Array[T].reserve(&self, newSize: uint) =
     allocator := self.allocator.default context.allocator
@@ -71,6 +73,13 @@ def Array[T].iterator(&self) =
 def Array[T: Stringer].toString(&self) string =
     "[ {self.join ", "} ]"
 
+def Array[T].free(&self) =
+    allocator := self.allocator.default context.allocator
+
+    match self.data with
+        Some data -> free data
+        None ->
+
 type ArrayIterator[T] =
     array: &Array[T]
     it: uint
@@ -82,4 +91,28 @@ def ArrayIterator[T].next(&self) Maybe[T] =
     else
         self.it += 1
         Some self.array[self.it - 1]
+
+
+type Range =
+    start: uint
+    end: Maybe[uint]
+
+type RangeIterator =
+    range: Range
+    i: uint
+
+def Range.iterator(self) =
+    RangeIterator{ self, 0 }
+
+def RangeIterator.next(&self) Maybe[uint] =
+    range := &(self.range)
+
+    if (Some range.start) < range.end then
+        tmp := self.i
+        self.i += 1
+        Some tmp
+    else
+        None
+
+range := Range{ 0, None }
 

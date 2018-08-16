@@ -2,24 +2,40 @@ type Maybe[T] either
     Some(T)
     None
 
-def Maybe[T: Stringer].toString(&self) =
-    match *self with
+def Maybe[T: Stringer].toString(self) =
+    match self with
         Some x ->
             "Some({x})"
 
         None ->
             "None"
 
-def Maybe[T].unwrap(&self) T =
-    match *self with
+def Maybe[T].unwrap(self) T =
+    match self with
         Some x -> x
         None ->
             panic "Trying to unwrap maybe, which was None"
 
-            pToValue := alloc::[T]! //this code will never be reached
-            *pToValue
+            *((alloc 0) cast &T)
 
-def Maybe[T].default(&self, value: T) T =
-    match *self with
+def Maybe[T].default(self, value: T) T =
+    match self with
         Some x -> x
         None -> value
+
+def Maybe[T].map[R](self, f: |T| -> R) Maybe[R] =
+    match self with
+        Some x -> Some (f x)
+        None -> None
+
+def Maybe[T: {op_gt: |T| -> bool}].op_gt(self, other: Maybe[T]) bool =
+    match self with
+        Some x ->
+            match other with
+                Some y -> x > y
+                None -> false
+
+        None -> false
+
+def Maybe[T: {op_gt: |T| -> bool}].op_lt(self, other: Maybe[T]) bool =
+    other > self

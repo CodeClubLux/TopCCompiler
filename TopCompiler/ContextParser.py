@@ -64,6 +64,25 @@ def pushContext(parser):
 
     parser.currentNode = previous
 
+def defer(parser):
+    node = Tree.Defer(parser)
+    previos = parser.currentNode
+    previos.addNode(node)
+    parser.currentNode = node
+
+    while not Parser.isEnd(parser):
+        parser.nextToken()
+        Parser.callToken(parser)
+
+    if len(node.nodes) != 1:
+        Error.parseError(parser, "Expecting single expression, not "+str(len(node.nodes)))
+
+    if not type(node.nodes[0]) is Tree.FuncCall:
+        Error.parseError(parser, "Expecting function call")
+
+    parser.currentNode = previos
+
+
 
 def typecheckPushContext(parser, i):
     contextTyp = parser.structs["global"]["Context"]
@@ -73,3 +92,4 @@ def typecheckPushContext(parser, i):
 
 Parser.stmts["#addToContext"] = addToContext
 Parser.stmts["#pushContext"] = pushContext
+Parser.stmts["defer"] = defer
