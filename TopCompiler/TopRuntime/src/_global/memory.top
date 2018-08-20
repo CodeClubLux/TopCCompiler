@@ -10,8 +10,6 @@ type Allocator with
     def dealloc(&none)
     def clear()
 
-
-
 type TemporaryStorage =
     occupied: SizeT
     highest: SizeT
@@ -50,21 +48,24 @@ def TemporaryStorage.resetTo(&self, occupied: SizeT) =
 def TemporaryStorage.clear(&self) =
     self.resetTo 0
 
-type MallocWrapper =
+type Malloc =
 
-def MallocWrapper.alloc(&self, size: SizeT) &none =
+def Malloc.alloc(&self, size: SizeT) &none =
     c_alloc size
 
-def MallocWrapper.dealloc(&self, pointer: &none) =
+def Malloc.dealloc(&self, pointer: &none) =
     c_free pointer
 
-def MallocWrapper.clear(&self) =
+def Malloc.clear(&self) =
 
-temporary_storage := new_TemporaryStorage 16384
-mallocWrapper := MallocWrapper{}
+temporary_storage := new_TemporaryStorage 32384
+malloc := Malloc{}
 
-#addToContext allocator := &temporary_storage as Allocator
-#addToContext longterm_storage := &mallocWrapper as Allocator
+temporary_storage_as_allocator := &temporary_storage as Allocator
+malloc_as_allocator := &malloc as Allocator
+
+#addToContext allocator := &temporary_storage_as_allocator
+#addToContext longterm_storage := &malloc_as_allocator
 
 def alloc(size: SizeT) &none =
     context.allocator.alloc size
@@ -72,7 +73,7 @@ def alloc(size: SizeT) &none =
 def indexPtr[T](pType: &T, offset: int) &T =
     (offsetPtr pType, offset * sizeof T) cast &T
 
-def new[T](value: T) &T =
+def box[T](value: T) &T =
     pointer := (context.allocator.alloc sizeof T) cast &T
     *pointer = value
 

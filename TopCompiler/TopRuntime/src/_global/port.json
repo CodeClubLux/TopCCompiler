@@ -1,3 +1,3 @@
 {
-    "files": ["memory", "string", "interfaces", "logger", "maybe", "array"]
+    "files": ["memory", "string", "interfaces", "logger", "maybe", "array", "dynamic_array"]
 }

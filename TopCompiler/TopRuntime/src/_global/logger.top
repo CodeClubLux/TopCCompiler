@@ -7,3 +7,8 @@ def assert(b: bool, message: string) =
 
 def toString[T: Stringer](s: T) string =
     &s.toString!
+
+ext c_log: |string| -> none = "_global_c_log"
+
+def log[T: Stringer](s: T) =
+    c_log &s.toString!

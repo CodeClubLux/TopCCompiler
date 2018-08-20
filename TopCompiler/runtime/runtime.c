@@ -5,7 +5,8 @@
 #include <stdint.h>
 
 #define Context struct _global_Context* context
-#define alloc _global_Allocator_allocByValue
+#define alloc _global_Allocator_alloc
+
 
 struct _global_String {
     unsigned int length;
@@ -58,6 +59,7 @@ void _reverse_string(struct _global_String * self) {
     }
 }
 
+/*
 void itoa(int value, char* str, int base) {
 	static char num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 	char* wstr=str;
@@ -77,6 +79,7 @@ void itoa(int value, char* str, int base) {
 	*wstr='\0';
 	// Reverse string
 }
+*/
 
 struct _global_String _global_int_toStringByValue(int number, Context) {
     unsigned int length = 1;
@@ -84,10 +87,10 @@ struct _global_String _global_int_toStringByValue(int number, Context) {
 
     int absNumber = number;
     if (absNumber < 0) {
-        absNumber *= -1;
+        absNumber = -absNumber;
     }
 
-    while (number % divisor != absNumber) {
+    while (absNumber % divisor != absNumber) {
         length++;
         divisor *= 10;
     }
@@ -96,13 +99,11 @@ struct _global_String _global_int_toStringByValue(int number, Context) {
         length++;
     }
 
-
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
 
     struct _global_String newString = _global_StringInit(length, memory);
 
-    itoa(number, newString.data, 10);
-    _reverse_string(&newString);
+    snprintf(newString.data, 10, "%d", number);
 
     return newString;
 }
@@ -129,7 +130,7 @@ gen_integer(i16, int16_t)
 gen_integer(i32, int32_t)
 gen_integer(i64, int64_t)
 
-void _global_log(struct _global_String s, Context) {
+void _global_c_log(struct _global_String s) {
     printf("%s\n", s.data);
 };
 

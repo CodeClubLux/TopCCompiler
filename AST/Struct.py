@@ -50,9 +50,6 @@ class InitStruct(Node):
                 self.nodes[i].compileToC(codegen)
                 if i != len(self.nodes)-1:
                     codegen.append(",")
-
-                if self.typ.normalName == "Range":
-                    print(self.nodes[i])
             codegen.append(")")
         else:
             self.compileAssign(codegen)
@@ -69,6 +66,7 @@ class Type(Node):
         self.args = []
         self.fields = []
         self.generics = {}
+        self.remainingGen = {}
 
     def __str__(self):
         return "type "+self.package+"."+self.name
@@ -83,9 +81,17 @@ class Type(Node):
         self.args = list(structT.types.values())
         #Types.replaceT(i, structT.gen) for i in structT.types.values()]
         self.fields =list(structT.types.keys())
-
+        self.remainingGen = structT.remainingGen
     def compileToC(self, codegen):
         if self.generics:
+            return
+
+        if self.package and self.normalName.startswith("StaticArray") and type(self.remainingGen["StaticArray.S"]) is int:
+            staticArrDataType = Tree.ArrDataType(self.package, self.normalName, self)
+
+            staticArrDataType.replaceT(self, self.normalName)
+            staticArrDataType.compileToC(codegen)
+
             return
 
         codegen.inFunction()

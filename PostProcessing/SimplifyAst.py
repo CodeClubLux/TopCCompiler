@@ -3,11 +3,13 @@ from TopCompiler import Types
 
 realPrint = print
 
+"""
 def print(s):
     return
     if s == "Array.T_toStringByValue":
         print("shouldn''")
     realPrint(s)
+"""
 
 def callMethodCode(node, name, typ, parser, unary):
     if not node.type.isType(Types.Pointer):
@@ -40,17 +42,29 @@ def simplifyArrRead(operator, iter, parser):
     readMethodName = callMethodCode(operator.nodes[0], "op_get", operator.nodes[0].type, parser, False)
     readMethodName.type.args[1] = operator.nodes[1].type
     readMethodName.type.returnType = operator.type
+    if operator.nodes[0].type.isType(Types.Pointer):
+        readMethodName.replaced = operator.nodes[0].type.pType.remainingGen
+    else:
+        readMethodName.replaced = operator.nodes[0].type.remainingGen
+
+    deref = Tree.Operator("*", operator)
+    deref.unary = True
+    deref.type = operator.type
+    deref.owner = operator.owner
 
     func = Tree.FuncCall(operator)
-    func.type = operator.type
+    func.type = Types.Pointer(operator.type)
     func.addNode(readMethodName)
 
     func.addNode(operator.nodes[0])
     func.addNode(operator.nodes[1])
 
-    operator.owner.nodes[iter] = func
 
-    return func
+    deref.addNode(func)
+
+    operator.owner.nodes[iter] = deref
+
+    return deref
 
 def simplifyOperator(operator, iter, parser):
     def overloaded(methodName):
@@ -94,7 +108,7 @@ def simplifyOperator(operator, iter, parser):
         elif operator.kind == "+":
             return overloaded(callMethodCode(operator.nodes[0], "op_add", operator.type, parser, operator.unary))
     elif operator.overload and not typ.isType(Types.I32) and not typ.isType(Types.Float):
-        return overloaded(callMethodCode(operator.nodes[0], operator.name[operator.name.find("_")+1:], operator.type, parser, operator.unary))
+        return overloaded(callMethodCode(operator.nodes[0], operator.name[operator.name.find("_")+1:], operator.opT, parser, operator.unary))
 
 import copy
 
@@ -186,7 +200,7 @@ def stringify(typ):
     #if type(typ) is Types.T:
     #    return typ.type.name
     #else:
-    return typ.name
+    return str(typ) #.name
 
 def toUniqueID(package, funcName, replaced):
     keys = sorted(replaced.keys())
@@ -304,6 +318,8 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
 
     def simplify(ast, iter, upperDeleteQueue):
         deleteQueue = []
+        originalAST = ast
+
         if not (type(ast) is Tree.FuncBody and len(ast.owner.nodes) >= 3 and isGenericFunc(ast.owner.nodes[iter-2])):
             for (it, i) in enumerate(ast.nodes):
                 simplify(i, it, deleteQueue)
@@ -311,7 +327,10 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             ast = simplifyOperator(ast, iter, parser)
         elif type(ast) is Tree.ArrRead:
             ast = simplifyArrRead(ast, iter, parser)
-
+            ast = ast.nodes[0]
+            iter = 0
+        elif type(ast) is Tree.Array:
+            ast = Tree.simplifyArray(parser, ast, iter)
         if type(ast) is Tree.Generic:
             ast.owner.nodes[iter] = ast.nodes[0]
         elif type(ast) is Tree.FuncStart and isGenericFunc(ast):
@@ -337,6 +356,10 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             elif readVar.type.generic:
                 newName = specifications.addSpecification(readVar.package, readVar.name, ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]  # remove package which will be added later
+        #elif type(ast) is Tree.Cast and type(ast.nodes[0]) is Tree.InitStruct and ast.fromT in [Types.Enum, Types.Struct] and Tree.Cast.notSpecified(ast.fromT):  @cleanup add optimization
+        #    print("happens")
+        #    ast.nodes[0].constructor = ast.toT
+
         elif type(ast) is Tree.Field:
             typ = ast.nodes[0].type
             struct = typ
@@ -363,9 +386,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                     if not type(self.nodes[0].type) is Types.Pointer:
                         r.name += "ByValue"
 
-
-                    print(r.name)
-
                     r.type = self.type
                     r.package = package
                     r.owner = self.owner
@@ -380,8 +400,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
 
                     if type(typ) in [Types.Struct, Types.Alias, Types.Enum]:
                         r.replaced = typ.remainingGen
-
-
 
         for e in deleteQueue:
             ast.nodes.remove(e)

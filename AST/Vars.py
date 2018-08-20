@@ -142,7 +142,7 @@ class Assign(Node):
 
             if self.extern:
                 func = codegen.inAFunction
-                codegen.inAFunction = True
+
                 create = self.owner.nodes[0]
                 tmp = self.nodes[0].string.replace("\{", "{").replace("\}", "}")
                 tmp = tmp[1:-1]

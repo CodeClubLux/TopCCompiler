@@ -10,6 +10,9 @@ def isRead(parser):
     return not isUnary(parser, parser.lookBehind())
 
 def arrayLiteral(parser, shouldRead= True):
+    if parser.thisToken().type == "whiteOpenS":
+        shouldRead = False
+
     numB = parser.bracket
     parser.bracket += 1
 
@@ -27,7 +30,6 @@ def arrayLiteral(parser, shouldRead= True):
 
     parser.nodeBookmark.append(0)
 
-    rang = False
     init = False
 
     while parser.thisToken().token != "]":
@@ -43,28 +45,9 @@ def arrayLiteral(parser, shouldRead= True):
             continue
         elif t.token == "\n":
             endExpr(parser)
-        elif parser.thisToken().token == "..":
-            endExpr(parser)
-            parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
-
-            if ExprParser.isUnary(parser, parser.lookBehind()):
-                op = Tree.Operator("..", parser)
-                Parser.Opcode(parser, "..", lambda: operatorPop(parser, op, 1, True))
-            else:
-                if init:
-                    parseError(parser, "unexpected ..")
-
-                if lastSize != 0:
-                    parseError(parser, "unexpected ..")
-
-                rang = True
-                arr.range = rang
-            parser.nextToken()
-            continue
         elif parser.thisToken().token == ":":
             endExpr(parser)
-            if rang:
-                parseError(parser, "unexpected :")
+
             if lastSize != 0:
                 parseError(parser, "unexpected ..")
             init = True
@@ -86,27 +69,22 @@ def arrayLiteral(parser, shouldRead= True):
     parser.currentNode = arr.owner
     arr.mutable = False
 
-    if len(arr.nodes) < 1 :
-        #emtpy array
-        arr.type = Array(False, Types.Null(), empty= True)
-
-    if arr.range:
-        if len(arr.nodes) != 2:
-            Error.parseError(parser, "unexpected ]")
-
     parser.nodeBookmark.pop()
 
 from .Scope import *
 from .VarParser import *
+from TopCompiler import Struct
 
 def arrayRead(parser):
     numB = parser.bracket - 1
     parser.nextToken()
+
+    Struct.popAt(parser)
+
     parser.nodeBookmark.append(1)
     try:
         arr = parser.currentNode.nodes[-1]
     except IndexError:
-        print(parser.tokens[parser.iter-2])
         Error.parseError(parser, "unexpected array read")
 
     del parser.currentNode.nodes[-1]
@@ -140,6 +118,4 @@ def closeBracket(parser):
 
 Parser.exprToken["["] = arrayLiteral
 Parser.exprToken["]"] = closeBracket
-Parser.exprToken[".."] = lambda parser: Error.parseError(parser, "unexpected ..")
-Parser.exprType["whiteOpenS"] = lambda parser, token: arrayLiteral(parser, False)
 Parser.precidences[".."] = (True, 1.5)

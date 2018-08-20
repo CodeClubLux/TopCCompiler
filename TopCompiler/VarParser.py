@@ -197,6 +197,7 @@ def createAndAssignParser(parser, imutable= True): # let i assignment
 
         if type(name) is Tree.Create:
             n.addNode(name)
+            name = name.name
             #parser.nextToken()
         else:
             createParser(parser, name=name, typ=typ, check=checkIt, imutable=imutable, attachTyp=attachTyp)

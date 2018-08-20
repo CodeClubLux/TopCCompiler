@@ -125,8 +125,12 @@ class Enum(Node):
     def validate(self, parser):
         pass
 
-def genFunction(compileNodes, codegen, returnType):
-    funcName = CodeGen.genGlobalTmp()
+def genFunction(compileNodes, codegen, returnType, owner):
+    if type(owner) is Tree.FuncBody:
+        compileNodes()
+        return
+
+    funcName = CodeGen.genGlobalTmp(codegen.filename)
     inAFunc = codegen.inAFunction
     codegen.inGenerateFunction()
 
@@ -156,7 +160,7 @@ def genFunction(compileNodes, codegen, returnType):
                 scope[varName] = (typ, var[1:])
 
     codegen.append("\n}\n")
-    codegen.setInAFunction(inAFunc)
+    codegen.outFunction()
     codegen.append(f"{funcName}({varNames}, {codegen.getContext()})")
 
 class Match(Node):
@@ -179,7 +183,7 @@ class Match(Node):
                 for iter in range(1, len(self.nodes)):
                     self.nodes[iter].compileToC(codegen)
 
-            genFunction(genNodes, codegen, self.type)
+            genFunction(genNodes, codegen, self.type, self.owner)
         else:
             codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
             self.nodes[0].compileToC(codegen)
@@ -263,12 +267,20 @@ class MatchCase(Node):
                 count = list(node.type.const.keys()).index(node.nodes[0].name)
                 nameOfCase = node.nodes[0].name
 
-                codegen.append(tmp + ".tag==" + str(count))
+                maybeOptimization = Types.isMaybe(node.type)
+
+                if maybeOptimization:
+                    codegen.append(tmp + " != NULL")
+                else:
+                    codegen.append(tmp + ".tag==" + str(count))
 
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) != Tree.ReadVar:
                         codegen.append("&&")
-                        loop(i, f"{tmp}.cases.{nameOfCase}.field{index}")
+                        if maybeOptimization:
+                            loop(i, tmp)
+                        else:
+                            loop(i, f"{tmp}.cases.{nameOfCase}.field{index}")
 
                 codegen.checking = False
 
@@ -277,7 +289,10 @@ class MatchCase(Node):
                         typ = node.type.const[nameOfCase][index]
                         name = codegen.createName(i.package + "_" + i.name, typ)
                         codegen.append(f"{typ.toCType()} {name}")
-                        codegen.append(f" = {tmp}.cases.{nameOfCase}.field{index};\n")
+                        if maybeOptimization:
+                            codegen.append(f"= {tmp};\n")
+                        else:
+                            codegen.append(f" = {tmp}.cases.{nameOfCase}.field{index};\n")
             elif type(node) is Tree.Tuple:
                 if len(node.nodes) == 1:
                     loop(node.nodes[0], tmp)
@@ -338,7 +353,13 @@ class MatchCase(Node):
 
             elif type(node) is Tree.ReadVar:
                 count = list(node.type.const.keys()).index(node.name)
-                codegen.append(tmp + ".tag==" + str(count))
+
+                maybeOptimization = Types.isMaybe(node.type)
+                if maybeOptimization:
+                    codegen.append(tmp + " == NULL")
+                else:
+                    codegen.append(tmp + ".tag==" + str(count))
+
                 codegen.checking = False
             elif type(node) is Tree.Under:
                 codegen.append("1")

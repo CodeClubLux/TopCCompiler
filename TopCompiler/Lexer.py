@@ -70,15 +70,13 @@ slSymbols = fastacess([
     ";",
     "$",
     "!",
-    ".",
     ",",
 ]) #Single length delimeters
 
-mlSymbols = [
+mlSymbols = fastacess([
     "::",
-    "..",
-    ":=", "=", ":"
-]
+    ":=", "=", ":", "."
+])
 
 slOperator = fastacess(["|", "^", "&"])
 ml2Operators = fastacess([
@@ -89,10 +87,11 @@ ml2Operators = fastacess([
     "<-", "->",
     "+=", "-=", "*=", "/=",
     "++",
+    ".."
     ])
 
 ml1Operators = fastacess([
-    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+"
+    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+", "."
 ])
 
 def intRegex(ending):
@@ -288,8 +287,12 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
         else:
             if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
                 if t in slSymbols:
+                    typ = "symbol"
+                    if t == "[":
+                        if state.iter > 0 and state.s[state.iter-1] == " ":
+                            typ = "whiteOpenS"
                     state.pushTok()
-                    state.append(Token(t, "symbol", state.line, state.column))
+                    state.append(Token(t, typ, state.line, state.column))
                 elif t in slOperator:
                     state.pushTok()
                     if state.followedByNumSpace() > 0:
@@ -314,7 +317,7 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                             if operators in mlSymbols:
                                 state.append(Token(operators, "symbol", state.line, state.column))
                             else:
-                                if state.followedByNumSpace() > 0:
+                                if operators == ".." or state.followedByNumSpace() > 0:
                                     state.append(Token(operators, "operator", state.line, state.column))
                                 else:
                                     state.append(Token(operators, "unary_operator", state.line, state.column))

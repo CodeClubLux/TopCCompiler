@@ -54,6 +54,10 @@ def checkIfOperator(parser, attachTyp, name, func):
             operators[op].duckType(parser, func, Tree.PlaceHolder(parser), Tree.PlaceHolder(parser), 0)
         except EOFError as e:
             Error.beforeError(e, "Operator overload: ")
+
+
+        if op == "get" and not func.returnType.isType(Types.Pointer):
+            Error.parseError(parser, "Return type of operator overload op_get: Must be of type pointer, not " + str(func.returnType))
     elif name.startswith("unary_"):
         unary = {
             "add": Types.FuncPointer([Types.All], attachTyp),

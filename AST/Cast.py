@@ -46,6 +46,8 @@ def checkCast(originalType, newType, node, parser):
 def castFrom(originalType, newType, node, codegen):
     if originalType.isType(Types.FuncPointer):
         return node.compileToC(codegen)
+    elif type(newType) is Types.I32:
+        return node.compileToC(codegen)
     elif type(newType) is Types.Interface:
         if not type(originalType) is Types.Pointer:
             node.error("Can only upcast to interface from pointer, not "+str(originalType))
@@ -59,17 +61,41 @@ def castFrom(originalType, newType, node, codegen):
             codegen.append(f", &{originalType.package}_{originalType.normalName}_{field}")
         codegen.append(")")
         return
+    elif type(newType) is Types.Array:
+        if originalType.empty:
+            funcName = CodeGen.genGlobalTmp(codegen.filename)
+            codegen.inGenerateFunction()
+
+            inputT = codegen.getName()
+            typNewC = newType.toCType()
+
+            codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
+            codegen.append(f"return *(({typNewC}*) &{inputT});")
+            codegen.append("};\n")
+            codegen.outFunction()
+
+            codegen.append(f"{funcName}(")
+            node.compileToC(codegen)
+            codegen.append(");")
+            return
+        print(originalType)
+        print(newType)
+        raise Exception("not handled yet")
     elif type(newType) in [Types.Enum, Types.Struct] and notSpecified(originalType):
-        funcName = CodeGen.genGlobalTmp()
+        if Types.isMaybe(newType):
+            codegen.append("NULL")
+            return
+
+
+        funcName = CodeGen.genGlobalTmp(codegen.filename)
         tmp = codegen.getName()
         inputT = codegen.getName()
 
-        inFunc = codegen.inAFunction
         codegen.inGenerateFunction()
 
         typNewC = newType.toCType()
 
-        codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
+        codegen.append(f"static inline {typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
         codegen.append(f"{typNewC} {tmp};")
 
         if type(newType) is Types.Enum: #@cleanup maybe optimization will cause this not to be valid
@@ -82,8 +108,7 @@ def castFrom(originalType, newType, node, codegen):
 
         codegen.append(f"return {tmp};\n}}\n")
 
-        newType.toCType()
-        codegen.setInAFunction(inFunc)
+        codegen.outFunction()
 
         codegen.append(funcName + "(")
         node.compileToC(codegen)

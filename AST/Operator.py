@@ -28,6 +28,16 @@ class Operator(Node):
             self.nodes[0].compileToC(codegen)
             codegen.append(")")
             return
+        elif self.kind == "..":
+            codegen.append("_global_RangeInit(")
+            it = 0
+            for i in self.nodes:
+                it += 1
+                i.compileToC(codegen)
+                if it != len(self.nodes):
+                    codegen.append(",")
+            codegen.append(")")
+            return
         elif self.kind == "as":
             return Cast.castFrom(self.nodes[0].type, self.type, self.nodes[0], codegen)
         elif self.kind == ">>":
@@ -148,7 +158,6 @@ def checkOperator(self, parser):
         ]
 
         if i.kind in ["|>", ">>", "concat", "as", ".."] : return
-
         if i.kind == "&":
             Vars.canMutate(self, False)
             return
@@ -214,3 +223,5 @@ def checkOperator(self, parser):
 
         elif not i.kind in ops[i.opT.name]:
             i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))
+        if i.unary and type(i.type) is Types.I32 and i.type.unsigned and i.kind == "-":
+            i.type = Types.I32(size=i.type.size, unsigned=False)

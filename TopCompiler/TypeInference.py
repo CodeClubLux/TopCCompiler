@@ -273,6 +273,13 @@ def infer(parser, tree):
                 elif i.kind == "as":
                     #does this create a cast node
                     i.type.duckType(parser, i.nodes[0].type, i, i.nodes[0], 0)
+
+                elif i.kind == "..":
+                    for c in i.nodes:
+                        if not type(c.type.toRealType()) is Types.I32 and c.unsigned:
+                            c.error("Expecting uint")
+
+                    i.type = Parser.Range
                 elif i.kind == "<-":
                     if i.unary:
                         try:
@@ -479,30 +486,23 @@ def infer(parser, tree):
 
             elif type(i) is Tree.Array:
                 arr = i
+                lengthOfArray = 0
 
                 if len(i.nodes) > 0:
-                    if arr.init or arr.range:
+                    static = False
+                    if arr.init:
                         if arr.nodes[0].type != Types.I32(unsigned=True):
                             arr.nodes[0].error("expecting unsigned integer for range start, not "+str(arr.nodes[1].type))
-
-                        if arr.range:
-                            if arr.nodes[1].type != Types.I32(unsigned=True):
-                                arr.nodes[1].error("expecting unsigned integer for range end, not "+str(arr.nodes[1].type))
-                            typ = Types.I32()
+                        if len(arr.nodes) > 1:
+                            typ = arr.nodes[1].type
+                            static = type(arr.nodes[0]) is Tree.Int
                         else:
-                            if len(arr.nodes) > 1:
-                                typ = arr.nodes[1].type
-                            else:
-                                arr.nodes[0].error("expecting value after :")
+                            arr.nodes[0].error("expecting value after :")
 
                     else:
-                        c = arr.nodes[0]
-                        if type(c) is Tree.Operator and c.kind == "..":
-                            if not type(c.nodes[0].type) is Types.Array:
-                                c.nodes[0].error("Expecting array")
-                            typ = c.nodes[0].type.elemT
-                        else:
-                            typ = c.type
+                        static = True
+                        lengthOfArray = len(arr.nodes)
+                        typ = arr.nodes[0].type
                         if typ == Types.Null():
                             arr.error("array elements must be non none")
 
@@ -510,12 +510,7 @@ def infer(parser, tree):
                         for c in arr.nodes[1:]:
                             err = False
                             if typ != c.type:
-                                if type(c) is Tree.Operator and c.kind == "..":
-                                    if not type(c.nodes[0].type) is Types.Array:
-                                        c.nodes[0].error("Expecting array")
-                                    ctype = c.nodes[0].type.elemT
-                                else:
-                                    ctype = c.type
+                                ctype = c.type
                                 try:
                                     typ.duckType(parser, ctype, i, c, count)
                                 except EOFError as e:
@@ -530,15 +525,12 @@ def infer(parser, tree):
 
                             count += 1
 
-                        count = 0
-                        for c in arr.nodes[1:]:
-                            err = False
-                            if not type(c) is Tree.Operator and c.kind == "..":
-                                Tree.insertCast(c, c.type, typ, count)
+                        for (index, c) in enumerate(arr.nodes[1:]):
+                            Tree.insertCast(c, c.type, typ, index+1)
 
-                            count += 1
-
-                    arr.type = Types.Array(arr.mutable, typ)
+                    arr.type = Types.Array(typ, static= static, numElements=lengthOfArray, both=False)
+                else:
+                    arr.type = Types.Array(Types.Null(), empty=True, static=False,both=False)
             elif type(i) is Tree.InitPack:
                 parser.imports.append(i.package)
             elif type(i) is Tree.InitStruct:
@@ -583,6 +575,8 @@ def infer(parser, tree):
                     elif assign:
                         i.nodes[iter].error("expecting =")
 
+                    realIter = iter
+
                     if not randomOrder:
                         nameInOrder = i.paramNames[iter-1]
                         order[nameInOrder] = i.nodes[iter]
@@ -625,7 +619,8 @@ def infer(parser, tree):
                         normalTyp.duckType(parser, myTyp, i, myNode, iter)
 
                         Tree.insertCast(myNode, myNode.type, normalTyp, iter)
-                        order[nameInOrder] = i.nodes[iter]
+                        order[nameInOrder] = i.nodes[realIter]
+
                         #resolveGen(xnormalTyp, myNode.type, gen, parser, myNode, i)
                 if not assign:
                     del i.nodes[0]
@@ -654,21 +649,23 @@ def infer(parser, tree):
             elif type(i) is Tree.ArrRead:
                 if len(i.nodes) == 2:
                     typ = i.nodes[0].type
+
                     try:
-                        func = typ.types["op_get"]
-                    except KeyError:
                         func = typ.hasMethod(parser, "op_get")
-                        if not func:
-                            i.nodes[0].error("Type "+str(i.nodes[0].type)+" is not indexable, missing method op_get")
-                        else:
-                            func = Types.FuncPointer(func.args[1:], func.returnType, generic=func.generic, do=func.do)
+                    except EOFError as e:
+                        Error.beforeError(e, str(typ) + " only operates : ")
+
+                    if not func:
+                        i.nodes[0].error("Type "+str(i.nodes[0].type)+" is not indexable, missing method op_get")
+                    else:
+                        func = Types.FuncPointer(func.args[1:], func.returnType, generic=func.generic, do=func.do)
 
                     arrRead = i
                     if len(arrRead.nodes) != 2:
                         i.nodes[1].error("expecting single index")
 
-                    if len(func.args) != 1:
-                        i.nodes[0].error(str(typ) + " is not indexable, method get should take 1 paramter, not "+str(len(func.args)))
+                    #if len(func.args) != 1: cant add a method that does not follow the proper type for operator overloading
+                    #    i.nodes[0].error(str(typ) + " is not indexable, method get should take 1 parameter, not "+str(len(func.args)))
 
                     try:
                         func.args[0].duckType(parser, i.nodes[1].type, i.nodes[1], i, 0)
@@ -676,7 +673,7 @@ def infer(parser, tree):
                     except EOFError as e:
                         Error.beforeError(e, "Index : ")
 
-                    arrRead.type = func.returnType
+                    arrRead.type = func.returnType.pType
                 else:
                     i.error("expecting single index")
             elif type(i) is Tree.Generic:

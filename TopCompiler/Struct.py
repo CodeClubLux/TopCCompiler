@@ -217,6 +217,13 @@ def closeCurly(parser):
     if parser.curly < 0:
         Tree.PlaceHolder(parser).error("unexpected }")
 
+def popAt(parser):
+    if len(parser.stack) > parser.bookmark[-2]:
+        op = parser.stack[-1]
+        if op.kind == "&":
+            op.func()
+            parser.stack.pop()
+
 def index(parser, unary=False):
 
     if not unary:
@@ -227,11 +234,7 @@ def index(parser, unary=False):
     elif unary:
         Error.parseError(parser, "unexpected .")
 
-    if len(parser.stack) > parser.bookmark[-2]:
-        op = parser.stack[-1]
-        if op.kind == "&":
-            op.func()
-            parser.stack.pop()
+    popAt(parser)
 
     field = parser.nextToken()
 

@@ -1,4 +1,4 @@
-__author__ = 'antonellacalvia'
+L__author__ = 'antonellacalvia'
 
 from TopCompiler import Parser
 import AST as Tree

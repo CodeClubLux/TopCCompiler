@@ -69,7 +69,7 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             return Types.Pointer(pType, mut)
         elif token == "[" or parser.thisToken().type == "whiteOpenS":
             incrScope(parser)
-            if parser.lookInfront().token != "]" and parser.lookInfront().type != "i32":
+            if parser.lookInfront().token != "]" and parser.lookInfront().type != "i32" and parser.lookInfront().token != "..":
                 from TopCompiler import FuncParser
                 gen = FuncParser.generics(parser, "_")
                 if parser.thisToken().token != "|":
@@ -84,14 +84,20 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
                 static = int(parser.nextToken().token)
                 parser.nextToken()
                 parser.nextToken()
+                parser.nextToken()
                 decrScope(parser)
-                return Array(False, parseType(parser, package), static)
-
+                return Array(parseType(parser, package), static=True, numElements=static)
+            elif parser.lookInfront().token == "..":
+                parser.nextToken()
+                parser.nextToken()
+                parser.nextToken()
+                decrScope(parser)
+                return Array(parseType(parser, package), static=False)
             else:
                 parser.nextToken()
                 parser.nextToken()
                 decrScope(parser)
-                return Array(False, parseType(parser, package))
+                return Array(parseType(parser, package), both= True, static=False)
         elif token == "|":
             parser.nextToken()
 
@@ -579,6 +585,9 @@ class Struct(Type):
 
             if isP:
                 self = Types.Pointer(self)
+
+            if not type(firstArg) is Pointer and type(self) is Pointer:
+                self = self.pType
             firstArg.duckType(parser, self, parser, parser)
             return func
 
@@ -589,7 +598,6 @@ class Struct(Type):
             return "struct " + self.package + "_" + self.normalName
 
     def duckType(self, parser, other, node, mynode, iter=0):
-        
         if self.gen != {} and self.name == other.name:
             return
 
@@ -652,89 +660,68 @@ class Tuple(Type):
                 beforeError(e, "Tuple element #" + key + ": ")
 
 class Array(Type):
-    def __init__(self, mutable, elemT, empty=False, static=False):
-        self.name = "[]"+elemT.name
+    def __init__(self, elemT, static, numElements=None, both=False, empty=False):
+        if static:
+            self.name = "[" + str(numElements) + "]" + elemT.name
+        elif both:
+            self.name = "[]" + elemT.name
+        else:
+            self.name = "[..]"+elemT.name
 
         self.elemT = elemT
 
         self.package = "_global"
-        self.normalName = "array"
+        self.normalName = "Array"
 
-        self.mutable = mutable
-        self.__types = None
         self.empty = empty
         self.static = static
+        self.numElements = numElements
+        self.both = both
+
+        if not static and not both:
+            self.arrT = replaceT(Parser.DynamicArray, {"Array.T": elemT})
+            self.types = self.arrT.types
+            self.remainingGen = self.arrT.remainingGen
+        else:
+            sizeT = T("S", Types.All, "StaticArray") if self.both else self.numElements
+            self.arrT = replaceT(Parser.StaticArray, {"StaticArray.T": elemT, "StaticArray.S": sizeT})
+            self.types = self.arrT.types
+            self.remainingGen = self.arrT.remainingGen
+
+            self.normalName = "StaticArray"
 
     def toCType(self):
-        return "Array"
+        if self.empty:
+            return "struct _global_Array_Array_T"
+        if not self.static and not self.both:
+            return self.arrT.toCType()
+        elif self.both:
+            raise EOFError("not implemented yet")
+        else:
+            return genGenericCType(self, Tree.ArrDataType)
+            #raise EOFError("not implemented yet")
 
-    @property
-    def types(self):
-        if not self.__types:
-            self.__types = {
-                "toString": FuncPointer([], String(0)),
-                "append": FuncPointer([self.elemT], self),
-                "insert": FuncPointer([I32(), self.elemT], self),
-                "map": FuncPointer(
-                    [FuncPointer([self.elemT], T("T", All, "Array"))],
-                    Array(False, T("T", All,  "Array")),
-                    coll.OrderedDict([("Array.T", All)])
-                ),
-                "remove": FuncPointer([I32()], self),
-                "serial": FuncPointer(
-                    [FuncPointer([self.elemT], T("T", All, "Array"), do=True)],
-                    Array(False, T("T", All, "Array")),
-                    generic=coll.OrderedDict([("Array.T", All)]),
-                    do=True
-                ),
-                "parallel": FuncPointer(
-                    [FuncPointer([self.elemT], T("T", All, "Array"), do=True)],
-                    Array(False, T("T", All, "Array")),
-                    generic=coll.OrderedDict([("Array.T", All)]),
-                    do=True
-                ),
-                "set": FuncPointer([I32(), self.elemT], self)
-                ,
-                "filter": FuncPointer(
-                    [FuncPointer([self.elemT], Bool())],
-                    self,
-                ),
-                "get": FuncPointer([I32()], self.elemT),
-                "reduce": FuncPointer(
-                    [FuncPointer([self.elemT, self.elemT], self.elemT)],
-                    self.elemT,
-                ),
-                "has": FuncPointer(
-                    [self.elemT],
-                    Bool()
-                ),
-                "indexOf": FuncPointer(
-                    [self.elemT],
-                    I32()
-                ),
-                "op_add": FuncPointer(
-                    [self.elemT],
-                    Array(False, self.elemT)
-                ),
-                "length": I32(),
-                "join": FuncPointer([String(0)], String(0)),
-                "shorten": FuncPointer([Types.I32()], self),
-                "slice": FuncPointer([Types.I32(), Types.I32()], self)
-            }
-        return self.__types
+    def isDynamic(self):
+        return not self.static and not self.both
+
     def duckType(self, parser, other, node, mynode, iter):
-        
         if not other.isType(Array):
             mynode.error("expecting array type "+str(self)+" not "+str(other))
 
-        if other.empty:
-            return
+        dynamic = self.isDynamic()
+        otherDynamic = other.isDynamic()
 
+        if (dynamic and otherDynamic) or (self.both) or (self.static and other.static):
+            if not other.empty:
+                try:
+                    self.elemT.duckType(parser, other.elemT, node, mynode, iter)
+                except EOFError as e:
+                    beforeError(e, "Element type in array: ")
+        else:
+            node.error("Could not upcast from type " + str(other) + " to " + str(self))
 
-        try:
-            self.elemT.duckType(parser, other.elemT, node, mynode, iter)
-        except EOFError as e:
-            beforeError(e, "Element type in array: ")
+    def hasMethod(self, parser, field, isP= False):
+        return self.arrT.hasMethod(parser, field, isP)
 
 def isMutable(typ):
     if type(typ) in [Struct, Array]:
@@ -940,6 +927,10 @@ def hasMethodEnum(attachTyp, parser, name, isP=False):
         firstArg.duckType(parser, attachTyp, parser, parser, 0)
         return m
 
+def isMaybe(typ):
+    typ = typ.toRealType()
+    return type(typ) is Types.Enum and typ.package == "_global" and typ.normalName == "Maybe" and typ.remainingGen["Maybe.T"].isType(Types.Pointer)
+
 class Enum(Type):
     def __init__(self, package, name, const, generic):
         self.generic = generic
@@ -981,6 +972,9 @@ class Enum(Type):
         return hasMethodEnum(attachTyp, parser, name)
 
     def toCType(self):
+        if isMaybe(self):
+            return self.remainingGen["Maybe.T"].toCType()
+
         if self.remainingGen:
             return genGenericCType(self, E)
         else:
@@ -1061,14 +1055,7 @@ def isGeneric(t, unknown=False):
     elif type(t) is T: return True
     elif type(t) is Pointer: return isGeneric(t.pType)
     elif type(t) in [Interface, Struct, Alias, Enum]:
-        if len(t.remainingGen) == 0: return False
-
-        if t.normalName != t.name:
-            for i in t.remainingGen:
-                if not type(t.remainingGen[i]) is T: return False
-            return True
-        else:
-            return False
+        return len(t.remainingGen) > 0
 
     elif type(t) is Tuple:
         for i in t.list:
@@ -1133,9 +1120,6 @@ class I32(Type):
         self.name = intTypeToString[(size, unsigned)]
         self.normalName = self.name
 
-        if not size:
-            size = 32
-
         self.types = {}
         self.unsigned = unsigned
 
@@ -1184,7 +1168,10 @@ class I32(Type):
         if self.unsigned and not other.unsigned:
             node.error("Expecting uint not int")
 
-        if self.size < other.size:
+        sizeA = (self.size if self.size else 32)
+        sizeB = (other.size if other.size else 32)
+
+        if sizeA < sizeB:
             node.error("Truncating "+str(other)+" to "+str(self))
 
 class Pointer(Type):

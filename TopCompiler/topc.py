@@ -470,7 +470,18 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 timeForCodeAnalysis = time() - beforeLoad
                 if compileRuntime:   #not dev and not _raise:
+                    parser.generatedGenericTypes = Types.genericTypes
+                    deleteQue = []
+                    for c in parser.generatedGenericTypes:
+                        parser.generatedGenericTypes[c] = None
+                        if c in ["_global_Allocator"]:
+                            deleteQue.append(c)
+
+                    for c in deleteQue:
+                        del parser.generatedGenericTypes[c]
+
                     saveParser.save(parser, compileRuntime)
+
                     pass
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target, context=contextCCode, runtimeBuild=compileRuntime)

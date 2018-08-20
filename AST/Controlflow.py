@@ -29,7 +29,8 @@ class If(Node):
                 for i in self.nodes:
                     i.compileToC(codegen)
 
-            Enum.genFunction(compileInner, codegen, self.type)
+
+            Enum.genFunction(compileInner, codegen, self.type, self.owner)
         else:
             count = 0
             _l = len(self.nodes)

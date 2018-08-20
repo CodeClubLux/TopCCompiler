@@ -28,6 +28,7 @@ def Maybe[T].map[R](self, f: |T| -> R) Maybe[R] =
         Some x -> Some (f x)
         None -> None
 
+/*
 def Maybe[T: {op_gt: |T| -> bool}].op_gt(self, other: Maybe[T]) bool =
     match self with
         Some x ->
@@ -39,3 +40,4 @@ def Maybe[T: {op_gt: |T| -> bool}].op_gt(self, other: Maybe[T]) bool =
 
 def Maybe[T: {op_gt: |T| -> bool}].op_lt(self, other: Maybe[T]) bool =
     other > self
+*/

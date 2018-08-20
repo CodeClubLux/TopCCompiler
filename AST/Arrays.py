@@ -3,6 +3,37 @@ __author__ = 'antonellacalvia'
 from .node import *
 from .Struct import *
 from PostProcessing import SimplifyAst
+from PostProcessing import SimplifyAst
+
+def simplifyArray(parser, self, iter):
+    if len(self.nodes) == 0:
+        func = Tree.FuncCall(self)
+        var = Tree.ReadVar("empty_array", True, self)
+        var.type = parser.scope["_global"][0]["empty_array"].type
+        var.package = "_global"
+        func.addNode(var)
+        func.replaced = var.type.generic
+        self.owner.nodes[iter] = func
+        func.owner = self.owner
+        func.type = self.type
+        return func
+    elif self.init:
+        func = Tree.FuncCall(self)
+        if self.type.static:
+            var = Tree.ReadVar("fill_array", True, self)
+            var.package = "_global"
+            var.type = parser.scope["_global"][0]["fill_array"].type
+            func.replaced = {i: self.type.elemT for i in var.type.generic}
+        else: return
+
+        func.addNode(self.nodes[0])
+        func.addNode(self.nodes[1])
+
+        func = self.type
+        self.owner.nodes[iter] = func
+        func.owner = self.owner
+        return func
+    return self
 
 class Array(Node):
     def __init__(self, parser):
@@ -11,65 +42,32 @@ class Array(Node):
         self.range = False
         self.init = False
         self.mutable = False
-        self.type = Types.Array(False,Types.Null(),empty=True)
+        #self.type = Types.Array(False,Types.Null(),empty=True)
 
     def __str__(self):
         return "[]"
 
-    def compileToJS(self, codegen):
-        if len(self.nodes) == 0:
-            codegen.append("EmptyVector");
-            return
-        if self.range:
-            codegen.append("newVectorRange(")
-            self.nodes[0].compileToJS(codegen)
-            codegen.append(",")
-            self.nodes[1].compileToJS(codegen)
-            codegen.append(")")
-        elif self.init:
-            codegen.append("newVectorInit(")
-            self.nodes[0].compileToJS(codegen)
-            codegen.append(",")
-            self.nodes[1].compileToJS(codegen)
+    def compileToC(self, codegen):
+
+        if self.init and not self.type.static:
+            name = self.type.toCType().replace("struct ", "")
+            codegen.append(name + "Fill_array(")
+            count = 0
+            for i in self.nodes:
+                i.compileToC(codegen)
+                if count != len(self.nodes) - 1:
+                    codegen.append(",")
+                count += 1
             codegen.append(")")
         else:
-            paren = False
-            i = self.nodes[0]
-            if not (type(i) is Tree.Operator and i.kind == ".."):
-                codegen.append("newVector(")
+            name = self.type.toCType().replace("struct ", "")
+            codegen.append(f"{name}Init(")
             count = 0
-            for i in self.nodes[:-1]:
-                if type(i) is Tree.Operator and i.kind == "..":
-                    if paren:
-                        codegen.append(")")
-                    paren = True
-
-                    if count == 0:
-                        codegen.append("(")
-                    else:
-                        codegen.append(").op_add(")
-                    i.nodes[0].compileToJS(codegen)
-                    codegen.append(").op_add(newVector(")
-                else:
-                    i.compileToJS(codegen)
-                    next = self.nodes[count+1]
-                    if not (type(next) is Tree.Operator and next.kind == ".."):
-                        codegen.append(",")
-
+            for i in self.nodes:
+                i.compileToC(codegen)
+                if count != len(self.nodes) - 1:
+                    codegen.append(",")
                 count += 1
-
-            if len(self.nodes) > 0 :
-                i = self.nodes[-1]
-
-                if type(i) is Tree.Operator and i.kind == "..":
-                    if paren:
-                        codegen.append(")")
-                    codegen.append(").op_add(")
-                    i.nodes[0].compileToJS(codegen)
-                else:
-                    i.compileToJS(codegen)
-                    if paren:
-                        codegen.append(")")
             codegen.append(")")
 
     def validate(self, parser):
@@ -111,4 +109,51 @@ class ArrRead(Node):
 
     def validate(self, parser): pass
 
+class ArrDataType(Node):
+    def __init__(self, package, structName,  parser):
+        Node.__init__(self, parser)
+        self.package = package
+        self.structName = structName
+
+    def replaceT(self, arrType, structName):
+        self.structName = self.package + "_" + structName
+        self.arrType = arrType
+
+    def compileToC(self, codegen):
+        elemT = self.arrType.remainingGen["StaticArray.T"]
+        numElements = self.arrType.remainingGen["StaticArray.S"]
+
+        codegen.append(f"struct {self.structName} {{\n")
+        codegen.append("unsigned int length;\n")
+        codegen.append(f"{elemT.toCType()} data[{numElements}];\n")
+        codegen.append("};\n")
+
+        #fill Array, -syntax [8: 3] == [3,3,3,3,3,3,3,3,3,3]
+        codegen.append(f"struct {self.structName} {self.structName}Fill_array(")
+        codegen.append("unsigned int length, ")
+        codegen.append(elemT.toCType() + " with")
+        codegen.append("){\n")
+        codegen.append(f"struct {self.structName} tmp;\n")
+        codegen.append(f"tmp.length = {numElements};\n")
+        codegen.append(f"for (unsigned int i = 0; i < {numElements}; i++) {{\n")
+        codegen.append("tmp.data[i] = with;\n")
+        codegen.append("}; return tmp; }\n")
+
+        codegen.append(f"struct {self.structName} {self.structName}Init(")
+
+        names = []
+        cElemT = elemT.toCType()
+        for i in range(numElements):
+            name = codegen.getName()
+            names.append(name)
+
+            codegen.append(cElemT + " " + name)
+            if i < numElements-1:
+                codegen.append(",")
+        codegen.append("){\n")
+        codegen.append(f"struct {self.structName} tmp;\n")
+        codegen.append(f"tmp.length = {numElements};")
+        for (it, name) in enumerate(names):
+            codegen.append(f"tmp.data[{it}] = {name};\n")
+        codegen.append("return tmp; }\n")
 

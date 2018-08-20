@@ -1,0 +1,124 @@
+// Dynamic Arrays
+type Array[T] =
+    length: uint
+    capacity: uint
+    allocator: Maybe[&Allocator]
+    data: Maybe[&T]
+
+def empty_array() Array[_] =
+    Array{
+        capacity = 0
+        length = 0
+        allocator = None
+        data = None
+    }
+
+def fill_array[T](numTimes: uint, elem: T) Array[T] =
+    arr : Array[T] = Array{
+        length = 0
+        capacity = 0
+        allocator = None
+        data = None
+    }
+
+    &arr.reserve numTimes
+    i := 0
+    while i < numTimes do
+        &arr.append elem
+        i += 1
+
+    arr
+
+
+def Array[T].op_get(&self, index: uint) &T =
+    assert index < self.length, "Out of bounds"
+
+    indexPtr self.data.unwrap!, index
+
+def Array[T].reserve(&self, newSize: uint) =
+    allocator := self.allocator.default context.allocator
+
+    self.capacity = newSize
+    self.data = match self.data with
+        Some data ->
+            assert newSize >= self.length, "Truncating array"
+
+            newData := (allocator.alloc self.capacity * sizeof T) cast &T
+            memcpy newData, data, self.length * sizeof T
+
+            allocator.dealloc data
+
+            Some newData
+
+        None ->
+            Some (allocator.alloc self.capacity * sizeof T) cast &T
+
+def Array[T].append(&self, value: T) =
+    newLength := self.length + 1
+    if newLength > self.capacity then
+        if self.capacity == 0 then
+            self.reserve 1
+        else
+            self.reserve self.capacity * 2
+
+    *(indexPtr self.data.unwrap!, self.length) = value
+    self.length = newLength
+
+def Array[T: Stringer].join(&self, delimiter: string) string =
+    match self.length with
+        0 -> ""
+        1 -> toString self[0]
+        _ ->
+            s := ""
+            i := 0
+            while i < self.length - 1 do
+                s += "{self[i]}{delimiter}"
+                i += 1
+
+            s + toString self[self.length - 1]
+
+def Array[T].iterator(&self) =
+    ArrayIterator{ self, 0, self.length }
+
+def Array[T: Stringer].toString(&self) string =
+    "[ {self.join ", "} ]"
+
+def Array[T].free(&self) =
+    allocator := self.allocator.default context.allocator
+
+    match self.data with
+        Some data -> free data
+        None ->
+
+//Iterator for arrays
+type ArrayIterator[T] =
+    array: &Array[T]
+    it: uint
+    length: uint //easier to optimize for compiler
+
+//#inline
+def ArrayIterator[T].next(&self) Maybe[T] =
+    if self.it >= self.length then None
+    else
+        self.it += 1
+        Some self.array[self.it - 1]
+
+type Range =
+    start: uint
+    end: uint
+
+type RangeIterator =
+    range: Range
+    it: uint
+
+def Range.iterator(self) =
+    RangeIterator{ self, 0 }
+
+def RangeIterator.next(&self) Maybe[uint] =
+    range := &(self.range)
+    if self.it < range.end then
+        tmp := self.it
+        self.it += 1
+        Some tmp
+    else
+        None

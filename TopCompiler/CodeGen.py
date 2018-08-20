@@ -37,6 +37,7 @@ class CodeGen:
         self.out_parts = []
         self.main_parts = []
         self.func_parts = []
+        self.func_count = 0
 
         self.main = ""
 
@@ -57,24 +58,35 @@ class CodeGen:
         self.deferred = []
 
     def inFunction(self):
-        self.inAFunction = 1
+        self.inAFunction += 1
+        self.func_parts.append([])
 
     def outFunction(self):
-        self.inAFunction = 0
         self.info.reset([0], 0)
-        self.out_parts.extend(self.func_parts)
-        self.func_parts = []
+
+        self.inAFunction -= 1
+        if self.inAFunction == 0:
+            for i in reversed(self.func_parts):
+                self.out_parts.extend(i)
+            self.func_parts = []
 
     def inGenerateFunction(self):
-        self.inAFunction = 2
+        self.inFunction()
 
+    """ 
     def setInAFunction(self, new):
-        if new == 2:
-            self.inGenerateFunction()
-        elif new == 1:
-            self.inFunction()
+        raise Exception()
+        
+        if new > 0:
+            self.inAFunction = new + 1
+            if self.inAFunction == 0:
+                for i in reversed(self.func_parts):
+                    self.out_parts.extend(i)
+                self.func_parts = []
+
         else:
             self.outFunction()
+    """
 
     def incrScope(self):
         self.names.append({})
@@ -106,10 +118,8 @@ class CodeGen:
                 pass
 
     def getParts(self):
-        if self.inAFunction == 2:
-            return self.out_parts
-        elif self.inAFunction == 1:
-            return self.func_parts
+        if self.inAFunction > 0:
+            return self.func_parts[self.inAFunction - 1]
         else:
             return self.main_parts
 
@@ -271,8 +281,8 @@ def genNames(info):
 global_info = Info()
 global_gen = genNames(global_info)
 
-def genGlobalTmp():
+def genGlobalTmp(package):
     tmp = global_gen.__next__()
 
-    return "func" + tmp
+    return "tmp"+package + tmp
 

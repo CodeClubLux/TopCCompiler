@@ -115,7 +115,9 @@ class FuncBody(Node):
             codegen.addSemicolon(i)
 
         if self.returnType != Types.Null():
-            codegen.append(";return ")
+            codegen.append(";")
+            if not type(self.nodes[-1]) in [Tree.Match, Tree.If]:
+                codegen.append("return ")
 
         if len(self.nodes) > 0:
             self.nodes[-1].compileToC(codegen)
@@ -157,8 +159,8 @@ class FuncBody(Node):
             codegen.append(");\n}")
 
 
-        if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
-            codegen.outFunction()
+        #if type(self.owner) is Root or (type(self.owner) is Tree.Block and type(self.owner.owner) is Tree.Root):
+        codegen.outFunction()
 
         codegen.contexts.pop()
 
@@ -167,10 +169,7 @@ class FuncBody(Node):
 
         if self.returnType == Types.Null(): pass
         elif len(self.nodes) > 0:
-            if self.nodes[-1].type == Types.Null():
-                actReturnType = Types.Null()
-            else:
-                actReturnType = self.nodes[-1].type
+            actReturnType = self.nodes[-1].type
 
         returnType = self.returnType
         name = self.name
@@ -207,6 +206,13 @@ class FuncCall(Node):
         return ""
 
     def compileToC(self, codegen):
+        firstNode = self.nodes[0]
+
+        if type(firstNode) is Tree.ReadVar and firstNode.name.startswith("Some") and firstNode.package in ["", "_global"] and self.replaced["Maybe.T"].isType(Types.Pointer):
+            self.nodes[1].compileToC(codegen)
+
+            return
+
         self.nodes[0].compileToC(codegen)
         codegen.append("(")
 
@@ -223,9 +229,14 @@ class Return(Node):
         Node.__init__(self, parser)
 
     def compileToC(self, codegen):
+        if len(self.nodes) > 0 and type(self.nodes[0]) in [Tree.Match, Tree.If]:
+            self.nodes[0].compileToC(codegen)
+            return
+
         codegen.append("return ")
-        self.nodes[0].compileToC(codegen)
-        codegen.append(";")
+        if len(self.nodes) > 0:
+            self.nodes[0].compileToC(codegen)
+        codegen.addSemicolon(self)
 
 class Func(Node):
     def __init__(self, parser):
@@ -268,12 +279,10 @@ def forwardRef(funcStart, funcBrace, funcBody, codegen):
     if not funcStart.generated:
         return
 
-    inAFunc = codegen.inAFunction
-
     funcStart.compileToC(codegen)
     funcBrace.compileToC(codegen)
 
-    codegen.func_parts[-1] = ");\n"
+    codegen.getParts()[-1] = ");\n"
 
     self = funcBody
 
@@ -299,4 +308,4 @@ def forwardRef(funcStart, funcBrace, funcBody, codegen):
     codegen.decrScope()
     codegen.contexts.pop()
 
-    codegen.setInAFunction(inAFunc)
+    codegen.outFunction()

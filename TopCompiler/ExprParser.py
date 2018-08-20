@@ -57,10 +57,18 @@ def operatorPop(parser, op, takesIn, unary= False):
         count += 1
 
     if count < takesIn:
+        print(count)
+        print(unary)
+        print(parser.currentNode.nodes)
+        print(takesIn)
+        print(min)
+        print(use)
         Error.parseError(parser, "Too few values to operate on for operator " + op.kind)
         op.curry = True
 
-    parser.currentNode.nodes = parser.currentNode.nodes[:-1 - len(op.nodes)] + [op]
+    del parser.currentNode.nodes[-1 -len(op.nodes):-1]
+
+    #parser.currentNode.nodes[:-1 - len(op.nodes)] + [op]
     #parser.nodeBookmark.pop()
     pass
    # checkOperator(parser, parser.currentNode.nodes[-1], unary)
@@ -73,6 +81,7 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False, token=True):
     def f(parser):
         op = Tree.Operator(kind, parser)
         actuallyUnary = isUnary(parser, parser.lookBehind())
+
         if len(parser.currentNode.nodes) != 0:
             if not unary and actuallyUnary:
                 Error.parseError(parser, "unexpected "+kind)
@@ -85,7 +94,7 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False, token=True):
     if func == None: func = f
     Parser.precidences[kind] = precidence
 
-    _f = lambda parser: Error.parseError(parser, "unexpected operator") if parser.lookBehind().type == "xoperator" else func(parser)
+    _f = lambda parser: Error.parseError(parser, "unexpected operator") if parser.lookBehind().type == "operator" else func(parser)
 
     if token:
         Parser.exprToken[kind] = _f
@@ -185,7 +194,7 @@ newOperator("|>", (2, True), 2)
 newOperator(">>", (2, True), 2)
 newOperator("<<", (2, True), 2)
 newOperator("and", (3, True), 2)
-newOperator("or", (4, True), 2)
+newOperator("or", (3, True), 2)
 newOperator("not", (6, False), 1, unary= True)
 newOperator("<-", (100, False), 1, func = read)
 newOperator("==", (8, True), 2)
@@ -194,9 +203,10 @@ newOperator("<", (10, True), 2)
 newOperator("<=", (10, True), 2)
 newOperator(">=", (10, True), 2)
 newOperator(">", (10, True), 2)
+newOperator("..", (14, True), 2)
 newOperator("concat", (20, True), 2)
-newOperator("+", (20, True), 2, func=plus)  # becuase of unary, possiblity
-newOperator("-", (20, True), 2, func=minus)  # becuase of unary, possiblity
+newOperator("+", (20, True), 2, func=plus)  # because of unary, possiblity
+newOperator("-", (20, True), 2, func=minus)  # because of unary, possiblity
 newOperator("*", (40, True), 2, func=asterix)
 newOperator("/", (40, True), 2)
 newOperator("%", (40, True), 2)

@@ -10,8 +10,6 @@ class AddToContext(Node):
     def compileToC(self, codegen):
         inFunc = codegen.inAFunction
 
-        codegen.outFunction()
-
         createAssign = self.nodes[0]
         create = createAssign.nodes[0]
         assign = createAssign.nodes[1]
@@ -20,7 +18,9 @@ class AddToContext(Node):
 
         assign.nodes[0].compileToC(codegen)
 
-        codegen.setInAFunction(inFunc)
+    def validate(self, parser):
+        if not type(self.owner) is Tree.Root:
+            self.error("Can only add to context outside of function")
 
 class PushContext(Node):
     def __init__(self, parser):

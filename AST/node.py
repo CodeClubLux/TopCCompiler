@@ -113,8 +113,8 @@ def checkOther(self, parser, function, block):
             checkOther(i, parser, self, block)
         else:
             checkOther(i, parser, function, block)
-    if type(self) in [Tree.Continue, Tree.Break] and not block in [Tree.While, Tree.For]:
-        statement  = "continue" if type(i) is Tree.Continue else "break"
+    if type(self) in [Tree.Continue, Tree.Break] and not type(block) in [Tree.While, Tree.For]:
+        statement  = "continue" if type(self) is Tree.Continue else "break"
         self.error(f"unexpected {statement}, outside of a loop")
     elif type(self) is Tree.Return:
         if not function:

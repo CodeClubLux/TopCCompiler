@@ -1,4 +1,4 @@
-pasteInto = "/Users/luke/Desktop/games/TopCCompiler/TopCompiler/runtime/runtimeTop.c"
+pasteInto = "../runtime/runtimeTop.c"
 modules = ["array", "maybe", "memory"]
 
 from TopCompiler import topc

@@ -96,7 +96,6 @@ from .TypeInference import *
 from .Enum import *
 from .ParseJson import *
 from .Lambda import *
-from .Dict import *
 from .ContextParser import *
 from TopCompiler import Struct
 from TopCompiler import Sizeof
@@ -271,6 +270,7 @@ class Func:
         self.args = args
         self.returnType = returnType
 
+
 class Parser:  # all mutable state
     def nextToken(parser):
         parser.iter += 1
@@ -364,6 +364,8 @@ class Parser:  # all mutable state
         self.opt = 0
         self.specifications = {}
 
+
+
     def setGlobalData(self, compileRuntime):
         global Stringable
         global runtimeParser
@@ -376,6 +378,10 @@ class Parser:  # all mutable state
         self.Stringable = Stringable
 
         if not compileRuntime:
+            global DynamicArray
+            global Range
+            global StaticArray
+
             if not runtimeParser:
                 runtimeParser = saveParser.loadRuntimeTypeData()  # data containing runtime
 
@@ -385,6 +391,17 @@ class Parser:  # all mutable state
             self.contextFields["_global"] = runtimeParser.contextFields["_global"]
             self.contextType = runtimeParser.contextType
             self.specifications["_global"] = runtimeParser.specifications["_global"]
+
+            tmp = self.structs["_global"]["Array"]
+            tmp2 = self.structs["_global"]["Range"]
+            tmp3 = self.structs["_global"]["StaticArray"]
+
+            DynamicArray = Types.Struct(False, tmp.normalName, tmp._types, tmp.package, tmp.generic)
+            StaticArray = Types.Struct(False, tmp3.normalName, tmp3._types, tmp3.package, tmp3.generic)
+            Range = Types.Struct(False, tmp2.normalName, tmp2._types, tmp2.package)
+
+            Types.genericTypes = runtimeParser.generatedGenericTypes
+
             return
 
 
@@ -404,7 +421,6 @@ class Parser:  # all mutable state
 
         self.interfaces["_global"] = {"Stringer": Stringable, "Any": All}
         self.contextFields["_global"] = {}
-        self.scope["_global"][0]["log"] =  Scope.Type(True, Types.FuncPointer([Types.String(0)], Types.Null(), do=True))
         self.scope["_global"][0]["offsetPtr"] = Scope.Type(True,Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32()],
                                                       Types.Pointer(Types.Null(), True)))
         self.scope["_global"][0]["context"] = Scope.Type(True,

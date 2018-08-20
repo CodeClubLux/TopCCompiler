@@ -12,7 +12,6 @@ def find(n, x):
             if a+b == a*b:
                 found.append((a, b))
 
-    print(found)
     #arr = [(a+b) for (a,b) in found]
     #print(arr)
     #print(", ".join(["%.2f" % (b+1 - b) for ((a,b),result) in zip(found, arr)]))
@@ -29,11 +28,8 @@ def optFind(n):
         found.append((x, y))
 
     (a,b) = found[0]
-    print(a+b)
 
     return found
-
-print(len(optFind(0)))
 
 """
 a <= 2
