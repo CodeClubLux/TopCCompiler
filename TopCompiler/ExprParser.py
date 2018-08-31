@@ -94,7 +94,7 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False, token=True):
     if func == None: func = f
     Parser.precidences[kind] = precidence
 
-    _f = lambda parser: Error.parseError(parser, "unexpected operator") if parser.lookBehind().type == "operator" else func(parser)
+    _f = lambda parser: Error.parseError(parser, "unexpected operator") if not unary and parser.lookBehind().type == "operator" else func(parser)
 
     if token:
         Parser.exprToken[kind] = _f
@@ -110,7 +110,7 @@ def endExpr(parser, layer= -1):
     return
 
 def isUnary(parser, lastToken, onlyFact=False):
-    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS", "unary_operator"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else", "either"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
+    fact = (lastToken.type in ["operator", "keyword", "whiteOpenS", "bracketOpenS", "unary_operator"] or lastToken.token in ["(", "{", "[", ",", "|", ":", "..", "=", "->", "then", "with", "else", "either", "return"] or (lastToken.token == "set" and lastToken.type == "operator") or Parser.selectStmt(parser, lastToken) != None) and\
         not lastToken.token in ["int", "float", "bool", "lens"]
 
     if onlyFact:

@@ -1,0 +1,53 @@
+ext _ = "#include <assimp/cimport.h>"
+ext _ = "#include <assimp/scene.h>"
+ext _ = "#include <assimp/vector3.h>"
+ext _ = "#include <assimp/vector2.h>"
+ext _ = "#include <assimp/postprocess.h>"
+
+type ext aiVector3D =
+    x: float
+    y: float
+    z: float
+
+type ext aiVector2D =
+    x: float
+    y: float
+
+type ext aiFace =
+    mNumIndices: uint
+    mIndices: &uint
+
+type ext aiMesh =
+    mNumVertices: uint
+    mNumFaces: uint
+
+    mVertices: &aiVector3D
+    mNormals: &aiVector3D
+    mTangents: &aiVector3D
+    mBitangents: &aiVector3D
+    mIndices: &uint
+    mFaces: &aiFace
+
+    mMaterialIndex: uint
+
+    mTextureCoords: &Maybe[&aiVector3D]
+
+type ext aiString =
+    data: &Char
+
+type ext aiNode =
+    mNumMeshes: uint
+    mNumChildren: uint
+    mChildren: &&aiNode
+
+type ext aiScene =
+    mMaterialIndex: uint
+    mMaterials: &&aiMaterial
+    mMeshes: &&aiMesh
+    mRootNode: &aiNode
+
+type ext aiMaterial =
+
+ext aiImportFile: |&Char, uint| -> Maybe[&aiScene] = "aiImportFile"
+ext ai_matkey_name: uint = "AI_MATKEY_NAME"
+ext aiGetMaterialString: |&aiMaterial, uint, &aiString| -> none = "aiGetMaterialString"

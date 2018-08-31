@@ -85,7 +85,8 @@ def defer(parser):
 
 
 def typecheckPushContext(parser, i):
-    contextTyp = parser.structs["global"]["Context"]
+    contextTyp = parser.structs["_global"]["Context"]
+    contextTyp = Types.Struct(False, "Context", contextTyp._types, "_global")
 
     contextTyp.duckType(parser,  i.nodes[0].type, i.nodes[0], i.nodes[0], 0)
     Tree.insertCast(i.nodes[0], i.nodes[0].type, contextTyp, 0)

@@ -1,0 +1,57 @@
+import "window"
+from "math" import all
+import "buffer"
+import "gi"
+import "shader"
+import "opengl"
+import "imageLoader"
+import "modelLoading"
+import "scene"
+from "materialSystem" import all
+
+wet_street_params := [
+    Param_Image "material.diffuse", imageLoader.load "assets/wet_street/Pebble_Wet_street_basecolor.jpg"
+    Param_Image "material.metallic", imageLoader.load "assets/wet_street/Pebble_Wet_street_metallic.jpg"
+    Param_Image "material.roughness", imageLoader.load "assets/wet_street/Pebble_Wet_street_roughness.jpg"
+    Param_Image "material.normal", imageLoader.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
+]
+
+sky_box_params := []
+
+wet_street := box Material{
+    name = "DefaultMaterial"
+    shader = shader.make "assets/shaders/pbr.vert", "assets/shaders/pbr.frag"
+    params = &wet_street_params
+}
+
+sky_box := box Material{
+    name = "DefaultMaterial"
+    shader = shader.make "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"
+    params = sky_box_params
+}
+
+&materials.append sky_box
+skybox_cube := modelLoading.load_model "assets/cube.fbx"
+&materials.shorten 1
+
+&materials.append wet_street
+model := modelLoading.load_model "assets/cube.fbx"
+
+//setting up the shader
+my_shader := shader.make "assets/vertex.vert", "assets/fragment.frag"
+
+identity := math.identity_mat!
+
+type ExampleScene =
+
+def ExampleScene.render(&self) =
+    opengl.depthFunc opengl.lequal
+    skybox_cube.render!
+    opengl.depthFunc opengl.less
+
+    model.render!
+
+def ExampleScene.update(&self) =
+
+example_scene := ExampleScene{}
+context.scene.init &example_scene

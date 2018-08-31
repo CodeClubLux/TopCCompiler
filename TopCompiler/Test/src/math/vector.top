@@ -1,0 +1,110 @@
+type Vec2 =
+    x: float
+    y: float
+
+type Vec3 =
+    x: float
+    y: float
+    z: float
+
+type Vec4 =
+    x: float
+    y: float
+    z: float
+    w: float
+
+def Vec3.op_add(self, other: Vec3) Vec3 =
+    Vec3{
+        self.x + other.x
+        self.y + other.y
+        self.z + other.z
+    }
+
+def Vec4.op_add(self, other: Vec4) Vec4 =
+    Vec4{
+        self.x + other.x
+        self.y + other.y
+        self.z + other.z
+        self.w + other.w
+    }
+
+
+def Vec3.scale(self, constant: float) Vec3 =
+    Vec3{
+        self.x * constant
+        self.y * constant
+        self.z * constant
+    }
+
+def Vec4.scale(self, constant: float) Vec4 =
+    Vec4{
+        self.x * constant
+        self.y * constant
+        self.z * constant
+        self.w * constant
+    }
+
+
+def Vec3.dot(self, other: Vec3) float =
+    self.x * other.x + self.y * other.y + self.z * other.z
+
+def Vec4.dot(self, other: Vec4) float =
+    self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+
+def Vec3.len(self) float =
+    sqrt self.x^2 + self.y^2 + self.z^2
+
+def Vec4.len(self) float =
+    sqrt self.x^2 + self.y^2 + self.z^2 + self.w^2
+
+
+def Vec3.normalize(self) Vec3 =
+    self.scale 1.0 / self.len!
+
+def Vec4.normalize(self) Vec4 =
+    self.scale 1.0 / self.len!
+
+
+def Vec3.cross(a, b: Vec3) Vec3 =
+    Vec3{
+        (a.y * b.z) - (a.z * b.y)
+        (a.z * b.x) - (a.x * a.z)
+        (a.x * b.y) - (a.y * b.x)
+    }
+
+def Vec4.cross(a, b: Vec4) Vec4 =
+    Vec4{
+        (a.y * b.z) - (a.z * b.y)
+        (a.z * b.x) - (a.x * a.z)
+        (a.x * b.y) - (a.y * b.x)
+        1.0
+    }
+
+def Vec3.reflect(self, other: Vec3) Vec3 =
+    p := 2.0 * self.dot other
+    Vec3{
+        self.x - p*other.x
+        self.y - p*other.y
+        self.z - p*other.z
+    }
+
+def Vec4.reflect(self, other: Vec4) Vec4 =
+    p := 2.0 * self.dot other
+    Vec4{
+        self.x - p*other.x
+        self.y - p*other.y
+        self.z - p*other.z
+        self.w - p*other.w
+    }
+
+def Vec4.op_get(&self, index: uint) &float =
+    indexPtr &(self.x), index
+
+def vec4_from_array(arr: &[4]float) Vec4 =
+    Vec4{
+        arr[0]
+        arr[1]
+        arr[2]
+        arr[3]
+    }
+

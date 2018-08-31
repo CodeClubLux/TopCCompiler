@@ -25,18 +25,19 @@ def addMethod(node, parser, attachTyp, name, func, otherNode= False):
         node.error("Can't add method to "+str(attachTyp))
 def checkIfOperator(parser, attachTyp, name, func):
     attachTyp = func.args[0]
+    no_p_AttachTyp = attachTyp if not type(attachTyp) is Types.Pointer else attachTyp.pType
 
     if name.startswith("op_"):
         try:
             operators = {
-                "add": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-                "sub": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-                "mul": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-                "div": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "add": Types.FuncPointer([attachTyp, attachTyp], no_p_AttachTyp),
+                "sub": Types.FuncPointer([attachTyp, attachTyp],  no_p_AttachTyp),
+                "mul": Types.FuncPointer([attachTyp, attachTyp],  no_p_AttachTyp),
+                "div": Types.FuncPointer([attachTyp, attachTyp],  no_p_AttachTyp),
                 "eq": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
                 "ne": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
-                "mod": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
-                "pow": Types.FuncPointer([attachTyp, attachTyp], attachTyp),
+                "mod": Types.FuncPointer([attachTyp, attachTyp],  no_p_AttachTyp),
+                "pow": Types.FuncPointer([attachTyp, attachTyp], no_p_AttachTyp),
                 "gt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
                 "lt": Types.FuncPointer([attachTyp, attachTyp], Types.Bool()),
                 "set": Types.FuncPointer([attachTyp, func.args[1]], Types.Null()),

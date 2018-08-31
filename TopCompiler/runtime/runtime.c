@@ -3,8 +3,9 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <math.h>
 
-#define Context struct _global_Context* context
+#define __Context struct _global_Context* context
 #define alloc _global_Allocator_alloc
 
 
@@ -19,17 +20,47 @@ struct _global_String _global_StringInit(unsigned int length, char* data) {
     s.length = length;
     return s;
 };
-struct _global_String _global_String_toStringByValue(struct _global_String s, Context) {
+struct _global_String _global_String_toStringByValue(struct _global_String s,__Context) {
     return s;
 }
 
-struct _global_String _global_String_toString(struct _global_String* s, Context) {
+struct _global_String _global_String_toString(struct _global_String* s,__Context) {
     return *s;
 }
 
-void _global_log(struct _global_String, Context);
+struct _global_String _global_Bool_toStringByValue(_Bool b, __Context) {
+    if (b) {
+        return _global_StringInit(4, "true");
+    } else {
+        return _global_StringInit(5, "false");
+    }
+}
 
-struct _global_String _global_String_op_addByValue(struct _global_String a, struct _global_String b, Context) {
+struct _global_String _global_Bool_toString(_Bool* b, __Context) {
+    return _global_Bool_toStringByValue(*b, context);
+}
+
+_Bool _global_String_op_eqByValue(struct _global_String self, struct _global_String other, __Context) {
+    if (self.length != other.length) {
+        return 0;
+    }
+
+    for (unsigned int i =0; i < self.length; i++) {
+        if (self.data[i] != other.data[i]) {
+            return 1;
+        }
+    }
+
+    return 1;
+}
+
+struct _global_String _global_String_op_eq(struct _global_String* s, struct _global_String* other, __Context) {
+    _global_String_op_eqByValue(*s, *other, context);
+}
+
+void _global_log(struct _global_String,__Context);
+
+struct _global_String _global_String_op_addByValue(struct _global_String a, struct _global_String b,__Context) {
     if (a.length == 0) {
         return b;
     } else if (b.length == 0) {
@@ -45,8 +76,18 @@ struct _global_String _global_String_op_addByValue(struct _global_String a, stru
     return newString;
 };
 
-struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b, Context) {
+struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b,__Context) {
     return _global_String_op_addByValue(*a, b, context);
+}
+
+struct _global_String _global_Float_toStringByValue(float x,__Context) {
+    printf("%f", x);
+    return _global_StringInit(0,"");
+}
+
+struct _global_String _global_Float_toString(float* x,__Context) {
+    printf("%f", *x);
+    return _global_StringInit(0,"");
 }
 
 void _reverse_string(struct _global_String * self) {
@@ -81,7 +122,7 @@ void itoa(int value, char* str, int base) {
 }
 */
 
-struct _global_String _global_int_toStringByValue(int number, Context) {
+struct _global_String _global_int_toStringByValue(int number,__Context) {
     unsigned int length = 1;
     unsigned int divisor = 10;
 
@@ -102,20 +143,28 @@ struct _global_String _global_int_toStringByValue(int number, Context) {
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
 
     struct _global_String newString = _global_StringInit(length, memory);
-
     snprintf(newString.data, 10, "%d", number);
 
     return newString;
 }
 
-struct _global_String _global_int_toString(int* number, Context) {
+struct _global_String _global_int_toString(int* number,__Context) {
     return _global_int_toStringByValue(*number, context);
 }
 
-#define gen_integer(name, typ) struct _global_String _global_##name##_toString(typ* number, Context) {\
+char* _global_String_to_c_string(struct _global_String* s, __Context) {
+    return s->data;
+}
+
+char* _global_String_to_c_stringByValue(struct _global_String s, __Context) {
+    return s.data;
+}
+
+
+#define gen_integer(name, typ) struct _global_String _global_##name##_toString(typ* number,__Context) {\
 return _global_int_toStringByValue(*number, context); \
 } \
-struct _global_String _global_##name##_toStringByValue(typ number, Context) {\
+struct _global_String _global_##name##_toStringByValue(typ number,__Context) {\
 return _global_int_toStringByValue(number, context); \
 } \
 
@@ -132,12 +181,62 @@ gen_integer(i64, int64_t)
 
 void _global_c_log(struct _global_String s) {
     printf("%s\n", s.data);
+    fflush(stdout);
 };
 
-static inline void* _global_offsetPtr(void* ptr, int offset, Context) {
+static inline void* _global_offsetPtr(void* ptr, int offset,__Context) {
     return ((char*)ptr) + offset;
 };
 
+
+
+struct _global_String _global_console_input(struct _global_String text, __Context) {
+    char string[40];
+    fputs(text.data, stdout);
+    fflush(stdout);
+    fgets(string, sizeof(string), stdin);
+    fflush(stdin);
+
+
+
+    unsigned int length = strlen(string);
+    char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
+    memcpy(memory, string, length + 1);
+    return _global_StringInit(length, memory);
+}
+
+
+
+FILE* _runtime_c_open_file(struct _global_String filename, struct _global_String acess) {
+    char * buffer = 0;
+    int length;
+    FILE* f;
+    errno_t errors = fopen_s(&f, filename.data, acess.data);
+    if (errors) { return NULL; }
+    return f;
+}
+
+struct _global_String _runtime_read_file(FILE* f, __Context) {
+    fseek (f, 0, SEEK_END);
+    int length = ftell (f);
+    fseek (f, 0, SEEK_SET);
+    char* buffer = alloc(context->allocator, length + 1, context);
+
+    length = fread(buffer, sizeof(char), length, f);
+    buffer[length] = '\0';
+
+    return _global_StringInit(length, buffer);
+}
+
+void _runtime_c_close_file(FILE* file) {
+    fclose (file);
+}
+
+struct _global_String _runtime_char_buffer_toString(char* buffer) {
+    return _global_StringInit(strlen(buffer), buffer);
+}
+
+#define _global_indexPtr(value, by, c) value + by
 /*
 void printI(int i) {
     printf("%i\n", i);

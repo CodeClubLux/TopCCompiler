@@ -17,7 +17,7 @@ class Token:
 from TopCompiler import topc
 import os
 
-def lex(target, stream, filename, modifiers, hotswap, lexed, transforms):
+def lex(target, stream, filename, modifiers, hotswap, lexed):
     for c in stream: #@cleanup might not need to reparse if isn't modified
         if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
             lexed[c] = []
@@ -59,9 +59,9 @@ keywords = fastacess([
         "defer",
         "i32", "i8", "i16", "i32", "i64",
         "u32", "u8", "u16", "i32", "i64",
-        "for"
+        "for",
+        "offsetof", "sizeof"
     ])
-
 
 slSymbols = fastacess([
     "[","]",
@@ -148,12 +148,17 @@ class LexerState:
         self.inString = False
         self.inChar = False
 
+    def spaceBefore(self):
+        if len(self.tokens) > 1:
+            if self.tokens[-1].type == "indent": return True
+        return self.amountOfSpaces > 0
+
     def pushTok(self):
         if self.tok == "": return
         if self.tok in keywords:
             self.append(Token(self.tok, "keyword", self.line, self.column))
         else:
-            t = time.time()
+            if self.tok == "\t": Error.errorAst("Found tab expecting only spaces", self.package, self.filename, Token(self.tok, "", self.line, self.column))
             typ = ""
             match = None
             for (it, (group, regex)) in enumerate(tokenSpecification):
@@ -165,7 +170,7 @@ class LexerState:
             if typ == "":
                 Error.errorAst("Unexpected token " + self.tok, self.package, self.filename, Token(self.tok, "", self.line, self.column))
 
-            if not typ == "identifier"  :
+            if not typ == "identifier":
                 tok = self.tok.replace("_", "")
             else:
                 tok = self.tok
@@ -200,13 +205,16 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
     state.filename = filename
     state.column = scolumn
     state.package = package
+    state.amountOfSpaces = 0
 
     state.inBrace = 0
 
     lenOfS = len(s)
+
     while state.iter < lenOfS:
         t = state.s[state.iter]
         completed = True
+
         if t == '"' and notBack(state.iter) and not (state.inComment or state.inChar or state.inCommentLine):
             state.inString = not state.inString
             if state.inString:
@@ -227,6 +235,7 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                 state.tok = ""
         elif t == " " and not (state.inString or state.inComment or state.inChar or state.inCommentLine):
             state.pushTok()
+            state.amountOfSpaces += 1
         elif t == "{" and notBack(state.iter) and state.inString:
             state.inBrace += 1
             state.tok += '"'
@@ -274,6 +283,7 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
         elif t == "\n":
             if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
                 state.pushTok()
+
             if state.inCommentLine:
                 state.tok = ""
             state.append(Token("\n", "symbol", state.line, state.column))
@@ -284,6 +294,8 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
             state.line += 1
             global linesOfCode
             linesOfCode += 1
+        elif t == "." and len(state.s) >= state.iter+1 and str.isdigit(state.s[state.iter+1]):
+            completed = False
         else:
             if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
                 if t in slSymbols:
@@ -295,10 +307,10 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                     state.append(Token(t, typ, state.line, state.column))
                 elif t in slOperator:
                     state.pushTok()
-                    if state.followedByNumSpace() > 0:
-                        state.append(Token(t, "operator", state.line, state.column))
-                    else:
+                    if state.followedByNumSpace() == 0 and state.spaceBefore():
                         state.append(Token(t, "unary_operator", state.line, state.column))
+                    else:
+                        state.append(Token(t, "operator", state.line, state.column))
                 else:
                     completed = False
                     lastLength = 0
@@ -317,10 +329,10 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                             if operators in mlSymbols:
                                 state.append(Token(operators, "symbol", state.line, state.column))
                             else:
-                                if operators == ".." or state.followedByNumSpace() > 0:
-                                    state.append(Token(operators, "operator", state.line, state.column))
-                                else:
+                                if state.followedByNumSpace() == 0 and state.spaceBefore():
                                     state.append(Token(operators, "unary_operator", state.line, state.column))
+                                else:
+                                    state.append(Token(operators, "operator", state.line, state.column))
                             completed = True
                     if not completed:
                         if state.s[state.iter] in ml1Operators:
@@ -332,10 +344,10 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
                             if operators in mlSymbols:
                                 state.append(Token(operators, "symbol", state.line, state.column))
                             else:
-                                if state.followedByNumSpace() > 0:
-                                    state.append(Token(operators, "operator", state.line, state.column))
-                                else:
+                                if state.followedByNumSpace() == 0 and state.spaceBefore():
                                     state.append(Token(operators, "unary_operator", state.line, state.column))
+                                else:
+                                    state.append(Token(operators, "operator", state.line, state.column))
                             completed = True
             else:
                 completed = False
@@ -343,12 +355,19 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
         if not completed:
             state.tok += t
 
+        if not (t == " " and not (state.inString or state.inComment or state.inChar or state.inCommentLine)):
+            state.amountOfSpaces = 0
+
         state.iter += 1
         state.column += 1
 
         #print("'" + state.tok + "'", state.inString, state.inCommentLine, state.inComment, state.inChar)
 
-    state.pushTok()
+    if not state.inCommentLine:
+        state.pushTok()
+
+    if state.inString or state.inComment:
+        state.tokens[-1].error("EOF")
     state.append(Token("\n", "symbol", state.line-1, state.column))
     state.append(Token(0, "indent", state.line, state.column))
     state.append(Token("\n", "symbol", state.line, state.column))

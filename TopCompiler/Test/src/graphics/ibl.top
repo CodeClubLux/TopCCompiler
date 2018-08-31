@@ -1,0 +1,72 @@
+import "imageLoader"
+import "opengl"
+import "primitives"
+
+type Skybox =
+    convuluted_BRDF_map: imageLoader.Texture
+    env_cubemap: imageLoader.Cubemap
+    irradiance_cubemap: imageLoader.Cubemap
+    prefilter_map: imageLoader.Texture
+    brdf_LUT: imageLoader.Texture
+
+def Skybox.render(&self) =
+    opengl.depthFunc opengl.lequal
+    skybox_shader.bind!
+
+    self.env_cubemap.bind_to 0
+    primitives.cube.bind!
+
+    opengl.depthFunc opengl.less
+
+def Skybox.set_ibl_params_for(&self, shader: Shader) =
+    self.irradiance_cubemap.bind_to 0
+    shader.set_int "irradianceMap", 0
+
+    self.prefilter_map.bind_to 1
+    shader.set_int "prefilterMap", 1
+
+    self.brdf_LUT.bind_to 2
+    shader.set_int "brdfLut", 2
+
+def setup_IBL() =
+    opengl.enable opengl.texture_cube_map_seamless
+
+    equirectangular_to_cubemap_shader := shader.make "assets/shader/eToCubemap.vert", "assets/shaders/eToCubemap.frag"
+
+    capture_FBO : uint = _
+    capture_RBO : uint = _
+
+    opengl.genFramebuffers 1, &capture_FBO
+    opengl.genRenderbuffers 1, &capture_RBO
+
+    hdr_texture := imageLoader.load "assets/LA_Downtown_Helipad_GoldenHour_3k.hdr"
+
+    env_cubemap := imageLoader.create_cubemap 2048
+
+    capture_projection = math.perspective
+        math.radians 90
+        1.0
+        0.1
+        10.0f
+
+    capture_views := [
+        math.look_at math.Vec3{0,0,0}, math.Vec3{1,0,0}, math.Vec3{0,-1,0}
+        math.look_at math.Vec3{0,0,0}, math.Vec3{-1,0,0}, math.Vec3{0,-1,0}
+        math.look_at math.Vec3{0,0,0}, math.Vec3{0,1,0}, math.Vec3{0,0,1}
+        math.look_at math.Vec3{0,0,0}, math.Vec3{0,-1,0}, math.Vec3{0,0,-1}
+        math.look_at math.Vec3{0,0,0}, math.Vec3{0,0,1}, math.Vec3{0,-1,0}
+        math.look_at math.Vec3{0,0,0}, math.Vec3{0,0,-1}, math.Vec3{0,-1,0}
+    ]
+
+    equirectangular_to_cubemap_shader.bind!
+    equirectangular_to_cubemap_shader.set_int "equirectangularMap", 0
+    equirectangular_to_cubemap_shader.set_mat4x4 "projection", capture_projection
+
+    hdr_texture.bind_to 0
+
+    opengl.viewport 0, 0, 2048, 2048
+
+
+    opengl.bindFramebuffer opengl.framebuffer, capture_FBO
+    for i := 0..6 do
+        

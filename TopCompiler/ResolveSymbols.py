@@ -103,7 +103,11 @@ def _resolve(self, tokens, filename, passN= 0 ):
 
         elif passN == 0:
             if b == "type":
-                Scope.addVar(Tree.Node(self), self, self.nextToken().token, Scope.Type(True, Types.StructInit(self.thisToken().token)))
+                name = self.nextToken()
+                if name.token == "ext":
+                    name = self.nextToken()
+
+                Scope.addVar(Tree.Node(self), self, name.token, Scope.Type(True, Types.StructInit(self.thisToken().token)))
 
                 #"""
                 self.structs[self.package][self.thisToken().token] = Struct.Struct(self.thisToken().token, [],[], {}, self, self.package)
@@ -169,14 +173,13 @@ def insert(parser, p, only= False, copy= False):
     p.shouldCompile = parser.shouldCompile
     p.atoms = parser.atoms
     p.atomTyp = parser.atomTyp
-    p.jsFiles = parser.jsFiles
     p.outputFile = parser.outputFile
     p.transforms = parser.transforms
     p.output_target = parser.output_target
-    p.cssFiles = parser.cssFiles
     p.usedModules = parser.usedModules
     p.specifications  = parser.specifications
     p.path = parser.path
+    p.order_of_modules = parser.order_of_modules
 
     return p
 

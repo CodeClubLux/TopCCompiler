@@ -1,0 +1,90 @@
+ext _ = '#include <glad/glad.h>'
+
+ext viewport: |int,int,int,int| -> none = "glViewport"
+
+ext gladLoadGLLoader: |&none| -> bool = "gladLoadGLLoader"
+
+ext enableVertexAttribArray: |uint| -> none = "glEnableVertexAttribArray"
+ext vertexAttribPointer: |uint, uint, int, bool, SizeT, &none| -> none = "glVertexAttribPointer"
+ext bindVertexArray: |uint| -> none = "glBindVertexArray"
+ext genBuffers: |uint, &uint| -> none = "glGenBuffers"
+ext genVertexArrays: |uint, &uint| -> none = "glGenVertexArrays"
+ext bindBuffer: |uint, uint| -> none = "glBindBuffer"
+
+ext deleteShader: |uint| -> none = "glDeleteShader"
+ext createShader: |uint| -> uint = "glCreateShader"
+ext shaderSource: |uint, uint, &&Char, Maybe[&int]| -> none = "glShaderSource"
+ext compileShader: |uint| -> none = "glCompileShader"
+ext getShaderiv: |uint, uint, &int| -> none = "glGetShaderiv"
+ext getShaderInfoLog: |uint, uint, Maybe[&none], &Char| -> none = "glGetShaderInfoLog"
+ext createProgram: || -> uint = "glCreateProgram"
+ext attachShader: |uint, uint| -> none = "glAttachShader"
+ext linkProgram: |uint| -> none = "glLinkProgram"
+ext getPromgramiv: |uint, uint, &int| -> none = "glGetProgramiv"
+ext getProgramInfoLog: |uint, uint, Maybe[&none], &Char|-> none = "glGetProgramInfoLog"
+ext useProgram: |uint| -> none = "glUseProgram"
+ext activeTexture: |uint| -> none = "glActiveTexture"
+ext texture0: uint = "GL_TEXTURE0"
+
+ext debug_severity_low: uint = "GL_DEBUG_SEVERITY_LOW"
+
+ext genTextures: |uint, &uint| -> none = "glGenTextures"
+ext bindTexture: |uint, uint| -> none = "glBindTexture"
+ext texParameteri: |uint, uint, uint| -> none = "glTexParameteri"
+
+ext repeat: uint = "GL_REPEAT"
+ext texture_wrap_s: uint = "GL_TEXTURE_WRAP_S"
+ext texture_wrap_t: uint = "GL_TEXTURE_WRAP_T"
+ext texture_min_filter: uint = "GL_TEXTURE_MIN_FILTER"
+ext texture_mag_filter: uint = "GL_TEXTURE_MAG_FILTER"
+ext linear: uint = "GL_LINEAR"
+ext texImage2D: |uint, uint, uint, int, int, uint, uint, uint, &Byte| -> none = "glTexImage2D"
+ext generateMipmap: |uint| -> none = "glGenerateMipmap"
+
+ext rgb: uint = "GL_RGB"
+
+ext texture_2d: uint = "GL_TEXTURE_2D"
+ext unsigned_byte: uint = "GL_UNSIGNED_BYTE"
+
+ext compile_status: uint = "GL_COMPILE_STATUS"
+
+ext vertex_shader: uint = "GL_VERTEX_SHADER"
+ext fragment_shader: uint = "GL_FRAGMENT_SHADER"
+ext link_status: uint = "GL_LINK_STATUS"
+
+ext bufferData: |uint, uint, &none, uint| -> none = "glBufferData"
+
+ext type_float: uint = "GL_FLOAT"
+ext type_int: uint = "GL_INT"
+
+ext array_buffer: uint = "GL_ARRAY_BUFFER"
+ext element_array_buffer: uint = "GL_ELEMENT_ARRAY_BUFFER"
+
+ext static_draw: uint = "GL_STATIC_DRAW"
+
+ext clearColor: |float,float,float,float| -> none = "glClearColor"
+ext clear: |uint| -> none = "glClear"
+ext color_buffer_bit: uint = "GL_COLOR_BUFFER_BIT"
+ext drawArrays: |uint, uint, uint| -> none = "glDrawArrays"
+ext drawElements: |uint, uint, uint, uint| -> none = "glDrawElements"
+
+ext unsigned_int: uint = "GL_UNSIGNED_INT"
+
+ext depth_buffer_bit: uint = "GL_DEPTH_BUFFER_BIT"
+ext depth_test: uint = "GL_DEPTH_TEST"
+
+ext triangles: uint = "GL_TRIANGLES"
+
+ext getUniformLocation: |uint, &Char| -> int = "glGetUniformLocation"
+ext uniformMatrix4fv: |int, uint, bool, &float| -> none = "glUniformMatrix4fv"
+ext uniform3fv: |int, uint, &float| -> none = "glUniform3fv"
+ext uniform1i: |int, int| -> none = "glUniform1i"
+
+ext debug_output: uint = "GL_DEBUG_OUTPUT"
+ext enable: |uint| -> none = "glEnable"
+
+ext depthFunc: |uint| -> none = "glDepthFunc"
+ext lequal: uint = "GL_LEQUAL"
+ext less: uint = "GL_LESS"
+
+ext debugMessageCallback: | |uint, uint, uint, uint, SizeT, &Char| -> none, &Context| -> none = "glDebugMessageCallback"

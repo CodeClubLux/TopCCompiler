@@ -81,9 +81,7 @@ class Root:
     def destruct(self, codegen):
         pass
 
-    def validate(self, parser):
-        for i in self:
-            isUseless(i)
+    def validate(self, parser): pass
 
 def isUseless(i):
     if i.repl:
@@ -135,8 +133,15 @@ def validate(parser, self, function=None, block=None):
     checkOther(self, parser, None, None)
 
 def checkUseless(self):
-    for i in self.nodes[:-1]:
+    if type(self) is Tree.FuncBody and self.returnType.name == "none":
+        checkNodes = self.nodes
+    else:
+        checkNodes = self.nodes[:-1]
+    for i in checkNodes:
         isUseless(i)
+
+        if type(i) in [Tree.FuncBody, Tree.While, Tree.WhileBlock, Tree.If, Tree.Block]:
+            checkUseless(i)
 
 def toStr(array):  # turn names list into something for llvm
     return ", ".join(array)

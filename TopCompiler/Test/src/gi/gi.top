@@ -1,0 +1,34 @@
+//api to call the graphics card
+//graphics library independent, meaning there will be multiple versions of this file for each supported graphics api
+
+import "opengl"
+from "math" import all
+
+
+def load(procAddress: &none) =
+    if not (opengl.gladLoadGLLoader procAddress) then
+        panic "Failed to initialize GLAD!"
+
+    log "initialized opengl"
+
+def set_viewport(width: int, height: int) =
+    opengl.viewport 0, 0, width, height
+
+type BufferToClear either
+    ColorBuffer
+    DepthBuffer
+
+def BufferToClear.to_c_type(self) uint =
+    match self with
+        ColorBuffer -> opengl.color_buffer_bit
+        DepthBuffer -> opengl.depth_buffer_bit
+
+def clear_to_color(bufferType: BufferToClear, color: Vec4) =
+    opengl.clearColor color.x, color.y, color.z, color.w
+    opengl.clear bufferType.to_c_type!
+
+def clear(bufferType: BufferToClear) =
+    opengl.clear bufferType.to_c_type!
+
+def enable_depth_buffer() =
+    opengl.enable opengl.depth_test

@@ -40,7 +40,9 @@ class Create(Node):
             codegen.out_parts.append(self.varType.toCType() + " " + self.attachTyp.package + "_" + self.attachTyp.normalName + "_" + self.name + ";")
         elif not self.isGlobal:
             typ = self.varType.toCType()
-            codegen.append(typ + " " + codegen.createName(self.package + "_" + self.name, typ) + ";")
+            name = codegen.createName(self.package + "_" + self.name, typ)
+            codegen.append(typ + " " + name + ";")
+            return name
         else:
             if self.extern:
                 if self.varType.isType(Types.FuncPointer):
@@ -73,7 +75,7 @@ class CreateAssign(Node):
         if self.extern and self.nodes[0].name == "_":
             tmp = self.nodes[1].nodes[0].string.replace("\{", "{").replace("\}", "}")
             tmp = tmp[1:-1]
-            codegen.out_parts.append(tmp)
+            codegen.out_parts.append(tmp + "\n")
             return
         elif self.nodes[0].name == "_":
             self.nodes[1].nodes[0].compileToC(codegen)
@@ -131,6 +133,9 @@ class Assign(Node):
         return self.name + "="
 
     def compileToC(self, codegen):
+        if self.init and type(self.nodes[0]) is Tree.Under:
+            return
+
         if type(self.owner) is Tree.InitStruct:
             self.nodes[1].compileToC(codegen)
             return
@@ -220,7 +225,7 @@ class Assign(Node):
                 self.error("expecting single expression, not multiple")
             typ = node.nodes[1].type
 
-        if typ == Types.Null():
+        if typ == Types.Null() and not (self.init and type(self.nodes[0]) is Tree.Under):
             self.nodes[0].error("cannot assign nothing")
 
 def getVar(self, codegen):

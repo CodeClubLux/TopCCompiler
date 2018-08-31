@@ -60,7 +60,7 @@ def newLine(parser):
         diff = indent - parser.indent[-1]
         if diff > 0 and diff % parser.normalIndent != 0:
             Error.parseError(parser, "inconsistent indentation")
-        elif diff < 0 and ((-diff) / 2) % parser.normalIndent != 0:
+        elif diff < 0 and -diff % parser.normalIndent != 0:
             Error.parseError(parser, "unindent does not match any outer indentation level")
 
     parser.indentLevel = indent
@@ -190,6 +190,8 @@ class Opcode:
                         tryIt()
 
         try:
+            #if parser.package == "math" and type(parser.currentNode) is Tree.ArrRead:
+            #    print("hey")
             tryIt()
         except:
             Error.parseError(parser, "Unexpected " + opcode)
@@ -252,7 +254,7 @@ def callToken(self, lam= False):
             if not (self.tokens[self.iter + 2].token == "\n"):
                 if int(self.lookInfront().token) > self.indentLevel:
                     b = self.tokens[self.iter + 2]
-                    self.iter += 2
+                    #self.iter +=
                     isIndentationCall = True
 
         if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
@@ -270,6 +272,7 @@ class Func:
         self.args = args
         self.returnType = returnType
 
+Char = Types.I32(size=8)
 
 class Parser:  # all mutable state
     def nextToken(parser):
@@ -364,6 +367,8 @@ class Parser:  # all mutable state
         self.opt = 0
         self.specifications = {}
 
+        self.order_of_modules = []
+
 
 
     def setGlobalData(self, compileRuntime):
@@ -381,6 +386,7 @@ class Parser:  # all mutable state
             global DynamicArray
             global Range
             global StaticArray
+            global Char
 
             if not runtimeParser:
                 runtimeParser = saveParser.loadRuntimeTypeData()  # data containing runtime
@@ -392,6 +398,16 @@ class Parser:  # all mutable state
             self.contextType = runtimeParser.contextType
             self.specifications["_global"] = runtimeParser.specifications["_global"]
 
+            tmp = self.tokens
+            self.tokens = [0]
+            self._filename = ""
+
+            self.structs["_global"]["Context"] = Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "_global")
+
+            self.tokens = tmp
+
+            self.structs["_global"]["Context"]._types = self.contextType
+
             tmp = self.structs["_global"]["Array"]
             tmp2 = self.structs["_global"]["Range"]
             tmp3 = self.structs["_global"]["StaticArray"]
@@ -399,18 +415,19 @@ class Parser:  # all mutable state
             DynamicArray = Types.Struct(False, tmp.normalName, tmp._types, tmp.package, tmp.generic)
             StaticArray = Types.Struct(False, tmp3.normalName, tmp3._types, tmp3.package, tmp3.generic)
             Range = Types.Struct(False, tmp2.normalName, tmp2._types, tmp2.package)
+            Char = self.interfaces["_global"]["Char"]
+
 
             Types.genericTypes = runtimeParser.generatedGenericTypes
 
+
             return
-
-
         tmp = self.tokens
         self.tokens = [0]
         self._filename = ""
 
         self.structs["_global"] = {
-            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "")
+            "Context": Struct.Struct("Context", [], [], {}, Tree.PlaceHolder(self), "_global")
         }
 
         self.tokens = tmp
@@ -438,6 +455,7 @@ class Parser:  # all mutable state
             PackageParser.packDec(self, self.package)
             self._parse(tokens[i], filenames[i][1])
 
+        self.order_of_modules.append(self.package)
             #self.imports = []
         self.iter = 0
 

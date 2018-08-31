@@ -1,0 +1,23 @@
+from "math" import all
+
+type Entity =
+    id: uint
+    enabled: bool
+
+    position: Vec3
+    rotation: Quat
+    scale: Vec3
+
+/*
+type System[T] =
+    components: [..]T
+
+type Component with
+    def render()
+    def update()
+
+component_types: [..]Component = ""
+
+def make_system[T](system: T) System[T] =
+    System{ }
+*/

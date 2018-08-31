@@ -312,7 +312,8 @@ def funcCallBody(parser, paren):
             ExprParser.endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             continue
-
+        if t.token in ["then", "with", "do"]:
+            break
         Parser.callToken(parser)
 
     ExprParser.endExpr(parser)
@@ -374,6 +375,7 @@ def comma(parser):
 
 def returnF(parser):
     previous = parser.currentNode
+    parser.nodeBookmark.append(0)
 
     if type(previous) is Tree.Root:
         Error.parseError(parser, "Can only return from function")
@@ -391,6 +393,7 @@ def returnF(parser):
         Error.parseError(parser, "Expecting single expression not "+str(len(returnAST.nodes)))
 
     parser.currentNode = previous
+    parser.nodeBookmark.pop()
 
 Parser.stmts["def"] = func
 Parser.stmts["return"] = returnF

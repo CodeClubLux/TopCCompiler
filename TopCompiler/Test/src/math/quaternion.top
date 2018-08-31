@@ -1,0 +1,19 @@
+type Quat =
+    w: float
+    x: float
+    y: float
+    z: float
+
+def quat_identity() Quat =
+    Quat{ 0, 0, 0, 1 }
+
+def Quat.op_add(&self, other: &Quat) Quat =
+    Quat{
+        self.x + other.x
+        self.y + other.y
+        self.z + other.z
+        self.w + other.w
+    }
+
+//def Quat.op_sub(&self, other: &Quat) Quat =
+

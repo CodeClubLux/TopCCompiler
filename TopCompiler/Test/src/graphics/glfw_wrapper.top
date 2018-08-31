@@ -1,0 +1,23 @@
+ext _ = '#include <GLFW/glfw3.h>'
+
+type ext GLFWwindow =
+type ext GLFWmonitor =
+
+ext glfwInit: || -> none = "glfwInit"
+ext glfwCreateWindow: |int, int, &Char, Maybe[&GLFWmonitor], Maybe[&none]| -> Maybe[&GLFWwindow] = "glfwCreateWindow"
+ext glfwDestroyWindow: |&GLFWwindow| -> none = "glfwDestroyWindow"
+ext glfwTerminate: || -> none = "glfwTerminate"
+ext glfwWindowShouldClose: |&GLFWwindow| -> bool = "glfwWindowShouldClose"
+ext glfwGetPrimaryMonitor: || -> Maybe[&GLFWmonitor] = "glfwGetPrimaryMonitor"
+
+ext glfwWindowHint: |int, int| -> none = "glfwWindowHint"
+ext glfw_context_version_major: int = "GLFW_CONTEXT_VERSION_MAJOR"
+ext glfw_context_version_minor: int = "GLFW_CONTEXT_VERSION_MINOR"
+ext glfw_opengl_profile: int = "GLFW_OPENGL_CORE_PROFILE"
+ext glfw_samples: int = "GLFW_SAMPLES"
+ext glfwMakeContextCurrent: |&GLFWwindow| -> none = "glfwMakeContextCurrent"
+ext glfwSetFramebufferSizeCallback: |&GLFWwindow, |&GLFWwindow, int,int| -> none| -> none = "glfwSetFramebufferSizeCallback"
+ext glfwSwapBuffers: |&GLFWwindow| -> none = "glfwSwapBuffers"
+ext glfwPollEvents: || -> none = "glfwPollEvents"
+
+ext getProcAddress: &none = "glfwGetProcAddress"

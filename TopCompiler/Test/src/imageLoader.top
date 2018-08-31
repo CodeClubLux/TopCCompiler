@@ -1,0 +1,60 @@
+ext _ = "#define STB_IMAGE_IMPLEMENTATION"
+ext _ = '#include "stb_image.h"'
+
+ext stbi_load: |&Char, &int, &int, &int, uint| -> Maybe[&Byte] = "stbi_load"
+ext stbi_image_free: |&Byte| -> none = "stbi_image_free"
+
+
+from "opengl" import all
+
+type Texture =
+    filename: string
+    id: uint
+
+textures : [..]Texture = []
+textures.allocator = Some &malloc_as_allocator
+&textures.reserve 10
+
+def load(filename: string) Texture =
+    for i := 0..textures.length do
+        tex := &textures[i]
+
+        if tex.filename == filename then
+            return tex
+
+    width : int = 0
+    height : int = 0
+    nr_channels : int = 0
+    texture := 0
+
+    genTextures 1, &texture
+    bindTexture opengl.texture_2d, texture
+
+    texParameteri texture_2d, texture_wrap_s, repeat
+    texParameteri texture_2d, texture_wrap_t, repeat
+    texParameteri texture_2d, texture_min_filter, linear
+    texParameteri texture_2d, texture_mag_filter, linear
+
+    data := match stbi_load filename.to_c_string!, &width, &height, &nr_channels, 0 with
+        Some d -> d
+        None ->
+            panic "Could not load image {filename}"
+            0 cast &Byte
+
+    defer stbi_image_free data
+
+    texImage2D texture_2d, 0, rgb, width, height, 0, rgb, unsigned_byte, data
+    generateMipmap texture_2d
+
+    tmp := Texture{
+        filename
+        texture
+    }
+
+    &textures.append tmp
+
+    tmp
+
+def Texture.bind_to(&self, num: uint) =
+    activeTexture texture0 + num
+    bindTexture opengl.texture_2d, self.id

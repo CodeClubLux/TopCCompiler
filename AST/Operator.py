@@ -80,7 +80,6 @@ class Operator(Node):
 
         #codegen.append("(")
 
-
         if self.kind == "^":
             codegen.append("powf(")
 
@@ -104,6 +103,9 @@ class Operator(Node):
 
         if self.unary:
             codegen.append(op)
+            if self.kind == "not":
+                codegen.append("(")
+
         self.nodes[0].compileToC(codegen)
 
         if not self.unary:
@@ -119,6 +121,9 @@ class Operator(Node):
                 #codegen.append(").toString()")
             if self.kind == "^":
                 codegen.append(")")
+
+        if self.kind == "not":
+            codegen.append(")")
 
         #codegen.append(")")
 
@@ -165,6 +170,9 @@ def checkOperator(self, parser):
             Vars.canMutate(self, True)
             return
 
+        if i.kind == "*" and i.unary and not i.opT.isType(Types.Pointer):
+            i.error("Can only dereference a pointer")
+
         if not i.opT.name in ops:
             if unary:
                overloads = {
@@ -201,15 +209,12 @@ def checkOperator(self, parser):
             elif type(i.opT) is Types.Pointer and i.kind == "*" and i.unary:
                 i.type = i.opT.pType
             elif type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Pointer]:
-                func = i.opT.hasMethod(parser, overloads[i.kind])
+                try:
+                    func = i.opT.hasMethod(parser, overloads[i.kind])
+                except EOFError as e:
+                    Error.beforeError(e, str(i.opT) + "." + overloads[i.kind] + " only operates: ")
                 if not func:
-                    try:
-                        i.opT.types[overloads[i.kind]]
-                        i.interface = True
-                        i.name = overloads[i.kind]
-
-                    except KeyError:
-                        i.error( "Operator " + i.kind + ", cannot operate on type " + str(i.opT))
+                    i.error( "Operator " + i.kind + ", cannot operate on type " + str(i.opT))
                 else:
                     i.name = i.opT.normalName + "_" + overloads[i.kind]
                     i.package = i.opT.package

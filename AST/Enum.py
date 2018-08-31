@@ -25,8 +25,7 @@ class Enum(Node):
         #Types.replaceT(i, structT.gen) for i in structT.types.values()]
 
     def compileToC(self, codegen):
-        if self.generic and not self.replaced:
-
+        if not self.replaced:
             return
 
         count = 0
@@ -85,6 +84,7 @@ class Enum(Node):
         codegen.append("\n};\n")
 
         index = 0
+
         for (iter, name) in enumerate(self.const):
             args = self.const[name]
             if len(args) > 0:
@@ -101,7 +101,7 @@ class Enum(Node):
                 codegen.append(f"{cType} {tmp};\n")
 
                 for (c, i) in enumerate(vars[:-1]):
-                    codegen.append(tmp + ".cases." + name + ".field" + str(index) + " = " + i + ";")
+                    codegen.append(tmp + ".cases." + name + ".field" + str(c) + " = " + i + ";")
                 codegen.append(f"{tmp}.tag = {iter};\n")
                 codegen.append("return " + tmp + ";}\n")
                 index += 1
@@ -117,16 +117,18 @@ class Enum(Node):
                     codegen.append(f"{cType} {self.package}_{name};\n")
 
                     codegen.outFunction()
+                    alreadyOut = True
 
                     codegen.append(f"{self.package}_{name}.tag = {iter};")
+                    codegen.inFunction()
 
         codegen.outFunction()
 
     def validate(self, parser):
         pass
 
-def genFunction(compileNodes, codegen, returnType, owner):
-    if type(owner) is Tree.FuncBody:
+def genFunction(compileNodes, codegen, returnType, owner, self):
+    if type(owner) is Tree.FuncBody and owner.nodes[-1] == self:
         compileNodes()
         return
 
@@ -137,30 +139,36 @@ def genFunction(compileNodes, codegen, returnType, owner):
     vars = []
     varNames = []
 
-    for scope in codegen.names:
+    for scope in codegen.names[1:]:
         for varName in scope:
             (typ, var) = scope[varName]
-            vars.append(f"{typ}* {var},")
-            varNames.append("&" + var)
-            if inAFunc != 2:
+            if inAFunc == 1 or (not var.startswith("*")):
+                vars.append(f"{typ}* {var},")
+                varNames.append("&" + var)
                 scope[varName] = (typ, "*" + var)
+            else:
+                vars.append(f"{typ} {var},")
+                varNames.append(var[1:])
 
     vars = "".join(vars)
     varNames = ",".join(varNames)
 
     codegen.append(
-        f"static inline {returnType.toCType()} {funcName}({vars} struct _global_Context* {codegen.getContext()}) {{\n")
+        f"\nstatic inline {returnType.toCType()} {funcName}({vars} struct _global_Context* {codegen.getContext()}) {{\n")
 
+    codegen.incrScope()
     compileNodes()
+    codegen.decrScope()
 
-    if inAFunc != 2:
-        for scope in codegen.names:
+    if inAFunc == 1:
+        for scope in codegen.names[1:]:
             for varName in scope:
                 (typ, var) = scope[varName]
                 scope[varName] = (typ, var[1:])
 
     codegen.append("\n}\n")
     codegen.outFunction()
+
     codegen.append(f"{funcName}({varNames}, {codegen.getContext()})")
 
 class Match(Node):
@@ -183,7 +191,7 @@ class Match(Node):
                 for iter in range(1, len(self.nodes)):
                     self.nodes[iter].compileToC(codegen)
 
-            genFunction(genNodes, codegen, self.type, self.owner)
+            genFunction(genNodes, codegen, self.type, self.owner, self)
         else:
             codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
             self.nodes[0].compileToC(codegen)

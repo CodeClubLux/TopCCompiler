@@ -1,0 +1,69 @@
+import "gi"
+from "glfw_wrapper" import all
+
+def framebuffer_size_callback(window_ptr: &GLFWwindow, width: int, height: int) =
+    gi.set_viewport width, height
+
+type Window =
+    title: string
+    vSync: bool
+    full_screen: bool
+    width: int
+    height: int
+
+    window_ptr: Maybe[&GLFWwindow]
+
+def Window.init(&self) =
+    glfwInit!
+    glfwWindowHint glfw_context_version_major, 4
+    glfwWindowHint glfw_context_version_minor, 4
+    glfwWindowHint glfw_opengl_profile, glfw_opengl_profile
+    glfwWindowHint glfw_samples, 4
+
+    c_title := self.title.to_c_string!
+
+    self.window_ptr =
+        if self.full_screen then
+            monitor := glfwGetPrimaryMonitor!
+            glfwCreateWindow self.width, self.height, c_title, monitor, None
+        else
+            glfwCreateWindow self.width, self.height, c_title, None, None
+
+    match self.window_ptr with
+        Some window_ptr ->
+            glfwMakeContextCurrent window_ptr
+            glfwSetFramebufferSizeCallback window_ptr, framebuffer_size_callback
+
+            gi.load getProcAddress
+
+        None ->
+            glfwTerminate!
+            panic "Failed to create window"
+
+def Window.should_close(&self) bool =
+    match self.window_ptr with
+        Some window_ptr -> glfwWindowShouldClose window_ptr
+        None -> true
+
+def Window.update_inputs(&self) =
+    glfwPollEvents!
+
+def Window.swap_buffers(&self) =
+    glfwSwapBuffers self.window_ptr.unwrap!
+
+def Window.close(&self) =
+    match self.window_ptr with
+        Some window_ptr ->
+            glfwDestroyWindow window_ptr
+            glfwTerminate!
+
+        None ->
+
+default := Window{
+    title = ""
+    vSync = true
+    full_screen = false
+    width = 1920
+    height = 1080
+    window_ptr = None
+}

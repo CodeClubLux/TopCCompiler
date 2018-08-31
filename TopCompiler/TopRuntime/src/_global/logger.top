@@ -1,5 +1,8 @@
+ext exit: |uint| -> none = "exit"
+
 def panic(s: string) none =
     log "panic: {s}"
+    exit 1
 
 def assert(b: bool, message: string) =
     if not b then

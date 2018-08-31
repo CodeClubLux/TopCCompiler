@@ -48,6 +48,19 @@ def ifBody(parser):
 
         Parser.callToken(parser)
 
+        token = parser.thisToken()
+
+        if token.token == "then" and not then:
+            then = True
+            ExprParser.endExpr(parser)
+
+            parser.nodeBookmark.pop()
+
+            block = Tree.Block(parser)
+            cond.owner.addNode(block)
+            parser.currentNode = block
+            continue
+
         next = parser.lookInfront()
         if (next.token == "else" or next.token == "elif") and isEnd:
             break

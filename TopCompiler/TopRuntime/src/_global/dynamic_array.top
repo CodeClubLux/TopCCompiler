@@ -29,11 +29,15 @@ def fill_array[T](numTimes: uint, elem: T) Array[T] =
 
     arr
 
-
 def Array[T].op_get(&self, index: uint) &T =
     assert index < self.length, "Out of bounds"
 
     indexPtr self.data.unwrap!, index
+
+def Array[T].shorten(&self, num: uint) =
+    self.length -= num
+    if self.length < 0 then
+        panic "shorten out of bounds"
 
 def Array[T].reserve(&self, newSize: uint) =
     allocator := self.allocator.default context.allocator
@@ -52,6 +56,7 @@ def Array[T].reserve(&self, newSize: uint) =
 
         None ->
             Some (allocator.alloc self.capacity * sizeof T) cast &T
+
 
 def Array[T].append(&self, value: T) =
     newLength := self.length + 1

@@ -1,0 +1,40 @@
+type FileAcess either
+    ReadFile
+    WriteFile
+
+def FileAcess.toString(self) string =
+    match self with
+        ReadFile -> "r"
+        WriteFile -> "w"
+
+type ext FILE =
+
+ext c_open_file: |string, string| -> Maybe[&FILE] = "_runtime_c_open_file"
+ext c_close_file: |&FILE| -> none = "_runtime_c_close_file"
+
+ext c_read_file: |&FILE, &Context| -> string = "_runtime_read_file"
+
+type File =
+    c_file: &FILE
+    acess: FileAcess
+
+def File.read(self) string =
+    match self.acess with
+        ReadFile -> c_read_file self.c_file, context
+        _ ->
+            panic "Trying to read from file not set to read"
+            ""
+
+def File.free(self) =
+    c_close_file self.c_file
+
+def open(filename: string, acess: FileAcess) Maybe[File] =
+    c_file := c_open_file filename, acess.toString!
+    match c_open_file filename, acess.toString! with
+        Some file ->
+            Some File{
+                c_file = file
+                acess = acess
+            }
+
+        None -> None

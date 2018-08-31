@@ -32,16 +32,18 @@ class Interface(Node):
 
         #helper function from struct to interface
         codegen.append(f"static inline struct {self.name} {self.name}FromStruct(void* data")
-        names = []
+        field_names = []
+        method_names = []
+
         for field in iType.types:
             n = codegen.getName()
             codegen.append(f", short {n}")
-            names.append(n)
+            field_names.append(n)
 
         for field in methods:
             n = codegen.getName()
             codegen.append(f", {methods[field].toCType()} {n}")
-            names.append(n)
+            method_names.append(n)
 
         codegen.append("){ \n")
 
@@ -50,17 +52,21 @@ class Interface(Node):
         codegen.append(f"struct {self.name} {tmp};\n")
 
         codegen.append(f"{tmp}.data = data;")
-        for (name, field) in zip(names, iType.types):
+        for (name, field) in zip(field_names, iType.types):
             codegen.append(f"{tmp}.field_{field} = {name};\n")
-        for (name, field) in zip(names, methods):
+        for (name, field) in zip(method_names, methods):
             codegen.append(f"{tmp}.method_{field} = {name};\n")
         codegen.append(f"return {tmp}; \n}}")
 
         #helper function to access fields
         for field in iType.types:
             typ = iType.types[field].toCType()
-            codegen.append(f"static inline {typ}* {self.name}_{field}(struct {self.name} {tmp}, struct _global_Context* {context}){{\n")
+            codegen.append(f"static inline {typ}* {self.name}_{field}ByValue(struct {self.name} {tmp}){{\n")
             codegen.append(f"return ({typ}*)({tmp}.data + {tmp}.field_{field});")
+            codegen.append("\n};")
+
+            codegen.append(f"static inline {typ}* {self.name}_{field}(struct {self.name}* {tmp}){{\n")
+            codegen.append(f"return ({typ}*)({tmp}->data + {tmp}->field_{field});")
             codegen.append("\n};")
 
         #helper function to call methods

@@ -5,6 +5,7 @@ from .node import *
 from .Func import *
 from .Operator import *
 from PostProcessing import SimplifyAst
+
 class InitStruct(Node):
     def __init__(self, parser):
         super(InitStruct, self).__init__(parser)
@@ -27,6 +28,39 @@ class InitStruct(Node):
                     codegen.append(",")
             codegen.append("}")
         else:
+            if type(self.nodes[0]) is Tree.ReadVar or (type(self.nodes[0]) is Tree.Field and self.nodes[0].indexPackage):
+                from TopCompiler import topc
+                structT = topc.global_parser.structs[self.type.package][self.type.normalName]
+
+
+                if self.replaced:
+                    codegen.append(
+                        f"{SimplifyAst.toUniqueID(self.type.package, self.type.normalName, self.type.remainingGen)}Init(")
+                else:
+                    codegen.append(self.typ.package + "_" + self.typ.normalName + "Init(")
+
+                myFields = {}
+                for c in self.nodes[1:]:
+                    myFields[c.nodes[0].name] = c.nodes[1]
+
+                iter = 0
+                for field in structT.actualfields:
+                    field = field.name
+                    if field in myFields:
+                        myFields[field].compileToC(codegen)
+                    else:
+                        f = Field(0, structT, self)
+                        f.field = field
+                        f.addNode(self.nodes[0])
+                        f.compileToC(codegen)
+
+                    iter += 1
+                    if iter != len(structT.actualfields):
+                        codegen.append(",")
+                codegen.append(")")
+                return
+
+            self.error("not implemented")
             codegen.append("core_assign(")
             self.nodes[0].compileToJS(codegen)
             codegen.append(",{")
@@ -67,6 +101,8 @@ class Type(Node):
         self.fields = []
         self.generics = {}
         self.remainingGen = {}
+        self.externalStruct = False
+        self.replaced = False
 
     def __str__(self):
         return "type "+self.package+"."+self.name
@@ -82,10 +118,11 @@ class Type(Node):
         #Types.replaceT(i, structT.gen) for i in structT.types.values()]
         self.fields =list(structT.types.keys())
         self.remainingGen = structT.remainingGen
-    def compileToC(self, codegen):
-        if self.generics:
-            return
+        self.replaced = True
 
+    def compileToC(self, codegen):
+        if not self.replaced and not self.externalStruct:
+            return
         if self.package and self.normalName.startswith("StaticArray") and type(self.remainingGen["StaticArray.S"]) is int:
             staticArrDataType = Tree.ArrDataType(self.package, self.normalName, self)
 
@@ -97,16 +134,19 @@ class Type(Node):
         codegen.inFunction()
         #print("compiling struct " + self.package + "." + self.name)
         names = self.fields
+
+        if not self.externalStruct:
+            cType = "struct " + self.package + "_" + self.normalName
+        else:
+            cType = self.package + "_" + self.normalName
+
         codegen.append("struct "+self.package+"_"+self.normalName+" {\n")
         for i in range(len(self.fields)):
-            if self.name == "Array":
-                typ = self.args[i].toCType()
-            else:
-                typ = self.args[i].toCType()
+            typ = self.args[i].toCType()
             codegen.append(typ + " " + self.fields[i]+";\n")
         codegen.append("};\n")
 
-        codegen.append("static inline struct " + self.package+"_"+self.normalName+" " + self.package+"_"+self.normalName + "Init(")
+        codegen.append("static inline " + cType +" " + self.package+"_"+self.normalName + "Init(")
 
         for i in range(len(self.fields)):
             codegen.append(self.args[i].toCType() + " " + names[i])
@@ -115,7 +155,7 @@ class Type(Node):
 
         codegen.append("){\n")
         name = codegen.getName()
-        codegen.append("struct "+self.package+"_"+self.normalName + " " + name + ";\n")
+        codegen.append(cType + " " + name + ";\n")
 
         for i in range(len(self.fields)):
             codegen.append(name + "." + self.fields[i] + "=" + names[i])
@@ -123,6 +163,7 @@ class Type(Node):
 
         codegen.append("return "+name)
         codegen.append(";\n};\n")
+
 
         #@cleanup Add Serialization for types
         #codegen.append(self.package+"_"+self.normalName+"._fields=[")
@@ -145,6 +186,7 @@ class Field(Node):
         self.newValue = False
         self.number = False
         self.unary = False
+        self.replaced = {}
 
 
     def __str__(self):
@@ -157,12 +199,26 @@ class Field(Node):
             field = "get"+self.field[0].upper()+self.field[1:]
             codegen.append("(function get"+self.field+"("+tmp+"){return "+tmp+"."+self.field+"})")
             return
+
+        if self.field == "length":
+            typ = self.nodes[0].type.toRealType()
+            if typ.isType(Types.Pointer):
+                typ = typ.pType.toRealType()
+            try:
+                if type(typ.remainingGen["StaticArray.S"]) is int:
+                    codegen.append(str(typ.remainingGen["StaticArray.S"]))
+                    return
+            except KeyError:
+                pass
+
         if not self.indexPackage:
             def getFieldOfInterface(iType, pointer=False):
                 n = SimplifyAst.sanitize(iType.name)
-                codegen.append(f"*{n}_{self.field}(")
+                codegen.append(f"*{n}_{self.field}")
                 if pointer:
-                    codegen.append("*(")
+                    codegen.append("(")
+                else:
+                    codegen.append("ByValue(")
                 self.nodes[0].compileToC(codegen)
                 if pointer:
                     codegen.append(")")
@@ -190,7 +246,7 @@ class Field(Node):
             else:
                 codegen.append(("" if self.indexPackage else ").") +self.field)
         else:
-            codegen.append(")")
+            codegen.append(".field_" + self.field + ")")
 
     def set(self, old, codegen):
         if self.newValue:

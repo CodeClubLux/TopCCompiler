@@ -1,0 +1,42 @@
+from "math" import Vec4
+from "materialSystem" import Material
+import "buffer"
+
+type SortKey is i64
+
+type DrawCommand =
+    vao: buffer.VertexBuffer
+    start: uint
+    length: uint
+    material: &Material
+
+def DrawCommand.get_sort_key(self, other: DrawCommand) bool =
+
+
+
+
+type CommandBuffer =
+    commands: [..]DrawCommand
+
+
+#addToContext command_buffer : Some[&CommandBuffer] = None
+
+def call(command: DrawCommand) =
+    match context.command_buffer with
+        Some command_buffer ->
+            &(command_buffer.commands).append command
+
+        None ->
+            panic "Command buffer not setup"
+
+def render() =
+    match context.command_buffer with
+        Some command_buffer ->
+            commands := &(command_buffer.commands)
+
+            for i := 0..commands.length do
+
+
+
+        None ->
+            panic "Command buffer not setup"

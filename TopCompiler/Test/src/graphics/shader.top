@@ -1,0 +1,88 @@
+import "opengl"
+import "math"
+
+type Shader =
+    name: string
+    id: uint
+
+def Shader.free(self) =
+    opengl.deleteShader self.id
+
+def make_shader(filename: string, source: string, kind: uint, info_log: &Char) uint =
+    c_source := source.to_c_string!
+    shader := opengl.createShader kind
+
+    opengl.shaderSource shader, 1, &c_source, None
+    opengl.compileShader shader
+
+    sucess : int = 0
+    opengl.getShaderiv shader, opengl.compile_status, &sucess
+
+    if sucess == 0 then
+        opengl.getShaderInfoLog shader, 512, None, info_log
+        if kind == opengl.vertex_shader then
+            panic "({filename}) Vertex shader compilation: {char_buffer_toString info_log}"
+        else
+            panic "({filename}) Fragment shader compilation: {char_buffer_toString info_log}"
+
+    shader
+
+def read_shader_file(filename: string) string =
+    match open filename, ReadFile with
+        Some file -> file.read!
+        None ->
+            panic "Failed to read shader source file {filename}"
+            ""
+
+def make(vfilename: string, ffilename: string) Shader =
+    vshader_source := read_shader_file vfilename
+    fshader_source := read_shader_file ffilename
+
+    //vertex shader
+    sucess : int = 0
+    info_log := (alloc 512 * sizeof Char) cast &Char
+    defer free info_log
+
+    vertex_shader := make_shader vfilename, vshader_source, opengl.vertex_shader, info_log
+    fragment_shader := make_shader ffilename, fshader_source, opengl.fragment_shader, info_log
+
+    id := opengl.createProgram!
+
+    opengl.attachShader id, vertex_shader
+    opengl.attachShader id, fragment_shader
+
+    opengl.linkProgram id
+
+    opengl.getPromgramiv id, opengl.link_status, &sucess
+
+    if sucess == 0 then
+        opengl.getProgramInfoLog id, 512, None, info_log
+        panic "({vfilename}) Shader linkage: {char_buffer_toString info_log}"
+
+    opengl.deleteShader vertex_shader
+    opengl.deleteShader fragment_shader
+
+    Shader{vfilename, id}
+
+def Shader.bind(self) =
+    opengl.useProgram self.id
+
+def check_loc(loc: int, name: string, shader_name: string) =
+    //if loc < 0 and not shader_name == "assets/shaders/skybox.vert" then
+    //    panic "{shader_name}: Could not set uniform {name}"
+
+def Shader.set_mat4x4(self, name: string, value: &math.Mat4x4) =
+    loc := opengl.getUniformLocation self.id, name.to_c_string!
+    check_loc loc, name, self.name
+    opengl.uniformMatrix4fv loc, 1, true, value.data
+
+def Shader.set_vec3(self, name: string, value: &math.Vec3) =
+    loc := opengl.getUniformLocation self.id, name.to_c_string!
+    check_loc loc, name, self.name
+    opengl.uniform3fv loc, 1, &(value.x)
+
+def Shader.set_int(self, name: string, value: int) =
+    loc := opengl.getUniformLocation self.id, name.to_c_string!
+    check_loc loc, name, self.name
+    opengl.uniform1i loc, value
+     

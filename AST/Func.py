@@ -65,6 +65,7 @@ class FuncStart(Node):
         codegen.append(f"{self.ftype.returnType.toCType()} {name}(")
 
         codegen.incrScope()
+        codegen.incrDeferred()
 
     def validate(self, parser):
         Scope.incrScope(parser)
@@ -110,21 +111,39 @@ class FuncBody(Node):
             codegen.append("}")
             return
 
+        codegen.incrDeferred()
+
         for i in self.nodes[:-1]:
             i.compileToC(codegen)
             codegen.addSemicolon(i)
 
+        isDeferred = False
+
         if self.returnType != Types.Null():
             codegen.append(";")
             if not type(self.nodes[-1]) in [Tree.Match, Tree.If]:
-                codegen.append("return ")
+                if len(codegen.getDeferred()) > 0:
+                    isDeferred = codegen.getName()
+                    codegen.append(f"{self.returnType.toCType()} {isDeferred} =")
+                else:
+                    codegen.decrDeferred()
+                    codegen.append("return ")
 
         if len(self.nodes) > 0:
             self.nodes[-1].compileToC(codegen)
+            codegen.addSemicolon(self.nodes[-1])
+
+        if self.returnType == Types.Null():
+            codegen.decrDeferred()
 
         codegen.decrScope()
 
-        codegen.append(";}\n")
+        if isDeferred:
+            codegen.decrDeferred()
+            codegen.append(f"return {isDeferred};\n }}")
+        else:
+            codegen.append(";}\n")
+
 
         isToString = self.method and self.name.endswith("toString") and self.types[0].isType(Types.Pointer)
 
@@ -179,7 +198,7 @@ class FuncBody(Node):
         try:
             s = self.nodes[-1] if len(self.nodes) > 0 else self
             returnType.duckType(parser,actReturnType, s, s ,0)
-            Tree.checkCast(actReturnType, returnType, s, s)
+            Tree.insertCast(s, actReturnType, returnType, -1)
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
 
@@ -211,6 +230,14 @@ class FuncCall(Node):
         if type(firstNode) is Tree.ReadVar and firstNode.name.startswith("Some") and firstNode.package in ["", "_global"] and self.replaced["Maybe.T"].isType(Types.Pointer):
             self.nodes[1].compileToC(codegen)
 
+            return
+
+        if type(firstNode) is Tree.ReadVar and firstNode.name == "indexPtr" and firstNode.package == "":
+            codegen.append("(")
+            self.nodes[1].compileToC(codegen)
+            codegen.append(" + ")
+            self.nodes[2].compileToC(codegen)
+            codegen.append(")")
             return
 
         self.nodes[0].compileToC(codegen)

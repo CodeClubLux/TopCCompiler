@@ -49,20 +49,52 @@ def castFrom(originalType, newType, node, codegen):
     elif type(newType) is Types.I32:
         return node.compileToC(codegen)
     elif type(newType) is Types.Interface:
-        if not type(originalType) is Types.Pointer:
-            node.error("Can only upcast to interface from pointer, not "+str(originalType))
         originalType = originalType.pType
         n = SimplifyAst.sanitize(newType.name if newType.package != "_global" else "_global_" + newType.name )
         codegen.append(n+"FromStruct(")
         node.compileToC(codegen)
         for field in newType.types: #@cleanup handle recursive cast
-            codegen.append(f", offsetof({originalType.pType.toCType()},{field})")
+            codegen.append(f", offsetof({originalType.toCType()},{field})")
         for field in newType.methods:
             codegen.append(f", &{originalType.package}_{originalType.normalName}_{field}")
         codegen.append(")")
         return
     elif type(newType) is Types.Array:
-        if originalType.empty:
+        if newType.both and originalType.isType(Types.Pointer) and originalType.pType.static:
+
+            funcName = CodeGen.genGlobalTmp(codegen.filename)
+            codegen.inGenerateFunction()
+
+            inputT = codegen.getName()
+            typNewC = newType.toCType()
+
+            initCall = typNewC.replace("struct ", "") + "Init"
+
+            codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
+            codegen.append(f"return {initCall}({inputT}->data, {originalType.pType.numElements});")
+            codegen.append("};\n")
+            codegen.outFunction()
+
+            codegen.append(f"{funcName}(")
+            node.compileToC(codegen)
+            codegen.append(")")
+
+            return
+        elif newType.both and not originalType.both and not originalType.static:
+            if not type(node) is Tree.ReadVar:
+                node.error("not handled yet")
+
+            typNewC = newType.toCType()
+            initCall = typNewC.replace("struct ", "") + "Init"
+
+            codegen.append(f"{initCall}(")
+            node.compileToC(codegen)
+            codegen.append(".data, ")
+            node.compileToC(codegen)
+            codegen.append(".length)")
+            return
+
+        elif originalType.empty:
             funcName = CodeGen.genGlobalTmp(codegen.filename)
             codegen.inGenerateFunction()
 
@@ -76,11 +108,12 @@ def castFrom(originalType, newType, node, codegen):
 
             codegen.append(f"{funcName}(")
             node.compileToC(codegen)
-            codegen.append(");")
+            codegen.append(")")
             return
-        print(originalType)
-        print(newType)
-        raise Exception("not handled yet")
+
+        print(newType.name)
+        print(originalType.name)
+        node.error("not handled yet")
     elif type(newType) in [Types.Enum, Types.Struct] and notSpecified(originalType):
         if Types.isMaybe(newType):
             codegen.append("NULL")

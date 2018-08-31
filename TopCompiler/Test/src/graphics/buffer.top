@@ -1,0 +1,53 @@
+import "opengl"
+
+type NumberType either
+    Float
+    Int
+
+def NumberType.to_gl(self) uint =
+    match self with
+        Float -> opengl.type_float
+        Int -> opengl.type_int
+
+def NumberType.to_size(self) SizeT =
+    match self with
+        Float -> sizeof float
+        Int -> sizeof int
+
+type VertexAttrib =
+    length: uint
+    kind: NumberType
+    offset: uint
+
+type VertexBuffer =
+    vao: uint
+
+def make_vertex_buffer[T](vertices: []T, indices: []uint, vertexAttribs: []VertexAttrib) VertexBuffer =
+    vao := 0
+    vbo := 0
+    ebo := 0
+
+    opengl.genVertexArrays 1, &vao
+    opengl.genBuffers 1, &vbo
+    opengl.genBuffers 1, &ebo
+
+    opengl.bindVertexArray vao
+
+    opengl.bindBuffer opengl.array_buffer, vbo
+    opengl.bufferData opengl.array_buffer, vertices.length * sizeof T, vertices.data, opengl.static_draw
+
+    opengl.bindBuffer opengl.element_array_buffer, ebo
+    opengl.bufferData opengl.element_array_buffer, indices.length * sizeof uint, indices.data, opengl.static_draw
+
+    for i := 0..vertexAttribs.length do
+        va := &vertexAttribs[i]
+
+        opengl.enableVertexAttribArray i
+        opengl.vertexAttribPointer i, va.length, va.kind.to_gl!, false, (sizeof T), (va.offset  cast u64) cast &none
+
+    opengl.bindVertexArray 0
+
+    VertexBuffer{ vao }
+
+def VertexBuffer.bind(self) =
+    opengl.bindVertexArray self.vao

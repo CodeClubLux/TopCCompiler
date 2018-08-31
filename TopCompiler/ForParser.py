@@ -13,11 +13,15 @@ def forExpr(parser):
     parser.currentNode.addNode(toplevel)
     parser.currentNode = toplevel
 
-    parser.nextToken()
-
-    while not (Parser.isEnd(parser) and not parser.thisToken().token == "do"):
+    while not (Parser.isEnd(parser) or parser.thisToken().token == "do"):
         token = parser.nextToken()
-        Parser.callToken(token)
+        if token.token == "do":
+            break
+        Parser.callToken(parser)
+
+    ExprParser.endExpr(parser)
+
+    parser.nodeBookmark.append(len(parser.currentNode.nodes))
 
     if parser.thisToken().token != "do":
         Error.parseError(parser, "Expecting do")
@@ -25,9 +29,13 @@ def forExpr(parser):
     if len(toplevel.nodes) != 1 or not type(toplevel.nodes[0]) is Tree.CreateAssign:
         Error.parseError(parser, "Expecting := and then do")
 
-    while not Parser.isEnd(parser):
+    count = 0
+    while not (Parser.isEnd(parser) and count > 0): #avoid breaking on do keyword
+        count += 1
         token = parser.nextToken()
-        Parser.callToken(token)
+        Parser.callToken(parser)
+
+    parser.nodeBookmark.pop()
 
     parser.currentNode = toplevel.owner
 

@@ -18,7 +18,7 @@ from TopCompiler import VarParser
 from TopCompiler import saveParser
 import datetime
 from PostProcessing import SimplifyAst
-
+import collections as coll
 # is class
 
 def handleOptions(jsonLoad, names):
@@ -106,15 +106,23 @@ def getCompilationFiles(target):
     file = {}
 
     def getCompFiles(start, dir):
-        linkCSSWithFiles = []
-        linkWithFiles = []
-        clientLinkWithFiles = []
-        nodeLinkWithFiles = []
+        linkWith = []
+        headerIncludePath = []
+
 
         for root, dirs, files in os.walk(dir, topdown=False, followlinks=True):
+            hasPort = False
+
+            if root != "src/":
+                for i in files:
+                    if i == "port.json":
+                        hasPort = True
+
             for i in files:
-                if root == start and i != "port.json" and i.endswith(".top"):
+                if not hasPort and i != "port.json" and i.endswith(".top"):
                     package = i[:-4]
+                    if package in file and not package == "main":
+                        Error.error("multiple packages named " + package)
                     file[package] = [(root, i)]
                     #file[package].append((root, f + ".top"))
 
@@ -143,14 +151,12 @@ def getCompilationFiles(target):
             except json.decoder.JSONDecodeError as e:
                 Error.error("In file port.json, in directory "+package+", "+str(e))
 
-            (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = handleOptions(j,["linkCSS","linkWith","linkWith-client","linkWith-node"])
-            (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [
-                ["src/" + package + "/" + c for c in i] for i in [_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles]]
+            (_linkWith, _headerIncludePath) = handleOptions(j, ["linkWith", "headerIncludePath"])
+            (_linkWith, _headerIncludePath) = [
+                ["src/" + package + "/" + c for c in i] for i in (_linkWith, _headerIncludePath)]
 
-            linkCSSWithFiles += _linkCSSWithFiles
-            linkWithFiles += _linkWithFiles
-            clientLinkWithFiles += _clientLinkWithFiles
-            nodeLinkWithFiles += _nodeLinkWithFiles
+            linkWith += _linkWith
+            headerIncludePath += _headerIncludePath
 
             for f in files:
                 file[package].append((root, f+".top"))
@@ -158,51 +164,44 @@ def getCompilationFiles(target):
             if root[0].lower() != root[0]:
                 Error.error("package name must be lowercase")
 
-        return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles)
+
+        return (linkWith, headerIncludePath)
 
     try:
         (_, dirs, _) = next(os.walk("packages", followlinks=True))
     except StopIteration:
         dirs = {}
 
-    (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = [[],[],[],[], {}]
+    (linkWith, headerIncludePath) = [[],[]]
 
     for name in dirs:
         f = open("packages/"+name+"/src/port.json")
         jsonLoads = json.loads(f.read())
 
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = handleOptions(jsonLoads,
-            ["linkCSS", "linkWith", "linkWith-client", "linkWith-node"])
+        (_linkWith, _headerIncludePath) = handleOptions(jsonLoads, ["linkWith", "headerIncludePath"])
 
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [[(name, "packages/"+name+"/"+c) for c in i] for i in (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
+        (_linkWith, _headerIncludePath) = [[(name, "packages/"+name+"/"+c) for c in i] for i in (_linkWith, _headerIncludePath)]
 
-        linkCSSWithFiles += _linkCSSWithFiles
-        linkWithFiles += _linkWithFiles
-        clientLinkWithFiles += _clientLinkWithFiles
-        nodeLinkWithFiles += _nodeLinkWithFiles
+        linkWith += _linkWith
+        headerIncludePath += _headerIncludePath
 
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = getCompFiles("packages/"+name+"/src/", "packages/"+name+"/src/")
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [
+        (_linkWith, _headerIncludePath, _files) = getCompFiles("packages/"+name+"/src/", "packages/"+name+"/src/")
+        (_linkWith, _headerIncludePath, _files) = [
             [(name, "packages/" + name + "/" + c) for c in i] for i in
-            (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
+            (_linkWith, _headerIncludePath, _files)]
 
+        linkWith += _linkWith
+        headerIncludePath += _headerIncludePath
 
-        linkCSSWithFiles += _linkCSSWithFiles
-        linkWithFiles += _linkWithFiles
-        clientLinkWithFiles += _clientLinkWithFiles
-        nodeLinkWithFiles += _nodeLinkWithFiles
-
-    (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = getCompFiles("src/", "src/")
-    (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles) = [
+    (_linkWith, _headerIncludePath) = getCompFiles("src/", "src/")
+    (_linkWith, _headerIncludePath) = [
         [("", c) for c in i] for i in
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles)]
+        (_linkWith, _headerIncludePath)]
 
-    linkCSSWithFiles += _linkCSSWithFiles
-    linkWithFiles += _linkWithFiles
-    clientLinkWithFiles += _clientLinkWithFiles
-    nodeLinkWithFiles += _nodeLinkWithFiles
+    linkWith += _linkWith
+    headerIncludePath += _headerIncludePath
 
-    return (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, file, transforms)
+    return (linkWith, headerIncludePath, file)
 
 compiled = []
 
@@ -272,16 +271,15 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
         except KeyError:
             Error.error("must specify compilation target in port.json file")
 
-        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles, transforms) = handleOptions(jsonLoad, ["linkCSS", "linkWith", "linkWith-client", "linkWith-node", "register-transforms"])
-        (linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles) = [
-            [("", c) for c in i] for i in(linkCSSWithFiles, linkWithFiles, clientLinkWithFiles, nodeLinkWithFiles)]
+        (linkWith, headerIncludePath, files) = handleOptions(jsonLoad, ["linkWith", "headerIncludePath", "files"])
+        (linkWith, headerIncludePath, files) = [
+            [("", c) for c in i] for i in (linkWith, headerIncludePath, files)]
 
-        (_linkCSSWithFiles, _linkWithFiles, _clientLinkWithFiles, _nodeLinkWithFiles, files, transforms) = getCompilationFiles(target)
+        (_linkWith, _headerIncludePath, files) = getCompilationFiles(target)
 
-        linkCSSWithFiles += _linkCSSWithFiles
-        linkWithFiles += _linkWithFiles
-        clientLinkWithFiles += _clientLinkWithFiles
-        nodeLinkWithFiles += _nodeLinkWithFiles
+        linkWith += _linkWith
+        headerIncludePath += _headerIncludePath
+
 
         global filenames_sources
 
@@ -346,7 +344,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             #print(cache.usedModules)
 
-            lexed = Lexer.lex(target, sources, filenames, files, cache, {}, transforms)
+            lexed = Lexer.lex(target, sources, filenames, files, cache, {})
+
+            print("Lexed and parsed : " + str(Lexer.linesOfCode))
 
             declarations = Parser.Parser(lexed, filenames)
             declarations.hotswap = False
@@ -354,9 +354,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.atoms = 0
             declarations.atomTyp = False
             declarations.outputFile = outputFile
-            declarations.jsFiles = [b for (a,b) in clientLinkWithFiles + linkWithFiles + linkCSSWithFiles + nodeLinkWithFiles]
-            declarations.cssFiles = linkCSSWithFiles
-            declarations.transforms = transforms
             declarations.usedModules = {}
             declarations.path = os.path.abspath("")
 
@@ -381,7 +378,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.lexed = lexed
             declarations.filenames = filenames
             declarations.opt = opt
-            declarations.compiled = {}
+            declarations.compiled = coll.OrderedDict()
             declarations.externFuncs = {"main": []}
             declarations.filenames_sources = filenames_sources
             declarations.global_target = target
@@ -440,33 +437,66 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 order_of_modules = []
 
+                compiled = parser.order_of_modules  # order_of_modules #parser.compiled
+                print(parser.order_of_modules)
+
+                typesInContext = []
+
+                def removeTypes(typesInContext, tmpTypesInContext):
+                    tmp = []
+                    for name in typesInContext:
+                        Types.genericTypes[name] = None
+                        tmp.append((True, name))
+
+                    for name in tmpTypesInContext:
+                        Types.tmpTypes[name] = None
+                        tmp.append((False, name))
+
+                    return tmp
+
+                def addTypes(tmp):
+                    for (inGeneric, name) in tmp:
+                        if inGeneric:
+                            del Types.genericTypes[name]
+                        else:
+                            del Types.tmpTypes[name]
+
+
                 for i in parser.compiled:
                     parser.package = i
                     if parser.compiled[i][0]:
                         SimplifyAst.resolveGeneric(parser, parser.compiled[i][1][0])
 
-                contextCCode = CodeGen.buildContext(parser.contextType)
+                if compileRuntime:
+                    contextCCode = CodeGen.buildContext(parser.contextType)
+                else:
+                    removedTypes = removeTypes(["_global_Allocator"], [
+                        "typedef void*(*prnonec_SizeTp___rnone)(void*,unsigned int,struct _global_Context*)",
+                        "typedef unsigned int(*prnonep___uint)(void*,struct _global_Context*)"
+                    ])
 
-                for i in parser.compiled:
+                for i in compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])
 
                     dir = tmp[tmp.find("packages")+len("packages")+1:tmp.rfind("src")-1]
                     canStartWith.append(dir)
 
                     if parser.compiled[i][0]:
-                        CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt).compile(opt=opt)
+                        CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt)
+
+                if not compileRuntime:
+                    addTypes(removedTypes)
+                    contextCCode = CodeGen.buildContext(parser.contextType)
 
                 order_of_modules.append("main")
 
                 for i in parser.lexed:
                     parser.usedModules[i] = datetime.datetime.now()
 
-                _linkCSSWithFiles = [i for (d, i) in linkCSSWithFiles if d in canStartWith]
-                _clientLinkWithFiles = [i for (d, i) in clientLinkWithFiles if d in canStartWith]
-                _nodeLinkWithFiles = [i for (d, i) in nodeLinkWithFiles if d in canStartWith]
-                _linkWithFiles = [i for (d, i) in linkWithFiles if d in canStartWith]
+                _linkWith = [i for (d, i) in linkWith if d in canStartWith]
+                _headerIncludePath = [i for (d, i) in headerIncludePath if d in canStartWith]
 
-                compiled = order_of_modules #parser.compiled
+
 
                 timeForCodeAnalysis = time() - beforeLoad
                 if compileRuntime:   #not dev and not _raise:
@@ -484,9 +514,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                     pass
 
-                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWithFiles, target=target, context=contextCCode, runtimeBuild=compileRuntime)
+                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 
-                print("Lexed and parsed : " + str(Lexer.linesOfCode))
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))

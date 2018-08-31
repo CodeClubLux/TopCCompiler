@@ -20,7 +20,7 @@ runtimeFile.close()
 from TopCompiler import Types
 
 class CodeGen:
-    def __init__(self, parser, order_of_modules, filename, tree, externFunctions, target, opt, main=True):
+    def __init__(self, parser, order_of_modules, filename, tree, externFunctions, target, opt, debug, main=True):
         self.tree = tree
         self.filename = filename
         self.parser = parser
@@ -39,6 +39,8 @@ class CodeGen:
         self.func_parts = []
         self.func_count = 0
 
+        self.debug = debug
+
         self.main = ""
 
         self.externs = externFunctions
@@ -56,19 +58,24 @@ class CodeGen:
         self.out_scopes = []
         self.count = 0
         self.deferred = []
+        self.previousArray = []
+        self.previousPointer = []
 
     def inFunction(self):
+        if self.inAFunction == 0:
+            self.previousPointer = self.info.pointer
+            self.previousArray = list(self.info.array)
         self.inAFunction += 1
         self.func_parts.append([])
 
     def outFunction(self):
-        self.info.reset([0], 0)
-
         self.inAFunction -= 1
         if self.inAFunction == 0:
             for i in reversed(self.func_parts):
                 self.out_parts.extend(i)
             self.func_parts = []
+            self.info.array = self.previousArray
+            self.info.pointer = self.previousPointer
 
     def inGenerateFunction(self):
         self.inFunction()
@@ -108,6 +115,7 @@ class CodeGen:
     def decrScope(self):
         self.names.pop()
 
+
     def readName(self, name):
         #return name
 
@@ -126,8 +134,9 @@ class CodeGen:
     def addSemicolon(self, ast):
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
             self.append(";\n")
-            return
-            self.append(f';\n#line {ast.token.line+2} "{ast.fullFilePath()}.top"\n')
+            #if self.debug:
+            #    filename = ast.fullFilePath().replace("\\", "\\\\")
+            #    self.append(f';\n#line {ast.token.line+2} "{filename}.top"\n')
 
     def createName(self, name, typ):
         self.names[-1][name] = (typ, name)
@@ -142,6 +151,12 @@ class CodeGen:
 
         self.incrDeferred()
 
+        includes = Types.TmpCodegen()
+
+        for (iter, i) in enumerate(tree):
+            if type(i) is Tree.CreateAssign and i.extern and i.nodes[0].name == "_":
+                i.compileToC(includes)
+
         for (iter, i) in enumerate(tree):
             if type(i) is Tree.FuncStart:
                 funcStart = i
@@ -150,10 +165,13 @@ class CodeGen:
                 Func.forwardRef(funcStart, funcBrace, funcBody, self)
 
         for i in tree:
+            if type(i) in [Tree.Type, Tree.Enum] or (type(i) is Tree.CreateAssign and i.extern and i.nodes[0].name == "_"): continue
             i.compileToC(self)
             self.addSemicolon(i)
 
         self.decrDeferred()
+
+        return "".join(includes.out_parts)
 
     def getName(self):
         return next(self.gen)
@@ -165,16 +183,19 @@ class CodeGen:
         self.contexts = ["(&_global_context)"]
 
         self.parser.package = self.filename
+        self.parser.imports = self.parser.allImports[self.filename]
         PostProcessing.simplifyAst(self.parser, self.tree)
 
-        self.toCHelp()
+        includes = self.toCHelp()
 
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
 
         (generatedTypes, mainC) = Types.getGeneratedDataTypes()
+        Types.compiledTypes = coll.OrderedDict()
+        Types.dataTypes = []
 
-        cCode = f"{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
+        cCode = f"{includes}\n{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
@@ -221,7 +242,7 @@ import os
 
 
 
-def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev, context, runtimeBuild): #Add Option to change compiler
+def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
     topRuntime = ""
     (context, mainC) = context
     if not runtimeBuild:
@@ -241,13 +262,51 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, target, dev, conte
     f.write("\n".join(linkedCode))
     f.close()
 
-    subprocess.call(["clang", "bin/" + outputFile + ".c", "-o", "bin/" + outputFile, "-Wno-incompatible-pointer-types", "-Wno-visibility", "-Wno-return-type"])
+    clang_commands = ["clang",  "bin/" + outputFile + ".c"]
+
+    #linkWith.append("C:\\Program Files (x86)\Windows Kits\\10\Lib\\10.0.17134.0\\um\\x64\\.lib")
+
+    for i in linkWith:
+        clang_commands.append(i)
+
+    for i in headerIncludePath:
+        clang_commands.append("-iwithprefix")
+        clang_commands.append(i)
+
+    """
+    glfw3.lib;
+    opengl32.lib;
+    kernel32.lib;
+    user32.lib; 
+    gdi32.lib;
+    winspool.lib;
+    shell32.lib;
+    ole32.lib;
+    oleaut32.lib;
+    uuid.lib;
+    comdlg32.lib;
+    advapi32.lib;
+    glfw3.lib
+    """
+
+    if debug:
+        debug = ["-g", "-gcodeview"]
+    else:
+        debug = [] #["-g",  "-gcodeview"]
+
+    clang_commands += ["-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type"]
+
+    print(" ".join(clang_commands),"\n")
+    try:
+        subprocess.check_call(clang_commands)
+    except:
+        Error.error("\nC code failed to compile")
 
 def exec(outputFile):
     try:
-        subprocess.call(["./bin/"+outputFile])
-    except:
-        Error.error("running .exe failed")
+        subprocess.check_call(["./bin/"+outputFile+".exe"])
+    except subprocess.CalledProcessError as e:
+        Error.error(e)
 
 def genNames(info):
     import string

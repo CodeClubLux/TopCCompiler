@@ -1,0 +1,93 @@
+import "opengl"
+
+type Model =
+    meshes: [..]Mesh
+
+ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
+
+def process_mesh(mesh: &aiMesh, scene: &aiScene) Mesh =
+    vertices: [..]Vertex = []
+    vertices.allocator = Some &malloc_as_allocator
+    &vertices.reserve mesh.mNumVertices
+
+    indices: [..]uint = []
+    indices.allocator = Some &malloc_as_allocator
+    &indices.reserve mesh.mNumVertices
+
+    for i := 0..mesh.mNumVertices do
+        position := indexPtr mesh.mVertices, i
+        tangent := indexPtr mesh.mTangents, i
+        bitangent := indexPtr mesh.mBitangents, i
+
+        tex_coords := match (*indexPtr mesh.mTextureCoords, 0) with
+            Some coords ->
+                first_coords := *indexPtr coords, i
+                Vec2{ first_coords.x, first_coords.y }
+
+            None ->
+                panic "No uv coordinates in mesh!"
+                Vec2{ 0, 0 }
+
+        normals := indexPtr mesh.mNormals, i
+
+        &vertices.append Vertex{
+            position = Vec3{ position.x, position.y, position.z }
+            tex_coord = tex_coords
+            normal = Vec3{ normals.x, normals.y, normals.z }
+            tangent = Vec3{ tangent.x, tangent.y, tangent.z }
+            bitangent = Vec3{ bitangent.x, bitangent.y, bitangent.z }
+        }
+
+    for i := 0..mesh.mNumFaces do
+        face := *indexPtr mesh.mFaces, i
+        for j := 0..face.mNumIndices do
+            &indices.append (*indexPtr face.mIndices, j)
+
+    material :=
+        if mesh.mMaterialIndex >= 0 then
+            aMat := *indexPtr scene.mMaterials, mesh.mMaterialIndex
+            name : aiString = _
+            aiGetMaterialString aMat, ai_matkey_name, &name
+
+            top_name : string = char_buffer_toString name.data
+
+            match material_by_name top_name with
+                Some x -> x
+                None ->
+                    panic "Could not find material {top_name}"
+                    0 cast &Material
+        else
+            panic "No material defined for mesh"
+            0 cast &Material
+
+    make_Mesh vertices, indices, material
+
+
+def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh) =
+    for i := 0..node.mNumMeshes do
+        mesh := *indexPtr scene.mMeshes, i
+        meshes.append process_mesh mesh, scene
+
+    for i := 0..node.mNumChildren do
+        process_node *(indexPtr node.mChildren, i), scene, meshes
+
+def load_model(path: string) Model =
+    scene := match aiImportFile path.to_c_string!, triangulate_and_flip with
+        Some s -> s
+        None ->
+            panic "Assimp could not load model"
+            0 cast &aiScene
+
+    meshes : [..]Mesh = []
+    meshes.allocator = Some &malloc_as_allocator
+    process_node scene.mRootNode, scene, &meshes
+
+    Model{ meshes }
+
+def Model.render(self) =
+    meshes := self.meshes
+
+    for i := 0..meshes.length do
+        mesh := &meshes[i]
+        &mesh.render!
+

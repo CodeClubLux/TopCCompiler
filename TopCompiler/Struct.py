@@ -31,11 +31,14 @@ class Struct:
 
         self.node = node
 
+        self.externalStruct = False
+
         for i in range(len(actualfields)):
             self.offsets[actualfields[i].name] = i
             self._types[actualfields[i].name] = self.fieldType[i]
 
         self.methods = {}
+        self.actualfields = actualfields
 
     def toCType(self):
         Error.error("no type introspection yet")
@@ -56,7 +59,7 @@ class Struct:
     def isType(self, other):
         return type(self) is other
 
-    def hasMethod(self, parser, name):
+    def hasMethod(self, parser, name, isP=False):
         packages = []
         b = None
         for i in parser.imports+[parser.package]+["_global"]:
@@ -79,21 +82,34 @@ def typeParser(parser, decl= False):
     Scope.incrScope(parser)
 
 
-    if name.type != "identifier":
+    if name.type != "identifier" and name.token != "ext":
         Error.parseError(parser, "type name must be an identifier")
+
+    externalStruct = False
+    if name.token == "ext":
+        externalStruct = True
+        name = parser.nextToken()
+
+        if name.type != "identifier" and name.token != "ext":
+            Error.parseError(parser, "type name must be an identifier")
+
     name = name.token
 
-    if name[0].lower() == name[0]:
+    if name[0].lower() == name[0] and not externalStruct:
         Error.parseError(parser, "struct name must be upper case")
 
     import collections as coll
     gen = coll.OrderedDict()
 
     if parser.nextToken().token == "[":
+        if externalStruct:
+            Error.parseError(parser, "External structs cannot be generic")
         gen = FuncParser.generics(parser, name)
 
     if parser.thisToken().token != "=":
         if parser.thisToken().token in ["with", "either", "is"]:
+            if externalStruct:
+                Error.parseError(parser, "Can only define external structs not interfaces, enums or aliases")
             tmp = parser.currentNode
             if parser.thisToken().token == "either":
                 Enum.enumParser(parser, name, decl, gen)
@@ -111,6 +127,7 @@ def typeParser(parser, decl= False):
     typ = Tree.Type(parser.package, name, parser)
     typ.package = parser.package
     typ.normalName = name
+    typ.externalStruct = externalStruct
 
     tmp.addNode(typ)
 
@@ -139,6 +156,7 @@ def typeParser(parser, decl= False):
         parser.structs[parser.package][name].methods = meth
         parser.structs[parser.package][name].package = parser.package
         parser.structs[parser.package][name]._types = _types
+        parser.structs[parser.package][name].externalStruct = externalStruct
         _types.update(tmp)
 
         Scope.changeType(parser, name, parser.structs[parser.package][name] )

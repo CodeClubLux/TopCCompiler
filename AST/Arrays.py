@@ -20,16 +20,20 @@ def simplifyArray(parser, self, iter):
     elif self.init:
         func = Tree.FuncCall(self)
         if self.type.static:
+            return self
+            s = self.type.toCType().replace("struct ", "")
+            var = Tree.ReadVar(s+ "fill_array", True, self)
+            var.package = "_global"
+            var.type = parser.scope["_global"][0]["fill_array"].type
+            func.replaced = {}
+        else:
             var = Tree.ReadVar("fill_array", True, self)
             var.package = "_global"
             var.type = parser.scope["_global"][0]["fill_array"].type
             func.replaced = {i: self.type.elemT for i in var.type.generic}
-        else: return
-
-        func.addNode(self.nodes[0])
+        func.addNode(var)
         func.addNode(self.nodes[1])
 
-        func = self.type
         self.owner.nodes[iter] = func
         func.owner = self.owner
         return func
@@ -49,15 +53,10 @@ class Array(Node):
 
     def compileToC(self, codegen):
 
-        if self.init and not self.type.static:
+        if self.init and self.type.static:
             name = self.type.toCType().replace("struct ", "")
             codegen.append(name + "Fill_array(")
-            count = 0
-            for i in self.nodes:
-                i.compileToC(codegen)
-                if count != len(self.nodes) - 1:
-                    codegen.append(",")
-                count += 1
+            self.nodes[1].compileToC(codegen)
             codegen.append(")")
         else:
             name = self.type.toCType().replace("struct ", "")
@@ -69,6 +68,7 @@ class Array(Node):
                     codegen.append(",")
                 count += 1
             codegen.append(")")
+
 
     def validate(self, parser):
         return
@@ -124,17 +124,14 @@ class ArrDataType(Node):
         numElements = self.arrType.remainingGen["StaticArray.S"]
 
         codegen.append(f"struct {self.structName} {{\n")
-        codegen.append("unsigned int length;\n")
         codegen.append(f"{elemT.toCType()} data[{numElements}];\n")
         codegen.append("};\n")
 
         #fill Array, -syntax [8: 3] == [3,3,3,3,3,3,3,3,3,3]
         codegen.append(f"struct {self.structName} {self.structName}Fill_array(")
-        codegen.append("unsigned int length, ")
         codegen.append(elemT.toCType() + " with")
         codegen.append("){\n")
         codegen.append(f"struct {self.structName} tmp;\n")
-        codegen.append(f"tmp.length = {numElements};\n")
         codegen.append(f"for (unsigned int i = 0; i < {numElements}; i++) {{\n")
         codegen.append("tmp.data[i] = with;\n")
         codegen.append("}; return tmp; }\n")
@@ -152,7 +149,6 @@ class ArrDataType(Node):
                 codegen.append(",")
         codegen.append("){\n")
         codegen.append(f"struct {self.structName} tmp;\n")
-        codegen.append(f"tmp.length = {numElements};")
         for (it, name) in enumerate(names):
             codegen.append(f"tmp.data[{it}] = {name};\n")
         codegen.append("return tmp; }\n")

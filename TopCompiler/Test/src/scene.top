@@ -1,0 +1,89 @@
+import "shader"
+import "math"
+import "window"
+import "gi"
+import "opengl"
+import "imageLoader"
+
+type DirLight =
+    direction: math.Vec3
+    color: math.Vec3
+
+type Scene =
+    window: &window.Window
+    projection: math.Mat4x4
+    view: math.Mat4x4
+    dir_light: DirLight
+
+type Game with
+    def update()
+    def render()
+
+def Scene.free(&self) =
+    self.window.close!
+
+brdf : imageLoader.Texture = _
+
+def Scene.set_shader_scene_params(&self, _shader: shader.Shader) =
+    _shader.set_int "brdfLUT", 0
+    &brdf.bind 0
+
+    _shader.set_mat4x4 "projection", &(self.projection)
+    _shader.set_mat4x4 "view", &(self.view)
+    _shader.set_vec3 "dirLight.color", &(self.dir_light.color)
+    _shader.set_vec3 "dirLight.direction", &(self.dir_light.direction)
+
+def Scene.init(&self, game: Game) =
+    gi.enable_depth_buffer!
+
+    while not self.window.should_close! do
+        defer context.allocator.reset_to context.allocator.get_occupied!
+        self.window.update_inputs!
+
+        gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
+        gi.clear gi.DepthBuffer
+
+        game.update!
+        game.render!
+
+        //render
+        self.window.swap_buffers!
+
+def make_scene() Scene =
+    log "opening window"
+    w := box window.default{ title = "Fernix Game" }
+    fov := 55
+
+    projection := math.perspective
+        math.radians fov
+        ((w.width as float) / (w.height as float))
+        0.1
+        100.0
+
+    view := math.identity_mat!
+    math.translate &view, math.Vec3{ 0, 0, -1 }
+    math.scale &view, math.Vec3{ 0.8, 0.8, 0.8 }
+
+    w.init!
+
+    log "opened window"
+
+    Scene{
+        window = w
+        projection = projection
+        view = view
+        dir_light = DirLight{
+            direction = math.Vec3{ 0.7, 0.7, 0 }
+            color = math.Vec3{ 1.0, 1.0, 1.0 }
+        }
+    }
+
+#addToContext scene := box make_scene!
+
+def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &Char) =
+    //log char_buffer_toString message
+
+opengl.enable opengl.debug_output
+opengl.debugMessageCallback error_callback, context
+
+brdf = imageLoader.load "assets/brdf.png"

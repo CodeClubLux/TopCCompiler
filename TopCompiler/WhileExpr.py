@@ -20,7 +20,7 @@ def whileExpr(parser):
     parser.currentNode.addNode(cond)
     parser.currentNode = cond
 
-    while not (Parser.isEnd(parser) and not parser.thisToken().token == "do"):
+    while not (Parser.isEnd(parser) and not parser.thisToken().token in ["!", "do"]):
         token = parser.nextToken()
 
         iter = parser.iter

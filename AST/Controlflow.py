@@ -30,7 +30,7 @@ class If(Node):
                     i.compileToC(codegen)
 
 
-            Enum.genFunction(compileInner, codegen, self.type, self.owner)
+            Enum.genFunction(compileInner, codegen, self.type, self.owner, self)
         else:
             count = 0
             _l = len(self.nodes)
@@ -170,10 +170,13 @@ class WhileBlock(Node):
         return "block"
 
     def compileToC(self, codegen):
+        codegen.incrDeferred()
         for i in self.nodes:
             i.compileToC(codegen)
             if not type(i) in [Tree.FuncBraceOpen, Tree.FuncBody, Tree.FuncStart]:
                 codegen.append(";")
+
+        codegen.decrDeferred()
         codegen.append("}")
 
     def validate(self, parser):

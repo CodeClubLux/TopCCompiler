@@ -67,9 +67,13 @@ def varExists(parser, package, name):
             if name in i:
                 return True
 
+    if name in parser.imports:
+        return True
+
     for i in parser.scope[package]:
         if name in i:
             return True
+
     return False
 
 def changeType(parser, name, newType):

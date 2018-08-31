@@ -1,0 +1,9 @@
+ext sqrt: |float| -> float = "sqrtf"
+ext cos: |float| -> float = "cosf"
+ext sin: |float| -> float = "sinf"
+ext tan: |float| -> float = "tanf"
+
+pi := 3.14159265
+
+def radians(degrees: float) float =
+    degrees * (pi / 180)

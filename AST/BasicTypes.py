@@ -128,6 +128,14 @@ class Sizeof(Node):
     def compileToC(self, codegen):
         codegen.append("sizeof(" + self.typ.toCType() + ")")
 
+class Offsetof(Node):
+    def __init__(self, parser):
+        Node.__init__(self, parser)
+
+    def compileToC(self, codegen):
+        codegen.append("offsetof(" + self.typ.toCType() + "," + self.field + ")")
+
+
 class CastToType(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)

@@ -19,5 +19,7 @@ if __name__ == "__main__":
             topc.start()
         elif sys.argv[1] == "run":
             topc.start(True)
+        elif sys.argv[1] == "debug":
+            topc.start(debug= True)
         else:
             Error.error("invalid option "+sys.argv[1])

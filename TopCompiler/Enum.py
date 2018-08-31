@@ -89,7 +89,7 @@ def checkCase(parser, case, typ, first=False):
             case.error("cannot pattern match on type " + str(typ) + ", as if it were a ADT")
 
         if not case.name in typ.const:
-            case.error("ADT " + str(typ) + ", does not have case " + case.nodes[0].name)
+            case.error("ADT " + str(typ) + ", does not have case " + case.name)
 
         case.type = typ
     elif type(case) is Tree.Operator and case.kind == "concat" and not case.curry and not case.partial:

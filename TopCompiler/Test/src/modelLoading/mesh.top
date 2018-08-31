@@ -1,0 +1,37 @@
+import "buffer"
+from "materialSystem" import (Material, material_by_name)
+from "math" import all
+
+type Vertex =
+    position: Vec3
+    normal: Vec3
+    tex_coord: Vec2
+    tangent: Vec3
+    bitangent: Vec3
+
+type Mesh =
+    buffer: buffer.VertexBuffer
+    vertices: []Vertex
+    indices: []uint
+    material: &Material
+
+def make_Mesh(vertices: []Vertex, indices: []uint, material: &Material) Mesh =
+    attributes := [
+        buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, position }
+        buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, normal }
+        buffer.VertexAttrib{ 2, buffer.Float, offsetof Vertex, tex_coord }
+        buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, tangent }
+        buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, bitangent}
+    ]
+
+    Mesh{
+        buffer = buffer.make_vertex_buffer vertices, indices, &attributes
+        vertices = vertices
+        indices = indices
+        material = material
+    }
+
+def Mesh.render(&self) =
+    self.material.bind!
+    self.buffer.bind!
+    opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0
