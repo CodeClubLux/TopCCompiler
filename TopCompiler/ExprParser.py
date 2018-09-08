@@ -214,4 +214,4 @@ newOperator("^", (60, False), 2)
 newOperator('as', (70, True), 1, func= asOperator)
 newOperator("&", (80, True), 1, unary= True)
 
-Parser.exprToken["\\"] = lambda parser: parser.nodeBookmark.append(len(parser.currentNode.owner.nodes))
+#Parser.exprToken["\\"] = lambda parser: parser.nodeBookmark.append(len(parser.currentNode.owner.nodes))

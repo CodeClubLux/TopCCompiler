@@ -1,26 +1,25 @@
 ext _ = "#define STB_IMAGE_IMPLEMENTATION"
 ext _ = '#include "stb_image.h"'
 
+import "assetManager"
+
 ext stbi_load: |&Char, &int, &int, &int, uint| -> Maybe[&Byte] = "stbi_load"
 ext stbi_image_free: |&Byte| -> none = "stbi_image_free"
-
+ext stbi_set_flip_vertically_on_load: |bool| -> none = "stbi_set_flip_vertically_on_load"
 
 from "opengl" import all
 
 type Texture =
-    filename: string
     id: uint
 
-textures : [..]Texture = []
-textures.allocator = Some &malloc_as_allocator
-&textures.reserve 10
+cached_textures := assetManager.make_asset_cache::[Texture]!
 
 def load(filename: string) Texture =
-    for i := 0..textures.length do
-        tex := &textures[i]
+    match &cached_textures.in_cache filename with
+        Some texture -> return texture
+        None ->
 
-        if tex.filename == filename then
-            return tex
+    stbi_set_flip_vertically_on_load true
 
     width : int = 0
     height : int = 0
@@ -28,12 +27,12 @@ def load(filename: string) Texture =
     texture := 0
 
     genTextures 1, &texture
-    bindTexture opengl.texture_2d, texture
+    bindTexture opengl.texture_2D, texture
 
-    texParameteri texture_2d, texture_wrap_s, repeat
-    texParameteri texture_2d, texture_wrap_t, repeat
-    texParameteri texture_2d, texture_min_filter, linear
-    texParameteri texture_2d, texture_mag_filter, linear
+    texParameteri texture_2D, texture_wrap_s, repeat
+    texParameteri texture_2D, texture_wrap_t, repeat
+    texParameteri texture_2D, texture_min_filter, linear
+    texParameteri texture_2D, texture_mag_filter, linear
 
     data := match stbi_load filename.to_c_string!, &width, &height, &nr_channels, 0 with
         Some d -> d
@@ -43,18 +42,19 @@ def load(filename: string) Texture =
 
     defer stbi_image_free data
 
-    texImage2D texture_2d, 0, rgb, width, height, 0, rgb, unsigned_byte, data
-    generateMipmap texture_2d
+    texImage2D texture_2D, 0, rgb, width, height, 0, rgb, unsigned_byte, Some data
+    generateMipmap texture_2D
 
-    tmp := Texture{
-        filename
-        texture
-    }
+    &cached_textures.append filename, Texture{ texture }
 
-    &textures.append tmp
-
-    tmp
-
-def Texture.bind_to(&self, num: uint) =
+def Texture.bind_to(self, num: uint) =
     activeTexture texture0 + num
-    bindTexture opengl.texture_2d, self.id
+    bindTexture opengl.texture_2D, self.id
+
+type Cubemap =
+    id: uint
+
+def Cubemap.bind_to(self, num: uint) =
+    activeTexture texture0 + num
+    bindTexture opengl.texture_cube_map, self.id
+

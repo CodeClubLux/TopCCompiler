@@ -1018,6 +1018,7 @@ class Alias(Type):
         self.typ = typ
         self.types = typ.types
         self.normalName = name
+        self.methods = {}
 
         self.generic = generic
         self.remainingGen = generic #{**generic, **typ.remainingGen}
@@ -1387,8 +1388,11 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
             arr.append(replaceT(i, gen, acc, unknown))
 
         newTyp = replaceT(typ.returnType, gen, acc, unknown)
-        r = FuncPointer(arr, newTyp, {}, do= typ.do)
-        r.generic = remainingT(r)
+        r = FuncPointer(arr, newTyp, gen, do= typ.do)
+        r.remainingGen = {}
+        for field in r.remainingGen:
+            r.remainingGen[field] = replaceT(r.remainingGen[field], gen, acc, unknown)
+
         return r
     else:
         return typ

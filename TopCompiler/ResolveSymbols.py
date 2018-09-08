@@ -39,7 +39,6 @@ def resolve(self):
         for i in range(len(tokens[c])):
             _resolve(self, tokens[c][i], self._filename[i][1], passN=0)
 
-
     for n in range(1,3):
         start = time()
         for c in filenames:

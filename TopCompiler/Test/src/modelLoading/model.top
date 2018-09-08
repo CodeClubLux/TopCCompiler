@@ -75,7 +75,7 @@ def load_model(path: string) Model =
     scene := match aiImportFile path.to_c_string!, triangulate_and_flip with
         Some s -> s
         None ->
-            panic "Assimp could not load model"
+            panic "Assimp could not load model, {path}"
             0 cast &aiScene
 
     meshes : [..]Mesh = []

@@ -1,12 +1,17 @@
+import "scene"
 import "imageLoader"
 import "opengl"
 import "primitives"
+import "shader"
+import "math"
+import "buffer"
+
+skybox_shader := shader.make "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"
 
 type Skybox =
-    convuluted_BRDF_map: imageLoader.Texture
     env_cubemap: imageLoader.Cubemap
     irradiance_cubemap: imageLoader.Cubemap
-    prefilter_map: imageLoader.Texture
+    prefilter_cubemap: imageLoader.Cubemap
     brdf_LUT: imageLoader.Texture
 
 def Skybox.render(&self) =
@@ -14,24 +19,28 @@ def Skybox.render(&self) =
     skybox_shader.bind!
 
     self.env_cubemap.bind_to 0
-    primitives.cube.bind!
+
+    skybox_shader.set_mat4x4 "projection", &(context.scene.projection)
+    skybox_shader.set_mat4x4 "view", &(context.scene.view)
+
+    primitives.render_cube!
 
     opengl.depthFunc opengl.less
 
-def Skybox.set_ibl_params_for(&self, shader: Shader) =
+def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.irradiance_cubemap.bind_to 0
-    shader.set_int "irradianceMap", 0
+    s.set_int "irradianceMap", 0
 
-    self.prefilter_map.bind_to 1
-    shader.set_int "prefilterMap", 1
+    self.prefilter_cubemap.bind_to 1
+    s.set_int "prefilterMap", 1
 
     self.brdf_LUT.bind_to 2
-    shader.set_int "brdfLut", 2
+    s.set_int "brdfLut", 2
 
-def setup_IBL() =
+def make_Skybox() Skybox =
     opengl.enable opengl.texture_cube_map_seamless
 
-    equirectangular_to_cubemap_shader := shader.make "assets/shader/eToCubemap.vert", "assets/shaders/eToCubemap.frag"
+    equirectangular_to_cubemap_shader := shader.make "assets/shaders/eToCubemap.vert", "assets/shaders/eToCubemap.frag"
 
     capture_FBO : uint = _
     capture_RBO : uint = _
@@ -39,15 +48,40 @@ def setup_IBL() =
     opengl.genFramebuffers 1, &capture_FBO
     opengl.genRenderbuffers 1, &capture_RBO
 
-    hdr_texture := imageLoader.load "assets/LA_Downtown_Helipad_GoldenHour_3k.hdr"
+    opengl.bindFramebuffer opengl.framebuffer, capture_FBO
+    opengl.bindRenderbuffer opengl.renderbuffer, capture_RBO
+    opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, 2048, 2048
+    opengl.framebufferRenderbuffer opengl.framebuffer, opengl.depth_attachment, opengl.renderbuffer, capture_RBO
 
-    env_cubemap := imageLoader.create_cubemap 2048
+    hdr_texture := imageLoader.load "assets/Tropical_Beach_3k.hdr"
 
-    capture_projection = math.perspective
+    env_cubemap: uint = _
+    opengl.genTextures 1, &env_cubemap
+    opengl.bindTexture opengl.texture_cube_map, env_cubemap
+
+    for i := 0..6 do
+        opengl.texImage2D
+            (opengl.texture_cube_map_positive_x + i)
+            0
+            opengl.rgb16f
+            2048
+            2048
+            0
+            opengl.rgb
+            opengl.type_float
+            None
+
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_s, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_t, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_r, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_min_filter, opengl.linear_mipmap_linear
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_mag_filter, opengl.linear
+
+    capture_projection := math.perspective
         math.radians 90
         1.0
         0.1
-        10.0f
+        10
 
     capture_views := [
         math.look_at math.Vec3{0,0,0}, math.Vec3{1,0,0}, math.Vec3{0,-1,0}
@@ -60,13 +94,176 @@ def setup_IBL() =
 
     equirectangular_to_cubemap_shader.bind!
     equirectangular_to_cubemap_shader.set_int "equirectangularMap", 0
-    equirectangular_to_cubemap_shader.set_mat4x4 "projection", capture_projection
+    equirectangular_to_cubemap_shader.set_mat4x4 "projection", &capture_projection
 
-    hdr_texture.bind_to 0
+    opengl.activeTexture opengl.texture0
+    opengl.bindTexture opengl.texture_2D, hdr_texture.id
 
     opengl.viewport 0, 0, 2048, 2048
+    opengl.bindFramebuffer opengl.framebuffer, capture_FBO
 
+
+    for i := 0..6 do
+        equirectangular_to_cubemap_shader.set_mat4x4 "view", &(&capture_views[i])
+        opengl.framebufferTexture2D
+            opengl.framebuffer
+            opengl.color_attachment0
+            opengl.texture_cube_map_positive_x + i
+            env_cubemap
+            0
+
+        opengl.clear opengl.color_buffer_and_depth_buffer_bit
+        primitives.render_cube!
+
+    opengl.bindFramebuffer opengl.framebuffer, 0
+
+    opengl.bindTexture opengl.texture_cube_map, env_cubemap
+    opengl.generateMipmap opengl.texture_cube_map
+
+    irradiance_shader := shader.make "assets/shaders/irradiance.vert", "assets/shaders/irradiance.frag"
+
+    irradiance_map : uint = _
+
+    opengl.genTextures 1, &irradiance_map
+    opengl.bindTexture opengl.texture_cube_map, irradiance_map
+
+    for i := 0..6 do
+        opengl.texImage2D
+            opengl.texture_cube_map_positive_x + i
+            0
+            opengl.rgb16f
+            32
+            32
+            0
+            opengl.rgb
+            opengl.type_float
+            None
+
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_s, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_t, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_r, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_min_filter, opengl.linear
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_mag_filter, opengl.linear
 
     opengl.bindFramebuffer opengl.framebuffer, capture_FBO
+    opengl.bindRenderbuffer opengl.renderbuffer, capture_RBO
+    opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, 32, 32
+
+    irradiance_shader.bind!
+    irradiance_shader.set_int "environmentMap", 0
+    irradiance_shader.set_mat4x4 "projection", &capture_projection
+    opengl.activeTexture opengl.texture0
+    opengl.bindTexture opengl.texture_cube_map, env_cubemap
+
+    opengl.viewport 0, 0, 32, 32
+    opengl.bindFramebuffer opengl.framebuffer, capture_FBO
+
     for i := 0..6 do
-        
+        irradiance_shader.set_mat4x4 "view", &(&capture_views[i])
+        opengl.framebufferTexture2D
+            opengl.framebuffer
+            opengl.color_attachment0
+            opengl.texture_cube_map_positive_x + i
+            irradiance_map
+            0
+
+        opengl.clear opengl.color_buffer_and_depth_buffer_bit
+        primitives.render_cube!
+
+    opengl.bindFramebuffer opengl.framebuffer, 0
+
+    prefilter_map: uint = _
+    opengl.genTextures 1, &prefilter_map
+    opengl.bindTexture opengl.texture_cube_map, prefilter_map
+
+    for i := 0..6 do
+        opengl.texImage2D
+            opengl.texture_cube_map_positive_x + i
+            0
+            opengl.rgb16f
+            128, 128, 0,
+            opengl.rgb, opengl.type_float, None
+
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_s, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_t, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_r, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_min_filter, opengl.linear_mipmap_linear
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_mag_filter, opengl.linear
+
+    opengl.generateMipmap opengl.texture_cube_map
+
+    prefilter_shader := shader.make "assets/shaders/prefilter.vert", "assets/shaders/prefilter.frag"
+
+    prefilter_shader.bind!
+    prefilter_shader.set_int "environmentMap", 0
+    prefilter_shader.set_mat4x4 "projection", &capture_projection
+
+    opengl.activeTexture opengl.texture0
+    opengl.bindTexture opengl.texture_cube_map, env_cubemap
+    opengl.texParameteri opengl.texture_cube_map, opengl.texture_min_filter, opengl.linear_mipmap_linear
+
+    opengl.bindFramebuffer opengl.framebuffer, capture_FBO
+
+    maxMipLevels := 5
+
+    for mip := 0..maxMipLevels do
+        mip_width := (128 * (0.5 ^ mip)) cast uint
+        mip_height := (128 * (0.5 ^ mip)) cast uint
+
+
+        opengl.bindRenderbuffer opengl.renderbuffer, capture_RBO
+        opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, mip_width, mip_height
+        opengl.viewport 0, 0, mip_width, mip_height
+
+        roughness := (mip as float) / (maxMipLevels - 1 as float)
+        prefilter_shader.set_float "roughness", roughness
+
+        for i := 0..6 do
+            prefilter_shader.set_mat4x4 "view", &(&capture_views[i])
+            opengl.framebufferTexture2D
+                opengl.framebuffer
+                opengl.color_attachment0
+                opengl.texture_cube_map_positive_x + i
+                prefilter_map
+                mip
+
+            opengl.clear opengl.color_buffer_and_depth_buffer_bit
+            primitives.render_cube!
+
+
+    opengl.bindFramebuffer opengl.framebuffer, 0
+
+    brdf_shader := shader.make "assets/shaders/brdf_convultion.vert", "assets/shaders/brdf_convultion.frag"
+
+    brdf_LUT_texture : uint = _
+    opengl.genTextures 1, &brdf_LUT_texture
+
+    opengl.bindTexture opengl.texture_2D, brdf_LUT_texture
+    opengl.texImage2D opengl.texture_2D, 0, opengl.rgb16f, 512, 512, 0, opengl.rg, opengl.type_float, None
+    opengl.texParameteri opengl.texture_2D, opengl.texture_wrap_s, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_2D, opengl.texture_wrap_t, opengl.clamp_to_edge
+    opengl.texParameteri opengl.texture_2D, opengl.texture_min_filter, opengl.linear
+    opengl.texParameteri opengl.texture_2D, opengl.texture_mag_filter, opengl.linear
+
+    opengl.bindFramebuffer opengl.framebuffer, capture_FBO
+    opengl.bindRenderbuffer opengl.renderbuffer, capture_RBO
+    opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, 512, 512
+    opengl.framebufferTexture2D opengl.framebuffer, opengl.color_attachment0, opengl.texture_2D, brdf_LUT_texture, 0
+
+    opengl.viewport 0, 0, 512, 512
+    brdf_shader.bind!
+    opengl.clear opengl.color_buffer_and_depth_buffer_bit
+    primitives.render_quad!
+
+    opengl.bindFramebuffer opengl.framebuffer, 0
+    opengl.bindTexture opengl.texture_2D, 0
+    opengl.bindTexture opengl.texture_cube_map, 0
+
+    log "================"
+
+    Skybox{
+        env_cubemap = imageLoader.Cubemap{ env_cubemap }
+        irradiance_cubemap = imageLoader.Cubemap{ irradiance_map }
+        prefilter_cubemap = imageLoader.Cubemap{ prefilter_map }
+        brdf_LUT = imageLoader.Texture{ brdf_LUT_texture }
+    }

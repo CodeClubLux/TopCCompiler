@@ -38,6 +38,8 @@ def make(vfilename: string, ffilename: string) Shader =
     vshader_source := read_shader_file vfilename
     fshader_source := read_shader_file ffilename
 
+    defer context.allocator.reset_to context.allocator.get_occupied!
+
     //vertex shader
     sucess : int = 0
     info_log := (alloc 512 * sizeof Char) cast &Char
@@ -67,22 +69,19 @@ def make(vfilename: string, ffilename: string) Shader =
 def Shader.bind(self) =
     opengl.useProgram self.id
 
-def check_loc(loc: int, name: string, shader_name: string) =
-    //if loc < 0 and not shader_name == "assets/shaders/skybox.vert" then
-    //    panic "{shader_name}: Could not set uniform {name}"
-
 def Shader.set_mat4x4(self, name: string, value: &math.Mat4x4) =
     loc := opengl.getUniformLocation self.id, name.to_c_string!
-    check_loc loc, name, self.name
     opengl.uniformMatrix4fv loc, 1, true, value.data
 
 def Shader.set_vec3(self, name: string, value: &math.Vec3) =
     loc := opengl.getUniformLocation self.id, name.to_c_string!
-    check_loc loc, name, self.name
     opengl.uniform3fv loc, 1, &(value.x)
 
 def Shader.set_int(self, name: string, value: int) =
     loc := opengl.getUniformLocation self.id, name.to_c_string!
-    check_loc loc, name, self.name
     opengl.uniform1i loc, value
+
+def Shader.set_float(self, name: string, value: float) =
+    loc := opengl.getUniformLocation self.id, name.to_c_string!
+    opengl.uniform1f loc, value
      

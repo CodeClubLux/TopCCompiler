@@ -458,7 +458,7 @@ def infer(parser, tree):
                         else:
                             normalTyp = xnormalTyp
 
-                        normalTyp.duckType(parser, myTyp, i, myNode, iter + 1)
+                        normalTyp.duckType(parser, myTyp, myNode, i, iter + 1)
                         Tree.insertCast(i.nodes[iter+1], myNode.type, normalTyp, iter+1)
 
                 i = c
@@ -643,7 +643,7 @@ def infer(parser, tree):
                             if myIsGen:
                                 myTyp = Types.replaceT(myNode.type, gen)
 
-                        normalTyp.duckType(parser, myTyp, i, myNode, iter)
+                        normalTyp.duckType(parser, myTyp, myNode, i, iter)
 
                         Tree.insertCast(myNode, myNode.type, normalTyp, iter)
                         order[nameInOrder] = i.nodes[realIter]

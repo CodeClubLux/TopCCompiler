@@ -80,6 +80,10 @@ def castFrom(originalType, newType, node, codegen):
             codegen.append(")")
 
             return
+        elif newType.both and originalType.empty:
+            initCall = newType.toCType().replace("struct ", "") + "Init"
+            codegen.append(initCall + "(NULL, 0)")
+            return
         elif newType.both and not originalType.both and not originalType.static:
             if not type(node) is Tree.ReadVar:
                 node.error("not handled yet")

@@ -28,6 +28,12 @@ def Vec4.op_add(self, other: Vec4) Vec4 =
         self.w + other.w
     }
 
+def Vec3.op_sub(self, other: Vec3) Vec3 =
+    Vec3{
+        self.x - other.x
+        self.y - other.y
+        self.z - other.z
+    }
 
 def Vec3.scale(self, constant: float) Vec3 =
     Vec3{
@@ -58,10 +64,10 @@ def Vec4.len(self) float =
     sqrt self.x^2 + self.y^2 + self.z^2 + self.w^2
 
 
-def Vec3.normalize(self) Vec3 =
+def Vec3.norm(self) Vec3 =
     self.scale 1.0 / self.len!
 
-def Vec4.normalize(self) Vec4 =
+def Vec4.norm(self) Vec4 =
     self.scale 1.0 / self.len!
 
 

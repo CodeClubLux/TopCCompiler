@@ -1,8 +1,6 @@
 import AST as Tree
 from TopCompiler import Types
 
-realPrint = print
-
 """
 def print(s):
     return
@@ -182,7 +180,6 @@ class FuncSpecification:
         funcBrace = loop(self.funcBrace)
         funcBody = loop(self.funcBody)
         funcBody.returnType = funcStart.ftype.returnType
-
 
         inGlobal = False
 
@@ -401,7 +398,8 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         #elif type(ast) is Tree.Cast and type(ast.nodes[0]) is Tree.InitStruct and ast.fromT in [Types.Enum, Types.Struct] and Tree.Cast.notSpecified(ast.fromT):  @cleanup add optimization
         #    print("happens")
         #    ast.nodes[0].constructor = ast.toT
-
+            readVar.replaced = {}
+            ast.replaced = {}
         elif type(ast) is Tree.Field:
             typ = ast.nodes[0].type
             struct = typ

@@ -227,7 +227,7 @@ class FuncCall(Node):
     def compileToC(self, codegen):
         firstNode = self.nodes[0]
 
-        if type(firstNode) is Tree.ReadVar and firstNode.name.startswith("Some") and firstNode.package in ["", "_global"] and self.replaced["Maybe.T"].isType(Types.Pointer):
+        if type(firstNode) is Tree.ReadVar and firstNode.name.startswith("Some") and firstNode.package in ["", "_global"] and self.type.remainingGen["Maybe.T"].isType(Types.Pointer):
             self.nodes[1].compileToC(codegen)
 
             return

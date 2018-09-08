@@ -212,10 +212,13 @@ def initStruct(parser, package= "", shouldRead=True):
 
     parser.nextToken()
 
+    parser.nodeBookmark.append(0)
+
     while parser.thisToken().token != "}":
 
         if parser.thisToken().token in [",", "\n"]:
             ExprParser.endExpr(parser)
+            parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
         if parser.thisToken().token != ",": Parser.callToken(parser)
 
         t = parser.thisToken().token
@@ -227,6 +230,8 @@ def initStruct(parser, package= "", shouldRead=True):
         closeCurly(parser)
 
     ExprParser.endExpr(parser)
+
+    parser.nodeBookmark.pop()
 
     parser.currentNode = init.owner
 

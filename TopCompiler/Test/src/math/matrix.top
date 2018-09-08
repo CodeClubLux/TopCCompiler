@@ -55,4 +55,17 @@ def perspective(fov: float, aspect: float, n: float, f: float) Mat4x4 =
         0          ,    0        , -1          ,    0
     ]
 
-def look_at()
+def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
+    f := (center - eye).norm!
+    s := (f.cross up).norm!
+
+    t := s.cross f
+
+    [
+        s.x,  s.y,  s.z,  -eye.x
+        t.x,  t.y,  t.z,  -eye.y
+        -f.x, -f.y, -f.z, -eye.z
+        0      , 0   , 0,  1
+    ]
+
+

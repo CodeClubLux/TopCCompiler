@@ -43,6 +43,8 @@ def parenClose(parser):
 def newLine(parser):
     maybeEnd(parser)
 
+    ExprParser.endExpr(parser, -2)
+
     parser.lineNumber += 1
 
     indent = int(parser.lookInfront().token)

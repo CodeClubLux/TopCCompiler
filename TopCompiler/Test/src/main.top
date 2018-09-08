@@ -8,6 +8,7 @@ import "imageLoader"
 import "modelLoading"
 import "scene"
 from "materialSystem" import all
+import "ibl"
 
 wet_street_params := [
     Param_Image "material.diffuse", imageLoader.load "assets/wet_street/Pebble_Wet_street_basecolor.jpg"
@@ -24,16 +25,6 @@ wet_street := box Material{
     params = &wet_street_params
 }
 
-sky_box := box Material{
-    name = "DefaultMaterial"
-    shader = shader.make "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"
-    params = sky_box_params
-}
-
-&materials.append sky_box
-skybox_cube := modelLoading.load_model "assets/cube.fbx"
-&materials.shorten 1
-
 &materials.append wet_street
 model := modelLoading.load_model "assets/cube.fbx"
 
@@ -42,16 +33,18 @@ my_shader := shader.make "assets/vertex.vert", "assets/fragment.frag"
 
 identity := math.identity_mat!
 
+skybox := ibl.make_Skybox!
+
 type ExampleScene =
 
 def ExampleScene.render(&self) =
-    opengl.depthFunc opengl.lequal
-    skybox_cube.render!
-    opengl.depthFunc opengl.less
-
+    &skybox.render!
     model.render!
+
+def ExampleScene.set_scene_params_for(&self, _shader: shader.Shader) =
+    &skybox.set_ibl_params_for _shader
 
 def ExampleScene.update(&self) =
 
 example_scene := ExampleScene{}
-context.scene.init &example_scene
+context.scene.init box &example_scene as scene.Game

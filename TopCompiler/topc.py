@@ -496,8 +496,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 _linkWith = [i for (d, i) in linkWith if d in canStartWith]
                 _headerIncludePath = [i for (d, i) in headerIncludePath if d in canStartWith]
 
-
-
                 timeForCodeAnalysis = time() - beforeLoad
                 if compileRuntime:   #not dev and not _raise:
                     parser.generatedGenericTypes = Types.genericTypes

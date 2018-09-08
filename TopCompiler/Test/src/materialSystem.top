@@ -27,8 +27,8 @@ def Material.bind(&self) =
                 self.shader.set_mat4x4 field, &matrix
 
             Param_Image field, texture ->
-                self.shader.set_int field, i + 1
-                (&texture.bind i + 1)
+                (&texture).bind_to (i + 3)
+                self.shader.set_int field, i + 3
 
     context.scene.set_shader_scene_params self.shader
 
@@ -43,3 +43,5 @@ def material_by_name(name: string) Maybe[&Material] =
 
     None
 
+def get_materials() &[..]&Material =
+    &materials

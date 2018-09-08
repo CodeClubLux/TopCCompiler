@@ -25,6 +25,29 @@ ext getProgramInfoLog: |uint, uint, Maybe[&none], &Char|-> none = "glGetProgramI
 ext useProgram: |uint| -> none = "glUseProgram"
 ext activeTexture: |uint| -> none = "glActiveTexture"
 ext texture0: uint = "GL_TEXTURE0"
+ext texture_cube_map: uint = "GL_TEXTURE_CUBE_MAP"
+ext texture_cube_map_seamless: uint = "GL_TEXTURE_CUBE_MAP_SEAMLESS"
+ext clamp_to_edge: uint = "GL_CLAMP_TO_EDGE"
+ext framebufferRenderbuffer: |uint, uint, uint, uint| -> none = "glFramebufferRenderbuffer"
+ext depth_attachment: uint = "GL_DEPTH_ATTACHMENT"
+
+
+ext texture_wrap_r: uint = "GL_TEXTURE_WRAP_R"
+ext linear_mipmap_linear: uint = "GL_LINEAR_MIPMAP_LINEAR"
+
+ext bindFramebuffer: |uint, uint| -> none = "glBindFramebuffer"
+ext framebuffer: uint = "GL_FRAMEBUFFER"
+
+ext framebufferTexture2D: |uint, uint, uint, uint, uint| -> none = "glFramebufferTexture2D"
+
+ext color_attachment0: uint = "GL_COLOR_ATTACHMENT0"
+ext color_buffer_and_depth_buffer_bit: uint = "GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT"
+
+ext genFramebuffers: |uint, &uint| -> none = "glGenFramebuffers"
+ext genRenderbuffers: |uint, &uint| -> none = "glGenRenderbuffers"
+
+ext texture_cube_map_positive_x: uint = "GL_TEXTURE_CUBE_MAP_POSITIVE_X"
+ext rgb16f: uint = "GL_RGB16F"
 
 ext debug_severity_low: uint = "GL_DEBUG_SEVERITY_LOW"
 
@@ -38,12 +61,18 @@ ext texture_wrap_t: uint = "GL_TEXTURE_WRAP_T"
 ext texture_min_filter: uint = "GL_TEXTURE_MIN_FILTER"
 ext texture_mag_filter: uint = "GL_TEXTURE_MAG_FILTER"
 ext linear: uint = "GL_LINEAR"
-ext texImage2D: |uint, uint, uint, int, int, uint, uint, uint, &Byte| -> none = "glTexImage2D"
+ext texImage2D: |uint, uint, uint, int, int, uint, uint, uint, Maybe[&Byte]| -> none = "glTexImage2D"
 ext generateMipmap: |uint| -> none = "glGenerateMipmap"
+ext bindRenderbuffer: |uint, uint| -> none = "glBindRenderbuffer"
+ext renderbuffer: uint = "GL_RENDERBUFFER"
+ext renderbufferStorage: |uint, uint, uint, uint| -> none = "glRenderbufferStorage"
+ext depth_component24: uint = "GL_DEPTH_COMPONENT24"
+ext uniform1f: |int, float| -> none = "glUniform1f"
 
 ext rgb: uint = "GL_RGB"
+ext rg: uint = "GL_RG"
 
-ext texture_2d: uint = "GL_TEXTURE_2D"
+ext texture_2D: uint = "GL_TEXTURE_2D"
 ext unsigned_byte: uint = "GL_UNSIGNED_BYTE"
 
 ext compile_status: uint = "GL_COMPILE_STATUS"
