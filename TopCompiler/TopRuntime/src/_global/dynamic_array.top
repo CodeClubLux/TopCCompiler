@@ -21,10 +21,10 @@ def fill_array[T](numTimes: uint, elem: T) Array[T] =
         data = None
     }
 
-    &arr.reserve numTimes
+    arr.reserve numTimes
     i := 0
     while i < numTimes do
-        &arr.append elem
+        arr.append elem
         i += 1
 
     arr

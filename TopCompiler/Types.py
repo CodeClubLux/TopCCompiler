@@ -945,6 +945,9 @@ def hasMethodEnum(attachTyp, parser, name, isP=False):
 
         if isP:
             attachTyp = Types.Pointer(attachTyp)
+        if not type(firstArg) is Types.Pointer and isP:
+            attachTyp = attachTyp.pType
+
         firstArg.duckType(parser, attachTyp, parser, parser, 0)
         return m
 
@@ -1201,7 +1204,7 @@ class Pointer(Type):
     def __init__(self, pType, mutable=False):
         self.pType = pType
         self.name = "&" + pType.name
-        self.normalName = pType.normalName
+        #self.normalName = pType.normalName
         if not pType.isType(Pointer):
             self.types = pType.types
         else:

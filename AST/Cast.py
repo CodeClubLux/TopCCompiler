@@ -22,13 +22,38 @@ class Cast(Node):
 from TopCompiler import Types
 from PostProcessing import SimplifyAst
 
+def canTakeRef(ast, struct):
+    if struct.toRealType() is Types.Pointer:
+        return False
+
+    def loop(i):
+        if type(i) is Tree.ReadVar: return True
+        elif type(i) is Tree.Field:
+            return loop(i.nodes[0])
+        return False
+
+    return loop(ast)
+
 def insertCast(ast, fromT, toT, iter):
     if fromT != toT:
+        if toT.isType(Types.Pointer) and not fromT.isType(Types.Pointer):
+            takeRef = Tree.Operator("&", ast)
+            takeRef.owner = ast.owner
+            takeRef.unary = True
+            ast.owner.nodes[iter] = takeRef
+            takeRef.addNode(ast)
+            takeRef.type = Types.Pointer(fromT)
+
+            insertCast(takeRef, takeRef.type, toT, iter)
+            return
+
+
         c = Cast(fromT, toT, ast)
         c.type = toT
         ast.owner.nodes[iter] = c
         c.owner = ast.owner
         c.addNode(ast)
+    return fromT
 
 def notSpecified(self):
     generics = self.remainingGen

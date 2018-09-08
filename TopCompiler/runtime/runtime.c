@@ -211,8 +211,14 @@ FILE* _runtime_c_open_file(struct _global_String filename, struct _global_String
     char * buffer = 0;
     int length;
     FILE* f;
-    errno_t errors = fopen_s(&f, filename.data, acess.data);
-    if (errors) { return NULL; }
+    #ifdef __APPLE__
+        f = fopen(filename.data, acess.data);
+    #else
+        errno_t errors = fopen_s(&f, filename.data, acess.data);
+
+        if (errors) { return NULL; }
+    #endif
+
     return f;
 }
 

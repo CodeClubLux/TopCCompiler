@@ -380,6 +380,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             upperDeleteQueue.append(funcStart) #remove funcStart, funcBrace, funcBody, since specialized version is useless
             upperDeleteQueue.append(funcBrace)
             upperDeleteQueue.append(funcBody)
+
         elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar and not ast.nodes[0].name == "indexPtr":
             readVar = ast.nodes[0]
             if readVar.replaced: #for method calls
@@ -393,7 +394,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 newName = toUniqueID(readVar.package, readVar.name, ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]
             elif readVar.type.generic:
-                newName = specifications.addSpecification(readVar.package, readVar.name, ast.replaced)
+                newName = specifications.addSpecification(readVar.package, readVar.name,ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]  # remove package which will be added later
         #elif type(ast) is Tree.Cast and type(ast.nodes[0]) is Tree.InitStruct and ast.fromT in [Types.Enum, Types.Struct] and Tree.Cast.notSpecified(ast.fromT):  @cleanup add optimization
         #    print("happens")
@@ -443,7 +444,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                         else:
                             break
 
-                    if type(typ) in [Types.Struct, Types.Alias, Types.Enum, Tree.Array]:
+                    if type(typ) in [Types.Struct, Types.Alias, Types.Enum, Types.Array]:
                         r.replaced = typ.remainingGen
 
         for e in deleteQueue:

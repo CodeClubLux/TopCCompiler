@@ -191,6 +191,7 @@ def infer(parser, tree):
                     count += 1
                     continue
 
+                """ 
                 def bind():
                     if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i: return
                     typ = type(i.type)
@@ -204,7 +205,7 @@ def infer(parser, tree):
                             bind.type = Types.FuncPointer(self.type.args[1:], self.type.returnType, generic= self.type.generic, do= self.type.do)
                         self.owner.nodes[count] = bind
                         bind.owner = self.owner
-
+                """
 
                 typ = i.nodes[0].type
                 t = i.nodes[0]
@@ -221,18 +222,24 @@ def infer(parser, tree):
                     struct = typ
 
                     self = i
+                    insertTakeRef = False
+
                     try:
                         i.type = struct.types[self.field]
                     except KeyError:
                         try:
-                            if type(typ) is Types.Alias:
-                                method = struct.typ.hasMethod(parser, self.field) #has method should check if t can be upcasted
+                            if type(struct) is Types.Alias:
+                                insertTakeRef = Tree.canTakeRef(self.nodes[0], struct)
+
+                                method = struct.typ.hasMethod(parser, self.field, isP= insertTakeRef) #has method should check if t can be upcasted
                                 if method:
                                     typ = struct.typ
                                 else:
                                     method = struct.hasMethod(parser, self.field)
                             else:
-                                method = struct.hasMethod(parser, self.field)
+                                insertTakeRef = Tree.canTakeRef(self.nodes[0], struct)
+
+                                method = struct.hasMethod(parser, self.field, isP= insertTakeRef)
                         except EOFError as e:
                             Error.beforeError(e, str(struct)+"."+self.field+" only operates: ")
 
@@ -247,6 +254,8 @@ def infer(parser, tree):
                         if not type(self.owner) is Tree.FuncCall:
                             self.error("Binding method function not supported")
 
+                        if insertTakeRef:
+                            Tree.insertCast(self.nodes[0], self.nodes[0].type, method.args[0], 0)
             elif type(i) is Tree.Operator:
                 if i.kind == "|>" or i.kind == ">>":
                     self = i
@@ -676,11 +685,16 @@ def infer(parser, tree):
             elif type(i) is Tree.ArrRead:
                 if len(i.nodes) == 2:
                     typ = i.nodes[0].type
+                    insertTakeRef = False
 
                     try:
-                        func = typ.hasMethod(parser, "op_get")
+                        insertTakeRef = Tree.canTakeRef(i.nodes[0], i.nodes[0].type)
+                        func = typ.hasMethod(parser, "op_get", isP=insertTakeRef)
                     except EOFError as e:
                         Error.beforeError(e, str(typ) + " only operates : ")
+
+                    if insertTakeRef:
+                        Tree.insertCast(i.nodes[0], i.nodes[0].type, func.args[0], 0)
 
                     if not func:
                         i.nodes[0].error("Type "+str(i.nodes[0].type)+" is not indexable, missing method op_get")
@@ -690,6 +704,7 @@ def infer(parser, tree):
                     arrRead = i
                     if len(arrRead.nodes) != 2:
                         i.nodes[1].error("expecting single index")
+
 
                     #if len(func.args) != 1: cant add a method that does not follow the proper type for operator overloading
                     #    i.nodes[0].error(str(typ) + " is not indexable, method get should take 1 parameter, not "+str(len(func.args)))

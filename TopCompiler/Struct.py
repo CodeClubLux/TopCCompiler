@@ -241,11 +241,7 @@ def closeCurly(parser):
         Tree.PlaceHolder(parser).error("unexpected }")
 
 def popAt(parser):
-    if len(parser.stack) > parser.bookmark[-2]:
-        op = parser.stack[-1]
-        if op.kind == "&":
-            op.func()
-            parser.stack.pop()
+    pass
 
 def index(parser, unary=False):
 

@@ -1,5 +1,6 @@
 #include <string.h>
 
+typedef struct _global_String(*prnonep___string)(void*,struct _global_Context*) ;
 struct _global_TemporaryStorage {
 unsigned int occupied;
 unsigned int highest;
@@ -115,7 +116,19 @@ struct _global_Maybe_File _global_Some_File(struct _global_File b,struct _global
 struct _global_Maybe_File d;
 d.cases.Some.field0 = b;d.tag = 0;
 return d;}
-
+struct _global_Stringer {
+void* type; /* is always null, for now */ 
+void* data;
+prnonep___string method_toString;
+};static inline struct _global_Stringer _global_StringerFromStruct(void* data, prnonep___string c){ 
+struct _global_Stringer d;
+d.data = data;d.method_toString = c;
+return d; 
+}static inline struct _global_String _global_Stringer_toString(struct _global_Stringer* d,struct _global_Context* b){
+return d->method_toString(d->data,b);
+};static inline struct _global_String _global_Stringer_toStringByValue(struct _global_Stringer d,struct _global_Context* b){
+return d.method_toString(d.data,b);
+};
 void _global_log_string(struct _global_String _global_s, struct _global_Context* b);
 
 #define _global_exit(c,d) exit(c)
@@ -236,7 +249,7 @@ if(F != NULL){struct FILE* _global_file= F;
 return _global_Some_File(_global_FileInit(_global_file,_global_acess),D);}if(F == NULL){return tmp_globalc(_global_None);};
 ;}
 void _global_log_string(struct _global_String _global_s, struct _global_Context* D){;
-_global_c_log(_global_String_toString(&_global_s,D),D);
+_global_c_log(_global_Stringer_toString((struct _global_Stringer*)&_global_s,D),D);
 ;}
 
 void _globalInit() { 

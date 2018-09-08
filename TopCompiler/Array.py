@@ -31,6 +31,7 @@ def arrayLiteral(parser, shouldRead= True):
     parser.nodeBookmark.append(0)
 
     init = False
+    dynamicEmpty = False
 
     while parser.thisToken().token != "]":
         t = parser.thisToken()
@@ -42,6 +43,11 @@ def arrayLiteral(parser, shouldRead= True):
 
             lastSize = len(parser.currentNode.nodes)
             parser.nextToken()
+            continue
+        elif t.token == "..":
+            dynamicEmpty = True
+            if parser.nextToken().token != "]":
+                Error.parseError(parser, "Expecting ..")
             continue
         elif t.token == "\n":
             endExpr(parser)
@@ -68,6 +74,18 @@ def arrayLiteral(parser, shouldRead= True):
 
     parser.currentNode = arr.owner
     arr.mutable = False
+    if len(arr.nodes) == 0:
+        if dynamicEmpty:
+            parser.nextToken()
+            arrT = Types.parseType(parser)
+            Tree.insertCast(arr,
+                Types.Array(Types.Null(), static=False, both=False, empty=True),
+                Types.Array(arrT, static=False, empty=False),
+                -1
+            )
+
+        elif type(arr.owner) is Tree.Assign and arr.owner.init:
+            Error.parseError(parser, "Use [..] instead")
 
     parser.nodeBookmark.pop()
 
