@@ -20,6 +20,8 @@ Features that are coming soon, are the ability to switch between AOS and SOA, li
 4. Execute `cd HelloWorld`, this will go into the project directory
 5. Execute `topc new package main`, this will create a new main package inside the src directory, which will contain a port.json file for configurations, the main package which is the entry point to your application
 7. Execute `topc run`, to build and run your program.
+8. Execute `topc debug`, to build your program with debug symbols (to add #line defintions, uncomment a line in codegen.py), note this is temporary and I will add a flag). 
+
 ## Introduction
 
 ## File structure
