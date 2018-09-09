@@ -155,9 +155,7 @@ for x := 0..10 do //0..10 denotes a range from 0 to 10, so x will be 0, 1, 2, ..
 
 Pointers are the adresses to some data. There is no concept of null in top so there can't be any null pointer dereferences. 
 However this does not mean that acessing a pointer is always safe as the data could have been freed. This is the problem with automatic memory management but it does allow for better performance.
-Passing an object by reference means you don't make a copy which can be slow and you can modify the original data when passed to a function or struct.
-The size of a pointer is around 32bit-64bit depending on the platform.
-
+Passing an object by reference means you don't make a copy which can be slow and you can modify the original data when passed to a function or struct. Pointers in top are a mix bitween reference in c++ and pointers. Unlike in c++ you can get a field from a pointer using ., as well as call methods on pointers and use them for operator overloading. 
 
 ```scala
 def func() &int =
@@ -245,6 +243,11 @@ def Maybe[T].default(&self, value: T) T =
         Some x -> x //if self is Some then the result will be x
         None -> value //if self is None then the result will be value
 
+def Maybe[T: Stringer].toString(&self) string =
+    match *self with
+      Some x -> "Some({x})
+      None x -> "None"      
+  
 //You don't have to define this type as if is part of the global namespace, to see it's actual definition read through TopCompiler/TopRuntime 
     
 type Person =
@@ -258,17 +261,22 @@ def Person.toString(&self) string =
     "{name} is {age}
  
 person := Person{
-    name = Some "Luke"
+    name = Some "Bob"
     age = None
 }
 
-person2 := Person{
+person2 := Person2{
     name = None
-    age = Some 14
+    age = Some 30
 }
 
-log toString person //will print: Luke is ageless
+copy_of_person := person{
+  age = Some 26
+} //copy of person with age set to Some 13
+
+log toString person //will print: Bob is ageless
 log toString person2 //will print: Anonymous is 14
+log toString copy_of_person //will print: Luke is 26
 ``` 
 
 ### Methods
@@ -297,6 +305,20 @@ log i /*
 log i /* this will print Point(10, 0)
 
 ```
+
+### Operator overloading
+
+```scala
+
+def Point.op_add(self, other: Point) Point = //unary operator overloads use unary_name_of_operator
+    Point{
+        self.x + other.x
+        other.y + other.y
+    }
+
+log (Point{10,20} + Point{30,20}).x
+```
+
 
 ### #addToContext
 
