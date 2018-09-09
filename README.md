@@ -313,7 +313,7 @@ log context.x //will print 10
 
 Push context pushes a new context meaning context, and the context passed into each function will be the new context.
 
-```
+```scala
 new_context := *context
 new_context.allocator = &Malloc_as_allocator //allocator is the field for context which set's the allocator to use, by default it is a linear allocator that you can free all memory up to a certain point, or at the end of a frame
 
@@ -323,7 +323,7 @@ new_context.allocator = &Malloc_as_allocator //allocator is the field for contex
 
 ### Defer
 Defer calls a function at the end of the block with the parameters evaluated where the defer is.  Which is usefull for managing resources.
-```
+```scala
 defer context.allocator.reset_to context.allocator.get_occupied! //will free all of the memory that has been allocated after this statement if you are using the default linear allocator
 
 x := box 10
