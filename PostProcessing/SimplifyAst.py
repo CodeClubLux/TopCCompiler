@@ -25,6 +25,9 @@ def callMethodCode(node, name, typ, parser, unary):
 
     length = 1 if unary else 2
 
+    if type(typ) is Types.Pointer:
+        typ = typ.pType
+
     package = "_global" if typ.package == "" else typ.package
     var = Tree.ReadVar(typ.normalName + "_" + name, True, node)
     var.package = package
@@ -251,8 +254,8 @@ class Specifications:
         id = toUniqueID(package, funcName, replaced)
 
         if not fullName in self.genericFuncs:
-            if forceFound:
-                raise EOFError("Could not find generic function " + fullName)
+            if forceFound: pass
+            raise EOFError("Could not find generic function " + fullName)
             self.delayed[fullName] = (package, funcName, replaced)
             return id
 

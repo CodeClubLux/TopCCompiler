@@ -14,7 +14,7 @@ type Material =
     params: []Param
 
 def Material.bind(&self) =
-    params := &(self.params)
+    params := &self.params
 
     self.shader.bind!
 
@@ -32,11 +32,11 @@ def Material.bind(&self) =
 
     context.scene.set_shader_scene_params self.shader
 
-materials: [..]&Material = []
+materials := [..]&Material
 
 def material_by_name(name: string) Maybe[&Material] =
     for i := 0..materials.length do
-        m := &materials[i]
+        m := materials[i]
 
         if m.name == name then
             return Some m

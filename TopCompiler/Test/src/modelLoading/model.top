@@ -6,13 +6,13 @@ type Model =
 ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
 
 def process_mesh(mesh: &aiMesh, scene: &aiScene) Mesh =
-    vertices: [..]Vertex = []
+    vertices := [..]Vertex
     vertices.allocator = Some &malloc_as_allocator
-    &vertices.reserve mesh.mNumVertices
+    vertices.reserve mesh.mNumVertices
 
-    indices: [..]uint = []
+    indices := [..]uint
     indices.allocator = Some &malloc_as_allocator
-    &indices.reserve mesh.mNumVertices
+    indices.reserve mesh.mNumVertices
 
     for i := 0..mesh.mNumVertices do
         position := indexPtr mesh.mVertices, i
@@ -30,7 +30,7 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene) Mesh =
 
         normals := indexPtr mesh.mNormals, i
 
-        &vertices.append Vertex{
+        vertices.append Vertex{
             position = Vec3{ position.x, position.y, position.z }
             tex_coord = tex_coords
             normal = Vec3{ normals.x, normals.y, normals.z }
@@ -41,7 +41,7 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene) Mesh =
     for i := 0..mesh.mNumFaces do
         face := *indexPtr mesh.mFaces, i
         for j := 0..face.mNumIndices do
-            &indices.append (*indexPtr face.mIndices, j)
+            indices.append (*indexPtr face.mIndices, j)
 
     material :=
         if mesh.mMaterialIndex >= 0 then
@@ -78,7 +78,7 @@ def load_model(path: string) Model =
             panic "Assimp could not load model, {path}"
             0 cast &aiScene
 
-    meshes : [..]Mesh = []
+    meshes := [..]Mesh
     meshes.allocator = Some &malloc_as_allocator
     process_node scene.mRootNode, scene, &meshes
 
@@ -88,6 +88,6 @@ def Model.render(self) =
     meshes := self.meshes
 
     for i := 0..meshes.length do
-        mesh := &meshes[i]
-        &mesh.render!
+        mesh := meshes[i]
+        mesh.render!
 

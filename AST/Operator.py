@@ -78,8 +78,6 @@ class Operator(Node):
         if self.kind == "+" and type(self.type ) is Types.String:
             codegen.append("_global_String_op_addByValue")
 
-        #codegen.append("(")
-
         if self.kind == "^":
             codegen.append("powf(")
 
@@ -103,8 +101,7 @@ class Operator(Node):
 
         if self.unary:
             codegen.append(op)
-            if self.kind == "not":
-                codegen.append("(")
+            codegen.append("(")
 
         self.nodes[0].compileToC(codegen)
 
@@ -122,7 +119,7 @@ class Operator(Node):
             if self.kind == "^":
                 codegen.append(")")
 
-        if self.kind == "not":
+        if self.unary:
             codegen.append(")")
 
         #codegen.append(")")

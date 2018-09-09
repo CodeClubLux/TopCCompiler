@@ -15,7 +15,7 @@ type Texture =
 cached_textures := assetManager.make_asset_cache::[Texture]!
 
 def load(filename: string) Texture =
-    match &cached_textures.in_cache filename with
+    match cached_textures.in_cache filename with
         Some texture -> return texture
         None ->
 
@@ -45,7 +45,7 @@ def load(filename: string) Texture =
     texImage2D texture_2D, 0, rgb, width, height, 0, rgb, unsigned_byte, Some data
     generateMipmap texture_2D
 
-    &cached_textures.append filename, Texture{ texture }
+    cached_textures.append filename, Texture{ texture }
 
 def Texture.bind_to(self, num: uint) =
     activeTexture texture0 + num

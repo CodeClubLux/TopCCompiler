@@ -96,7 +96,7 @@ def canMutate(self, tryingToMutate):
         if type(i) is Tree.FuncCall:
             return
 
-        if not type(i) in [Tree.Field, Tree.ArrRead, Tree.ReadVar, Tree.Tuple] and not (type(i) is Tree.Operator and i.kind in ["*", "&"]):
+        if not type(i) in [Tree.Field, Tree.ArrRead, Tree.ReadVar, Tree.Tuple, Tree.Cast.Cast] and not (type(i) is Tree.Operator and i.kind in ["*", "&"]):
             i.error("expecting variable")
 
         if type(node) is Tree.ReadVar:

@@ -5,10 +5,10 @@ def empty_mat() Mat4x4 =
 
 def identity_mat() Mat4x4 =
     new := empty_mat!
-    &new[0] = 1
-    &new[5] = 1
-    &new[10] = 1
-    &new[15] = 1
+    new[0] = 1
+    new[5] = 1
+    new[10] = 1
+    new[15] = 1
 
     new
 
@@ -18,7 +18,7 @@ def Mat4x4.op_mul(&self, other: &Mat4x4) Mat4x4 =
     for c := 0..4 do
         for r := 0..4 do
             for k := 0..4 do
-                &tmp[(r*4 + c)] = self[(r*4 + k)] + other[(k*4 + c)]
+                tmp[(r*4 + c)] = self[(r*4 + k)] + other[(k*4 + c)]
 
     tmp
 
@@ -26,9 +26,9 @@ def Mat4x4.mul_vec(&self, other: Vec4) Vec4 =
     new_vec := [4: 0.0]
 
     for row := 0..4 do
-        vec_value := &other[row]
+        vec_value := other[row]
         for column := 0..4 do
-            &new_vec[row] += vec_value * self[row*4 + column]
+            new_vec[row] += vec_value * self[row*4 + column]
 
     vec4_from_array &new_vec
 
@@ -62,10 +62,10 @@ def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
     t := s.cross f
 
     [
-        s.x,  s.y,  s.z,  -eye.x
-        t.x,  t.y,  t.z,  -eye.y
-        -f.x, -f.y, -f.z, -eye.z
-        0      , 0   , 0,  1
+        s.x, t.x, -f.x, -eye.x
+        s.y, t.y, -f.y, -eye.y
+        s.z, t.z, -f.z, -eye.z
+        0  , 0 , 0    ,      1
     ]
 
 

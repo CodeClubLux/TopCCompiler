@@ -91,6 +91,8 @@ def isUseless(i):
         i.error("useless read")
     elif type(i) in [Tree.Int, Tree.Array, Tree.ArrRead, Tree.String, Tree.Bool, Tree.Float]:
         i.error("useless literal")
+    elif type(i) is Tree.Operator:
+        i.error("useless operator")
     elif type(i) is Tree.FuncCall and not i.nodes[0].type.do:
         if i.type != Types.Null():
             i.error("not using return of function")
@@ -135,12 +137,18 @@ def validate(parser, self, function=None, block=None):
 def checkUseless(self):
     if type(self) is Tree.FuncBody and self.returnType.name == "none":
         checkNodes = self.nodes
+    elif type(self) is Tree.For:
+        checkNodes = self.nodes
+    elif type(self) is Tree.While:
+        checkNodes = self.nodes
     else:
         checkNodes = self.nodes[:-1]
-    for i in checkNodes:
+
+
+    for (iter, i) in enumerate(checkNodes):
         isUseless(i)
 
-        if type(i) in [Tree.FuncBody, Tree.While, Tree.WhileBlock, Tree.If, Tree.Block]:
+        if type(i) in [Tree.FuncBody, Tree.While, Tree.WhileBlock, Tree.If, Tree.Block, Tree.For]:
             checkUseless(i)
 
 def toStr(array):  # turn names list into something for llvm

@@ -3,8 +3,8 @@ type AssetCache[T] =
     assets: [..]T
 
 def make_asset_cache[T]() AssetCache[T] =
-    filenames : [..]string = []
-    assets : [..]T = []
+    filenames := [..]string
+    assets := [..]T
 
     AssetCache{
         filenames = filenames
@@ -12,14 +12,14 @@ def make_asset_cache[T]() AssetCache[T] =
     }
 
 def AssetCache[T].append(&self, filename: string, asset: T) T =
-    &(self.filenames).append filename
-    &(self.assets).append asset
+    self.filenames.append filename
+    self.assets.append asset
 
     asset
 
 def AssetCache[T].in_cache(&self, filename: string) Maybe[T] =
     for i := 0..self.filenames.length do
-        if &(self.filenames)[i] == filename then
-            return Some &(self.assets)[i]
+        if self.filenames[i] == filename then
+            return Some self.assets[i]
 
     None

@@ -44,9 +44,8 @@ def insertCast(ast, fromT, toT, iter):
             takeRef.addNode(ast)
             takeRef.type = Types.Pointer(fromT)
 
-            insertCast(takeRef, takeRef.type, toT, iter)
+            #insertCast(takeRef, takeRef.type, toT, iter)
             return
-
 
         c = Cast(fromT, toT, ast)
         c.type = toT

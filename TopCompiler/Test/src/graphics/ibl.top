@@ -104,7 +104,7 @@ def make_Skybox() Skybox =
 
 
     for i := 0..6 do
-        equirectangular_to_cubemap_shader.set_mat4x4 "view", &(&capture_views[i])
+        equirectangular_to_cubemap_shader.set_mat4x4 "view", &capture_views[i]
         opengl.framebufferTexture2D
             opengl.framebuffer
             opengl.color_attachment0
@@ -159,7 +159,7 @@ def make_Skybox() Skybox =
     opengl.bindFramebuffer opengl.framebuffer, capture_FBO
 
     for i := 0..6 do
-        irradiance_shader.set_mat4x4 "view", &(&capture_views[i])
+        irradiance_shader.set_mat4x4 "view", &capture_views[i]
         opengl.framebufferTexture2D
             opengl.framebuffer
             opengl.color_attachment0
@@ -219,7 +219,7 @@ def make_Skybox() Skybox =
         prefilter_shader.set_float "roughness", roughness
 
         for i := 0..6 do
-            prefilter_shader.set_mat4x4 "view", &(&capture_views[i])
+            prefilter_shader.set_mat4x4 "view", &capture_views[i]
             opengl.framebufferTexture2D
                 opengl.framebuffer
                 opengl.color_attachment0

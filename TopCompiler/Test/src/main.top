@@ -17,15 +17,13 @@ wet_street_params := [
     Param_Image "material.normal", imageLoader.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
 ]
 
-sky_box_params := []
-
 wet_street := box Material{
     name = "DefaultMaterial"
     shader = shader.make "assets/shaders/pbr.vert", "assets/shaders/pbr.frag"
     params = &wet_street_params
 }
 
-&materials.append wet_street
+materials.append wet_street
 model := modelLoading.load_model "assets/cube.fbx"
 
 //setting up the shader
@@ -38,11 +36,11 @@ skybox := ibl.make_Skybox!
 type ExampleScene =
 
 def ExampleScene.render(&self) =
-    &skybox.render!
+    skybox.render!
     model.render!
 
 def ExampleScene.set_scene_params_for(&self, _shader: shader.Shader) =
-    &skybox.set_ibl_params_for _shader
+    skybox.set_ibl_params_for _shader
 
 def ExampleScene.update(&self) =
 

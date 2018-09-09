@@ -17,19 +17,19 @@ plane := modelLoading.load_model "assets/plane.fbx"
 get_materials!.shorten 1
 
 def render_cube() =
-    self := &(cube.meshes)[0]
+    self := cube.meshes[0]
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0
 
 def render_sphere() =
-    self := &(sphere.meshes)[0]
+    self := sphere.meshes[0]
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0
 
 def render_quad() =
-    self := &(plane.meshes)[0]
+    self := plane.meshes[0]
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0

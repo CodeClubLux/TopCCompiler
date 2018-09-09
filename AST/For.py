@@ -27,7 +27,7 @@ class For(Node):
 
         name = self.nodes[0].nodes[0].compileToC(codegen)
         if isRange:
-            codegen.append(f"{name} = {iteration};")
+            codegen.append(f"{name} = {iteration};\n")
         else:
             self.func(codegen, obj)
 
