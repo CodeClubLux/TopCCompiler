@@ -27,11 +27,11 @@ def Scene.free(&self) =
 brdf : imageLoader.Texture = _
 
 def Scene.set_shader_scene_params(&self, _shader: shader.Shader) =
-    _shader.set_mat4x4 "projection", &(self.projection)
-    _shader.set_mat4x4 "view", &(self.view)
+    _shader.set_mat4x4 "projection", &self.projection
+    _shader.set_mat4x4 "view", &self.view
 
-    _shader.set_vec3 "dirLight.color", &(self.dir_light.color)
-    _shader.set_vec3 "dirLight.direction", &(self.dir_light.direction)
+    _shader.set_vec3 "dirLight.direction", &self.dir_light.direction
+    _shader.set_vec3 "dirLight.color", &self.dir_light.color
 
     game := self.game.unwrap!
     game.set_scene_params_for _shader
@@ -60,7 +60,7 @@ def Scene.init(&self, game: &Game) =
 def make_scene() Scene =
     log "opening window"
     w := box window.default{ title = "Fernix Game" }
-    fov := 55
+    fov := 110
 
     projection := math.perspective
         math.radians fov
@@ -71,7 +71,7 @@ def make_scene() Scene =
 
     view := math.identity_mat!
 
-    math.translate &view, math.Vec3{ 0, 0, -1.5 }
+    math.translate &view, math.Vec3{ 0, 0, -1.8}
     //math.scale &view, math.Vec3{ 0.5, 0.5, 0.5 }
 
     w.init!
@@ -81,8 +81,8 @@ def make_scene() Scene =
         projection = projection
         view = view
         dir_light = DirLight{
-            direction = math.Vec3{ 0.7, 0.7, 0 }
-            color = math.Vec3{ 1.0, 1.0, 1.0 }
+            direction = math.Vec3{ 0, 0, -1 }
+            color = math.Vec3{ 3, 3, 3 }
         }
         game = None
     }

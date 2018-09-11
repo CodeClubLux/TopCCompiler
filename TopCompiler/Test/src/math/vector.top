@@ -65,7 +65,7 @@ def Vec4.len(self) float =
 
 
 def Vec3.norm(self) Vec3 =
-    self.scale 1.0 / self.len!
+    self.scale (1.0 / self.len!)
 
 def Vec4.norm(self) Vec4 =
     self.scale 1.0 / self.len!
@@ -74,14 +74,14 @@ def Vec4.norm(self) Vec4 =
 def Vec3.cross(a, b: Vec3) Vec3 =
     Vec3{
         (a.y * b.z) - (a.z * b.y)
-        (a.z * b.x) - (a.x * a.z)
+        (a.z * b.x) - (a.x * b.z)
         (a.x * b.y) - (a.y * b.x)
     }
 
 def Vec4.cross(a, b: Vec4) Vec4 =
     Vec4{
         (a.y * b.z) - (a.z * b.y)
-        (a.z * b.x) - (a.x * a.z)
+        (a.z * b.x) - (a.x * b.z)
         (a.x * b.y) - (a.y * b.x)
         1.0
     }
@@ -104,7 +104,7 @@ def Vec4.reflect(self, other: Vec4) Vec4 =
     }
 
 def Vec4.op_get(&self, index: uint) &float =
-    indexPtr &(self.x), index
+    indexPtr &self.x, index
 
 def vec4_from_array(arr: &[4]float) Vec4 =
     Vec4{

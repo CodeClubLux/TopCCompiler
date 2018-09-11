@@ -43,16 +43,13 @@ def translate(self: &Mat4x4, other: Vec3) =
     self[11] = other.z
 
 def perspective(fov: float, aspect: float, n: float, f: float) Mat4x4 =
-    r := 1.0
-    l := -1.0
-    t := 1.0 / aspect
-    b := -1.0 / aspect
+    a := 1.0 / tan fov / 2.0
 
     [
-        (2*n)/(r-l),    0        , (r+l)/(r-l) ,    0
-        0          , (2*n)/(t-b) , (t+b)/(t-b) ,    0
-        0          ,    0        , -(f+n)/(f-n), (-2*f*n)/(f-n)
-        0          ,    0        , -1          ,    0
+        (a / aspect) ,  0  ,   0                   , 0
+        0          ,    a   ,  0                   , 0
+        0          ,    0   , -((f + n) / (f - n)) , -((2 * f * n) / (f - n))
+        0          ,    0   ,   -1                 , 0
     ]
 
 def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
@@ -61,11 +58,12 @@ def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
 
     t := s.cross f
 
+
     [
-        s.x, t.x, -f.x, -eye.x
-        s.y, t.y, -f.y, -eye.y
-        s.z, t.z, -f.z, -eye.z
-        0  , 0 , 0    ,      1
+        s.x, s.y, s.z, -eye.x
+        t.x, t.y, t.z, -eye.y
+        -f.x,-f.y,-f.z, -eye.z
+        0 ,  0 , 0,        1
     ]
 
 

@@ -20,12 +20,14 @@ def Skybox.render(&self) =
 
     self.env_cubemap.bind_to 0
 
-    skybox_shader.set_mat4x4 "projection", &(context.scene.projection)
-    skybox_shader.set_mat4x4 "view", &(context.scene.view)
+    skybox_shader.set_mat4x4 "projection", &context.scene.projection
+    skybox_shader.set_mat4x4 "view", &context.scene.view
 
     primitives.render_cube!
 
     opengl.depthFunc opengl.less
+
+brdf_LUT_texture2 := imageLoader.load "assets/ibl_brdf_lut.png"
 
 def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.irradiance_cubemap.bind_to 0
@@ -34,8 +36,8 @@ def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.prefilter_cubemap.bind_to 1
     s.set_int "prefilterMap", 1
 
-    self.brdf_LUT.bind_to 2
-    s.set_int "brdfLut", 2
+    brdf_LUT_texture2.bind_to 2
+    s.set_int "brdfLUT", 2
 
 def make_Skybox() Skybox =
     opengl.enable opengl.texture_cube_map_seamless

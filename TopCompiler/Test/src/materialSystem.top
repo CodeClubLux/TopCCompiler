@@ -18,6 +18,8 @@ def Material.bind(&self) =
 
     self.shader.bind!
 
+    context.scene.set_shader_scene_params self.shader
+
     for i := 0..params.length do
         match params[i] with
             Param_Vec3 field, vector ->
@@ -27,10 +29,9 @@ def Material.bind(&self) =
                 self.shader.set_mat4x4 field, &matrix
 
             Param_Image field, texture ->
-                (&texture).bind_to (i + 3)
+                texture.bind_to i+3
                 self.shader.set_int field, i + 3
 
-    context.scene.set_shader_scene_params self.shader
 
 materials := [..]&Material
 

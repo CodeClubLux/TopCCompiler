@@ -47,10 +47,9 @@ _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_Str
 
     for (unsigned int i =0; i < self.length; i++) {
         if (self.data[i] != other.data[i]) {
-            return 1;
+            return 0;
         }
     }
-
     return 1;
 }
 
