@@ -104,15 +104,16 @@ def isUseless(i):
     except AttributeError:
         pass
 
-def checkOther(self, parser, function, block):
+def checkOther(self, parser, function, block, iter=0):
     if type(self) in [Tree.FuncStart, Tree.FuncBraceOpen]: return
-    for i in self.nodes:
+
+    for (c, i) in enumerate(self.nodes):
         if type(self) in [Tree.While, Tree.For]:
-            checkOther(i, parser, function, self)
+            checkOther(i, parser, function, self, c)
         elif type(self) is Tree.FuncBody:
-            checkOther(i, parser, self, block)
+            checkOther(i, parser, self, block, c)
         else:
-            checkOther(i, parser, function, block)
+            checkOther(i, parser, function, block, c)
     if type(self) in [Tree.Continue, Tree.Break] and not type(block) in [Tree.While, Tree.For]:
         statement  = "continue" if type(self) is Tree.Continue else "break"
         self.error(f"unexpected {statement}, outside of a loop")
@@ -120,11 +121,9 @@ def checkOther(self, parser, function, block):
         if not function:
             self.error(f"unexpected return statement, outside of a function")
         try:
-
             actReturnType = self.nodes[0].type
             function.returnType.duckType(parser,actReturnType, self, self ,0)
-
-            Tree.checkCast(actReturnType, function.returnType, self, self)
+            Tree.insertCast(self, actReturnType, function.returnType, iter)
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
     else:

@@ -304,7 +304,8 @@ class Generic(Node):
 
 def forwardRef(funcStart, funcBrace, funcBody, codegen):
     if not funcStart.generated:
-        return
+        inAFunc = codegen.inHeader()
+        codegen.inAFunction -= 1
 
     funcStart.compileToC(codegen)
     funcBrace.compileToC(codegen)
@@ -335,4 +336,7 @@ def forwardRef(funcStart, funcBrace, funcBody, codegen):
     codegen.decrScope()
     codegen.contexts.pop()
 
-    codegen.outFunction()
+    if not funcStart.generated:
+        codegen.inAFunction = inAFunc
+    else:
+        codegen.outFunction()

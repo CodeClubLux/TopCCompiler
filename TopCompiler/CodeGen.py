@@ -17,6 +17,10 @@ runtimeFile = open(os.path.dirname(__file__) + "/runtime/runtime.c", "r")
 cRuntimeCode = runtimeFile.read()
 runtimeFile.close()
 
+hRuntimeFile = open(os.path.dirname(__file__) + "/runtime/runtime.h", "r")
+hRuntimeCode = hRuntimeFile.read()
+hRuntimeFile.close()
+
 from TopCompiler import Types
 
 class CodeGen:
@@ -34,10 +38,13 @@ class CodeGen:
 
         self.target = target
 
+        self.header_parts = []
         self.out_parts = []
         self.main_parts = []
         self.func_parts = []
         self.func_count = 0
+
+        self.header_parts = []
 
         self.debug = debug
 
@@ -67,6 +74,12 @@ class CodeGen:
             self.previousArray = list(self.info.array)
         self.inAFunction += 1
         self.func_parts.append([])
+
+    def inHeader(self):
+        tmp = self.inAFunction
+        self.inAFunction = -1
+
+        return tmp
 
     def outFunction(self):
         self.inAFunction -= 1
@@ -128,15 +141,17 @@ class CodeGen:
     def getParts(self):
         if self.inAFunction > 0:
             return self.func_parts[self.inAFunction - 1]
+        elif self.inAFunction == -1:
+            return self.header_parts
         else:
             return self.main_parts
 
     def addSemicolon(self, ast):
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
             self.append(";\n")
-            #if self.debug:
-            #    filename = ast.fullFilePath().replace("\\", "\\\\")
-            #    self.append(f';\n#line {ast.token.line+2} "{filename}.top"\n')
+            if False and self.debug:
+                filename = ast.fullFilePath().replace("\\", "\\\\")
+                self.append(f';\n#line {ast.token.line+2} "{filename}.top"\n')
 
     def createName(self, name, typ):
         self.names[-1][name] = (typ, name)
@@ -190,17 +205,23 @@ class CodeGen:
 
         mainCode = "".join(self.main_parts)
         outerCode = "".join(self.out_parts)
+        forward_ref = "".join(self.header_parts)
 
         (generatedTypes, mainC) = Types.getGeneratedDataTypes()
         Types.compiledTypes = coll.OrderedDict()
         Types.dataTypes = []
 
-        cCode = f"{includes}\n{generatedTypes}\n{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
+        headerCode = f"{includes}\n{generatedTypes}\n{forward_ref}"
+        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
         f = open("lib/" + self.filename + ".c", mode="w")
         f.write(cCode)
+        f.close()
+
+        f = open("lib/" + self.filename + ".h", mode="w")
+        f.write(headerCode)
         f.close()
 
 class Info:
@@ -246,10 +267,16 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
     topRuntime = ""
     (context, mainC) = context
     if not runtimeBuild:
-        topRuntime = open(os.path.dirname(__file__) + "/TopRuntime/lib/_global.c")
+        topRuntime = open(os.path.dirname(__file__) + "/runtime/runtimeTop.c")
+
         topRuntime = topRuntime.read()
 
-    linkedCode = [context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
+    linkedCode = [hRuntimeCode,  context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
+
+    for c in compiled:
+        f = open("lib/" + c + ".h", mode="r")
+        linkedCode.append(f.read())
+        f.close()
 
     for c in compiled:
         f = open("lib/" + c + ".c", mode="r")
@@ -290,11 +317,11 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
     """
 
     if debug:
-        debug = ["-g", "-gcodeview"]
+        debug = ["-g", "-O0", "-gcodeview"]
     else:
         debug = [] #["-g",  "-gcodeview"]
 
-    clang_commands += ["-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type"]
+    clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type"]
 
     print(" ".join(clang_commands),"\n")
     try:

@@ -1,0 +1,31 @@
+import "ecs"
+import "math"
+
+type DirLight =
+    entity: &ecs.Entity
+    direction: math.Vec3
+    color: math.Vec3
+
+def DirLight.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def DirLight.render(&self) =
+def DirLight.update(&self) =
+
+def make_DirLightSystem() &ecs.Store[DirLight] =
+    dir_light_system := ecs.make_Store::[DirLight]!
+    entity := ecs.make_Entity!
+
+    _ := dir_light_system.add_component DirLight{
+        entity = entity
+        direction = math.Vec3{ 0, 0, -1 }
+        color = math.Vec3{ 3, 3, 3 }
+    }
+
+    dir_light_system
+
+dir_light_system := make_DirLightSystem!
+
+def get_dir_light() &DirLight =
+    dir_light_system.get_active!.unwrap!
+

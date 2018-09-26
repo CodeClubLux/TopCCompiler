@@ -1,10 +1,13 @@
-import "scene"
+import "runner"
 import "imageLoader"
 import "opengl"
 import "primitives"
 import "shader"
 import "math"
 import "buffer"
+import "camera"
+import "runner"
+import "ecs"
 
 skybox_shader := shader.make "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"
 
@@ -20,8 +23,10 @@ def Skybox.render(&self) =
 
     self.env_cubemap.bind_to 0
 
-    skybox_shader.set_mat4x4 "projection", &context.scene.projection
-    skybox_shader.set_mat4x4 "view", &context.scene.view
+    cam := camera.get_camera!
+
+    skybox_shader.set_mat4x4 "projection", &cam.projection_matrix
+    skybox_shader.set_mat4x4 "view", &cam.view_matrix
 
     primitives.render_cube!
 
@@ -36,7 +41,7 @@ def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.prefilter_cubemap.bind_to 1
     s.set_int "prefilterMap", 1
 
-    brdf_LUT_texture2.bind_to 2
+    self.brdf_LUT.bind_to 2
     s.set_int "brdfLUT", 2
 
 def make_Skybox() Skybox =
@@ -183,7 +188,7 @@ def make_Skybox() Skybox =
             opengl.texture_cube_map_positive_x + i
             0
             opengl.rgb16f
-            128, 128, 0,
+            256, 256, 0,
             opengl.rgb, opengl.type_float, None
 
     opengl.texParameteri opengl.texture_cube_map, opengl.texture_wrap_s, opengl.clamp_to_edge
@@ -206,12 +211,11 @@ def make_Skybox() Skybox =
 
     opengl.bindFramebuffer opengl.framebuffer, capture_FBO
 
-    maxMipLevels := 5
+    maxMipLevels := 6
 
     for mip := 0..maxMipLevels do
-        mip_width := (128 * (0.5 ^ mip)) cast uint
-        mip_height := (128 * (0.5 ^ mip)) cast uint
-
+        mip_width := (256 * (0.5 ^ mip)) cast uint
+        mip_height := (256 * (0.5 ^ mip)) cast uint
 
         opengl.bindRenderbuffer opengl.renderbuffer, capture_RBO
         opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, mip_width, mip_height
@@ -269,3 +273,5 @@ def make_Skybox() Skybox =
         prefilter_cubemap = imageLoader.Cubemap{ prefilter_map }
         brdf_LUT = imageLoader.Texture{ brdf_LUT_texture }
     }
+
+#addToContext skybox := make_Skybox!

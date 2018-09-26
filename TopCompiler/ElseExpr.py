@@ -34,7 +34,7 @@ def checkIf(parser, i):
 
     i.type = typ
 
-    for it in i.nodes[3:][::2]:
+    for it in i.nodes[1:][::2]:
         if len(it.nodes) > 0:
             Tree.insertCast(it.nodes[-1], it.type, typ, -1)
 

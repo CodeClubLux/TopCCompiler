@@ -42,6 +42,27 @@ def translate(self: &Mat4x4, other: Vec3) =
     self[7] = other.y
     self[11] = other.z
 
+def rotate(m: &Mat4x4, q: Quat) =
+    a := q.w
+    b := q.x
+    c := q.y
+    d := q.z
+    a2 := a * a
+    b2 := b * b
+    c2 := c * c
+    d2 := d * d
+
+    xscale := m[0]
+    yscale := m[5]
+    zscale := m[10]
+
+    *m = [
+        a2 + b2 - c2 - d2, 2*(b*c - a*d), 2*(b*d + a*c) , m[3]
+        2*(b*c + a*d)    , a2-b2+c2-d2  , 2*(c*d - a*b) , m[7]
+        2*(b*d - a*c)    , 2*(c*d + a*b), a2-b2-c2+d2   , m[11]
+        0                , 0            , 0             , 1
+    ]
+
 def perspective(fov: float, aspect: float, n: float, f: float) Mat4x4 =
     a := 1.0 / tan fov / 2.0
 

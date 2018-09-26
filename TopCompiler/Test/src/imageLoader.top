@@ -15,6 +15,8 @@ type Texture =
 
 cached_textures := assetManager.make_asset_cache::[Texture]!
 
+
+
 def load(filename: string) Texture =
     match cached_textures.in_cache filename with
         Some texture -> return texture

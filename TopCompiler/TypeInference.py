@@ -255,7 +255,7 @@ def infer(parser, tree):
                             self.error("Binding method function not supported")
 
                         if insertTakeRef:
-                            Tree.insertCast(self.nodes[0], self.nodes[0].type, method.args[0], 0)
+                            Tree.insertCast(self.nodes[0], self.nodes[0].type, method.args[0], 0, onlyToP=True)
             elif type(i) is Tree.Operator:
                 if i.kind == "|>" or i.kind == ">>":
                     self = i
@@ -304,7 +304,7 @@ def infer(parser, tree):
 
                 elif i.kind == "..":
                     for c in i.nodes:
-                        if not type(c.type.toRealType()) is Types.I32 and c.unsigned:
+                        if not (type(c.type.toRealType()) is Types.I32 and c.type.toRealType().unsigned):
                             c.error("Expecting uint")
 
                     i.type = Parser.Range
@@ -693,13 +693,15 @@ def infer(parser, tree):
                     except EOFError as e:
                         Error.beforeError(e, str(typ) + " only operates : ")
 
-                    if insertTakeRef:
-                        Tree.insertCast(i.nodes[0], i.nodes[0].type, func.args[0], 0)
-
+                    firstArg = None
                     if not func:
                         i.nodes[0].error("Type "+str(i.nodes[0].type)+" is not indexable, missing method op_get")
                     else:
+                        firstArg = func.args[0]
                         func = Types.FuncPointer(func.args[1:], func.returnType, generic=func.generic, do=func.do)
+
+                    if insertTakeRef:
+                        Tree.insertCast(i.nodes[0], i.nodes[0].type, firstArg, 0)
 
                     arrRead = i
                     if len(arrRead.nodes) != 2:

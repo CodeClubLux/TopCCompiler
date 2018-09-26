@@ -64,9 +64,9 @@ class IfCondition(Node):
     def compileToC(self, codegen):
         if self.owner.ternary:
             if self.owner.nodes[0] != self:
-                codegen.append(":(")
+                codegen.append(" : (")
             self.nodes[0].compileToC(codegen)
-            codegen.append("?")
+            codegen.append(" ? ")
         else:
             s = "else " if self.owner.nodes[0] != self else ""
 

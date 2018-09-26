@@ -1,0 +1,18 @@
+entity_system := make_Store::[Entity]!
+
+def make_Entity() &Entity =
+    id := entity_system.components.length
+
+    entity_system.add_component Entity{
+        id = id
+        position = Vec3{ 0, 0, 0}
+        scale = Vec3{ 0, 0, 0}
+        rotation = identity_quat!
+        enabled = true
+        transform_matrix = identity_mat!
+    }
+
+def free_entity(id: ID) =
+    for i := 0..component_types.length do
+        system := component_types[i]
+        system.free_component_by_id id

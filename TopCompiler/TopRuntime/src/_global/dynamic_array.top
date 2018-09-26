@@ -39,6 +39,11 @@ def Array[T].shorten(&self, num: uint) =
     if self.length < 0 then
         panic "shorten out of bounds"
 
+def Array[T].pop(&self) T =
+    tmp := self[self.length - 1]
+    self.length -= 1
+    tmp
+
 def Array[T].reserve(&self, newSize: uint) =
     allocator := self.allocator.default context.allocator
 

@@ -1,0 +1,30 @@
+from "math" import all
+
+type ID is uint
+
+type Entity =
+    id: ID
+    enabled: bool
+
+    position: math.Vec3
+    rotation: math.Quat
+    scale: math.Vec3
+
+    transform_matrix: Mat4x4
+
+    //children: [..]&Entity
+    //parent: Maybe[&Entity]
+
+def Entity.get_entity(&self) &Entity =
+    self
+
+def Entity.update(&self) =
+
+def Entity.render(&self) =
+    matrix := identity_mat!
+
+    translate &matrix, self.position
+    rotate &matrix, self.rotation
+    scale &matrix, self.scale
+
+    self.transform_matrix = matrix

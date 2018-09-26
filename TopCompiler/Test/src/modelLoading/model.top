@@ -1,4 +1,5 @@
 import "opengl"
+import "ecs"
 
 type Model =
     meshes: [..]Mesh
@@ -84,10 +85,29 @@ def load_model(path: string) Model =
 
     Model{ meshes }
 
-def Model.render(self) =
+def Model.render(&self) =
     meshes := self.meshes
 
     for i := 0..meshes.length do
         mesh := meshes[i]
         mesh.render!
 
+
+//Model Renderer
+type ModelRenderer =
+    entity: &ecs.Entity
+    model: &Model
+
+def ModelRenderer.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def ModelRenderer.render(&self) =
+    self.model.render!
+
+def ModelRenderer.update(&self) =
+
+//setup model renderer system
+model_renderer_system := ecs.make_Store::[ModelRenderer]!
+
+def make_ModelRenderer(model_renderer: ModelRenderer) &ModelRenderer =
+    model_renderer_system.add_component model_renderer

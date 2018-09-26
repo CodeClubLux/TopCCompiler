@@ -17,11 +17,18 @@ def aliasParser(parser, name, decl, generic):
             typ = Types.parseType(parser)
         parser.nextToken()
 
-    alias = Types.Alias(parser.package, name, typ, generic)
-
     if decl:
-        del parser.structs[parser.package][name]# = Struct.Struct(name, args, fields, coll.OrderedDict())
+        alias = parser.interfaces[parser.package][name]
 
+        tmp = Types.Alias(parser.package, name, typ, generic)
+        alias.name = tmp.name
+        alias.normalName = tmp.normalName
+        alias.typ = tmp.typ
+        alias.generic = tmp.generic
+        alias.remainingGen = tmp.remainingGen
+        alias.types = tmp.types
+        alias.methods = tmp.methods
+    if decl:
         parser.interfaces[parser.package][name] = alias
 
     Scope.decrScope(parser)

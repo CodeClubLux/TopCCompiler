@@ -19,6 +19,7 @@ from TopCompiler import saveParser
 import datetime
 from PostProcessing import SimplifyAst
 import collections as coll
+import pprint
 # is class
 
 def handleOptions(jsonLoad, names):
@@ -475,6 +476,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                         "typedef unsigned int(*prnonep___uint)(void*,struct _global_Context*)"
                     ])
 
+                if not compileRuntime:
+                    addTypes(removedTypes)
+                    contextCCode = CodeGen.buildContext(parser.contextType)
+
                 for i in compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])
 
@@ -483,10 +488,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                     if parser.compiled[i][0]:
                         CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt)
-
-                if not compileRuntime:
-                    addTypes(removedTypes)
-                    contextCCode = CodeGen.buildContext(parser.contextType)
 
                 order_of_modules.append("main")
 
@@ -510,10 +511,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                     saveParser.save(parser, compileRuntime)
 
-                    pass
-
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 
+                print(compiled)
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))

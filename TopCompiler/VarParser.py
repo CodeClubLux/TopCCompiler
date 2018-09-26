@@ -94,6 +94,9 @@ def createParser(parser, name= "", typ= None, check= True, imutable= False, atta
         if not type(node.owner) in [Tree.FuncBraceOpen, Tree.Type, Tree.PlaceHolder]:
             parser.nextToken()
             Error.parseError(parser, "Uninitialized variable")
+    if parser.lookInfront().token == "=":
+        parser.nextToken()
+        assignParser(parser)
 
 def assignParser(parser, name= "", init= False, package = ""):
     if not init:

@@ -8,12 +8,6 @@
 #define __Context struct _global_Context* context
 #define alloc _global_Allocator_alloc
 
-
-struct _global_String {
-    unsigned int length;
-    char* data;
-};
-
 struct _global_String _global_StringInit(unsigned int length, char* data) {
     struct _global_String s;
     s.data = data;

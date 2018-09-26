@@ -102,16 +102,31 @@ def _resolve(self, tokens, filename, passN= 0 ):
 
         elif passN == 0:
             if b == "type":
-                name = self.nextToken()
-                if name.token == "ext":
-                    name = self.nextToken()
+                name = self.nextToken().token
+                if name == "ext":
+                    name = self.nextToken().token
 
-                Scope.addVar(Tree.Node(self), self, name.token, Scope.Type(True, Types.StructInit(self.thisToken().token)))
+                ofType = None
 
-                #"""
-                self.structs[self.package][self.thisToken().token] = Struct.Struct(self.thisToken().token, [],[], {}, self, self.package)
-                self.structs[self.package][self.thisToken().token].methods = {}
-                #"""
+                for i in range(0,100):
+                    if self.nextToken().token in ["either", "=", "is", "with"]:
+                        ofType = self.thisToken().token
+                        break
+
+                Scope.addVar(Tree.Node(self), self, name,
+                             Scope.Type(True, Types.StructInit(name)))
+
+                if ofType is None or ofType == "=":
+                    #"""
+                    self.structs[self.package][name] = Struct.Struct(name, [],[], {}, self, self.package)
+                    self.structs[self.package][name].methods = {}
+                    #"""
+                elif ofType == "either":
+                    self.interfaces[self.package][name] = Types.Enum(self.package, name, [], {})
+                elif ofType == "with":
+                    self.interfaces[self.package][name] = Types.Interface(False, {})
+                elif ofType == "is":
+                    self.interfaces[self.package][name] = Types.Alias(self.package, name, Types.Null(), {})
 
         if b == "\n":
             Parser.addBookmark(self)

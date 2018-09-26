@@ -13,7 +13,6 @@ def enumParser(parser, name, decl, generic):
     enum = Types.Enum(parser.package, name, const, generic)
 
     if decl:
-        del parser.structs[parser.package][name]# = Struct.Struct(name, args, fields, coll.OrderedDict())
         parser.interfaces[parser.package][name] = enum
 
     """if parser.lookInfront().token == "\n":

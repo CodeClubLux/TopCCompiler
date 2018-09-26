@@ -1,7 +1,7 @@
 import "shader"
 import "math"
-import "scene"
 import "imageLoader"
+import "runner"
 
 type Param either
     Param_Vec3(string, math.Vec3)
@@ -18,7 +18,7 @@ def Material.bind(&self) =
 
     self.shader.bind!
 
-    context.scene.set_shader_scene_params self.shader
+    runner.get_game!.set_shader_scene_params self.shader
 
     for i := 0..params.length do
         match params[i] with

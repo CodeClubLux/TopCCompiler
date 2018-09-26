@@ -178,6 +178,9 @@ class FuncSpecification:
 
             return newAST
 
+        #if self.identifier == "ecs_Store_index_is_active_ecs_Entity":
+            #print("gadeem")
+
         funcStart = copy.copy(self.funcStart)
         funcStart.ftype = Types.replaceT(funcStart.ftype, self.replaced)
         funcBrace = loop(self.funcBrace)
@@ -255,7 +258,7 @@ class Specifications:
 
         if not fullName in self.genericFuncs:
             if forceFound: pass
-            raise EOFError("Could not find generic function " + fullName)
+            #raise EOFError("Could not find generic function " + fullName)
             self.delayed[fullName] = (package, funcName, replaced)
             return id
 
@@ -280,7 +283,7 @@ class Specifications:
         while (len(self.funcsToBeProcessed) > 0 or len(self.delayed) > 0):
             groups.append([])
 
-            for key in self.delayed:
+            for key in list(self.delayed.keys()):
                 (package, funcName, replaced) = self.delayed[key]
                 self.addSpecification(package, funcName, replaced, forceFound=True)
                 del self.delayed[key]
@@ -360,6 +363,24 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             ast = simplifyArrRead(ast, iter, parser)
             ast = ast.nodes[0]
             iter = 0
+
+        elif type(ast) is Tree.Cast.Cast:
+            if ast.to.isType(Types.Interface):
+                toT = ast.to.toRealType()
+                fromT = ast.f.toRealType()
+
+                if type(fromT) is Types.Pointer: #has to be but type checking this hasnt happened yet
+                    fromT = fromT.pType
+
+                    if fromT.remainingGen:
+                        for name in toT.methods:
+                            package = toT.package
+
+                            newName = specifications.addSpecification(package, fromT.normalName + "_" + name, fromT.remainingGen)
+                            ast.realName[name] = newName
+                        #readVar.name = splitPackageAndName(newName)[1]
+
+
         elif type(ast) is Tree.Array:
             ast = Tree.simplifyArray(parser, ast, iter)
         elif type(ast) is Tree.Field and ast.indexPackage:

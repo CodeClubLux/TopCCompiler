@@ -34,8 +34,6 @@ def traitParser(parser, name, decl, generic):
     #fields = parser.currentNode.nodes
 
     if decl:
-        del parser.structs[parser.package][name]# = Struct.Struct(name, args, fields, coll.OrderedDict())
-
         i = Types.Interface(False, names, generic, parser.package+"."+name if parser.package != "_global" else name, methods= meth)
         parser.interfaces[parser.package][name] = i
 

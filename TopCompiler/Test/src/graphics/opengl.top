@@ -1,3 +1,5 @@
+import "window"
+
 ext _ = '#include <glad/glad.h>'
 
 ext viewport: |int,int,int,int| -> none = "glViewport"
@@ -31,6 +33,7 @@ ext clamp_to_edge: uint = "GL_CLAMP_TO_EDGE"
 ext framebufferRenderbuffer: |uint, uint, uint, uint| -> none = "glFramebufferRenderbuffer"
 ext depth_attachment: uint = "GL_DEPTH_ATTACHMENT"
 
+ext multisample: uint = "GL_MULTISAMPLE"
 
 ext texture_wrap_r: uint = "GL_TEXTURE_WRAP_R"
 ext linear_mipmap_linear: uint = "GL_LINEAR_MIPMAP_LINEAR"

@@ -1,10 +1,10 @@
 type Quat =
-    w: float
     x: float
     y: float
     z: float
+    w: float
 
-def quat_identity() Quat =
+def identity_quat() Quat =
     Quat{ 0, 0, 0, 1 }
 
 def Quat.op_add(&self, other: &Quat) Quat =
@@ -14,6 +14,54 @@ def Quat.op_add(&self, other: &Quat) Quat =
         self.z + other.z
         self.w + other.w
     }
+
+def Quat.op_sub(&self, other: &Quat) Quat =
+    Quat{
+        self.x - other.x
+        self.y - other.y
+        self.z - other.z
+        self.w - other.w
+    }
+
+def Quat.scale(&self, s: float) =
+    Quat{
+        self.x * s
+        self.y * s
+        self.z * s
+        self.w * s
+    }
+
+def Quat.norm(s) Quat =
+    n := sqrt s.x*s.x + s.y*s.y + s.z*s.z + s.w*s.w
+    Quat{
+        s.x/n
+        s.y/n
+        s.z/n
+        s.w/n
+    }
+
+def Quat.inner_product(&a, b: &Quat) float =
+    b.x * a.x + b.y * a.y + b.z * a.y + b.w * a.w
+
+def make_quat(angle: float, axis: Vec3) Quat =
+    v := axis.scale sin angle / 2
+
+    Quat{
+        x = v.x
+        y = v.y
+        z = v.z
+        w = cos angle / 2
+    }
+
+def Quat.op_mul(q1, q2: Quat) Quat =
+    Quat{
+        x =  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x
+        y = -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y
+        z =  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z
+        w = -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w
+    }
+
+
 
 //def Quat.op_sub(&self, other: &Quat) Quat =
 

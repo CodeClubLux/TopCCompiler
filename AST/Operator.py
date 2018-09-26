@@ -39,7 +39,7 @@ class Operator(Node):
             codegen.append(")")
             return
         elif self.kind == "as":
-            return Cast.castFrom(self.nodes[0].type, self.type, self.nodes[0], codegen)
+            return Cast.castFrom(self.nodes[0].type, self.type, self.nodes[0], {}, codegen)
         elif self.kind == ">>":
             a = self.nodes[0].type
             b = self.nodes[1].type

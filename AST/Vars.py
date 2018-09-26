@@ -68,6 +68,10 @@ class CreateAssign(Node):
         return "CreateAssign "
 
     def compileToC(self, codegen):
+        if self.nodes[0].name is None:
+            self.nodes[1].nodes[0].compileToC(codegen)
+            return
+
         create = self.nodes[0]
 
         self.nodes[0].extern = self.extern

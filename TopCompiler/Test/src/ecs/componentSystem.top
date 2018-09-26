@@ -1,0 +1,114 @@
+type Component with
+    def get_entity() &Entity
+    def render()
+    def update()
+
+type System with
+    def render()
+    def update()
+    def free_component_by_id(ID)
+
+component_types := [..]System
+
+type Store[T: Component] =
+    id_to_key: [..]int
+    components_alive: [..]bool
+    components: [..]T
+
+def make_Store[T: Component]() &Store[T] =
+    id_to_key := [..]int
+    components_alive := [..]bool
+    components := [..]T
+
+    self := box Store{ id_to_key, components_alive, components }
+
+    component_types.append self
+
+    self
+
+def Store[T].component_id_to_index(&self, id: ID) Maybe[uint] =
+    if id >= self.id_to_key.length then None
+    else
+        key := self.id_to_key[id]
+
+        if key < 0 then None
+        else Some key cast uint
+
+def Store[T].component_by_id(&self, id: ID) Maybe[&T] =
+    match self.component_id_to_index id with
+        Some key -> Some &self.components[key]
+        None -> None
+
+def Store[T].free_component_by_id(&self, id: ID) =
+    match self.component_id_to_index id with
+        Some key ->
+            self.id_to_key[id] = -1
+            self.components_alive[key] = false
+
+        None ->
+
+//function sets the id_to_key array which allows components to be indexed by global id
+def Store[T].register_component(&self, id: ID, index: uint) &T =
+    if id >= self.id_to_key.length then
+        self.id_to_key.reserve id + 1
+        for i := self.id_to_key.length..id do
+            self.id_to_key.append -1
+        self.id_to_key.append index
+    else
+        self.id_to_key[id] = index
+
+    &self.components[index]
+
+def Store[T].add_component(&self, comp: T) &T =
+    id := (comp.get_entity!).id
+
+    //try finding a dead component
+    for i := 0..self.components_alive.length do
+        if not self.components_alive[i] then
+            self.components[i] = comp
+            self.components_alive[i] = true
+            return self.register_component id, i
+
+    //no components to replace
+    self.components.append comp
+    self.components_alive.append true
+    self.register_component id, self.components.length - 1
+
+def Store[T].get_active(&self) Maybe[&T] =
+    for i := 0..self.components.length do
+        if self.components_alive[i] then
+            comp := &self.components[i]
+            entity := comp.get_entity!
+
+            if entity.enabled then
+                return Some comp
+
+    None
+
+def Store[T].index_is_active(&self, i: uint) bool =
+    comp := &self.components[i]
+    alive := self.components_alive[i]
+
+    alive and comp.get_entity!.enabled
+
+def Store[T].render(&self) =
+    for i := 0..self.components.length do
+        if self.index_is_active i then
+            self.components[i].render!
+
+def Store[T].update(&self) =
+    for i := 0..self.components.length do
+        if self.index_is_active i then
+            self.components[i].update!
+
+//render and update all component types
+type Tag either
+    All
+
+def render(tag: Tag) =
+    for i := 0..component_types.length do
+        component_types[i].render!
+
+def update(tag: Tag) =
+    for i := 0..component_types.length do
+        component_types[i].update!
