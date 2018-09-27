@@ -5,7 +5,7 @@ import "gi"
 import "shader"
 import "opengl"
 import "imageLoader"
-import "modelLoading"
+import "model"
 import "runner"
 from "materialSystem" import all
 import "ibl"
@@ -25,13 +25,17 @@ wet_street := box Material{
 }
 
 materials.append wet_street
-model := modelLoading.load_model "assets/cube.fbx"
+cube := model.load_model "assets/cube.fbx"
 
-mesh_renderer := modelLoading.make_ModelRenderer modelLoading.ModelRenderer{
+mesh_renderer := model.make_ModelRenderer model.ModelRenderer{
     entity = ecs.make_Entity!
-    model = &model
+    model = &cube
 }
 
 log "running"
 
-runner.get_game!.init!
+skybox := ibl.make_Skybox "assets/Tropical_Beach_3k.hdr"
+
+runner
+    .get_game!
+    .init!

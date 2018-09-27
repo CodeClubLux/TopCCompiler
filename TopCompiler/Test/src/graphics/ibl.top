@@ -12,10 +12,17 @@ import "ecs"
 skybox_shader := shader.make "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"
 
 type Skybox =
+    entity: &ecs.Entity
+
     env_cubemap: imageLoader.Cubemap
     irradiance_cubemap: imageLoader.Cubemap
     prefilter_cubemap: imageLoader.Cubemap
     brdf_LUT: imageLoader.Texture
+
+def Skybox.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def Skybox.update(&self) =
 
 def Skybox.render(&self) =
     opengl.depthFunc opengl.lequal
@@ -44,7 +51,20 @@ def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.brdf_LUT.bind_to 2
     s.set_int "brdfLUT", 2
 
-def make_Skybox() Skybox =
+
+
+//Skybox system
+def make_Skybox_System() &ecs.Store[Skybox] =
+    ecs.make_Store::[Skybox]!
+
+skybox_system := make_Skybox_System!
+
+def get_skybox() &Skybox =
+    skybox_system
+        .get_active!
+        .unwrap!
+
+def make_Skybox(name: string) &Skybox =
     opengl.enable opengl.texture_cube_map_seamless
 
     equirectangular_to_cubemap_shader := shader.make "assets/shaders/eToCubemap.vert", "assets/shaders/eToCubemap.frag"
@@ -60,7 +80,7 @@ def make_Skybox() Skybox =
     opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, 2048, 2048
     opengl.framebufferRenderbuffer opengl.framebuffer, opengl.depth_attachment, opengl.renderbuffer, capture_RBO
 
-    hdr_texture := imageLoader.load "assets/Tropical_Beach_3k.hdr"
+    hdr_texture := imageLoader.load name
 
     env_cubemap: uint = _
     opengl.genTextures 1, &env_cubemap
@@ -265,13 +285,11 @@ def make_Skybox() Skybox =
     opengl.bindTexture opengl.texture_2D, 0
     opengl.bindTexture opengl.texture_cube_map, 0
 
-    log "================"
+    skybox_system.add_component Skybox{
+        entity = ecs.make_Entity!
 
-    Skybox{
         env_cubemap = imageLoader.Cubemap{ env_cubemap }
         irradiance_cubemap = imageLoader.Cubemap{ irradiance_map }
         prefilter_cubemap = imageLoader.Cubemap{ prefilter_map }
         brdf_LUT = imageLoader.Texture{ brdf_LUT_texture }
     }
-
-#addToContext skybox := make_Skybox!

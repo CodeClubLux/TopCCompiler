@@ -6,6 +6,8 @@ import AST as Tree
 def save(parser, runtimeBuild):
     #return
 
+    print("saving")
+
     f = open("lib/parser.p", "wb")
     parser.rootAst = 0
     parser.currentNode = 0

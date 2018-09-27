@@ -1,4 +1,4 @@
-import "modelLoading"
+import "model"
 import "opengl"
 import "buffer"
 from "materialSystem" import all
@@ -10,9 +10,9 @@ get_materials!.append box Material{
     params = []
 }
 
-cube := modelLoading.load_model "assets/cube.fbx"
-sphere := modelLoading.load_model "assets/sphere.fbx"
-plane := modelLoading.load_model "assets/plane.fbx"
+cube := model.load_model "assets/cube.fbx"
+sphere := model.load_model "assets/sphere.fbx"
+plane := model.load_model "assets/plane.fbx"
 
 get_materials!.shorten 1
 

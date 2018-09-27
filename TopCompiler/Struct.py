@@ -253,11 +253,15 @@ def index(parser, unary=False):
     elif unary:
         Error.parseError(parser, "unexpected .")
 
-    popAt(parser)
+    c = parser.thisToken()
+    if c.token != ".":
+        print("whattttt")
 
     field = parser.nextToken()
 
     if not field.type in ["identifier", "i32"]:
+        print(c)
+        print(field)
         Error.parseError(parser, "field name must be an identifier")
 
     acess = Tree.Field(0, Types.Null(), parser)

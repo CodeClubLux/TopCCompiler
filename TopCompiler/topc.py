@@ -509,7 +509,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     for c in deleteQue:
                         del parser.generatedGenericTypes[c]
 
-                    saveParser.save(parser, compileRuntime)
+                saveParser.save(parser, compileRuntime)
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 

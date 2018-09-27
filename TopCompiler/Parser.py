@@ -251,12 +251,14 @@ def callToken(self, lam= False):
         returnBookmark(self)
     else:
         l = self.lookBehind()
+        moveForward = 0
         isIndentationCall = False
         if self.iter + 2 < len(self.tokens) and b.token == "\n" and (l.token in [")"] or l.type == "identifier") :
             if not (self.tokens[self.iter + 2].token == "\n"):
                 if int(self.lookInfront().token) > self.indentLevel:
                     b = self.tokens[self.iter + 2]
-                    #self.iter +=
+                    moveForward = 2
+                    #self.iter += 1
                     isIndentationCall = True
 
         if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
@@ -266,6 +268,8 @@ def callToken(self, lam= False):
             FuncParser.callFunc(self, False)
             returnBookmark(self)
             return
+        else:
+            self.iter += moveForward
 
         selectExpr(self, b)
 
