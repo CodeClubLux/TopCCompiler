@@ -158,6 +158,8 @@ class CodeGen:
         return name
 
     def append(self, value):
+        if value is None:
+            print("")
         self.getParts().append(value)
 
     def toCHelp(self, tree=None, isGlobal=True):

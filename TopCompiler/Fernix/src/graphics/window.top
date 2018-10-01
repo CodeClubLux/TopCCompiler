@@ -4,6 +4,12 @@ from "glfw_wrapper" import all
 def framebuffer_size_callback(window_ptr: &GLFWwindow, width: int, height: int) =
     gi.set_viewport width, height
 
+type Key is int
+
+type KeyAction either
+    Pressed
+    Released
+
 type Window =
     title: string
     vSync: bool

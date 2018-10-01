@@ -30,9 +30,42 @@ def infer(parser, tree):
             if type(n) is type(tree):
                 o_iter += 1
 
+            c = i.owner
+
             if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
                 count += 1
                 continue
+
+            if type(i.owner) is Tree.For and (count == 1 if len(i.owner.nodes) > 1 else count == 0):
+                _for = i.owner
+
+                condition = _for.nodes[0]
+                it_should_be = None
+                
+                if type(condition) is Tree.CreateAssign:
+                    _for.implicit = False
+                    _for.implicit_index = False
+                    if condition.nodes[0].varType.isType(Types.Array):
+                        it_should_be = Types.I32(unsigned=True)
+                        _for.implicit_index = True
+
+                    _for.condition_type = condition.nodes[0].varType
+                else:
+                    _for.implicit = True
+                    _for.implicit_index = False
+                    if condition.type.isType(Types.Array):
+                        it_should_be = condition.type.elemT
+                    elif condition.type.name == "Range":
+                        it_should_be = Types.I32(unsigned=True)
+                    else:
+                        i.error("for loop only operators either on Range or array")
+
+                    _for.condition_type = condition.type
+                if it_should_be:
+                    try:
+                        Scope.addVar(_for, parser, "i", Scope.Type(True, it_should_be, _for.global_target))
+                    except EOFError as e:
+                        pass
 
             if type(i) is Tree.FuncStart:
                 if not type(n) is Tree.Root:
@@ -152,7 +185,6 @@ def infer(parser, tree):
                     i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
             elif type(i) is Tree.FuncBody:
                 Scope.decrScope(parser)
-
             elif type(i) is Tree.Create:
                 if not i.varType is None:
                     if type(i.owner) is Tree.For and count == 0:
@@ -180,16 +212,16 @@ def infer(parser, tree):
                     self.package = Scope.packageOfVar(parser, parser.package, self.name)
 
             elif type(i) is Tree.Field:
-                if i.unary:
-                    field = i.field
+                #if i.unary:
+                #    field = i.field
 
-                    T = Types.T("T", Types.All, "get"+i.field[0].upper()+i.field[1:])
+                #    T = Types.T("T", Types.All, "get"+i.field[0].upper()+i.field[1:])
 
-                    I = Types.Interface(False, {field: T})
+                #    I = Types.Interface(False, {field: T})
 
-                    i.type = Types.FuncPointer([I], T, generic=ODict([("T", T)]))
-                    count += 1
-                    continue
+                 #   i.type = Types.FuncPointer([I], T, generic=ODict([("T", T)]))
+                  #  count += 1
+                   # continue
 
                 """ 
                 def bind():

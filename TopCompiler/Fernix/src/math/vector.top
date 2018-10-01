@@ -13,6 +13,12 @@ type Vec4 =
     z: float
     w: float
 
+def Vec2.op_add(self, other: Vec2) Vec2 =
+    Vec2{
+        self.x + other.x
+        self.y + other.y
+    }
+
 def Vec3.op_add(self, other: Vec3) Vec3 =
     Vec3{
         self.x + other.x

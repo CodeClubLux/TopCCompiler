@@ -380,7 +380,9 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                             ast.realName[name] = newName
                         #readVar.name = splitPackageAndName(newName)[1]
 
-
+        elif type(ast) is Tree.For:
+            condition = ast.condition_type
+            ast.op_get = specifications.addSpecification(condition.package, condition.normalName + "_op_get", condition.remainingGen)
         elif type(ast) is Tree.Array:
             ast = Tree.simplifyArray(parser, ast, iter)
         elif type(ast) is Tree.Field and ast.indexPackage:

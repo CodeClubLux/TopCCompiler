@@ -23,6 +23,9 @@ def make_Game() &Game =
 def get_game() &Game =
     context.game
 
+def get_window() &window.Window =
+    &context.game.window
+
 //imported later because game window has to be intialized before these can be called
 import "ibl"
 import "camera"

@@ -1,0 +1,118 @@
+import "window"
+import "runner"
+import "ecs"
+from "math" import all
+
+//Make generic version of this map data type
+type KeyActionMap =
+    keys: [..]window.Key
+    actions: [..]window.KeyAction
+
+def KeyActionMap.contains(&self, key: window.Key) bool =
+    for i := 0..self.keys.length do
+        if self.keys[i] == key then
+            return true
+
+    false
+
+def KeyActionMap.insert(&self, key: window.Key, value: window.KeyAction) =
+    for i := 0..self.keys.length do
+        if self.keys[i] == key then
+            self.actions[i] = value
+            return
+
+    self.keys.append key
+    self.actions.append value
+
+def KeyActionMap.op_get(&self, key: window.Key) &window.KeyAction =
+    for i := 0..self.keys.length do
+        if self.keys[i] == key then
+            return &self.actions[i]
+
+    panic "Key {key} could not be found!"
+
+//Handles all state related to input
+type Input =
+    first_mouse: bool
+    capture_mouse: bool
+
+    mouse_position: Vec2
+    mouse_offset: Vec2
+
+    scroll_offset: float
+
+    keys: KeyActionMap
+    last_frame_keys: KeyActionMap //@cleanup might want to remove this dynamic array
+
+def Input.cursor_pos_callback(&self, mouse_position: Vec2) =
+    if self.first_mouse then
+        self.mouse_position = mouse_position
+        self.first_mouse = false
+
+    if self.capture_mouse then
+        xpos := mouse_position.x
+        ypos := mouse_position.y
+
+        xoffset := xpos - self.mouse_position.x
+        yoffset := self.mouse_position.y - ypos //reversed since y-coordinates go from bottom to top
+
+        self.mouse_offset += Vec2{ xoffset, yoffset }
+
+    self.mouse_position = mouse_position
+
+def Input.to_device_cord(&self, position: Vec2) Vec2 = //Takes mouse postion and transforms into device coordinates
+    w := runner.get_window!
+
+    Vec2{
+        position.x / w.width * 2 - 1
+        -(position.y / w.height * 2 - 1)
+    }
+
+def Input.key_callback(&self, key: window.Key, action: window.KeyAction) = //really should a map type
+    self.keys.insert key, action
+
+def Input.key_down(&self) bool =
+    runner
+        .get_window!
+        .key_down!
+
+def Input.key_pressed(&self, key: window.Key) bool =
+    if not self.last_frame_keys.contains key then
+        return self.key_down!
+
+    last_frame_keys[key] == 0 and self.key_down!
+
+
+
+def Input.poll(&s) =
+    runner
+        .get_window!
+        .poll_events!
+
+def make_Input() =
+    w := runner.get_window!
+
+    w.cursor_pos_callback window_cursor_pos_callback
+    w.key_callback window_key_callback
+
+    Input{
+        first_mouse = true
+        capture_mouse = true
+        mouse_position = Vec2{0,0}
+    }
+
+// external api
+#addToContext input := box make_Input!
+
+def get_input() &Input =
+    context.input
+
+def window_cursor_pos_callback(xpos: float, ypos: float) =
+    get_input!
+        .cursor_pos_callback Vec2{ xpos, ypos }
+
+def window_key_callback() =
+    
+
+
+

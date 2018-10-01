@@ -26,8 +26,9 @@ def forExpr(parser):
     if parser.thisToken().token != "do":
         Error.parseError(parser, "Expecting do")
 
-    if len(toplevel.nodes) != 1 or not type(toplevel.nodes[0]) is Tree.CreateAssign:
-        Error.parseError(parser, "Expecting := and then do")
+    if len(toplevel.nodes) != 1: #or not type(toplevel.nodes[0]) is Tree.CreateAssign:
+        Error.parseError(parser, "Expecting single node")
+
 
     count = 0
     while not (Parser.isEnd(parser) and count > 0): #avoid breaking on do keyword
