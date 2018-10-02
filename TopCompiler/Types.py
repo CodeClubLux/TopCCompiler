@@ -22,6 +22,8 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
         token = parser.thisToken().token
         if token == "i32":
             return I32(size=32)
+        elif token == "char":
+            return Char()
         elif token == "i64":
             return I32(size=64)
         elif token == "i16":
@@ -1138,6 +1140,31 @@ intTypeToString = {
     (32, True): "u32",
     (64, True): "u64",
 }
+
+class Char(Type):
+    def __init__(self, unsigned=False, size=None):
+        Type.__init__(self)
+
+        self.name = "char"
+        self.normalName = "char"
+        self.__methods__ = None
+        self.types = {}
+
+    @property
+    def methods(self):
+        if self.__methods__ is None:
+            self.__methods__ = {
+                "toU8": FuncPointer([self], I32(unsigned=True, size=8)),
+                "toString": FuncPointer([self], String(0)),
+                "op_eq": FuncPointer([self,self], Bool()),
+                "op_gt": FuncPointer([self,self], Bool()),
+                "op_lt": FuncPointer([self,self], Bool()),
+            }
+
+        return self.__methods__
+
+    def toCType(self):
+        return "char"
 
 class I32(Type):
     def __init__(self, unsigned=False, size=None):

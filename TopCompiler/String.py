@@ -8,3 +8,6 @@ import AST as Tree
 
 Parser.exprType["str"] = lambda parser, string: \
     parser.currentNode.addNode(Tree.String(string, parser))
+
+Parser.exprType["char"] = lambda parser, string: \
+    parser.currentNode.addNode(Tree.Char(string, parser))

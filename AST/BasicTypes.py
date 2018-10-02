@@ -73,6 +73,15 @@ class String(Node):
 
     def validate(self, parser): pass
 
+class Char(Node):
+    def __init__(self, string, parser):
+        Node.__init__(self, parser)
+        self.string = string
+        self.type = Types.Char()
+
+    def compileToC(self, codegen):
+        codegen.append(f"'{self.string}'")
+
 class Decoder(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)

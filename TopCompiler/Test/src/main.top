@@ -1,2 +1,3 @@
-for [0,1,2,3] do
-    log i
+character := `c`
+
+log character

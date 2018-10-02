@@ -60,7 +60,7 @@ keywords = fastacess([
         "i32", "i8", "i16", "i32", "i64",
         "u32", "u8", "u16", "i32", "i64",
         "for",
-        "offsetof", "sizeof"
+        "offsetof", "sizeof", "char"
     ])
 
 slSymbols = fastacess([
@@ -280,6 +280,14 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
             state.iter += 1
             state.column += 1
             state.inCommentLine = True
+        elif t == "`" and notBack(state.iter) and not (state.inComment or state.inChar or state.inCommentLine):
+            state.pushTok()
+            state.iter += 2
+            state.column += 2
+            state.append(Token(state.s[state.iter-1], "char", state.line, state.column))
+            if not (state.iter < lenOfS and state.s[state.iter] == "`"):
+                Error.errorAst("Expecting `" + state.tok, state.package, state.filename,
+                               Token(state.tok, "", state.line, state.column))
         elif t == "\n":
             if not (state.inString or state.inComment or state.inChar or state.inCommentLine):
                 state.pushTok()

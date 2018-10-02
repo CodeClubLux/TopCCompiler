@@ -42,7 +42,9 @@ type Input =
     scroll_offset: float
 
     keys: KeyActionMap
-    last_frame_keys: KeyActionMap //@cleanup might want to remove this dynamic array
+    last_frame_keys: KeyActionMap //@cleanup might want to remove this dynamic array, replace with static
+
+    window: &Window
 
 def Input.cursor_pos_callback(&self, mouse_position: Vec2) =
     if self.first_mouse then
@@ -68,7 +70,7 @@ def Input.to_device_cord(&self, position: Vec2) Vec2 = //Takes mouse postion and
         -(position.y / w.height * 2 - 1)
     }
 
-def Input.key_callback(&self, key: window.Key, action: window.KeyAction) = //really should a map type
+def Input.key_callback(&self, key: window.Key, action: window.KeyAction) =
     self.keys.insert key, action
 
 def Input.key_down(&self) bool =

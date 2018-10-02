@@ -23,17 +23,13 @@ def infer(parser, tree):
     parser.func = []
 
     def loop(n, o_iter):
-        count = 0
-        for i in n:
+        for (count, i) in enumerate(n):
             parser.on(i)
 
             if type(n) is type(tree):
                 o_iter += 1
 
-            c = i.owner
-
             if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
-                count += 1
                 continue
 
             if type(i.owner) is Tree.For and (count == 1 if len(i.owner.nodes) > 1 else count == 0):
@@ -786,8 +782,6 @@ def infer(parser, tree):
 
             if type(i) in [Tree.Block, Tree.While, Tree.For, Tree.AddToContext]:
                 Scope.decrScope(parser)
-
-            count += 1
 
     loop(tree, -1)
 

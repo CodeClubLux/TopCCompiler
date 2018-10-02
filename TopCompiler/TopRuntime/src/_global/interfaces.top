@@ -18,5 +18,4 @@ type Number[T] with
     def op_div(T) T
     def toString() string
 
-type Char is i8
 type Byte is u8

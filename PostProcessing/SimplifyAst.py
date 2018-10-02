@@ -90,7 +90,7 @@ def simplifyOperator(operator, iter, parser):
 
     typ = operator.nodes[0].type
 
-    if typ.isType(Types.Pointer) and type(typ.pType.toRealType()) in [Types.I32, Types.Float, Types.Bool] and not (operator.kind in ["*", "&"] and operator.unary):
+    if typ.isType(Types.Pointer) and type(typ.pType.toRealType()) in [Types.I32, Types.Float, Types.Bool, Types.Char] and not (operator.kind in ["*", "&"] and operator.unary):
         for (c, i) in enumerate(operator.nodes):
             deref = Tree.Operator("*", i)
             deref.unary = True
