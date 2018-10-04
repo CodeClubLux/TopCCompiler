@@ -421,7 +421,6 @@ class Parser:  # all mutable state
             DynamicArray = Types.Struct(False, tmp.normalName, tmp._types, tmp.package, tmp.generic)
             StaticArray = Types.Struct(False, tmp3.normalName, tmp3._types, tmp3.package, tmp3.generic)
             Range = Types.Struct(False, tmp2.normalName, tmp2._types, tmp2.package)
-            Char = self.interfaces["_global"]["Char"]
 
 
             Types.genericTypes = runtimeParser.generatedGenericTypes

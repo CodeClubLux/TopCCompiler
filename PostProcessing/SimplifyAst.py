@@ -10,9 +10,6 @@ def print(s):
 """
 
 def callMethodCode(node, name, typ, parser, unary):
-    if not node.type.isType(Types.Pointer):
-        name += "ByValue"
-
     if type(typ) is Types.Pointer and type(typ.pType) is Types.Alias:
         method = typ.pType.typ.hasMethod(parser, name, isP=True)
         if method:
@@ -23,12 +20,17 @@ def callMethodCode(node, name, typ, parser, unary):
         if method:
             typ = typ.typ
 
+    if not node.type.isType(Types.Pointer):
+        name += "ByValue"
+
+
     length = 1 if unary else 2
 
     if type(typ) is Types.Pointer:
         typ = typ.pType
 
     package = "_global" if typ.package == "" else typ.package
+
     var = Tree.ReadVar(typ.normalName + "_" + name, True, node)
     var.package = package
     var.type = Types.FuncPointer([node.type] * length, node.type)
@@ -442,7 +444,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 method = typ.typ.hasMethod(parser, self.field, isP= isP)
                 if method:
                     typ = typ.typ
-
                 else:
                     method = typ.hasMethod(parser, self.field, isP= isP)
             else:

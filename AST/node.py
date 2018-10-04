@@ -121,9 +121,10 @@ def checkOther(self, parser, function, block, iter=0):
         if not function:
             self.error(f"unexpected return statement, outside of a function")
         try:
-            actReturnType = self.nodes[0].type
-            function.returnType.duckType(parser,actReturnType, self, self ,0)
-            Tree.insertCast(self, actReturnType, function.returnType, iter)
+            if len(self.nodes) > 0:
+                actReturnType = self.nodes[0].type
+                function.returnType.duckType(parser,actReturnType, self, self ,0)
+                Tree.insertCast(self, actReturnType, function.returnType, iter)
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
     else:

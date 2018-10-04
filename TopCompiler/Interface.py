@@ -6,6 +6,7 @@ from TopCompiler import Struct
 from TopCompiler import FuncParser
 import collections as coll
 from AST import PlaceHolder
+import AST as Tree
 
 def traitParser(parser, name, decl, generic):
     meth = {}
@@ -28,6 +29,8 @@ def traitParser(parser, name, decl, generic):
             parser.nextToken()
         else:
             Parser.declareOnly(parser, noVar=True)
+            if len(parser.currentNode.nodes) > 0 and type(parser.currentNode.nodes[0]) is Tree.Create:
+                Error.parseError(parser, "Interfaces are abstract interfaces which is why only methods are supported")
 
     names = {i.name: i.varType for i in parser.currentNode}
     #args = [i.varType for i in parser.currentNode]

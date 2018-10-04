@@ -37,6 +37,4 @@ log "running"
 
 skybox := ibl.make_Skybox "assets/Tropical_Beach_3k.hdr"
 
-runner
-    .get_game!
-    .init!
+runner.init!

@@ -1,0 +1,53 @@
+type Key is char
+
+type KeyAction either Pressed or Released
+
+def KeyAction.op_eq(self, other: KeyAction) bool =
+    match self with
+        Pressed -> match other with
+            Pressed -> true
+            _ -> false
+
+        Released -> match other with
+            Pressed -> true
+            _ -> false
+
+//Make generic version of this map data type
+type KeyActionMap =
+    keys: [..]Key
+    actions: [..]KeyAction
+
+def KeyActionMap.contains(&self, _key: Key) bool =
+    for i := 0..self.keys.length do
+        if self.keys[i] == _key then
+            return true
+
+    false
+
+def KeyActionMap.insert(&self, _key: Key, value: KeyAction) =
+    for i := 0..self.keys.length do
+        if self.keys[i] == _key then
+            self.actions[i] = value
+            return
+
+    self.keys.append _key
+    self.actions.append value
+
+def KeyActionMap.op_get(&self, _key: Key) &KeyAction =
+    for i := 0..self.keys.length do
+        if self.keys[i] == _key then
+            return &self.actions[i]
+
+    panic "Key {_key} could not be found!"
+
+    0 cast &KeyAction
+
+def KeyActionMap.clear(&self) =
+    self.keys.clear!
+    self.actions.clear!
+
+def make_KeyActionMap() KeyActionMap =
+    KeyActionMap{
+        keys = [..]Key
+        actions = [..]KeyAction
+    }

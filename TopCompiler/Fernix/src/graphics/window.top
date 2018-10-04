@@ -1,14 +1,10 @@
 import "gi"
 from "glfw_wrapper" import all
+from "math" import Vec2
+from "key" import (Key, KeyAction)
 
 def framebuffer_size_callback(window_ptr: &GLFWwindow, width: int, height: int) =
     gi.set_viewport width, height
-
-type Key is int
-
-type KeyAction either
-    Pressed
-    Released
 
 type Window =
     title: string
@@ -18,6 +14,9 @@ type Window =
     height: int
 
     window_ptr: Maybe[&GLFWwindow]
+
+    cursor_pos_callback: Maybe[|Vec2| -> none]
+    key_callback: Maybe[|Key, KeyAction| -> none]
 
 def Window.init(&self) =
     glfwInit!
@@ -46,6 +45,9 @@ def Window.init(&self) =
             glfwTerminate!
             panic "Failed to create window"
 
+def Window.update_context(&self) =
+    glfwSetWindowUserPointer self.window_ptr.unwrap!, context
+
 def Window.should_close(&self) bool =
     match self.window_ptr with
         Some window_ptr -> glfwWindowShouldClose window_ptr
@@ -57,6 +59,23 @@ def Window.update_inputs(&self) =
 def Window.swap_buffers(&self) =
     glfwSwapBuffers self.window_ptr.unwrap!
 
+import "runner"
+from "key" import all
+
+def on_glfw_cursor_pos_callback(glfwWindow: &GLFWwindow, x: f64, y: f64) =
+    context = (glfwGetWindowUserPointer glfwWindow) cast &Context
+    w := get_window!
+
+    match w.cursor_pos_callback with
+        Some callback -> callback Vec2{ x, y }
+        None ->
+
+def Window.set_cursor_pos_callback(&self, func: |Vec2| -> none) =
+    self.cursor_pos_callback = Some func
+
+def Window.set_key_callback(&self, func: |Key, KeyAction| -> none) =
+    self.key_callback = Some func
+
 def Window.close(&self) =
     match self.window_ptr with
         Some window_ptr ->
@@ -65,12 +84,26 @@ def Window.close(&self) =
 
         None ->
 
-default := Window{
-    title = ""
-    vSync = true
-    full_screen = false
-    width = 1920
-    height = 1080
-    window_ptr = None
-}
+def Window.key_down(&self, _key: char) bool =
+    (glfwGetKey self.window_ptr.unwrap!, _key.toU8!) == glfw_press
 
+def make_Window() &Window =
+    w := box Window{
+        title = ""
+        vSync = true
+        full_screen = false
+        width = 1920
+        height = 1080
+        window_ptr = None
+        cursor_pos_callback = None
+        key_callback = None
+    }
+
+    w.init!
+
+    w
+
+#addToContext window := make_Window!
+
+def get_window() &Window =
+    context.window

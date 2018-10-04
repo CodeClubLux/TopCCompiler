@@ -42,6 +42,8 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
             return I32(unsigned=True, size=64)
         elif token == "float":
             return Float()
+        elif token == "f64":
+            return Float(size= 64)
         elif token == "string":
             return String(0)
         elif token == "int":
@@ -214,7 +216,6 @@ def parseType(parser, _package= "", _mutable= False, _attachTyp= False, _gen= {}
 from TopCompiler import CodeGen
 info = CodeGen.Info()
 gen = CodeGen.genNames(info)
-dataTypes = []
 
 from PostProcessing import SimplifyAst
 
@@ -247,31 +248,32 @@ class TmpCodegen:
             self.initTypes.append(x)
 
 def getGeneratedDataTypes():
-    global dataTypes
-
     #@cleanup use new way of generating
 
-    (namedDataTypes, initializeTypes) = (dataTypes, [])
+    (namedDataTypes, initializeTypes) = ([], [])
 
     for i in compiledTypes:
         tmpCodegen = genericTypes[i]
 
         #print(tmpCodegen.array[0])
 
-        namedDataTypes.append("".join(tmpCodegen.out_parts))
-        if len(tmpCodegen.initTypes) > 0:
-            initializeTypes.append("\n".join(tmpCodegen.initTypes))
+        if type(tmpCodegen) is str:
+            namedDataTypes.append(tmpCodegen)
+        else:
+            namedDataTypes.append("".join(tmpCodegen.out_parts))
+            if len(tmpCodegen.initTypes) > 0:
+                initializeTypes.append("\n".join(tmpCodegen.initTypes))
 
     return ("".join(namedDataTypes), "".join(initializeTypes))
 
-tmpTypes = {}
 def genCType(header, genContents):
     global dataTypes
-    if header in tmpTypes:
+
+    if header in genericTypes:
         return header #tmpTypes[header]
     else:
-        dataTypes.append(f"{header} {genContents()};\n")
-        tmpTypes[header] = 0
+        genericTypes[header] = f"{header} {genContents()};\n"
+        compiledTypes[header] = None
     return header
 
 from AST import Struct as S
@@ -300,7 +302,7 @@ def genGenericCType(struct, func= S.Type):
         genericTypes[newName] = tmpCodegen
         s.compileToC(tmpCodegen)
 
-        compiledTypes[newName] = genericTypes
+        compiledTypes[newName] = None #genericTypes
     #elif newName in genericTypes and not newName in compiledTypes:
     #    print("recursive dependency")
 
@@ -397,7 +399,7 @@ class Type:
 
     def duckType(self, parser, other, node, mynode, iter):
         if self != other:
-            mynode.error("expecting type "+str(self)+" and got type "+str(other))
+            node.error("expecting type "+str(self)+" and got type "+str(other))
     
     def isType(self, other):
         return type(self) is other
@@ -478,7 +480,7 @@ class String(Type):
             "toString": FuncPointer([self], self),
             "toInt": FuncPointer([self], I32()),
             "toFloat": FuncPointer([self], Float()),
-            "to_c_string": FuncPointer([self], Types.Pointer(Parser.Char))
+            "to_c_string": FuncPointer([self], Types.Pointer(Types.Char()))
         }
 
         try:
@@ -1259,16 +1261,25 @@ class Pointer(Type):
         return self.pType.hasMethod(parser, field, isP= True)
 
 class Float(Type):
-    def __init__(self):
+    def __init__(self, size= None):
         Type.__init__(self)
 
-        self.name = "float"
+        if not size:
+            self.name = "float"
+        else:
+            self.name = "f" + str(size)
+
         self.normalName = "Float"
         self.types = {}
         self.__methods__ = None
 
+        self.size = size
+
     def toCType(self):
-        return "float"
+        if self.size:
+            return "double"
+        else:
+            return "float"
 
     @property
     def methods(self):
@@ -1288,6 +1299,11 @@ class Float(Type):
     def duckType(self, parser, other, node, mynode, iter):
         if not (other.isType(I32) or other.isType(Float)):
             mynode.error("expecting type " + str(self) + ", or "+str(I32())+" and got type " + str(other))
+
+        other = other.toRealType()
+        if type(other) is Float:
+            if self.size and other.size is None:
+                mynode.error("Cannot downcast " + str(other) + ", " + str(self))
 
 class Bool(Type):
     name = "bool"

@@ -33,7 +33,7 @@ type ext aiMesh =
     mTextureCoords: &Maybe[&aiVector3D]
 
 type ext aiString =
-    data: &Char
+    data: &char
 
 type ext aiNode =
     mNumMeshes: uint
@@ -48,6 +48,6 @@ type ext aiScene =
 
 type ext aiMaterial =
 
-ext aiImportFile: |&Char, uint| -> Maybe[&aiScene] = "aiImportFile"
+ext aiImportFile: |&char, uint| -> Maybe[&aiScene] = "aiImportFile"
 ext ai_matkey_name: uint = "AI_MATKEY_NAME"
 ext aiGetMaterialString: |&aiMaterial, uint, &aiString| -> none = "aiGetMaterialString"

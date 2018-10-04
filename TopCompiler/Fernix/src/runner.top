@@ -5,33 +5,12 @@ import "gi"
 import "opengl"
 import "imageLoader"
 import "ecs"
-
-//Global Game struct, contains everything that isnt an entity component and is needed in a global context
-type Game =
-    window: window.Window
-
-def make_Game() &Game =
-    w := window.default
-    w.init!
-
-    box Game{
-        window = w
-    }
-
-#addToContext game := make_Game!
-
-def get_game() &Game =
-    context.game
-
-def get_window() &window.Window =
-    &context.game.window
-
-//imported later because game window has to be intialized before these can be called
 import "ibl"
 import "camera"
 import "lights"
+import "input"
 
-def Game.set_shader_scene_params(&self, _shader: shader.Shader) =
+def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
     dir_light := lights.get_dir_light!
 
@@ -44,15 +23,20 @@ def Game.set_shader_scene_params(&self, _shader: shader.Shader) =
     ibl.get_skybox!
         .set_ibl_params_for _shader
 
-def Game.init(&self) =
+def init() =
+    w := window.get_window!
+
     opengl.enable opengl.depth_test
     opengl.enable opengl.multisample
     opengl.enable opengl.texture_cube_map_seamless
-    opengl.viewport 0, 0, self.window.width, self.window.height
+    opengl.viewport 0, 0, w.width, w.height
 
-    while not self.window.should_close! do
+    while not w.should_close! do
         defer context.allocator.reset_to context.allocator.get_occupied!
-        self.window.update_inputs!
+
+        input
+            .get_input!
+            .update_inputs!
 
         gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
         gi.clear gi.DepthBuffer
@@ -64,9 +48,9 @@ def Game.init(&self) =
         ecs.update ecs.All
         ecs.render ecs.All
 
-        self.window.swap_buffers!
+        w.swap_buffers!
 
-def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &Char) =
+def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
     log char_buffer_toString message
 
 opengl.enable opengl.debug_output

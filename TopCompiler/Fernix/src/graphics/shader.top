@@ -8,7 +8,7 @@ type Shader =
 def Shader.free(self) =
     opengl.deleteShader self.id
 
-def make_shader(filename: string, source: string, kind: uint, info_log: &Char) uint =
+def make_shader(filename: string, source: string, kind: uint, info_log: &char) uint =
     c_source := source.to_c_string!
     shader := opengl.createShader kind
 
@@ -42,7 +42,7 @@ def make(vfilename: string, ffilename: string) Shader =
 
     //vertex shader
     sucess : int = 0
-    info_log := (alloc 512 * sizeof Char) cast &Char
+    info_log := (alloc 512 * sizeof char) cast &char
     defer free info_log
 
     vertex_shader := make_shader vfilename, vshader_source, opengl.vertex_shader, info_log

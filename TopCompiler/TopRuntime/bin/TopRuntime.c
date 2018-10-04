@@ -276,6 +276,32 @@ struct _global_String _runtime_char_buffer_toString(char* buffer) {
     return _global_StringInit(strlen(buffer), buffer);
 }
 
+//char
+
+struct _global_String _global_char_toStringByValue(char self, __Context) {
+    char* buffer = alloc(context->allocator, 2, context);
+    buffer[0] = self;
+    buffer[1] = '\0';
+    return _global_StringInit(1, buffer);
+}
+
+struct _global_String _global_char_toString(char* self, __Context) {
+    return _global_char_toStringByValue(*self, context);
+}
+
+unsigned char _global_char_toU8ByValue(char self, __Context) {
+    return (unsigned char) self;
+}
+
+unsigned char _global_char_toU8(char* self, __Context) {
+    return (unsigned char) *self;
+}
+
+
+
+
+
+
 #define _global_indexPtr(value, by, c) value + by
 /*
 void printI(int i) {

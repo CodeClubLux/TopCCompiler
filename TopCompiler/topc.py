@@ -468,17 +468,19 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     if parser.compiled[i][0]:
                         SimplifyAst.resolveGeneric(parser, parser.compiled[i][1][0])
 
-                if compileRuntime:
-                    contextCCode = CodeGen.buildContext(parser.contextType)
-                else:
-                    removedTypes = removeTypes(["_global_Allocator"], [
-                        "typedef void*(*prnonec_SizeTp___rnone)(void*,unsigned int,struct _global_Context*)",
-                        "typedef unsigned int(*prnonep___uint)(void*,struct _global_Context*)"
-                    ])
+                #if compileRuntime:
+                #    contextCCode = CodeGen.buildContext(parser.contextType)
+                #else:
+                #    removedTypes = removeTypes(["_global_Allocator"], [
+                #        "typedef void*(*prnonec_SizeTp___rnone)(void*,unsigned int,struct _global_Context*)",
+                #        "typedef unsigned int(*prnonep___uint)(void*,struct _global_Context*)"
+                #    ])
 
-                if not compileRuntime:
-                    addTypes(removedTypes)
-                    contextCCode = CodeGen.buildContext(parser.contextType)
+                contextCCode = CodeGen.buildContext(parser.contextType)
+
+                #if not compileRuntime:
+                #    addTypes(removedTypes)
+                #    contextCCode = CodeGen.buildContext(parser.contextType)
 
                 for i in compiled:
                     tmp = os.path.dirname(parser.filenames[i][0][0])

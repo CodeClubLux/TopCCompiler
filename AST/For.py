@@ -12,7 +12,7 @@ class For(Node):
         obj = codegen.getName()
 
         if not self.implicit:
-            typ = self.nodes[0].nodes[0].varType
+            typ = self.nodes[0].nodes[1].nodes[0].type
         else:
             typ = self.nodes[0].type
         isRange = typ.name == "Range"

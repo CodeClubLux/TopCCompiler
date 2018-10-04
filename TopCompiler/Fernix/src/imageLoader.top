@@ -3,7 +3,7 @@ ext _ = '#include "stb_image.h"'
 
 import "assetManager"
 
-ext stbi_load: |&Char, &int, &int, &int, uint| -> Maybe[&Byte] = "stbi_load"
+ext stbi_load: |&char, &int, &int, &int, uint| -> Maybe[&Byte] = "stbi_load"
 ext stbi_image_free: |&Byte| -> none = "stbi_image_free"
 ext stbi_set_flip_vertically_on_load: |bool| -> none = "stbi_set_flip_vertically_on_load"
 

@@ -1,6 +1,6 @@
 import "ecs"
 import "math"
-import "runner"
+import "window"
 
 type Camera =
     entity: &ecs.Entity
@@ -20,7 +20,7 @@ def Camera.render(&self) =
 def Camera.update(&self) =
 
 def Camera.update_matrices(&self) =
-    w := (runner.get_game!).window
+    w := window.get_window!
 
     self.projection_matrix = math.perspective
         math.radians self.fov

@@ -4,7 +4,7 @@ type ext GLFWwindow =
 type ext GLFWmonitor =
 
 ext glfwInit: || -> none = "glfwInit"
-ext glfwCreateWindow: |int, int, &Char, Maybe[&GLFWmonitor], Maybe[&none]| -> Maybe[&GLFWwindow] = "glfwCreateWindow"
+ext glfwCreateWindow: |int, int, &char, Maybe[&GLFWmonitor], Maybe[&none]| -> Maybe[&GLFWwindow] = "glfwCreateWindow"
 ext glfwDestroyWindow: |&GLFWwindow| -> none = "glfwDestroyWindow"
 ext glfwTerminate: || -> none = "glfwTerminate"
 ext glfwWindowShouldClose: |&GLFWwindow| -> bool = "glfwWindowShouldClose"
@@ -19,5 +19,14 @@ ext glfwMakeContextCurrent: |&GLFWwindow| -> none = "glfwMakeContextCurrent"
 ext glfwSetFramebufferSizeCallback: |&GLFWwindow, |&GLFWwindow, int,int| -> none| -> none = "glfwSetFramebufferSizeCallback"
 ext glfwSwapBuffers: |&GLFWwindow| -> none = "glfwSwapBuffers"
 ext glfwPollEvents: || -> none = "glfwPollEvents"
+ext glfwGetKey: |&GLFWwindow, int| -> int = "glfwGetKey"
+ext glfwSetWindowUserPointer: |&GLFWwindow, &none| -> none = "glfwSetWindowUserPointer"
+ext glfwSetCursorPosCallback: |&GLFWwindow, |&GLFWwindow, f64, f64| -> none| -> none = ""
+
+ext glfwGetWindowUserPointer: |&GLFWwindow| -> &none = "glfwGetWindowUserPointer"
+
+ext glfw_press: int = "GLFW_PRESS"
+
+
 
 ext getProcAddress: &none = "glfwGetProcAddress"

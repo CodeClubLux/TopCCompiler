@@ -39,4 +39,4 @@ def String.multiply(&self, times: uint) String =
     buffer :=
 */
 
-ext char_buffer_toString: |&Char| -> string = "_runtime_char_buffer_toString"
+ext char_buffer_toString: |&char| -> string = "_runtime_char_buffer_toString"
