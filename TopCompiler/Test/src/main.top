@@ -1,3 +1,8 @@
-character := `c`
+type Point =
+    x: int
+    y: int
 
-log character
+def Point.toString(using &self) string =
+    "Point({x}, {y})"
+
+log Point{ 10, 20 }

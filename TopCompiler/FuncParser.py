@@ -146,9 +146,15 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
     parser.currentNode = brace
 
     if method:
+        using = False
         typ = attachTyp
         self = parser.nextToken()
         pointer = False
+
+        if self.token == "using":
+            using = True
+            self = parser.nextToken()
+
         if self.token == "&":
             self = parser.nextToken()
             pointer = True
@@ -168,10 +174,15 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
 
         selfNode.imutable = False
 
+        if using:
+            usingNode = Tree.Using(selfNode)
+            selfNode = usingNode
         parser.currentNode.addNode(selfNode)
+
 
         if not parser.lookInfront().token in [")", ","]:
             Error.parseError(parser, "expecting comma not "+parser.thisToken().token)
+
 
 
     if name[0].lower() != name[0]:

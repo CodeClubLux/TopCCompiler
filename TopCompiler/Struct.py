@@ -76,6 +76,13 @@ class Struct:
 
         return b
 
+    def getMethods(self, parser):
+        meths = {}
+        for i in parser.imports + [parser.package] + ["_global"]:
+            if not i in self.methods: continue
+            meths.update(self.methods[i])
+
+        return meths
 def typeParser(parser, decl= False):
     name = parser.nextToken()
 

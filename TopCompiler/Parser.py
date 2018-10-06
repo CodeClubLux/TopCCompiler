@@ -425,7 +425,6 @@ class Parser:  # all mutable state
 
             Types.genericTypes = runtimeParser.generatedGenericTypes
 
-
             return
         tmp = self.tokens
         self.tokens = [0]

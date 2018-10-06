@@ -235,7 +235,8 @@ class Info:
         self.array = lastArr
         self.pointer = pointer
 
-def buildContext(contextType):
+def buildContext(parser):
+    contextType = parser.contextType
     # build context data type
     context = "_global_context"
     typesGeneratedByContext = ""
@@ -246,6 +247,10 @@ def buildContext(contextType):
 
     string = []
     (typesGen, mainC) = Types.getGeneratedDataTypes()
+
+    parser.typesInContext = list(Types.genericTypes.keys())
+
+    print(Types.genericTypes)
 
     Types.compiledTypes = coll.OrderedDict()
     Types.dataTypes = []

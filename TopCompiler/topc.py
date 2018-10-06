@@ -476,7 +476,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 #        "typedef unsigned int(*prnonep___uint)(void*,struct _global_Context*)"
                 #    ])
 
-                contextCCode = CodeGen.buildContext(parser.contextType)
+                contextCCode = CodeGen.buildContext(parser)
 
                 #if not compileRuntime:
                 #    addTypes(removedTypes)

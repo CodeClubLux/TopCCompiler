@@ -323,13 +323,17 @@ def forwardRef(funcStart, funcBrace, funcBody, codegen):
                 codegen.append(f"{i.toCType()},")
         codegen.append(f"struct _global_Context* {codegen.getContext()}")
         codegen.append(");\n")
-    elif self.method and funcStart.name.endswith("toString") and self.types[0].isType(Types.Pointer):
-        codegen.append(f"\nstatic inline {self.returnType.toCType()} {self.package}_{self.name}(")
+
+        codegen.append(f"\n{self.returnType.toCType()} {self.package}_{self.name}ByValue(")
         for (iter, i) in enumerate(self.types):
-            if iter == 0:
-                codegen.append(f"{i.pType.toCType()},")
-            else:
-                codegen.append(f"{i.toCType()},")
+            codegen.append(f"{i.toCType()},")
+        codegen.append(f"struct _global_Context* {codegen.getContext()}")
+        codegen.append(");\n")
+
+    elif self.method and funcStart.name.endswith("toString") and self.types[0].isType(Types.Pointer):
+        codegen.append(f"\n{self.returnType.toCType()} {self.package}_{self.name}(")
+        for (iter, i) in enumerate(self.types):
+            codegen.append(f"{i.toCType()},")
         codegen.append(f"struct _global_Context* {codegen.getContext()}")
         codegen.append(");\n")
 

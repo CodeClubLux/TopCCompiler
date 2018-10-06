@@ -602,6 +602,9 @@ class Struct(Type):
             firstArg.duckType(parser, self, parser, parser)
             return func
 
+    def getMethods(self, parser):
+        return parser.structs[self.package][self.normalName].getMethods(parser)
+
     def toCType(self):
         if self.name == "Context": return "struct _global_Context"
         structType = topc.global_parser.structs[self.package][self.normalName]
@@ -1247,6 +1250,9 @@ class Pointer(Type):
 
     def toCType(self):
         return self.pType.toCType() + "*"
+
+    def getMethods(self, parser):
+        return self.pType.getMethods(parser)
 
     def duckType(self, parser, other, node, mynode, iter=0):
         if not other.isType(Pointer):

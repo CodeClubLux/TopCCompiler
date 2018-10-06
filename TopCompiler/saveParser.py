@@ -3,6 +3,8 @@ import os
 import pprint
 import AST as Tree
 
+import copy
+
 def save(parser, runtimeBuild):
     #return
 
@@ -31,6 +33,11 @@ def save(parser, runtimeBuild):
     parser.lexed = None
     parser._token = None
     parser.__filename = None
+    parser.compiledTypes = None
+
+    for typ in parser.typesInContext:
+        if typ in parser.generatedGenericTypes:
+            del parser.generatedGenericTypes[typ]
 
     """
     for package in parser.structs:

@@ -336,7 +336,30 @@ def resolveGeneric(parser, root):
             funcBody = ast.owner.nodes[iter + 2]
             specifications.addGenericFunc(funcStart.package, funcStart.name, funcStart, funcBrace, funcBody)
 
+class Replacer():
+    def __init__(self):
+        self.scope = [[]]
+
+    def replace(self, ast):
+        for scope in self.scope:
+            for (istarget, replacement) in scope:
+                if istarget(ast):
+                    return
+
+        return ast
+
+    def incrScope(self):
+        self.scope.append([])
+
+    def decrScope(self):
+        self.scope.pop()
+
+    def add(self, istarget, replacement):
+        self.scope[-1].append((istarget, replacement))
+
 def simplifyAst(parser, ast, specifications=None, dontGen=False):
+    replace =
+
     if not specifications:
         inImports = {}
         genericFuncs = {}

@@ -129,6 +129,28 @@ def infer(parser, tree):
 
             elif type(i) is Tree.PushContext:
                 ContextParser.typecheckPushContext(parser, i)
+
+            elif type(i) is Tree.Using:
+                typ = i.varType
+                i.extracted_fields = {}
+                i.extracted_methods = {}
+
+                for field in typ.types:
+                    try:
+                        Scope.addVar(i, parser, field, Scope.Type(i.imutable, typ.types[field]), False)
+                        i.extracted_fields[field] = typ.types[field]
+                    except EOFError:
+                        pass
+
+                methods = typ.getMethods(parser)
+
+                for meth in methods:
+                    try:
+                        Scope.addVar(i, parser, meth,  Scope.Type(i.imutable, methods[meth]), False)
+                        i.extracted_methods[meth] = methods[meth]
+                    except EOFError:
+                        pass
+
             elif type(i) is Tree.CreateAssign:
                 if type(i.nodes[0].name) is Tree.PlaceHolder:
                     p = i.nodes[0].name.nodes[0]
