@@ -250,8 +250,6 @@ def buildContext(parser):
 
     parser.typesInContext = list(Types.genericTypes.keys())
 
-    print(Types.genericTypes)
-
     Types.compiledTypes = coll.OrderedDict()
     Types.dataTypes = []
 

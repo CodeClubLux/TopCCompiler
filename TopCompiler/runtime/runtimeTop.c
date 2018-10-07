@@ -133,16 +133,24 @@ struct _global_Array_Array_T _global_empty_array(struct _global_Context* r);
 void _global_Range_iteratorByValue(struct _global_Range _global_self, struct _global_Context* s);
 
 static inline void _global_Range_iterator(struct _global_Range*,struct _global_Context* s);
+
+void _global_Range_iteratorByValue(struct _global_Range,struct _global_Context* s);
 struct _global_Maybe_uint _global_RangeIterator_next(struct _global_RangeIterator* _global_self, struct _global_Context* t);
 struct _global_String _global_FileAcess_toStringByValue(struct _global_FileAcess _global_self, struct _global_Context* v);
 
 static inline struct _global_String _global_FileAcess_toString(struct _global_FileAcess*,struct _global_Context* v);
+
+struct _global_String _global_FileAcess_toStringByValue(struct _global_FileAcess,struct _global_Context* v);
 struct _global_String _global_File_readByValue(struct _global_File _global_self, struct _global_Context* w);
 
 static inline struct _global_String _global_File_read(struct _global_File*,struct _global_Context* w);
+
+struct _global_String _global_File_readByValue(struct _global_File,struct _global_Context* w);
 void _global_File_freeByValue(struct _global_File _global_self, struct _global_Context* x);
 
 static inline void _global_File_free(struct _global_File*,struct _global_Context* x);
+
+void _global_File_freeByValue(struct _global_File,struct _global_Context* x);
 struct _global_Maybe_File _global_open(struct _global_String _global_filename, struct _global_FileAcess _global_acess, struct _global_Context* y);
 void _global_log_string(struct _global_String _global_s, struct _global_Context* z);
 

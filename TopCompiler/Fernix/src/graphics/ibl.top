@@ -25,7 +25,6 @@ def Skybox.get_entity(&self) &ecs.Entity =
 def Skybox.update(&self) =
 
 def Skybox.render(&self) =
-    opengl.depthFunc opengl.lequal
     skybox_shader.bind!
 
     self.env_cubemap.bind_to 0
@@ -36,8 +35,6 @@ def Skybox.render(&self) =
     skybox_shader.set_mat4x4 "view", &cam.view_matrix
 
     primitives.render_cube!
-
-    opengl.depthFunc opengl.less
 
 brdf_LUT_texture2 := imageLoader.load "assets/ibl_brdf_lut.png"
 

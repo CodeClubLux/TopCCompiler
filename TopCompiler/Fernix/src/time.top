@@ -1,0 +1,23 @@
+import "glfwWrapper"
+
+type Time =
+    last_frame: float
+    delta_time: float
+
+def get_time() float =
+    glfwWrapper.getTime!
+
+
+#addToContext time := box Time{
+    last_frame = 0
+    delta_time = 0
+}
+
+def update_delta_time() =
+    current_frame := get_time!
+
+    context.time.delta_time = current_frame - context.time.last_frame
+    context.time.last_frame = current_frame
+
+def get_delta_time() float =
+    context.time.delta_time

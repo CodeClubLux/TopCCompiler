@@ -49,8 +49,9 @@ def infer(parser, tree):
                 else:
                     _for.implicit = True
                     _for.implicit_index = False
+
                     if condition.type.isType(Types.Array):
-                        it_should_be = condition.type.elemT
+                        it_should_be = condition.type.toRealType().elemT
                     elif condition.type.name == "Range":
                         it_should_be = Types.I32(unsigned=True)
                     else:

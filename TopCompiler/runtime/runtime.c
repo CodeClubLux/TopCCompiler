@@ -248,12 +248,12 @@ struct _global_String _global_char_toString(char* self, __Context) {
     return _global_char_toStringByValue(*self, context);
 }
 
-unsigned char _global_char_toU8ByValue(char self, __Context) {
-    return (unsigned char) self;
+int8_t _global_char_toI8ByValue(char self, __Context) {
+    return (int8_t) self;
 }
 
-unsigned char _global_char_toU8(char* self, __Context) {
-    return (unsigned char) *self;
+int8_t _global_char_toI8(char* self, __Context) {
+    return (int8_t) *self;
 }
 
 

@@ -1,0 +1,41 @@
+import "ecs"
+import "camera"
+import "input"
+from "time" import (get_delta_time)
+import "camera"
+
+type FPSController =
+    mouse_sensitivity: float
+    movement_speed: float
+    camera: &camera.Camera
+
+def FPSController.get_entity(&self) &ecs.Entity =
+    self.camera.get_entity!
+
+def FPSController.get_speed(&self) float =
+    self.movement_speed * get_delta_time!
+
+def FPSController.update(&self) =
+    //get needed components
+    inp := input.get_input!
+    entity := self.get_entity!
+
+    if inp.key_down `W` then
+        entity.position.z -= self.get_speed!
+    elif inp.key_down `S` then
+        entity.position.z += self.get_speed!
+    elif inp.key_down `D` then
+        entity.position.x += self.get_speed!
+    elif inp.key_down `A` then
+        entity.position.x -= self.get_speed!
+
+def FPSController.render(&self) =
+
+fpsController_system := ecs.make_Store::[FPSController]!
+
+def make_FPSController(cam: &camera.Camera) &FPSController =
+    fpsController_system.add_component FPSController{
+        camera = cam
+        mouse_sensitivity = 1
+        movement_speed = 3
+    }

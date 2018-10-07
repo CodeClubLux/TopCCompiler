@@ -358,8 +358,6 @@ class Replacer():
         self.scope[-1].append((istarget, replacement))
 
 def simplifyAst(parser, ast, specifications=None, dontGen=False):
-    replace =
-
     if not specifications:
         inImports = {}
         genericFuncs = {}

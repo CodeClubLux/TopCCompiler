@@ -15,6 +15,7 @@ class For(Node):
             typ = self.nodes[0].nodes[1].nodes[0].type
         else:
             typ = self.nodes[0].type
+        typ = typ.toRealType()
         isRange = typ.name == "Range"
 
         codegen.append(f"{typ.toCType()} {obj} =")
@@ -29,7 +30,7 @@ class For(Node):
         if isRange:
             iterationTyp = Types.I32(unsigned=True)
         else:
-            iterationTyp = typ.elemT
+            iterationTyp = typ.toRealType().elemT
 
         iteration = codegen.getName()
 

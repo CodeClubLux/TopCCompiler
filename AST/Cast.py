@@ -94,6 +94,10 @@ def castFrom(originalType, newType, node, realName, codegen):
         codegen.append(")")
         return
     elif type(newType) is Types.Array:
+        if type(originalType) is Types.Alias:
+            node.compileToC(codegen)
+            return
+
         if newType.both and originalType.isType(Types.Pointer) and originalType.pType.static:
 
             funcName = CodeGen.genGlobalTmp(codegen.filename)

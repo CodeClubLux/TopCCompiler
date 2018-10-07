@@ -515,7 +515,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 
-                print(compiled)
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))

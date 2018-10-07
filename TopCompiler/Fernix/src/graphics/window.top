@@ -1,5 +1,5 @@
 import "gi"
-from "glfw_wrapper" import all
+from "glfwWrapper" import all
 from "math" import Vec2
 from "key" import (Key, KeyAction)
 
@@ -59,7 +59,6 @@ def Window.update_inputs(&self) =
 def Window.swap_buffers(&self) =
     glfwSwapBuffers self.window_ptr.unwrap!
 
-import "runner"
 from "key" import all
 
 def on_glfw_cursor_pos_callback(glfwWindow: &GLFWwindow, x: f64, y: f64) =
@@ -85,7 +84,7 @@ def Window.close(&self) =
         None ->
 
 def Window.key_down(&self, _key: char) bool =
-    (glfwGetKey self.window_ptr.unwrap!, _key.toU8!) == glfw_press
+    (glfwGetKey self.window_ptr.unwrap!, _key.toI8!) == glfw_press
 
 def make_Window() &Window =
     w := box Window{

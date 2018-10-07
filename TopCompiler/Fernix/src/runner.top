@@ -1,6 +1,6 @@
+import "window"
 import "shader"
 import "math"
-import "window"
 import "gi"
 import "opengl"
 import "imageLoader"
@@ -9,6 +9,7 @@ import "ibl"
 import "camera"
 import "lights"
 import "input"
+import "time"
 
 def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
@@ -16,6 +17,7 @@ def set_shader_scene_params(_shader: shader.Shader) =
 
     _shader.set_mat4x4 "projection", &cam.projection_matrix
     _shader.set_mat4x4 "view", &cam.view_matrix
+    _shader.set_vec3 "viewPos", &(cam.get_entity!.position)
 
     _shader.set_vec3 "dirLight.direction", &dir_light.direction
     _shader.set_vec3 "dirLight.color", &dir_light.color
@@ -29,23 +31,32 @@ def init() =
     opengl.enable opengl.depth_test
     opengl.enable opengl.multisample
     opengl.enable opengl.texture_cube_map_seamless
+    opengl.depthFunc opengl.lequal
+
     opengl.viewport 0, 0, w.width, w.height
 
     while not w.should_close! do
         defer context.allocator.reset_to context.allocator.get_occupied!
 
+        //update all systems
+        //@todo move these systems into the entity component system
         input
             .get_input!
             .update_inputs!
 
-        gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
-        gi.clear gi.DepthBuffer
+        time.update_delta_time!
+
+        ecs.update ecs.All
 
         camera
             .get_camera!
             .update_matrices!
 
-        ecs.update ecs.All
+        //render scene
+        //@todo move all rendering to gi from opengl
+        gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
+        gi.clear gi.DepthBuffer
+
         ecs.render ecs.All
 
         w.swap_buffers!

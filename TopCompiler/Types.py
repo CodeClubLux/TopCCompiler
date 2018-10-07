@@ -1159,7 +1159,7 @@ class Char(Type):
     def methods(self):
         if self.__methods__ is None:
             self.__methods__ = {
-                "toU8": FuncPointer([self], I32(unsigned=True, size=8)),
+                "toI8": FuncPointer([self], I32(size=8)),
                 "toString": FuncPointer([self], String(0)),
                 "op_eq": FuncPointer([self,self], Bool()),
                 "op_gt": FuncPointer([self,self], Bool()),
@@ -1188,7 +1188,7 @@ class I32(Type):
         nameToC = {
             "int": "int",
             "uint": "unsigned int",
-            "i8": "char",
+            "i8": "int8_t",
             "i16": "int16_t",
             "i32": "int32_t",
             "i64": "int64_t",

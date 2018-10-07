@@ -2,6 +2,8 @@ from "math" import all
 
 type ID is uint
 
+
+
 type Entity =
     id: ID
     enabled: bool
@@ -20,13 +22,16 @@ def Entity.get_entity(&self) &Entity =
 
 def Entity.update(&self) =
 
-def Entity.render(&self) =
+def Entity.compute_matrix(&self) Mat4x4 =
     matrix := identity_mat!
 
     translate &matrix, self.position
     rotate &matrix, self.rotation
     scale &matrix, self.scale
 
-    self.transform_matrix = matrix
+    matrix
+
+def Entity.render(&self) =
+    self.transform_matrix = self.compute_matrix!
 
 

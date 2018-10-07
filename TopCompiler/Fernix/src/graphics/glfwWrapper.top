@@ -27,6 +27,7 @@ ext glfwGetWindowUserPointer: |&GLFWwindow| -> &none = "glfwGetWindowUserPointer
 
 ext glfw_press: int = "GLFW_PRESS"
 
+ext getTime: || -> float = "glfwGetTime"
 
 
 ext getProcAddress: &none = "glfwGetProcAddress"

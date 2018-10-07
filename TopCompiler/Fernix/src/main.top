@@ -11,6 +11,10 @@ from "materialSystem" import all
 import "ibl"
 import "ecs"
 import "input"
+import "fpsController"
+import "camera"
+
+log "about to load images"
 
 wet_street_params := [
     Param_Image "material.diffuse", imageLoader.load "assets/wet_street/Pebble_Wet_street_basecolor.jpg"
@@ -28,10 +32,15 @@ wet_street := box Material{
 materials.append wet_street
 cube := model.load_model "assets/cube.fbx"
 
+cube_entity := ecs.make_Entity!
+cube_entity.scale = math.Vec3{0.5, 0.5, 0.5}
+
 mesh_renderer := model.make_ModelRenderer model.ModelRenderer{
-    entity = ecs.make_Entity!
+    entity = cube_entity
     model = &cube
 }
+
+floating_camera := fpsController.make_FPSController camera.get_camera!
 
 log "running"
 

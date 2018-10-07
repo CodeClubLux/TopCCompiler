@@ -79,7 +79,6 @@ def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
 
     t := s.cross f
 
-
     [
         s.x, s.y, s.z, -eye.x
         t.x, t.y, t.z, -eye.y
