@@ -12,17 +12,32 @@ def identity_mat() Mat4x4 =
 
     new
 
-def Mat4x4.op_mul(&self, other: &Mat4x4) Mat4x4 =
-    tmp : Mat4x4 = [16: 0.0]
+def mul_mat4(a: &Mat4x4, b: &Mat4x4) Mat4x4 =
+    r : Mat4x4 = _
 
-    for c := 0..4 do
-        for r := 0..4 do
-            for k := 0..4 do
-                tmp[(r*4 + c)] = self[(r*4 + k)] + other[(k*4 + c)]
+    r[0] = a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12]
+    r[1] = a[0] * b[1] + a[1] * b[5] + a[2] * b[9] + a[3] * b[13]
+    r[2] = a[0] * b[2] + a[1] * b[6] + a[2] * b[10] + a[3] * b[14]
+    r[3] = a[0] * b[3] + a[1] * b[7] + a[2] * b[11] + a[3] * b[15]
 
-    tmp
+    r[4] = a[4] * b[0] + a[5] * b[4] + a[6] * b[8] + a[7] * b[12]
+    r[5] = a[4] * b[1] + a[5] * b[5] + a[6] * b[9] + a[7] * b[13]
+    r[6] = a[4] * b[2] + a[5] * b[6] + a[6] * b[10] + a[7] * b[14]
+    r[7] = a[4] * b[3] + a[5] * b[7] + a[6] * b[11] + a[7] * b[15]
 
-def Mat4x4.mul_vec(&self, other: Vec4) Vec4 =
+    r[8] = a[8] * b[0] + a[9] * b[4] + a[10] * b[8] + a[11] * b[12]
+    r[9] = a[8] * b[1] + a[9] * b[5] + a[10] * b[9] + a[11] * b[13]
+    r[10] = a[8] * b[2] + a[9] * b[6] + a[10] * b[10] + a[11] * b[14]
+    r[11] = a[8] * b[3] + a[9] * b[7] + a[10] * b[11] + a[11] * b[15]
+
+    r[12] = a[12] * b[0] + a[13] * b[4] + a[14] * b[8] + a[15] * b[12]
+    r[13] = a[12] * b[1] + a[13] * b[5] + a[14] * b[9] + a[15] * b[13]
+    r[14] = a[12] * b[2] + a[13] * b[6] + a[14] * b[10] + a[15] * b[14]
+    r[15] = a[12] * b[3] + a[13] * b[7] + a[14] * b[11] + a[15] * b[15]
+
+    r
+
+def Mat4x4.mul_vec4(&self, other: Vec4) Vec4 =
     new_vec := [4: 0.0]
 
     for row := 0..4 do
@@ -32,17 +47,7 @@ def Mat4x4.mul_vec(&self, other: Vec4) Vec4 =
 
     vec4_from_array &new_vec
 
-def scale(self: &Mat4x4, other: Vec3) =
-    self[0] = other.x
-    self[5] = other.y
-    self[10] = other.z
-
-def translate(self: &Mat4x4, other: Vec3) =
-    self[3] = other.x
-    self[7] = other.y
-    self[11] = other.z
-
-def rotate(m: &Mat4x4, q: Quat) =
+def rotate(q: Quat) Mat4x4 =
     a := q.w
     b := q.x
     c := q.y
@@ -52,16 +57,29 @@ def rotate(m: &Mat4x4, q: Quat) =
     c2 := c * c
     d2 := d * d
 
-    xscale := m[0]
-    yscale := m[5]
-    zscale := m[10]
-
-    *m = [
-        a2 + b2 - c2 - d2, 2*(b*c - a*d), 2*(b*d + a*c) , m[3]
-        2*(b*c + a*d)    , a2-b2+c2-d2  , 2*(c*d - a*b) , m[7]
-        2*(b*d - a*c)    , 2*(c*d + a*b), a2-b2-c2+d2   , m[11]
-        0                , 0            , 0             , 1
+    [
+        (a2 + b2 - c2 - d2), 2*(b*c - a*d), 2*(b*d + a*c) , 0
+        2*(b*c + a*d)      , (a2-b2+c2-d2), 2*(c*d - a*b) , 0
+        2*(b*d - a*c)      , 2*(c*d + a*b), (a2-b2-c2+d2) , 0
+        0                  , 0            , 0             , 1
     ]
+
+def translate(position: Vec3) Mat4x4 =
+    [
+        1, 0, 0, position.x
+        0, 1, 0, position.y
+        0, 0, 1, position.z
+        0, 0, 0, 1
+    ]
+
+def scale(s: Vec3) Mat4x4 =
+    [
+        s.x, 0   , 0  , 0
+        0  , s.y , 0  , 0
+        0  , 0   , s.z, 0
+        0  , 0   , 0  , 1
+    ]
+
 
 def perspective(fov: float, aspect: float, n: float, f: float) Mat4x4 =
     a := 1.0 / tan fov / 2.0
@@ -86,4 +104,7 @@ def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
         0 ,  0 , 0,        1
     ]
 
-
+//tmp_mat := make_mat Vec3{0,0,0}, identity_quat!, Vec3{1,1,1}
+//
+//for tmp_i := 0..16 do
+//    log tmp_mat[tmp_i]

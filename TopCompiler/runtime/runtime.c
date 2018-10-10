@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <math.h>
-
 #define __Context struct _global_Context* context
 #define alloc _global_Allocator_alloc
 
@@ -248,12 +241,12 @@ struct _global_String _global_char_toString(char* self, __Context) {
     return _global_char_toStringByValue(*self, context);
 }
 
-int8_t _global_char_toI8ByValue(char self, __Context) {
-    return (int8_t) self;
+uint8_t _global_char_toU8ByValue(char self, __Context) {
+    return (uint8_t) self;
 }
 
-int8_t _global_char_toI8(char* self, __Context) {
-    return (int8_t) *self;
+uint8_t _global_char_toU8(char* self, __Context) {
+    return (uint8_t) *self;
 }
 
 

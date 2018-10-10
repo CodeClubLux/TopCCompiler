@@ -326,7 +326,7 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
     else:
         debug = [] #["-g",  "-gcodeview"]
 
-    clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type"]
+    clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
 
     print(" ".join(clang_commands),"\n")
     try:

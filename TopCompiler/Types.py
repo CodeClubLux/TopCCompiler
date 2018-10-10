@@ -1159,7 +1159,7 @@ class Char(Type):
     def methods(self):
         if self.__methods__ is None:
             self.__methods__ = {
-                "toI8": FuncPointer([self], I32(size=8)),
+                "toU8": FuncPointer([self], I32(unsigned=True, size=8)),
                 "toString": FuncPointer([self], String(0)),
                 "op_eq": FuncPointer([self,self], Bool()),
                 "op_gt": FuncPointer([self,self], Bool()),

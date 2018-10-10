@@ -21,6 +21,7 @@ def Camera.update(&self) =
 
 def Camera.update_matrices(&self) =
     w := window.get_window!
+    entity := self.get_entity!
 
     self.projection_matrix = math.perspective
         math.radians self.fov
@@ -28,10 +29,19 @@ def Camera.update_matrices(&self) =
         0.1
         100.0
 
-    self.view_matrix = math.look_at
-        self.entity.position
-        self.entity.position + math.Vec3{0,0,-1}
-        math.Vec3{0,1,0}
+
+
+    target := (entity.rotation.mul_vec3 math.Vec3{0,0,1}).norm!
+
+    rotate_m := math.rotate entity.rotation
+    translate_m := math.translate -entity.position
+
+    self.view_matrix = math.mul_mat4 &rotate_m, &translate_m
+
+    //self.view_matrix = math.look_at
+    //    entity.position
+    //    entity.position - target
+    //    math.Vec3{0,1,0}
 
 def make_CameraSystem() &ecs.Store[Camera] =
     entity := ecs.make_Entity!
@@ -49,6 +59,7 @@ def make_CameraSystem() &ecs.Store[Camera] =
         direction = math.Vec3{0,0,0}
 
         fov = 60
+
     }
 
     system

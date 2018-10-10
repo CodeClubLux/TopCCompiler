@@ -38,8 +38,12 @@ def Window.init(&self) =
         Some window_ptr ->
             glfwMakeContextCurrent window_ptr
             glfwSetFramebufferSizeCallback window_ptr, framebuffer_size_callback
+            glfwSetCursorPosCallback window_ptr, cursor_pos_callback
+
+            glfwSetInputMode window_ptr, glfw_cursor, glfw_cursor_disabled
 
             gi.load getProcAddress
+            self.update_context!
 
         None ->
             glfwTerminate!
@@ -61,7 +65,7 @@ def Window.swap_buffers(&self) =
 
 from "key" import all
 
-def on_glfw_cursor_pos_callback(glfwWindow: &GLFWwindow, x: f64, y: f64) =
+def cursor_pos_callback(glfwWindow: &GLFWwindow, x: f64, y: f64) =
     context = (glfwGetWindowUserPointer glfwWindow) cast &Context
     w := get_window!
 
@@ -83,16 +87,16 @@ def Window.close(&self) =
 
         None ->
 
-def Window.key_down(&self, _key: char) bool =
-    (glfwGetKey self.window_ptr.unwrap!, _key.toI8!) == glfw_press
+def Window.key_down(&self, _key: Key) bool =
+    (glfwGetKey self.window_ptr.unwrap!, _key) == glfw_press
 
 def make_Window() &Window =
     w := box Window{
         title = ""
         vSync = true
-        full_screen = false
-        width = 1920
-        height = 1080
+        full_screen = true
+        width = 3840
+        height = 2160
         window_ptr = None
         cursor_pos_callback = None
         key_callback = None

@@ -3,39 +3,77 @@ import "camera"
 import "input"
 from "time" import (get_delta_time)
 import "camera"
+import "key"
+import "math"
 
 type FPSController =
     mouse_sensitivity: float
     movement_speed: float
     camera: &camera.Camera
+    yaw: float
+    pitch: float
 
 def FPSController.get_entity(&self) &ecs.Entity =
     self.camera.get_entity!
 
 def FPSController.get_speed(&self) float =
-    self.movement_speed * get_delta_time!
+    inp := input.get_input!
+
+    if inp.key_down key.lshift then self.movement_speed * 2 * get_delta_time!
+    else self.movement_speed * get_delta_time!
 
 def FPSController.update(&self) =
-    //get needed components
     inp := input.get_input!
     entity := self.get_entity!
 
-    if inp.key_down `W` then
-        entity.position.z -= self.get_speed!
-    elif inp.key_down `S` then
-        entity.position.z += self.get_speed!
-    elif inp.key_down `D` then
-        entity.position.x += self.get_speed!
-    elif inp.key_down `A` then
-        entity.position.x -= self.get_speed!
+    facing_rotation := -entity.rotation
+
+    forward := (facing_rotation.mul_vec3 math.Vec3{0,0,-1}).norm!
+    right := (facing_rotation.mul_vec3 math.Vec3{1,0,0}).norm!
+
+    if (inp.key_down key.from_char `W`) then
+        entity.position += forward.scale self.get_speed!
+    elif (inp.key_down key.from_char `S`) then
+        entity.position -= forward.scale self.get_speed!
+    if (inp.key_down key.from_char `D`) then
+        entity.position += right.scale self.get_speed!
+    elif (inp.key_down key.from_char `A`) then
+        entity.position -= right.scale self.get_speed!
+
+    mouse_offset := inp.mouse_offset.scale self.mouse_sensitivity
+
+    yaw := mouse_offset.x + self.yaw
+    pitch := (-mouse_offset.y) + self.pitch
+
+    self.yaw = yaw
+    self.pitch = pitch
+
+    if pitch > 89 then
+        pitch = 89
+    if pitch < (-89) then
+        pitch = -89
+    if yaw > 360 then
+        yaw -= 360
+    if yaw < (-360) then
+        yaw += 360
+
+    q_pitch := math.make_quat (math.radians pitch), math.Vec3{ 1, 0, 0 }
+    q_yaw := math.make_quat (math.radians yaw), math.Vec3{ 0, 1, 0}
+
+    orientation := q_pitch * q_yaw
+
+    entity.rotation = orientation.norm!
 
 def FPSController.render(&self) =
+
 
 fpsController_system := ecs.make_Store::[FPSController]!
 
 def make_FPSController(cam: &camera.Camera) &FPSController =
     fpsController_system.add_component FPSController{
         camera = cam
-        mouse_sensitivity = 1
+        mouse_sensitivity = 0.01
         movement_speed = 3
+        yaw = 0
+        pitch = 0
     }

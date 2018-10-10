@@ -35,6 +35,7 @@ def parenClose(parser):
 
     if parser.paren < 1:
         Error.parseError(parser, "unexpected )")
+
     layer = -1 if len(parser.bookmark) < 2 else -2
 
     ExprParser.endExpr(parser, layer= layer)

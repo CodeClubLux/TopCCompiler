@@ -21,9 +21,15 @@ ext glfwSwapBuffers: |&GLFWwindow| -> none = "glfwSwapBuffers"
 ext glfwPollEvents: || -> none = "glfwPollEvents"
 ext glfwGetKey: |&GLFWwindow, int| -> int = "glfwGetKey"
 ext glfwSetWindowUserPointer: |&GLFWwindow, &none| -> none = "glfwSetWindowUserPointer"
-ext glfwSetCursorPosCallback: |&GLFWwindow, |&GLFWwindow, f64, f64| -> none| -> none = ""
-
+ext glfwSetCursorPosCallback: |&GLFWwindow, |&GLFWwindow, f64, f64| -> none| -> none = "glfwSetCursorPosCallback"
+ext glfwSetInputMode: |&GLFWwindow, uint, uint| -> none = "glfwSetInputMode"
 ext glfwGetWindowUserPointer: |&GLFWwindow| -> &none = "glfwGetWindowUserPointer"
+
+ext glfw_cursor: uint = "GLFW_CURSOR"
+ext glfw_cursor_disabled: uint = "GLFW_CURSOR_DISABLED"
+
+ext left_shift: uint = "GLFW_KEY_LEFT_SHIFT"
+ext right_shift: uint = "GLFW_KEY_RIGHT_SHIFT"
 
 ext glfw_press: int = "GLFW_PRESS"
 

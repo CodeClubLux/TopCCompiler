@@ -1,6 +1,9 @@
-type Key is char
+type Key is u16
 
 type KeyAction either Pressed or Released
+
+def from_char(c: char) Key =
+    c.toU8!
 
 def KeyAction.op_eq(self, other: KeyAction) bool =
     match self with
@@ -51,3 +54,8 @@ def make_KeyActionMap() KeyActionMap =
         keys = [..]Key
         actions = [..]KeyAction
     }
+
+import "glfwWrapper"
+
+lshift := glfwWrapper.left_shift cast Key
+rshift := glfwWrapper.right_shift cast Key

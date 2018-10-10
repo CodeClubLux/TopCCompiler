@@ -151,6 +151,7 @@ def checkUseless(self):
         if type(i) in [Tree.FuncBody, Tree.While, Tree.WhileBlock, Tree.If, Tree.Block, Tree.For]:
             checkUseless(i)
 
+
 def toStr(array):  # turn names list into something for llvm
     return ", ".join(array)
 

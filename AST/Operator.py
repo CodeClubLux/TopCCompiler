@@ -139,9 +139,13 @@ def checkOperator(self, parser):
         if not (i.kind == "<-" and not unary) and i.type == Types.Null():
             i.error("op "+i.kind + " cannot operate on type "+str(i.type))
 
+        int_operators = ["+", "-", "%", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="]
+
         ops = {
-            "int": ["+", "-", "%", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
-            "uint": ["+", "-", "%", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
+            "int": int_operators,
+            "uint": int_operators,
+            "u8": int_operators,
+            "u16": int_operators,
             "float": ["+", "-", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
             "string": ["+", "==", "!=", "<", ">"],
             "bool": ["==", "not", "and", "or", "!="],

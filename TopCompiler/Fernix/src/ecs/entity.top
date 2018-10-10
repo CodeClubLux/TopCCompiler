@@ -23,13 +23,9 @@ def Entity.get_entity(&self) &Entity =
 def Entity.update(&self) =
 
 def Entity.compute_matrix(&self) Mat4x4 =
-    matrix := identity_mat!
+    translate self.position
 
-    translate &matrix, self.position
-    rotate &matrix, self.rotation
-    scale &matrix, self.scale
-
-    matrix
+    //make_mat self.position, self.rotation, self.scale
 
 def Entity.render(&self) =
     self.transform_matrix = self.compute_matrix!
