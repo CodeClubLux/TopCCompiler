@@ -9,7 +9,7 @@ def make_Entity() &Entity =
         scale = Vec3{ 1, 1, 1}
         rotation = identity_quat!
         enabled = true
-        transform_matrix = identity_mat!
+        layermask = enable make_Layermask!, game
     }
 
 def free_entity(id: ID) =

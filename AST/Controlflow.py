@@ -66,6 +66,8 @@ class IfCondition(Node):
             if self.owner.nodes[0] != self:
                 codegen.append(" : (")
             self.nodes[0].compileToC(codegen)
+            if self.owner.nodes[0] != self:
+                codegen.append(")")
             codegen.append(" ? ")
         else:
             s = "else " if self.owner.nodes[0] != self else ""
@@ -73,6 +75,7 @@ class IfCondition(Node):
             codegen.append(f"{s}if(")
             self.nodes[0].compileToC(codegen)
             codegen.append("){")
+            codegen.addSemicolon(self)
 
     def validate(self, parser):
         if len(self.nodes) != 1:

@@ -1,5 +1,7 @@
 from "math" import all
+from "layermask" import all
 
+//Never store entity by reference, only id (unless as a component)
 type ID is uint
 
 
@@ -12,7 +14,7 @@ type Entity =
     rotation: math.Quat
     scale: math.Vec3
 
-    transform_matrix: Mat4x4
+    layermask: Layermask
 
     //children: [..]&Entity
     //parent: Maybe[&Entity]
@@ -22,12 +24,15 @@ def Entity.get_entity(&self) &Entity =
 
 def Entity.update(&self) =
 
-def Entity.compute_matrix(&self) Mat4x4 =
-    translate self.position
+def Entity.compute_model_matrix(&self) Mat4x4 =
+    trans := translate self.position
+    scal := scale self.scale
+    rotation := rotate self.rotation
 
-    //make_mat self.position, self.rotation, self.scale
+    tmp := mul_mat4 &trans, &scal
+    mul_mat4 &tmp, &rotation
 
 def Entity.render(&self) =
-    self.transform_matrix = self.compute_matrix!
+
 
 

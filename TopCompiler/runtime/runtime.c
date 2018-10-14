@@ -254,7 +254,12 @@ uint8_t _global_char_toU8(char* self, __Context) {
 
 
 
+
+
 #define _global_indexPtr(value, by, c) value + by
+#define _global_c_set_bit_to(number, n, x) (number & ~(1U << n) | (x << n))
+#define _global_c_is_bit_set(number, n) ((number >> n) & 1U)
+
 /*
 void printI(int i) {
     printf("%i\n", i);

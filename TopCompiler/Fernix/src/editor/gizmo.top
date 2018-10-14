@@ -1,0 +1,87 @@
+import "ecs"
+import "shader"
+import "buffer"
+import "model"
+from "materialSystem" import (Material, Param_Vec3)
+from "math" import (Vec3)
+
+gizmo_shader := shader.make "assets/shaders/gizmo.vert", "assets/shaders/gizmo.frag"
+
+translation_model_materials := [
+    materialSystem.Material{
+        name = "Up"
+        shader = gizmo_shader
+        params = box [
+            Param_Vec3 "color", Vec3{ 1, 0, 0}
+        ]
+    }
+    materialSystem.Material{
+        name = "Right"
+        shader = gizmo_shader
+        params = box [
+            Param_Vec3 "color", Vec3{ 0, 1, 0}
+        ]
+    }
+    materialSystem.Material{
+        name = "Forward"
+        shader = gizmo_shader
+        params = box [
+            Param_Vec3 "color", Vec3{ 0, 0, 1}
+        ]
+    }
+]
+
+translation_model := model.load_model "assets/gizmo.fbx", &translation_model_materials
+
+type GizmoType either
+    Translate
+    Disabled
+
+type Gizmo =
+    entity: &ecs.Entity
+    model_renderer: &model.ModelRenderer
+    target: Maybe[&ecs.Entity]
+    kind: GizmoType
+
+def Gizmo.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def Gizmo.target(&self, entity: &ecs.Entity) =
+    self.target = Some entity
+
+def Gizmo.render(&self) =
+
+def Gizmo.update(&self) =
+    match self.target with
+        Some target ->
+            //model_entity := translation_model_renderer.get_entity! //make translation gizmo visible
+
+            //if not target.enabled then
+            //    model_entity.enabled = false
+            //    self.target = None
+            //else
+            //    model_entity.enabled = true
+
+        None ->
+
+import "layermask"
+
+def make_GizmoSystem() &ecs.Store[Gizmo] =
+    system := ecs.make_Store::[Gizmo]!
+
+    entity := ecs.make_Entity!
+    entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor
+
+    _ := system.add_component Gizmo{
+        entity = entity
+        target = None
+        kind = Disabled
+        model_renderer = model.make_ModelRenderer model.ModelRenderer{
+            entity = entity
+            model = &translation_model
+        }
+    }
+
+    system
+
+gizmo_system := make_GizmoSystem!

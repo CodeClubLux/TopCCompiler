@@ -3,13 +3,14 @@ import "shader"
 import "math"
 import "gi"
 import "opengl"
-import "imageLoader"
+import "texture"
 import "ecs"
 import "ibl"
 import "camera"
 import "lights"
 import "input"
 import "time"
+import "layermask"
 
 def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
@@ -46,7 +47,7 @@ def init() =
 
         time.update_delta_time!
 
-        ecs.update ecs.All
+        ecs.update layermask.game
 
         camera
             .get_camera!
@@ -57,7 +58,7 @@ def init() =
         gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
         gi.clear gi.DepthBuffer
 
-        ecs.render ecs.All
+        ecs.render layermask.game
 
         w.swap_buffers!
 

@@ -1,6 +1,7 @@
 import "buffer"
 from "materialSystem" import (Material, material_by_name)
 from "math" import all
+import "ecs"
 
 type Vertex =
     position: Vec3
@@ -31,7 +32,8 @@ def make_Mesh(vertices: []Vertex, indices: []uint, material: &Material) Mesh =
         material = material
     }
 
-def Mesh.render(&self) =
-    self.material.bind!
+def Mesh.render(&self, entity: &ecs.Entity) =
+    self.material.bind entity
     self.buffer.bind!
+
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0

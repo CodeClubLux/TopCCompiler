@@ -271,8 +271,12 @@ struct FILE* _global_c_file;_global_c_file = _global_c_open_file(_global_filenam
 if(bc != NULL){struct FILE* _global_file= bc;
 return _global_Some_File(_global_FileInit(_global_file,_global_acess),bb);}if(bc == NULL){return tmp_globalc(_global_None);};
 ;}
-void _global_log_string(struct _global_String _global_s, struct _global_Context* bb){;
-_global_c_log(_global_String_toString(&(_global_s),bb),bb);
+
+#define _global_set_bit_to(bb,bc,bd,bf) _global_c_set_bit_to(bb,bc,bd)
+
+#define _global_is_bit_set(bg,bh,bj) _global_c_is_bit_set(bg,bh)
+void _global_log_string(struct _global_String _global_s, struct _global_Context* bk){;
+_global_c_log(_global_String_toString(&(_global_s),bk),bk);
 ;}
 
 void _globalInit() { 
@@ -289,6 +293,8 @@ _global_temporary_storage_as_allocator = _global_AllocatorFromStruct(&(_global_t
 _global_malloc_as_allocator = _global_AllocatorFromStruct(&(_global_malloc), &_global_Malloc_get_occupied, &_global_Malloc_alloc, &_global_Malloc_dealloc, &_global_Malloc_reset_to);;
 (&_global_context)->allocator = &(_global_temporary_storage_as_allocator);
 (&_global_context)->longterm_storage = &(_global_malloc_as_allocator);
+;
+;
 ;
 ;
 ;

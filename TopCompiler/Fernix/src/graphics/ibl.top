@@ -1,5 +1,5 @@
 import "runner"
-import "imageLoader"
+import "texture"
 import "opengl"
 import "primitives"
 import "shader"
@@ -14,10 +14,10 @@ skybox_shader := shader.make "assets/shaders/skybox.vert", "assets/shaders/skybo
 type Skybox =
     entity: &ecs.Entity
 
-    env_cubemap: imageLoader.Cubemap
-    irradiance_cubemap: imageLoader.Cubemap
-    prefilter_cubemap: imageLoader.Cubemap
-    brdf_LUT: imageLoader.Texture
+    env_cubemap: texture.Cubemap
+    irradiance_cubemap: texture.Cubemap
+    prefilter_cubemap: texture.Cubemap
+    brdf_LUT: texture.Texture
 
 def Skybox.get_entity(&self) &ecs.Entity =
     self.entity
@@ -36,7 +36,7 @@ def Skybox.render(&self) =
 
     primitives.render_cube!
 
-brdf_LUT_texture2 := imageLoader.load "assets/ibl_brdf_lut.png"
+brdf_LUT_texture2 := texture.load "assets/ibl_brdf_lut.png"
 
 def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.irradiance_cubemap.bind_to 0
@@ -77,7 +77,7 @@ def make_Skybox(name: string) &Skybox =
     opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, 2048, 2048
     opengl.framebufferRenderbuffer opengl.framebuffer, opengl.depth_attachment, opengl.renderbuffer, capture_RBO
 
-    hdr_texture := imageLoader.load name
+    hdr_texture := texture.load name
 
     env_cubemap: uint = _
     opengl.genTextures 1, &env_cubemap
@@ -285,8 +285,8 @@ def make_Skybox(name: string) &Skybox =
     skybox_system.add_component Skybox{
         entity = ecs.make_Entity!
 
-        env_cubemap = imageLoader.Cubemap{ env_cubemap }
-        irradiance_cubemap = imageLoader.Cubemap{ irradiance_map }
-        prefilter_cubemap = imageLoader.Cubemap{ prefilter_map }
-        brdf_LUT = imageLoader.Texture{ brdf_LUT_texture }
+        env_cubemap = texture.Cubemap{ env_cubemap }
+        irradiance_cubemap = texture.Cubemap{ irradiance_map }
+        prefilter_cubemap = texture.Cubemap{ prefilter_map }
+        brdf_LUT = texture.Texture{ brdf_LUT_texture }
     }

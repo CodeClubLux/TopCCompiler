@@ -310,6 +310,9 @@ def funcCallBody(parser, paren):
     parser.nodeBookmark.append(1)
 
     def notParen():
+        t = parser.thisToken()
+        if t.token in ["then", "with", "do"]:
+            return False
         return not Parser.isEnd(parser)
 
     if paren :
@@ -319,6 +322,7 @@ def funcCallBody(parser, paren):
 
     while notEnd():
         t = parser.nextToken()
+
         if t.token == "," :
             ExprParser.endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)

@@ -66,6 +66,16 @@ def Input.clear(&self) =
 
     self.keys.clear!
 
+def Input.get_vertical_axis(&self) float =
+    if self.key_down key.from_char `W` then 1
+    elif self.key_down key.from_char `S` then -1
+    else 0
+
+def Input.get_horizontal_axis(&self) float =
+    if self.key_down key.from_char `D` then 1
+    elif self.key_down key.from_char `A` then -1
+    else 0
+
 def Input.update_inputs(&s) =
     s.mouse_offset = Vec2{0,0}
 

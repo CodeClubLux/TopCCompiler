@@ -18,7 +18,7 @@ def make_DirLightSystem() &ecs.Store[DirLight] =
 
     _ := dir_light_system.add_component DirLight{
         entity = entity
-        direction = math.Vec3{ 0, 0, -1 }
+        direction = math.Vec3{ 0, -1, -1 }.norm!
         color = math.Vec3{ 3, 3, 3 }
     }
 

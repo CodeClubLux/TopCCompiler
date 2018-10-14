@@ -1,0 +1,2 @@
+ext set_bit_to: |uint, uint, bool| -> uint = "_global_c_set_bit_to"
+ext is_bit_set: |uint, uint| -> bool = "_global_c_is_bit_set"
