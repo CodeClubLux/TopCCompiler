@@ -29,8 +29,7 @@ def Entity.compute_model_matrix(&self) Mat4x4 =
     scal := scale self.scale
     rotation := rotate self.rotation
 
-    tmp := mul_mat4 &trans, &scal
-    mul_mat4 &tmp, &rotation
+    trans * scal * rotation
 
 def Entity.render(&self) =
 

@@ -52,7 +52,7 @@ def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
 
 //Skybox system
 def make_Skybox_System() &ecs.Store[Skybox] =
-    ecs.make_Store::[Skybox]!
+    ecs.make_Store::[Skybox] 1
 
 skybox_system := make_Skybox_System!
 

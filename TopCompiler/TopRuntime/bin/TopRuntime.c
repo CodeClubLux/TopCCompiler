@@ -484,7 +484,8 @@ _global_exit(1,C);
 ;}
 void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* C){;
 ;
-if(!(_global_b)){_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),C),_global_StringInit(0,""),C),C);
+if(!(_global_b)){;
+_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),C),_global_StringInit(0,""),C),C);
 ;};
 ;}
 
@@ -505,9 +506,11 @@ void* _global_TemporaryStorage_alloc(struct _global_TemporaryStorage* _global_se
 ;
 unsigned int _global_occupied;_global_occupied = (_global_self)->occupied;;
 (_global_self)->occupied=(_global_self)->occupied+_global_size;;
-if((_global_self)->occupied>(_global_self)->highest){(_global_self)->highest=(_global_self)->occupied;;
+if((_global_self)->occupied>(_global_self)->highest){;
+(_global_self)->highest=(_global_self)->occupied;;
 ;};
-if((_global_self)->occupied>=(_global_self)->maxSize){_global_log_string(_global_StringInit(48,"panic: used more temporary memory than available"),P);
+if((_global_self)->occupied>=(_global_self)->maxSize){;
+_global_log_string(_global_StringInit(48,"panic: used more temporary memory than available"),P);
 _global_exit(1,P);
 ;};
 ;return _global_offsetPtr((_global_self)->data,_global_occupied,P);
@@ -518,7 +521,8 @@ void _global_TemporaryStorage_dealloc(struct _global_TemporaryStorage* _global_s
 void _global_TemporaryStorage_reset_to(struct _global_TemporaryStorage* _global_self, unsigned int _global_occupied, struct _global_Context* P){;
 ;
 (_global_self)->occupied=_global_occupied;;
-if((_global_self)->occupied>=(_global_self)->maxSize){_global_panic(_global_StringInit(41,"used more temporary memory than available"),P);
+if((_global_self)->occupied>=(_global_self)->maxSize){;
+_global_panic(_global_StringInit(41,"used more temporary memory than available"),P);
 ;};
 ;}
 void* _global_Malloc_alloc(struct _global_Malloc* _global_self, unsigned int _global_size, struct _global_Context* P){;
@@ -555,7 +559,8 @@ struct _global_Maybe_uint S;S.tag = T.tag;S.cases = *(union _global_Maybe_uint_c
 }
 struct _global_Maybe_uint _global_RangeIterator_next(struct _global_RangeIterator* _global_self, struct _global_Context* R){;
 struct _global_Range* _global_range;_global_range = &(((_global_self)->range));;
-;if((_global_self)->it<(_global_range)->end){unsigned int _global_tmp;_global_tmp = (_global_self)->it;;
+;if((_global_self)->it<(_global_range)->end){;
+unsigned int _global_tmp;_global_tmp = (_global_self)->it;;
 (_global_self)->it=(_global_self)->it+1;;
 return _global_Some_uint(_global_tmp,R);}
 else{return tmp_globalb(_global_None);};
@@ -610,7 +615,7 @@ _global_WriteFile.tag = 1;_global_None.tag = 1;
 ;
 ;
 ;
-_global_temporary_storage = _global_new_TemporaryStorage(30000,(&_global_context));;
+_global_temporary_storage = _global_new_TemporaryStorage(100000,(&_global_context));;
 _global_malloc = _global_MallocInit();;
 _global_temporary_storage_as_allocator = _global_AllocatorFromStruct(&(_global_temporary_storage), &_global_TemporaryStorage_get_occupied, &_global_TemporaryStorage_alloc, &_global_TemporaryStorage_dealloc, &_global_TemporaryStorage_reset_to);;
 _global_malloc_as_allocator = _global_AllocatorFromStruct(&(_global_malloc), &_global_Malloc_get_occupied, &_global_Malloc_alloc, &_global_Malloc_dealloc, &_global_Malloc_reset_to);;

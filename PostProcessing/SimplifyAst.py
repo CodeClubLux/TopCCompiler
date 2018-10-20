@@ -10,13 +10,15 @@ def print(s):
 """
 
 def callMethodCode(node, name, typ, parser, unary):
+    isMethod = False
     if type(typ) is Types.Pointer and type(typ.pType) is Types.Alias:
         method = typ.pType.typ.hasMethod(parser, name, isP=True)
         if method:
             typ = typ.pType.typ
+            isMethod = True
 
     elif type(typ) is Types.Alias:
-        method = typ.typ.hasMethod(parser, name)
+        method = typ.typ.hasMethod(parser, name, isP= isMethod)
         if method:
             typ = typ.typ
 
@@ -260,7 +262,7 @@ class Specifications:
 
         if not fullName in self.genericFuncs:
             if forceFound: pass
-            #raise EOFError("Could not find generic function " + fullName)
+            #EOFError("Could not find generic function " + fullName)
             self.delayed[fullName] = (package, funcName, replaced)
             return id
 
@@ -312,15 +314,14 @@ class Specifications:
 
 def isGenericMethod(ast):
     if ast.method:
-        t = ast.ftype.args[0].toRealType()
+        t = ast.ftype.args[0]
         if type(t) is Types.Pointer:
-            g = t.pType.toRealType().remainingGen
+            g = t.pType.remainingGen
             return g
         else:
             return t.remainingGen
 
     return False
-
 
 def isGenericFunc(ast):
     return ast.ftype.generic or isGenericMethod(ast) #pass by reference

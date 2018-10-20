@@ -35,7 +35,7 @@ void main()
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 
     TexCoords = vec2(aTexCoords.x, aTexCoords.y) * 3;
-	FragPos = aPos;
+	FragPos = vec3(model * vec4(aPos, 1.0));
 
 	vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
 	vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));

@@ -116,9 +116,9 @@ def isEnd(parser):
         parser.fired = False
         return True
 
-    if token.token in ["!", "->", "\n", "with", "do"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
-        if token.token == "!" and len(parser.currentNode.nodes) > 1:
-            return False
+    if token.token in [ "->", "\n", "with", "do"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
+        #if token.token == "!" and len(parser.currentNode.nodes) > 1:
+        #    return False
 
         #"""
         if token.token == "|>" and type(parser.currentNode) in [Tree.Assign, Tree.CreateAssign, Tree.Block, Tree.FuncBody, Tree.Root]:
@@ -130,7 +130,6 @@ def isEnd(parser):
 
         return maybeEnd(parser)
     return False
-
 
 def declareOnly(self, noVar=False):
     s1 = selectStmt(self, self.thisToken())
@@ -262,11 +261,15 @@ def callToken(self, lam= False):
                     #self.iter += 1
                     isIndentationCall = True
 
-        if not lam and (b.token in ["!", "_", "(", "\\", "|", "<-"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
+
+        if not lam and (b.token in ["_", "(", "\\", "|", "<-", "!"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
             if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)
-            FuncParser.callFunc(self, False)
+            if b.token == "!":
+                FuncParser.callFunc(self, False, True)
+            else:
+                FuncParser.callFunc(self, False, False)
             returnBookmark(self)
             return
         else:

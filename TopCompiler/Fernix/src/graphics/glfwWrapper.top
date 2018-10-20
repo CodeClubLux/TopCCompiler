@@ -24,14 +24,24 @@ ext glfwSetWindowUserPointer: |&GLFWwindow, &none| -> none = "glfwSetWindowUserP
 ext glfwSetCursorPosCallback: |&GLFWwindow, |&GLFWwindow, f64, f64| -> none| -> none = "glfwSetCursorPosCallback"
 ext glfwSetInputMode: |&GLFWwindow, uint, uint| -> none = "glfwSetInputMode"
 ext glfwGetWindowUserPointer: |&GLFWwindow| -> &none = "glfwGetWindowUserPointer"
+ext glfwSetKeyCallback: |&GLFWwindow, |&GLFWwindow, int, int, int, int| -> none| -> none = "glfwSetKeyCallback"
+
+ext glfwGetMouseButton: |&GLFWwindow, uint| -> int = "glfwGetMouseButton"
 
 ext glfw_cursor: uint = "GLFW_CURSOR"
 ext glfw_cursor_disabled: uint = "GLFW_CURSOR_DISABLED"
+ext glfw_cursor_normal: uint = "GLFW_CURSOR_NORMAL"
 
-ext left_shift: uint = "GLFW_KEY_LEFT_SHIFT"
-ext right_shift: uint = "GLFW_KEY_RIGHT_SHIFT"
+ext glfw_key_left_shift: uint = "GLFW_KEY_LEFT_SHIFT"
+ext glfw_key_right_shift: uint = "GLFW_KEY_RIGHT_SHIFT"
+ext glfw_key_escape: uint = "GLFW_KEY_ESCAPE"
+
+ext glfw_mouse_button_right: uint = "GLFW_MOUSE_BUTTON_RIGHT"
+ext glfw_mouse_button_middle: uint = "GLFW_MOUSE_BUTTON_MIDDLE"
+ext glfw_mouse_button_left: uint = "GLFW_MOUSE_BUTTON_LEFT"
 
 ext glfw_press: int = "GLFW_PRESS"
+ext glfw_release: int = "GLFW_RELEASE"
 
 ext getTime: || -> float = "glfwGetTime"
 

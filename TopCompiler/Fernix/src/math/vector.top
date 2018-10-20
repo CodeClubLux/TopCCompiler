@@ -41,7 +41,6 @@ def Vec3.unary_sub(self) Vec3 =
         -self.z
     }
 
-
 def Vec2.op_sub(self, other: Vec2) Vec2 =
     Vec2{
         self.x - other.x
@@ -76,12 +75,17 @@ def Vec4.scale(self, constant: float) Vec4 =
         self.w * constant
     }
 
+def Vec4.toString(self) string =
+    "Vec4({self.x}, {self.y}, {self.z}"
+
+def Vec3.toString(self) string =
+    "Vec3({self.x}, {self.y}, {self.z})"
 
 def Vec3.dot(self, other: Vec3) float =
-    self.x * other.x + self.y * other.y + self.z * other.z
+    (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
 
 def Vec4.dot(self, other: Vec4) float =
-    self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+    (self.x * other.x) + (self.y * other.y) + (self.z * other.z) + (self.w * other.w)
 
 def Vec3.len(self) float =
     sqrt self.x^2 + self.y^2 + self.z^2

@@ -40,6 +40,8 @@ def incrScope(parser):
     parser.scope[parser.package].append({})
 
 def addVar(node, parser, name, type, _global=False):
+    if name is None: return
+
     if not parser.repl and varExists(parser, parser.package, name):
         node.error( "variable "+name+" already exists")
 
@@ -98,7 +100,7 @@ def isMutable(parser, package, name):
         except KeyError: pass
 
 def typeOfVar(node, parser, package, name):
-    if name in parser.imports: return Types.Package()
+    if name in parser.imports and parser.package == package: return Types.Package()
     if package == parser.package:
         for i in parser.scope["_global"]:
             if name in i:

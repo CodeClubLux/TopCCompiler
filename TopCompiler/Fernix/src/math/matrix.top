@@ -12,7 +12,7 @@ def identity_mat() Mat4x4 =
 
     new
 
-def mul_mat4(a: &Mat4x4, b: &Mat4x4) Mat4x4 =
+def Mat4x4.op_mul(a, b: Mat4x4) Mat4x4 =
     r : Mat4x4 = _
 
     r[0] = a[0] * b[0] + a[1] * b[4] + a[2] * b[8] + a[3] * b[12]
@@ -37,13 +37,12 @@ def mul_mat4(a: &Mat4x4, b: &Mat4x4) Mat4x4 =
 
     r
 
-def Mat4x4.mul_vec4(&self, other: Vec4) Vec4 =
+def Mat4x4.mul_vec4(&m, vec: Vec4) Vec4 =
     new_vec := [4: 0.0]
 
-    for row := 0..4 do
-        vec_value := other[row]
-        for column := 0..4 do
-            new_vec[row] += vec_value * self[row*4 + column]
+    for j := 0..4 do
+        for i := 0..4 do
+            new_vec[j] += m[j*4 + i] * vec[i]
 
     vec4_from_array &new_vec
 
@@ -63,6 +62,7 @@ def rotate(q: Quat) Mat4x4 =
         2*(b*d - a*c)      , 2*(c*d + a*b), (a2-b2-c2+d2) , 0
         0                  , 0            , 0             , 1
     ]
+
 
 def translate(position: Vec3) Mat4x4 =
     [
@@ -104,7 +104,56 @@ def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
         0 ,  0 , 0,        1
     ]
 
+
+
 //tmp_mat := make_mat Vec3{0,0,0}, identity_quat!, Vec3{1,1,1}
 //
 //for tmp_i := 0..16 do
 //    log tmp_mat[tmp_i]
+
+def invert(m: Mat4x4) Mat4x4 =
+    invOut : Mat4x4 = _
+    inv := [16: 0.0]
+
+    det := 0.0
+
+    inv[0] = m[5]  * m[10] * m[15] - m[5]  * m[11] * m[14] - m[9]  * m[6]  * m[15] + m[9]  * m[7]  * m[14] + m[13] * m[6]  * m[11] - m[13] * m[7]  * m[10]
+    inv[4] = -m[4]  * m[10] * m[15] + m[4]  * m[11] * m[14] + m[8]  * m[6]  * m[15] - m[8]  * m[7]  * m[14] - m[12] * m[6]  * m[11] + m[12] * m[7]  * m[10]
+    inv[8] = m[4]  * m[9] * m[15] - m[4]  * m[11] * m[13] - m[8]  * m[5] * m[15] + m[8]  * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9]
+    inv[12] = -m[4]  * m[9] * m[14] + m[4]  * m[10] * m[13] + m[8]  * m[5] * m[14] - m[8]  * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9]
+    inv[1] = -m[1]  * m[10] * m[15] + m[1]  * m[11] * m[14] + m[9]  * m[2] * m[15] - m[9]  * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10]
+    inv[5] = m[0]  * m[10] * m[15] - m[0]  * m[11] * m[14] - m[8]  * m[2] * m[15] + m[8]  * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10]
+    inv[9] = -m[0]  * m[9] * m[15] + m[0]  * m[11] * m[13] + m[8]  * m[1] * m[15] - m[8]  * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9]
+    inv[13] = m[0]  * m[9] * m[14] - m[0]  * m[10] * m[13] - m[8]  * m[1] * m[14] + m[8]  * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9]
+    inv[2] = m[1]  * m[6] * m[15] - m[1]  * m[7] * m[14] - m[5]  * m[2] * m[15] + m[5]  * m[3] * m[14] + m[13] * m[2] * m[7] - m[13] * m[3] * m[6]
+    inv[6] = -m[0]  * m[6] * m[15] + m[0]  * m[7] * m[14] + m[4]  * m[2] * m[15] - m[4]  * m[3] * m[14] - m[12] * m[2] * m[7] + m[12] * m[3] * m[6]
+    inv[10] = m[0]  * m[5] * m[15] - m[0]  * m[7] * m[13] - m[4]  * m[1] * m[15] + m[4]  * m[3] * m[13] + m[12] * m[1] * m[7] - m[12] * m[3] * m[5]
+    inv[14] = -m[0]  * m[5] * m[14] + m[0]  * m[6] * m[13] + m[4]  * m[1] * m[14] - m[4]  * m[2] * m[13] - m[12] * m[1] * m[6] + m[12] * m[2] * m[5]
+    inv[3] = -m[1] * m[6] * m[11] + m[1] * m[7] * m[10] + m[5] * m[2] * m[11] - m[5] * m[3] * m[10] - m[9] * m[2] * m[7] + m[9] * m[3] * m[6]
+    inv[7] = m[0] * m[6] * m[11] - m[0] * m[7] * m[10] - m[4] * m[2] * m[11] + m[4] * m[3] * m[10] + m[8] * m[2] * m[7] - m[8] * m[3] * m[6]
+    inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9] + m[4] * m[1] * m[11] - m[4] * m[3] * m[9] - m[8] * m[1] * m[7] + m[8] * m[3] * m[5]
+    inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10] + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5]
+
+    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12]
+
+    if det == 0 then
+        return invOut
+
+    det = 1.0 / det;
+
+    for i := 0..16 do
+        invOut[i] = inv[i] * det
+
+    invOut
+
+test := perspective 110, 1, 0.1, 100
+test2 := (&test).mul_vec4 Vec4{10,0,0,1}
+test = invert test
+test2 = (&test).mul_vec4 test2
+
+log test2.x
+log test2.y
+log test2.z
+log test2.w
+
+log "==== vec3"

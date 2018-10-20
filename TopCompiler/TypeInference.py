@@ -471,7 +471,7 @@ def infer(parser, tree):
                             else:
                                 typ = Types.FuncPointer([startType] * normal, typ)
 
-                        realT = typ.toRealType()
+                        realT = typ #.toRealType()
                         if i.kind == "-" and type(realT) is Types.I32 and realT.unsigned:
                             i.type = Types.I32(size= realT.size, unsigned=True)
                         i.type = typ

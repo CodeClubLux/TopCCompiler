@@ -130,7 +130,7 @@ class Operator(Node):
 
 def checkOperator(self, parser):
         i = self
-        if type(i.opT) is Types.Alias:
+        if type(i.opT) is Types.Alias and type(i.opT.typ) in [Types.Float, Types.I32]: #todo change this to work more general
             i.opT = i.opT.typ
 
         unary = self.unary
@@ -210,7 +210,7 @@ def checkOperator(self, parser):
                 return
             elif type(i.opT) is Types.Pointer and i.kind == "*" and i.unary:
                 i.type = i.opT.pType
-            elif type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Pointer]:
+            elif type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Pointer, Types.Alias]:
                 try:
                     func = i.opT.hasMethod(parser, overloads[i.kind])
                 except EOFError as e:

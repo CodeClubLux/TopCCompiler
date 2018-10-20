@@ -2,6 +2,7 @@ ext sqrt: |float| -> float = "sqrtf"
 ext cos: |float| -> float = "cosf"
 ext sin: |float| -> float = "sinf"
 ext tan: |float| -> float = "tanf"
+ext abs: |float| -> float = "fabs"
 
 pi := 3.14159265
 

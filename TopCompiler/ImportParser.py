@@ -163,7 +163,8 @@ def fromParser(parser, decl= False, stage=False):
             _names.add(i)
 
         for i in parser.scope[name][0]:
-            _names.add(i)
+            if not type(parser.scope[name][0][i]) is Scope.Alias:
+                _names.add(i)
 
         for i in _names:
             getName(token, i)

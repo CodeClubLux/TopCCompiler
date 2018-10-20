@@ -11,6 +11,7 @@ import "lights"
 import "input"
 import "time"
 import "layermask"
+import "editor"
 
 def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
@@ -41,13 +42,17 @@ def init() =
 
         //update all systems
         //@todo move these systems into the entity component system
-        input
-            .get_input!
-            .update_inputs!
+        mask :=
+            if editor.in_editor! then layermask.editor
+            else layermask.game
+
+        inp := input.get_input!
+        inp.clear!
+        inp.update_inputs!
 
         time.update_delta_time!
-
-        ecs.update layermask.game
+        editor.editor.update!
+        ecs.update layermask.enable layermask.make_Layermask!, mask
 
         camera
             .get_camera!
@@ -58,7 +63,11 @@ def init() =
         gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
         gi.clear gi.DepthBuffer
 
-        ecs.render layermask.game
+        render_mask := layermask.make_Layermask!
+        render_mask = layermask.enable render_mask, mask
+        render_mask = layermask.enable render_mask, layermask.game
+
+        ecs.render render_mask
 
         w.swap_buffers!
 

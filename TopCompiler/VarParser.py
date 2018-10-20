@@ -244,6 +244,8 @@ def read(parser, name, package= ""):
 
     parser.currentNode.addNode(node)
 
+import copy
+
 def equalAnd(parser, operator, package= ""):
     if package == "": package = parser.package
     assignParser(parser, "", init= False, package= package)
@@ -255,7 +257,7 @@ def equalAnd(parser, operator, package= ""):
 
     add = Tree.Operator(operator, parser)
     add.isUnary = False
-    add.addNode(readVar)
+    add.addNode(copy.copy(readVar))
     add.addNode(node.nodes[1])
 
     add.owner = node

@@ -96,17 +96,23 @@ def Model.render(&self, entity: &ecs.Entity) =
 type ModelRenderer =
     entity: &ecs.Entity
     model: &Model
+    visible: bool
 
 def ModelRenderer.get_entity(&self) &ecs.Entity =
     self.entity
 
 def ModelRenderer.render(&self) =
-    self.model.render self.get_entity!
+    if self.visible then
+        self.model.render self.get_entity!
 
 def ModelRenderer.update(&self) =
 
 //setup model renderer system
-model_renderer_system := ecs.make_Store::[ModelRenderer]!
+model_renderer_system := ecs.make_Store::[ModelRenderer] 100
 
-def make_ModelRenderer(model_renderer: ModelRenderer) &ModelRenderer =
-    model_renderer_system.add_component model_renderer
+def make_ModelRenderer(entity: &ecs.Entity, model: &Model) &ModelRenderer =
+    model_renderer_system.add_component ModelRenderer{
+        entity = entity
+        model = model
+        visible = true
+    }

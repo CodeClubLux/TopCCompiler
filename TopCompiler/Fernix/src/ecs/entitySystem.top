@@ -1,4 +1,4 @@
-entity_system := make_Store::[Entity]!
+entity_system := make_Store::[Entity] 1000
 
 def make_Entity() &Entity =
     id := entity_system.components.length

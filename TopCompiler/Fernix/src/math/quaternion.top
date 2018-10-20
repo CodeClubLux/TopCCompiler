@@ -86,11 +86,12 @@ q1 := make_quat (radians 90), Vec3{0,0,1}
 v2 := Vec3{1,0,0}
 v2 = q1.mul_vec3 v2
 
+/*
 log v2.x
 log v2.y
 log v2.z
 log "==== quat "
-
+*/
 //vec := tmp2.mul_vec3 Vec3{0,0,-1}
 
 //def Quat.op_sub(&self, other: &Quat) Quat =

@@ -29,25 +29,21 @@ def Camera.update_matrices(&self) =
         0.1
         100.0
 
-
-
     target := (entity.rotation.mul_vec3 math.Vec3{0,0,1}).norm!
 
     rotate_m := math.rotate entity.rotation
     translate_m := math.translate -entity.position
 
-    self.view_matrix = math.mul_mat4 &rotate_m, &translate_m
+    self.view_matrix = rotate_m * translate_m
 
-    //self.view_matrix = math.look_at
-    //    entity.position
-    //    entity.position - target
-    //    math.Vec3{0,1,0}
+import "layermask"
 
 def make_CameraSystem() &ecs.Store[Camera] =
     entity := ecs.make_Entity!
     entity.position = math.Vec3{ 0, 0, 1.8 }
+    entity.layermask = layermask.enable entity.layermask, layermask.editor
 
-    system := ecs.make_Store::[Camera]!
+    system := ecs.make_Store::[Camera] 10
 
     _ := system.add_component Camera{
         entity = entity

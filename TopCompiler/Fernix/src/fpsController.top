@@ -25,6 +25,8 @@ def FPSController.get_speed(&self) float =
     if inp.key_down key.lshift then self.movement_speed * 2 * get_delta_time!
     else self.movement_speed * get_delta_time!
 
+import "editor"
+
 def FPSController.update(&self) =
     inp := input.get_input!
     entity := self.get_entity!
@@ -60,7 +62,17 @@ def FPSController.update(&self) =
     for i := 0..self.past_movement_speed_length do
         mouse_offset += self.past_movement_speed[i]
 
-    mouse_offset = mouse_offset.scale (1.0/self.past_movement_speed_length)
+    mouse_offset =
+        if editor.in_editor! then
+            if inp.mouse_button_down key.Right then
+                inp.capture_mouse true
+                mouse_offset.scale (1.0/self.past_movement_speed_length)
+            else
+                inp.capture_mouse false
+                math.Vec2{0,0}
+        else
+            inp.capture_mouse true
+            mouse_offset.scale (1.0/self.past_movement_speed_length)
 
     yaw := mouse_offset.x + self.yaw
     pitch := (-mouse_offset.y) + self.pitch
@@ -87,13 +99,13 @@ def FPSController.update(&self) =
 def FPSController.render(&self) =
 
 
-fpsController_system := ecs.make_Store::[FPSController]!
+fpsController_system := ecs.make_Store::[FPSController] 5
 
 def make_FPSController(cam: &camera.Camera) &FPSController =
     fpsController_system.add_component FPSController{
         camera = cam
         mouse_sensitivity = 0.01
-        movement_speed = 3
+        movement_speed = 6
         yaw = 0
         pitch = 0
 

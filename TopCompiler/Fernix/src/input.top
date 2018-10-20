@@ -7,7 +7,6 @@ from "key" import all
 //Handles all state related to input
 type Input =
     first_mouse: bool
-    capture_mouse: bool
 
     mouse_position: Vec2
     mouse_offset: Vec2
@@ -24,8 +23,6 @@ def Input.cursor_pos_callback(&self, mouse_position: Vec2) =
         self.mouse_position = mouse_position
         self.first_mouse = false
 
-    //if self.capture_mouse then
-
     xpos := mouse_position.x
     ypos := mouse_position.y
 
@@ -36,7 +33,7 @@ def Input.cursor_pos_callback(&self, mouse_position: Vec2) =
 
     self.mouse_position = mouse_position
 
-def Input.to_device_cord(&self, position: Vec2) Vec2 = //Takes mouse postion and transforms into device coordinates
+def Input.to_device_coord(&self, position: Vec2) Vec2 = //Takes mouse postion and transforms into device coordinates
     w := window.get_window!
 
     Vec2{
@@ -44,13 +41,24 @@ def Input.to_device_cord(&self, position: Vec2) Vec2 = //Takes mouse postion and
         -(position.y / w.height * 2 - 1)
     }
 
+def Input.capture_mouse(&self, captured: bool) =
+    window
+        .get_window!
+        .capture_mouse captured
+
 def Input.key_callback(&self, _key: Key, action: KeyAction) =
     self.keys.insert _key, action
+    //todo delete key from last frame map if the key was released
 
 def Input.key_down(&self, _key: Key) bool =
     window
         .get_window!
         .key_down _key
+
+def Input.mouse_button_down(&self, button: MouseButton) bool =
+    window
+        .get_window!
+        .mouse_button_down button
 
 def Input.key_pressed(&self, _key: Key) bool =
     if not self.last_frame_keys.contains _key then
@@ -61,8 +69,7 @@ def Input.key_pressed(&self, _key: Key) bool =
 def Input.clear(&self) =
     for _key := self.keys.keys do
         value := self.keys.actions[i]
-
-        self.last_frame_keys[_key] = value
+        self.last_frame_keys.insert _key, value
 
     self.keys.clear!
 
@@ -91,7 +98,6 @@ def make_Input() Input =
 
     Input{
         first_mouse = true
-        capture_mouse = true
 
         mouse_position = Vec2{0,0}
         mouse_offset = Vec2{0,0}

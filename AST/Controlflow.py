@@ -19,6 +19,8 @@ class If(Node):
         return "IF"
 
     def compileToC(self, codegen):
+        codegen.incrScope()
+
         if self.ternary:
             codegen.append("(")
             for i in self.nodes:
@@ -40,6 +42,7 @@ class If(Node):
 
                 count += 2
 
+        codegen.decrScope()
     def validate(self, parser):
         if self.type != Types.Null():
             if len(self.nodes) <= 2:

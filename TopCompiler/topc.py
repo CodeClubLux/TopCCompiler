@@ -131,10 +131,6 @@ def getCompilationFiles(target):
             if package == start: continue
             package = package[package.find("src/")+len("src/"):]
 
-            if package in file and not package == "main":
-                Error.error("multiple packages named "+package)
-
-            file[package] = []
 
             try:
                 port = open(start+package+"/port.json", mode= "r")
@@ -142,6 +138,11 @@ def getCompilationFiles(target):
                 continue
                 Error.error("missing file port.json in package "+package+"")
 
+            if package in file and not package == "main":
+                Error.error("multiple packages named "+package)
+
+
+            file[package] = []
             files = []
             try:
                 j = json.loads(port.read())

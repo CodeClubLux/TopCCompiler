@@ -64,16 +64,6 @@ def Array[T].reserve(&self, newSize: uint) =
             Some (allocator.alloc self.capacity * sizeof T) cast &T
 
 def Array[T].clear(&self) =
-    self.data = match self.data with
-        Some data ->
-            match self.allocator with
-                Some allocator -> allocator.dealloc data
-                None -> //Shouldnt be possible but hey
-
-            None
-
-        None -> None
-
     self.length = 0
 
 def Array[T].append(&self, value: T) =

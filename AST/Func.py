@@ -111,6 +111,7 @@ class FuncBody(Node):
             codegen.append("}")
             return
 
+        codegen.addSemicolon(self)
         codegen.incrDeferred()
 
         for i in self.nodes[:-1]:
@@ -143,7 +144,6 @@ class FuncBody(Node):
             codegen.append(f"return {isDeferred};\n }}")
         else:
             codegen.append(";}\n")
-
 
         isToString = self.method and self.name.endswith("toString") and self.types[0].isType(Types.Pointer)
 

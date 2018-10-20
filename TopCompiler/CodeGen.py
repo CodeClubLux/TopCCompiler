@@ -154,6 +154,8 @@ class CodeGen:
                 self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
 
     def createName(self, name, typ):
+        if typ == "ecs.ID":
+            print("what")
         self.names[-1][name] = (typ, name)
         return name
 

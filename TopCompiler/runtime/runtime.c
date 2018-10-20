@@ -67,13 +67,14 @@ struct _global_String _global_String_op_add(struct _global_String* a, struct _gl
 }
 
 struct _global_String _global_Float_toStringByValue(float x,__Context) {
-    printf("%f", x);
-    return _global_StringInit(0,"");
+    int len = snprintf(NULL, 0, "%f", x);
+    char *result = (char *)alloc(context->allocator, len + 1, context);
+    snprintf(result, len + 1, "%f", x);
+    return _global_StringInit(len,result);
 }
 
 struct _global_String _global_Float_toString(float* x,__Context) {
-    printf("%f", *x);
-    return _global_StringInit(0,"");
+    return _global_Float_toStringByValue(*x, context);
 }
 
 void _reverse_string(struct _global_String * self) {
