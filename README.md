@@ -2,7 +2,7 @@
 
 Compiler for the Top programming language, written in python3.6. The language compiles to C and then calls clang to convert it to machine code.
 
-The Top programming language, also known as Toplang is a imperative programming language with functional features such as pattern matching, conditionals that return values and ADTs. It is designed to be low level while having clean syntax and powerfull but simple features. One example of this is context based allocation, allowing code to not care about allocations and then when needed fine tune the allocator strategy. The default allocator being a linear allocator that just deletes all data at the end of the frame, which means most of the time freeing memory is unnecessary. The next important features is interfaces which allows decoupling of code while still being performant when using generics that must fullfill an interace.
+The Top programming language, also known as Toplang is a imperative programming language with functional features such as pattern matching, conditionals that return values and ADTs. It is designed to be low level while having clean syntax and powerfull but simple features. One example of this is context based allocation, allowing code to not care about allocations and then when needed fine tune the allocator strategy. The default allocator being a linear allocator that just deletes all data at the end of the frame. This means most of the time freeing memory is unnecessary. The next important features is interfaces which allows decoupling of code while still being performant when using generics that must fullfill an interface.
 
 Features that are coming soon, are the ability to switch between AOS and SOA, lightweight fibers, go like concurrency, hot swapping and runtime type reflection. 
 
@@ -41,7 +41,7 @@ Features that are coming soon, are the ability to switch between AOS and SOA, li
 
   
 ## Example Project
-Take a look inside of TopCompiler/Test for the beginings of a game engine written in Top. Also, check TopCompiler/TopRuntime which is the runtime, also written in top.
+Take a look inside of TopCompiler/Fernix for the beginings of a game engine written in Top. Also, check TopCompiler/TopRuntime which is the runtime, also written in top.
 
 ## Small Guide to Top
 
