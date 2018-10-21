@@ -40,9 +40,9 @@ def Mat4x4.op_mul(a, b: Mat4x4) Mat4x4 =
 def Mat4x4.mul_vec4(&m, vec: Vec4) Vec4 =
     new_vec := [4: 0.0]
 
-    for j := 0..4 do
-        for i := 0..4 do
-            new_vec[j] += m[j*4 + i] * vec[i]
+    for i := 0..4 do
+        for j := 0..4 do
+            new_vec[j] += m[i*4 + j] * vec[i]
 
     vec4_from_array &new_vec
 
@@ -101,7 +101,7 @@ def look_at(eye: Vec3, center: Vec3, up: Vec3) Mat4x4 =
         s.x, s.y, s.z, -eye.x
         t.x, t.y, t.z, -eye.y
         -f.x,-f.y,-f.z, -eye.z
-        0 ,  0 , 0,        1
+        0 ,  0   , 0,   1
     ]
 
 
@@ -146,14 +146,14 @@ def invert(m: Mat4x4) Mat4x4 =
 
     invOut
 
-test := perspective 110, 1, 0.1, 100
-test2 := (&test).mul_vec4 Vec4{10,0,0,1}
-test = invert test
-test2 = (&test).mul_vec4 test2
+test := (invert perspective 56, 1, 0.1, 100) * (invert translate Vec3{1,0,0})
+test2 := (&test).mul_vec4 Vec4{0,0,0,1}
+test2 = test2.scale (1/test2.w)
 
-log test2.x
-log test2.y
-log test2.z
-log test2.w
+//test = invert test
+//test2 = (&test).mul_vec4 test2
+//test2 = test2.scale (1/test2.w)
+
+log test2
 
 log "==== vec3"

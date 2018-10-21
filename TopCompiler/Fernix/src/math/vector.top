@@ -76,7 +76,7 @@ def Vec4.scale(self, constant: float) Vec4 =
     }
 
 def Vec4.toString(self) string =
-    "Vec4({self.x}, {self.y}, {self.z}"
+    "Vec4({self.x}, {self.y}, {self.z}, {self.w})"
 
 def Vec3.toString(self) string =
     "Vec3({self.x}, {self.y}, {self.z})"

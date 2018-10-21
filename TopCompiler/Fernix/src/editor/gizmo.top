@@ -79,6 +79,7 @@ type Ray =
 let flt_min = 0.001
 let flt_max = 100
 
+
 def closest_distance_between_lines(l1: &Ray, l2: &Ray) float =
     dp := l2.origin - l1.origin
     v12 := l1.direction.dot l1.direction
@@ -107,9 +108,9 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
 
     if not inp.mouse_button_down key.Left then return true
 
-    n := (inp.to_device_coord inp.mouse_position).scale 0.5
+    n := inp.to_device_coord inp.mouse_position
 
-    view_proj_inverse := invert (cam.projection_matrix * cam.view_matrix)
+    view_proj_inverse := invert (cam.view_matrix * cam.projection_matrix)
 
     ray_start := (&view_proj_inverse).mul_vec4 Vec4{n.x, n.y, 0, 1}
     ray_start = ray_start.scale (1.0 / ray_start.w)
@@ -144,13 +145,12 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
         t = 1.0
     }
 
-    d1 := closest_distance_between_lines &r, &t1
-    d2 := closest_distance_between_lines &r, &t2
-    d3 := closest_distance_between_lines &r, &t3
+    d1 := closest_distance_between_lines &t1, &r
+    d2 := closest_distance_between_lines &t2, &r
+    d3 := closest_distance_between_lines &t3, &r
 
     log "===="
-    log r.origin
-    log r.direction
+    log "origin: {r.origin}, direction: {r.direction}, cam_position: {cam.get_entity!.position}"
 
     if d1 < d2 and d1 < d3 then
         log "right"
