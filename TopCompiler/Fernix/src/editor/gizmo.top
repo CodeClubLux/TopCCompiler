@@ -110,7 +110,7 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
 
     n := inp.to_device_coord inp.mouse_position
 
-    view_proj_inverse := invert (cam.view_matrix * cam.projection_matrix)
+    view_proj_inverse := invert (cam.projection_matrix * cam.view_matrix)
 
     ray_start := (&view_proj_inverse).mul_vec4 Vec4{n.x, n.y, 0, 1}
     ray_start = ray_start.scale (1.0 / ray_start.w)
