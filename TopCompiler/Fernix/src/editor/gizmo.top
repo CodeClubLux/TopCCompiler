@@ -45,6 +45,7 @@ type Gizmo =
     model_renderer: &model.ModelRenderer
     target: Maybe[ecs.ID]
     kind: GizmoType
+    last_intersection: Vec3
 
 def Gizmo.get_entity(&self) &ecs.Entity =
     self.entity
@@ -76,37 +77,54 @@ type Ray =
     direction: Vec3
     t: float
 
-let flt_min = 0.001
-let flt_max = 100
+let flt_min = 0.5
+let flt_max = 10000.0
+let greatest_distance = 0.1
 
+type Closest_Point_Result =
+    distance: float
+    closest_point_1: Vec3
+    closest_point_2: Vec3
 
-def closest_distance_between_lines(l1: &Ray, l2: &Ray) float =
-    dp := l2.origin - l1.origin
-    v12 := l1.direction.dot l1.direction
-    v22 := l2.direction.dot l2.direction
-    v1v2 := l1.direction.dot l2.direction
+def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
+    line_point1 := r1.origin
+    line_point2 := r2.origin
 
-    det := v1v2 * v1v2 - v12 * v22
+    line_vec1 := r1.direction
+    line_vec2 := r2.direction
 
-    if (abs det) > flt_min then
-        inv_det := 1.0 / det
+    a := line_vec1.dot line_vec1
+    b := line_vec1.dot line_vec2
+    e := line_vec2.dot line_vec2
 
-        dpv1 := dp.dot l1.direction
-        dpv2 := dp.dot l2.direction
+    d := a*e - b*b
 
-        l1.t = inv_det * (v22 * dpv1 - v1v2 * dpv2)
-        l2.t = inv_det * (v1v2 * dpv1 - v12 * dpv2)
+    if (abs d) > flt_min then
+        r := line_point1 - line_point2
+        c := line_vec1.dot r
+        f := line_vec2.dot r
 
-        (dp + (l2.direction.scale l2.t) - (l1.direction.scale l1.t)).len!
+        s := min r1.t, (b*f - c*e) / d
+        t := min r2.t, (a*f - c*b) / d
+
+        closest_point1 := line_point1 + line_vec1.scale s
+        closest_point2 := line_point2 + line_vec2.scale t
+
+        Some Closest_Point_Result{
+            distance = (closest_point2 - closest_point1).len!
+            closest_point_1 = closest_point1
+            closest_point_2 = closest_point2
+        }
     else
-        a := dp.cross l1.direction
-        sqrt (a.dot a) / v12
+        None
 
 def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
     inp := input.get_input!
     cam := camera.get_camera!
 
-    if not inp.mouse_button_down key.Left then return true
+    if not inp.mouse_button_down key.Left then
+        self.last_intersection = Vec3{0,0,0}
+        return true
 
     n := inp.to_device_coord inp.mouse_position
 
@@ -141,23 +159,47 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
 
     t3 := Ray{
         origin = target.position
-        direction = Vec3{0,0,-1}
-        t = 1.0
+        direction = Vec3{0,0,1}
+        t = -1.0
     }
 
-    d1 := closest_distance_between_lines &t1, &r
-    d2 := closest_distance_between_lines &t2, &r
-    d3 := closest_distance_between_lines &t3, &r
+    failed_intersect := Closest_Point_Result{
+        distance = 1000
+        closest_point_1 = Vec3{0,0,0}
+        closest_point_2 = Vec3{0,0,0}
+    }
 
-    log "===="
-    log "origin: {r.origin}, direction: {r.direction}, cam_position: {cam.get_entity!.position}"
+    i_right := (closest_point &t1, &r).default failed_intersect
+    i_up := (closest_point &t2, &r).default failed_intersect
+    i_forward := (closest_point &t3, &r).default failed_intersect
 
-    if d1 < d2 and d1 < d3 then
-        log "right"
-    elif d2 < d1 and d2 < d3 then
-        log "up"
+    d1 := i_right.distance
+    d2 := i_up.distance
+    d3 := i_forward.distance
+
+    if d1 < d2 and d1 < d3 and d1 < greatest_distance then
+        diff :=
+            if self.last_intersection.x == 0 then Vec3{0,0,0}
+            else i_right.closest_point_1 - self.last_intersection
+
+        target.position.x += diff.x
+        self.last_intersection = i_right.closest_point_1
+    elif d2 < d1 and d2 < d3 and d2 < greatest_distance then
+        diff :=
+            if self.last_intersection.y == 0 then Vec3{0,0,0}
+            else i_up.closest_point_1 - self.last_intersection
+
+        target.position.y += diff.y
+        self.last_intersection = i_up.closest_point_1
+    elif d3 < greatest_distance then
+        diff :=
+            if self.last_intersection.z == 0 then Vec3{0,0,0}
+            else i_forward.closest_point_1 - self.last_intersection
+
+        target.position.z += diff.z
+        self.last_intersection = i_forward.closest_point_1
     else
-        log "forward"
+        self.last_intersection = Vec3{0,0,0}
 
     true
 
@@ -176,7 +218,10 @@ def Gizmo.update(&self) =
                 Some target ->
                     if target.enabled then
                         match self.kind with
-                            Translate -> self.handle_translation target
+                            Translate ->
+                                res := self.handle_translation target
+                                model_renderer.get_entity!.position = target.position
+                                res
                             Disabled -> false
                     else false
                 None ->
@@ -184,6 +229,8 @@ def Gizmo.update(&self) =
                     false
 
         None -> false //No object is selected
+
+
 
 import "layermask"
 
@@ -200,6 +247,7 @@ def make_GizmoSystem() &ecs.Store[Gizmo] =
         target = None
         kind = Disabled
         model_renderer = model_renderer
+        last_intersection = Vec3{0,0,0}
     }
 
     system

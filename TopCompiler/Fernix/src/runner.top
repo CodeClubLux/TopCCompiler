@@ -39,7 +39,6 @@ def init() =
 
     while not w.should_close! do
         defer context.allocator.reset_to context.allocator.get_occupied!
-
         //update all systems
         //@todo move these systems into the entity component system
         mask :=

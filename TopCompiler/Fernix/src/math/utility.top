@@ -8,3 +8,11 @@ pi := 3.14159265
 
 def radians(degrees: float) float =
     degrees * (pi / 180)
+
+def min(a: float, b: float) float =
+    if a < b then a
+    else b
+
+def max(a: float, b: float) float =
+    if a > b then a
+    else b

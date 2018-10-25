@@ -13,7 +13,7 @@ type FPSController =
     yaw: float
     pitch: float
 
-    past_movement_speed: [3]math.Vec2
+    past_movement_speed: [1]math.Vec2
     past_movement_speed_length: uint
 
 def FPSController.get_entity(&self) &ecs.Entity =
@@ -104,11 +104,10 @@ fpsController_system := ecs.make_Store::[FPSController] 5
 def make_FPSController(cam: &camera.Camera) &FPSController =
     fpsController_system.add_component FPSController{
         camera = cam
-        mouse_sensitivity = 0.01
+        mouse_sensitivity = 0.005
         movement_speed = 6
         yaw = 0
         pitch = 0
-
-        past_movement_speed = [3: math.Vec2{0,0}]
+        past_movement_speed = [1: math.Vec2{0,0}]
         past_movement_speed_length = 0
     }

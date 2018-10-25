@@ -42,7 +42,7 @@ def Mat4x4.mul_vec4(&m, vec: Vec4) Vec4 =
 
     for i := 0..4 do
         for j := 0..4 do
-            new_vec[j] += m[i*4 + j] * vec[i]
+            new_vec[i] += m[i*4 + j] * vec[j]
 
     vec4_from_array &new_vec
 
@@ -146,14 +146,21 @@ def invert(m: Mat4x4) Mat4x4 =
 
     invOut
 
-test := (invert perspective 56, 1, 0.1, 100) * (invert translate Vec3{1,0,0})
-test2 := (&test).mul_vec4 Vec4{0,0,0,1}
-test2 = test2.scale (1/test2.w)
 
-//test = invert test
-//test2 = (&test).mul_vec4 test2
-//test2 = test2.scale (1/test2.w)
+def test() =
+    view := translate Vec3{0,0,5}
+    proj := perspective 110, 1.0, 0.1, 100
 
-log test2
+    mat := invert view
 
-log "==== vec3"
+    vec := (&mat).mul_vec4 Vec4{1,1,0,1}
+
+    for i := 0..16 do
+        log mat[i]
+
+    log vec
+    log Vec3{1,1,1}.dot Vec3{2,2,2}
+
+    //while true do
+
+test!
