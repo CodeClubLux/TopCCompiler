@@ -344,11 +344,9 @@ class Replacer():
         for scope in self.scope:
             for replacement in scope:
                 a = replacement(ast)
-                if a:
+                if not a is None:
                     ast.owner.nodes[it] = a
                     return a
-
-        return ast
 
     def incrScope(self):
         self.scope.append([])
@@ -381,7 +379,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         deleteQueue = []
         originalAST = ast
 
-        if type(ast) in [Tree.FuncBody, Tree.WhileBlock, Tree.Block]:
+        if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
             replacer.incrScope()
 
         if type(ast) in [Tree.ReadVar]:
@@ -405,7 +403,21 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             varType = ast.nodes[0].varType
 
             def shouldReplace(a):
+                if type(a) is Tree.ReadVar:
+                    if a.name in types:
+                        field = Tree.Field(a.name, varType, a)
+                        field.field = a.name
+                        field.type = types[a.name]
+                        var = Tree.ReadVar(wrapping.name, False, a)
+                        var.package = a.package
+                        var.type = varType
+                        field.addNode(var)
+                        return field
 
+                    if a.name in methods:
+                        pass
+
+            replacer.add(shouldReplace)
 
         elif type(ast) is Tree.Cast.Cast:
             if ast.to.isType(Types.Interface):
