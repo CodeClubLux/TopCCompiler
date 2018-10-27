@@ -75,12 +75,15 @@ type Ray =
 //constants
 let flt_min = 0.001
 let flt_max = 10000.0
-let greatest_distance = 0.1
+let greatest_distance = 0.15
 
 type Closest_Point_Result =
     distance: float
     closest_point_1: Vec3
     closest_point_2: Vec3
+
+def Closest_Point_Result.toString(using &self) string =
+    "distance: {distance}, closest_point_1: {closest_point_1}, closest_point_2: {closest_point_2}"
 
 def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
     line_point1 := r1.origin
@@ -103,8 +106,8 @@ def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
         s := (b*f - c*e) / d
         t := (a*f - c*b) / d
 
-        closest_point1 := line_point1 + line_vec1.scale (min r1.t, s)
-        closest_point2 := line_point2 + line_vec2.scale (min r2.t, t)
+        closest_point1 := line_point1 + line_vec1.scale (max 0, (min r1.t, s))
+        closest_point2 := line_point2 + line_vec2.scale (max 0, (min r2.t, t))
 
         Some Closest_Point_Result{
             distance = (closest_point2 - closest_point1).len!
@@ -173,8 +176,6 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity, axis: Axis) Axis =
     d1 := i_right.distance
     d2 := i_up.distance
     d3 := i_forward.distance
-
-    log "d1: {d1}, d2: {d2}, d3: {d3}"
 
     match axis with
         //select axis

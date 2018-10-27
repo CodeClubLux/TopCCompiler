@@ -448,8 +448,9 @@ class Parser:  # all mutable state
         self.contextFields["_global"] = {}
         self.scope["_global"][0]["offsetPtr"] = Scope.Type(True,Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32()],
                                                       Types.Pointer(Types.Null(), True)))
-        self.scope["_global"][0]["context"] = Scope.Type(True,
+        self.scope["_global"][0]["context"] = Scope.Type(False,
                                   Types.Pointer(Types.Struct(True, "Context", self.contextType, "_global"), True))
+
         self.scope["_global"][0]["Stringer"] =  Scope.Type(True, Stringable)
 
     def parse(self):

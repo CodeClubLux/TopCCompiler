@@ -1,0 +1,62 @@
+type IntType =
+    sign: bool
+    size: uint
+
+type FloatType =
+    size: uint
+
+type StringType =
+
+type AliasType =
+    name: string
+    package: string
+    real_type: &Type
+
+type StructType =
+    name: string
+    package: string
+    real_type: &Type
+
+type Cases =
+    name: string
+    args: []&Type
+
+type Field =
+    name: string
+    offset: uint
+    field_type: &Type
+
+type Method =
+    name: string
+    pointer_to_method: &none
+    method_type: &Type
+
+type EnumType =
+    name: string
+    package: string
+    cases: []Cases
+    methods: []Method
+
+type FuncType =
+    args: []&Type
+    return_type: &Type
+
+type InterfaceType =
+    name: string
+    package: string
+    fields: []Field
+    methods: []Method
+
+type Type either
+    Int(IntType)
+    Float(FloatType)
+    Alias(AliasType)
+    Func(FuncType)
+    Enum(EnumType)
+    Struct(StructType)
+    Interface(InterfaceType)
+    String(StringType)
+    NoneType
+
+def typeof[T](var: T) Type = //compiler will replace this type with real definition for every type
+    NoneType
