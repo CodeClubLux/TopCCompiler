@@ -36,8 +36,21 @@ translation_model_materials := [
 
 translation_model := model.load_model "assets/gizmo.fbx", &translation_model_materials
 
+type Axis either
+    Up(Vec3)
+    Right(Vec3)
+    Forward(Vec3)
+    NoAxis
+
+def Axis.toString(&self) string =
+    match *self with
+        Up v -> "Up: {v}"
+        Right v -> "Right: {v}"
+        Forward v -> "Forward: {v}"
+        NoAxis -> "No Axis"
+
 type GizmoType either
-    Translate
+    Translate(Axis)
     Disabled
 
 type Gizmo =
@@ -45,7 +58,6 @@ type Gizmo =
     model_renderer: &model.ModelRenderer
     target: Maybe[ecs.ID]
     kind: GizmoType
-    last_intersection: Vec3
 
 def Gizmo.get_entity(&self) &ecs.Entity =
     self.entity
@@ -55,29 +67,13 @@ def Gizmo.set_target(&self, entity: ecs.ID) =
 
 def Gizmo.render(&self) =
 
-/*
-def Gizmo.is_active(&self) =
-    target_id := match self.target with
-        Some x -> x
-        None -> return false
-
-    target := match ecs.entity_system.component_by_id target_id with
-        Some x -> x
-        None -> return false
-
-    if not target.enabled then return false
-
-    match target with
-        Translate -> self.handle_translation target
-        Disabled -> false
-*/
-
 type Ray =
     origin: Vec3
     direction: Vec3
     t: float
 
-let flt_min = 0.5
+//constants
+let flt_min = 0.001
 let flt_max = 10000.0
 let greatest_distance = 0.1
 
@@ -104,27 +100,26 @@ def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
         c := line_vec1.dot r
         f := line_vec2.dot r
 
-        s := min r1.t, (b*f - c*e) / d
-        t := min r2.t, (a*f - c*b) / d
+        s := (b*f - c*e) / d
+        t := (a*f - c*b) / d
 
-        closest_point1 := line_point1 + line_vec1.scale s
-        closest_point2 := line_point2 + line_vec2.scale t
+        closest_point1 := line_point1 + line_vec1.scale (min r1.t, s)
+        closest_point2 := line_point2 + line_vec2.scale (min r2.t, t)
 
         Some Closest_Point_Result{
             distance = (closest_point2 - closest_point1).len!
-            closest_point_1 = closest_point1
-            closest_point_2 = closest_point2
+            closest_point_1 = line_point1 + line_vec1.scale s
+            closest_point_2 = line_point2 + line_vec2.scale t
         }
     else
         None
 
-def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
+def Gizmo.handle_translation(&self, target: &ecs.Entity, axis: Axis) Axis =
     inp := input.get_input!
     cam := camera.get_camera!
 
     if not inp.mouse_button_down key.Left then
-        self.last_intersection = Vec3{0,0,0}
-        return true
+        return NoAxis
 
     n := inp.to_device_coord inp.mouse_position
 
@@ -139,28 +134,29 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
     ray_start_vec3 := Vec3{ray_start.x, ray_start.y, ray_start.z}
     ray_end_vec3 := Vec3{ray_end.x, ray_end.y, ray_end.z}
 
-    r := Ray{
+    //define rays
+    view_ray := Ray{
         origin = ray_start_vec3
         direction = (ray_end_vec3 - ray_start_vec3).norm!
         t = flt_max
     }
 
-    t1 := Ray{
+    right_ray := Ray{
         origin = target.position
         direction = Vec3{1,0,0}
         t = 1.0
     }
 
-    t2 := Ray{
+    up_ray := Ray{
         origin = target.position
         direction = Vec3{0,1,0}
         t = 1.0
     }
 
-    t3 := Ray{
+    forward_ray := Ray{
         origin = target.position
-        direction = Vec3{0,0,1}
-        t = -1.0
+        direction = Vec3{0,0,-1}
+        t = 1.0
     }
 
     failed_intersect := Closest_Point_Result{
@@ -169,46 +165,51 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity) bool =
         closest_point_2 = Vec3{0,0,0}
     }
 
-    i_right := (closest_point &t1, &r).default failed_intersect
-    i_up := (closest_point &t2, &r).default failed_intersect
-    i_forward := (closest_point &t3, &r).default failed_intersect
+    //test for intersection
+    i_right := (closest_point &right_ray, &view_ray).default failed_intersect
+    i_up := (closest_point &up_ray, &view_ray).default failed_intersect
+    i_forward := (closest_point &forward_ray, &view_ray).default failed_intersect
 
     d1 := i_right.distance
     d2 := i_up.distance
     d3 := i_forward.distance
 
-    if d1 < d2 and d1 < d3 and d1 < greatest_distance then
-        diff :=
-            if self.last_intersection.x == 0 then Vec3{0,0,0}
-            else i_right.closest_point_1 - self.last_intersection
+    log "d1: {d1}, d2: {d2}, d3: {d3}"
 
-        target.position.x += diff.x
-        self.last_intersection = i_right.closest_point_1
-    elif d2 < d1 and d2 < d3 and d2 < greatest_distance then
-        diff :=
-            if self.last_intersection.y == 0 then Vec3{0,0,0}
-            else i_up.closest_point_1 - self.last_intersection
+    match axis with
+        //select axis
+        NoAxis ->
+            if d1 < d2 and d1 < d3 and d1 < greatest_distance then
+                Right i_right.closest_point_1
 
-        target.position.y += diff.y
-        self.last_intersection = i_up.closest_point_1
-    elif d3 < greatest_distance then
-        diff :=
-            if self.last_intersection.z == 0 then Vec3{0,0,0}
-            else i_forward.closest_point_1 - self.last_intersection
+            elif d2 < d1 and d2 < d3 and d2 < greatest_distance then
+                Up i_up.closest_point_1
 
-        target.position.z += diff.z
-        self.last_intersection = i_forward.closest_point_1
-    else
-        self.last_intersection = Vec3{0,0,0}
+            elif d3 < greatest_distance then
+                Forward i_forward.closest_point_1
 
-    true
+            else NoAxis
+
+        //move gizmo
+        Right last_intersection ->
+            target.position += (i_right.closest_point_1 - last_intersection)
+            Right i_right.closest_point_1
+
+        Up last_intersection ->
+            target.position += (i_up.closest_point_1 - last_intersection)
+            Up i_up.closest_point_1
+
+        Forward last_intersection ->
+            target.position += (i_forward.closest_point_1 - last_intersection)
+            Forward i_forward.closest_point_1
 
 def Gizmo.update(&self) =
     inp := input.get_input!
     model_renderer := self.model_renderer
+    cam := camera.get_camera!
 
     if inp.key_down key.from_char `G` then
-        self.kind = Translate
+        self.kind = Translate NoAxis
     if inp.key_down key.esc then
         self.kind = Disabled
 
@@ -218,10 +219,11 @@ def Gizmo.update(&self) =
                 Some target ->
                     if target.enabled then
                         match self.kind with
-                            Translate ->
-                                res := self.handle_translation target
+                            Translate axis ->
+                                self.kind = Translate self.handle_translation target, axis
                                 model_renderer.get_entity!.position = target.position
-                                res
+
+                                true
                             Disabled -> false
                     else false
                 None ->
@@ -247,7 +249,6 @@ def make_GizmoSystem() &ecs.Store[Gizmo] =
         target = None
         kind = Disabled
         model_renderer = model_renderer
-        last_intersection = Vec3{0,0,0}
     }
 
     system

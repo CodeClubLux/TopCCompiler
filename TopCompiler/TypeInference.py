@@ -495,7 +495,7 @@ def infer(parser, tree):
                 newArgs = []
 
                 realNumArgs = len(i.nodes)-1
-                if args.__len__() != realNumArgs:
+                if len(args) != realNumArgs:
                     i.error("Expecting "+str(len(args))+ " amount of arguments but got "+str(realNumArgs))
 
                 generics = {}
