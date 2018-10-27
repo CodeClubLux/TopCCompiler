@@ -336,15 +336,19 @@ def resolveGeneric(parser, root):
             funcBody = ast.owner.nodes[iter + 2]
             specifications.addGenericFunc(funcStart.package, funcStart.name, funcStart, funcBrace, funcBody)
 
+import copy
+
 class Replacer():
     def __init__(self):
         self.scope = [[]]
 
-    def replace(self, ast):
+    def replace(self, ast, it):
         for scope in self.scope:
-            for (istarget, replacement) in scope:
-                if istarget(ast):
-                    return
+            for replacement in scope:
+                a = replacement(ast)
+                if not a is None:
+                    ast.owner.nodes[it] = a
+                    return a
 
         return ast
 
@@ -354,11 +358,11 @@ class Replacer():
     def decrScope(self):
         self.scope.pop()
 
-    def add(self, istarget, replacement):
-        self.scope[-1].append((istarget, replacement))
+    def add(self, replacement):
+        self.scope[-1].append(replacement)
 
 def simplifyAst(parser, ast, specifications=None, dontGen=False):
-    replace =
+    replacer = Replacer()
 
     if not specifications:
         inImports = {}
@@ -379,6 +383,12 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         deleteQueue = []
         originalAST = ast
 
+        if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
+            replacer.incrScope()
+
+        if type(ast) in [Tree.ReadVar]:
+            ast = replacer.replace(ast, iter)
+
         if not (type(ast) is Tree.FuncBody and len(ast.owner.nodes) >= 3 and isGenericFunc(ast.owner.nodes[iter-2])):
             for (it, i) in enumerate(ast.nodes):
                 simplify(i, it, deleteQueue)
@@ -389,6 +399,30 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             ast = ast.nodes[0]
             iter = 0
 
+        elif type(ast) is Tree.Using:
+            types = ast.extracted_fields
+            methods = ast.extracted_methods
+
+            wrapping = ast.nodes[0]
+            varType = ast.nodes[0].varType
+
+            def shouldReplace(a):
+                if type(a) is Tree.ReadVar:
+                    if a.name in types:
+                        field = Tree.Field(a.name, varType, a)
+                        field.field = a.name
+                        field.type = types[a.name]
+                        print(wrapping.name)
+                        var = Tree.ReadVar(wrapping.name, False, a)
+                        var.package = a.package
+                        var.type = varType
+                        field.addNode(var)
+                        return field
+
+                    if a.name in methods:
+                        pass
+
+            replacer.add(shouldReplace)
         elif type(ast) is Tree.Cast.Cast:
             if ast.to.isType(Types.Interface):
                 toT = ast.to.toRealType()
@@ -496,6 +530,9 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
 
                     if type(typ) in [Types.Struct, Types.Alias, Types.Enum, Types.Array]:
                         r.replaced = typ.remainingGen
+
+        if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
+            replacer.decrScope()
 
         for e in deleteQueue:
             ast.nodes.remove(e)

@@ -18,4 +18,5 @@ class Using(Node):
         return self.nodes[0].imutable
 
     def compileToC(self, codegen):
-        pass
+        self.nodes[0].owner = self.owner
+        self.nodes[0].compileToC(codegen)

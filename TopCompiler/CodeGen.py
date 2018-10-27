@@ -138,6 +138,8 @@ class CodeGen:
             except:
                 pass
 
+        raise Exception("could not find variable" + name)
+
     def getParts(self):
         if self.inAFunction > 0:
             return self.func_parts[self.inAFunction - 1]
