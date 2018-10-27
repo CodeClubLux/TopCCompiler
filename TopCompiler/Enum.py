@@ -9,7 +9,9 @@ import AST as Tree
 import collections as coll
 
 def enumParser(parser, name, decl, generic):
-    const = coll.OrderedDict()
+    const = parser.interfaces[parser.package][name].const
+
+    #const = coll.OrderedDict()
     enum = Types.Enum(parser.package, name, const, generic)
 
     if decl:

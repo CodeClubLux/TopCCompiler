@@ -4,8 +4,8 @@ type Component with
     def update()
 
 type System with
-    def render()
-    def update()
+    def render(Layermask)
+    def update(Layermask)
     def free_component_by_id(ID)
 
 component_types := [..]System
@@ -14,13 +14,19 @@ type Store[T: Component] =
     id_to_key: [..]int
     components_alive: [..]bool
     components: [..]T
+    max_number: uint
 
-def make_Store[T: Component]() &Store[T] =
+def make_Store[T: Component](max_number: uint) &Store[T] =
     id_to_key := [..]int
-    components_alive := [..]bool
-    components := [..]T
+    id_to_key.allocator = Some &malloc_as_allocator
 
-    self := box Store{ id_to_key, components_alive, components }
+    components_alive := [..]bool //array cant resize as this would case all pointers to become invalidated
+    components_alive.reserve max_number
+
+    components := [..]T
+    components.reserve max_number
+
+    self := box Store{ id_to_key, components_alive, components, max_number }
 
     component_types.append self
 
@@ -70,6 +76,9 @@ def Store[T].add_component(&self, comp: T) &T =
             return self.register_component id, i
 
     //no components to replace
+    if self.components.length == self.max_number then
+        panic "Overflowing entity buffer"
+
     self.components.append comp
     self.components_alive.append true
     self.register_component id, self.components.length - 1
@@ -91,24 +100,25 @@ def Store[T].index_is_active(&self, i: uint) bool =
 
     alive and comp.get_entity!.enabled
 
-def Store[T].render(&self) =
+def Store[T].render(&self, layer_mask: Layer) =
     for i := 0..self.components.length do
         if self.index_is_active i then
-            self.components[i].render!
+            comp := &self.components[i]
 
-def Store[T].update(&self) =
+            if not mask comp.get_entity!.layermask, layer_mask then //only render objects
+                self.components[i].render!
+
+def Store[T].update(&self, layer_mask: Layermask) =
     for i := 0..self.components.length do
         if self.index_is_active i then
-            self.components[i].update!
+            comp := &self.components[i]
+            if not mask comp.get_entity!.layermask, layer_mask then
+                self.components[i].update!
 
-//render and update all component types
-type Tag either
-    All
-
-def render(tag: Tag) =
+def render(layer_mask: Layermask) =
     for i := 0..component_types.length do
-        component_types[i].render!
+        component_types[i].render layer_mask
 
-def update(tag: Tag) =
+def update(layer_mask: Layermask) =
     for i := 0..component_types.length do
-        component_types[i].update!
+        component_types[i].update layer_mask

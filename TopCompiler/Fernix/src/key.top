@@ -1,16 +1,20 @@
-type Key is char
+type Key is u16
 
 type KeyAction either Pressed or Released
 
-def KeyAction.op_eq(self, other: KeyAction) bool =
-    match self with
-        Pressed -> match other with
-            Pressed -> true
-            _ -> false
+def KeyAction.toString(&self) string =
+    match *self with
+        Pressed -> "pressed"
+        Released -> "released"
 
-        Released -> match other with
-            Pressed -> true
-            _ -> false
+def from_char(c: char) Key =
+    c.toU8!
+
+def KeyAction.op_eq(self, other: KeyAction) bool =
+    self.tag == other.tag
+
+
+type MouseButton either Middle or Right or Left
 
 //Make generic version of this map data type
 type KeyActionMap =
@@ -47,7 +51,22 @@ def KeyActionMap.clear(&self) =
     self.actions.clear!
 
 def make_KeyActionMap() KeyActionMap =
+    keys := [..]Key
+    keys.reserve 10
+    keys.allocator = Some &malloc_as_allocator
+
+    actions := [..]KeyAction
+    actions.reserve 10
+    actions.allocator = Some &malloc_as_allocator
+
     KeyActionMap{
-        keys = [..]Key
-        actions = [..]KeyAction
+        keys = keys
+        actions = actions
     }
+
+from "glfwWrapper" import (glfw_key_left_shift, glfw_key_right_shift, glfw_key_escape)
+
+lshift := glfw_key_left_shift cast Key
+rshift := glfw_key_right_shift cast Key
+
+esc := glfw_key_escape cast Key

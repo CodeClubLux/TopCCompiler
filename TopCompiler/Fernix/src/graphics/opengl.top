@@ -74,6 +74,7 @@ ext uniform1f: |int, float| -> none = "glUniform1f"
 
 ext rgb: uint = "GL_RGB"
 ext rg: uint = "GL_RG"
+ext red: uint = "GL_RED"
 
 ext texture_2D: uint = "GL_TEXTURE_2D"
 ext unsigned_byte: uint = "GL_UNSIGNED_BYTE"

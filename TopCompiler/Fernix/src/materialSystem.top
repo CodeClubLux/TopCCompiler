@@ -1,19 +1,20 @@
 import "shader"
 import "math"
-import "imageLoader"
+import "texture"
 import "runner"
+import "ecs"
 
 type Param either
     Param_Vec3(string, math.Vec3)
     Param_Mat4x4(string, math.Mat4x4)
-    Param_Image(string, imageLoader.Texture)
+    Param_Image(string, texture.Texture)
 
 type Material =
     name: string
     shader: shader.Shader
     params: []Param
 
-def Material.bind(&self) =
+def Material.bind(&self, entity: &ecs.Entity) =
     params := &self.params
 
     self.shader.bind!
@@ -28,21 +29,20 @@ def Material.bind(&self) =
             Param_Mat4x4 field, matrix ->
                 self.shader.set_mat4x4 field, &matrix
 
-            Param_Image field, texture ->
-                texture.bind_to i+3
+            Param_Image field, tex ->
+                tex.bind_to i+3
                 self.shader.set_int field, i + 3
 
+    //set model matrix
+    transformation_matrix := entity.compute_model_matrix!
 
-materials := [..]&Material
+    self.shader.set_mat4x4 "model", &transformation_matrix
 
-def material_by_name(name: string) Maybe[&Material] =
+def material_by_name(materials: []Material, name: string) Maybe[&Material] =
     for i := 0..materials.length do
-        m := materials[i]
+        m := &materials[i]
 
         if m.name == name then
             return Some m
 
     None
-
-def get_materials() &[..]&Material =
-    &materials

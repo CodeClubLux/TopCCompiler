@@ -3,6 +3,6 @@ type Point =
     y: int
 
 def Point.toString(using &self) string =
-    "Point({x}, {y})"
+    "{x}, {y}"
 
-log Point{ 10, 20 }
+log Point{0,0}

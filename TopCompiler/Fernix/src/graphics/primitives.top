@@ -4,17 +4,15 @@ import "buffer"
 from "materialSystem" import all
 import "shader"
 
-get_materials!.append box Material{
+material_list := [Material{
     name = "DefaultMaterial"
     shader = shader.make "assets/shaders/pbr.vert", "assets/shaders/pbr.frag"
     params = []
-}
+}]
 
-cube := model.load_model "assets/cube.fbx"
-sphere := model.load_model "assets/sphere.fbx"
-plane := model.load_model "assets/plane.fbx"
-
-get_materials!.shorten 1
+cube := model.load_model "assets/cube.fbx", &material_list
+sphere := model.load_model "assets/sphere.fbx", &material_list
+plane := model.load_model "assets/plane.fbx", &material_list
 
 def render_cube() =
     self := cube.meshes[0]

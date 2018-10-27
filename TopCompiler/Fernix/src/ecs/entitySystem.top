@@ -1,4 +1,4 @@
-entity_system := make_Store::[Entity]!
+entity_system := make_Store::[Entity] 1000
 
 def make_Entity() &Entity =
     id := entity_system.components.length
@@ -6,10 +6,10 @@ def make_Entity() &Entity =
     entity_system.add_component Entity{
         id = id
         position = Vec3{ 0, 0, 0}
-        scale = Vec3{ 0, 0, 0}
+        scale = Vec3{ 1, 1, 1}
         rotation = identity_quat!
         enabled = true
-        transform_matrix = identity_mat!
+        layermask = enable make_Layermask!, game
     }
 
 def free_entity(id: ID) =

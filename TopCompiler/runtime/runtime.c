@@ -1,10 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <math.h>
-
 #define __Context struct _global_Context* context
 #define alloc _global_Allocator_alloc
 
@@ -74,13 +67,14 @@ struct _global_String _global_String_op_add(struct _global_String* a, struct _gl
 }
 
 struct _global_String _global_Float_toStringByValue(float x,__Context) {
-    printf("%f", x);
-    return _global_StringInit(0,"");
+    int len = snprintf(NULL, 0, "%f", x);
+    char *result = (char *)alloc(context->allocator, len + 1, context);
+    snprintf(result, len + 1, "%f", x);
+    return _global_StringInit(len,result);
 }
 
 struct _global_String _global_Float_toString(float* x,__Context) {
-    printf("%f", *x);
-    return _global_StringInit(0,"");
+    return _global_Float_toStringByValue(*x, context);
 }
 
 void _reverse_string(struct _global_String * self) {
@@ -248,13 +242,15 @@ struct _global_String _global_char_toString(char* self, __Context) {
     return _global_char_toStringByValue(*self, context);
 }
 
-unsigned char _global_char_toU8ByValue(char self, __Context) {
-    return (unsigned char) self;
+uint8_t _global_char_toU8ByValue(char self, __Context) {
+    return (uint8_t) self;
 }
 
-unsigned char _global_char_toU8(char* self, __Context) {
-    return (unsigned char) *self;
+uint8_t _global_char_toU8(char* self, __Context) {
+    return (uint8_t) *self;
 }
+
+
 
 
 
@@ -262,6 +258,9 @@ unsigned char _global_char_toU8(char* self, __Context) {
 
 
 #define _global_indexPtr(value, by, c) value + by
+#define _global_c_set_bit_to(number, n, x) (number & ~(1U << n) | (x << n))
+#define _global_c_is_bit_set(number, n) ((number >> n) & 1U)
+
 /*
 void printI(int i) {
     printf("%i\n", i);

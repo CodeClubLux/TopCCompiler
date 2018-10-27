@@ -274,6 +274,7 @@ def genCType(header, genContents):
     else:
         genericTypes[header] = f"{header} {genContents()};\n"
         compiledTypes[header] = None
+
     return header
 
 from AST import Struct as S
@@ -968,7 +969,7 @@ class Enum(Type):
         self.gen = generic
 
         self.const = const
-        self.types = {}
+        self.types = {"tag": Types.I32(unsigned=True)}
 
         self.package = package
         self.normalName = name
@@ -1188,7 +1189,7 @@ class I32(Type):
         nameToC = {
             "int": "int",
             "uint": "unsigned int",
-            "i8": "char",
+            "i8": "int8_t",
             "i16": "int16_t",
             "i32": "int32_t",
             "i64": "int64_t",

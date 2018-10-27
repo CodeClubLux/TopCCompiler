@@ -142,6 +142,7 @@ def genFunction(compileNodes, codegen, returnType, owner, self):
     for scope in codegen.names[1:]:
         for varName in scope:
             (typ, var) = scope[varName]
+
             if inAFunc == 1 or (not var.startswith("*")):
                 vars.append(f"{typ}* {var},")
                 varNames.append("&" + var)
@@ -295,7 +296,7 @@ class MatchCase(Node):
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) is Tree.ReadVar:
                         typ = node.type.const[nameOfCase][index]
-                        name = codegen.createName(i.package + "_" + i.name, typ)
+                        name = codegen.createName(i.package + "_" + i.name, typ.toCType())
                         codegen.append(f"{typ.toCType()} {name}")
                         if maybeOptimization:
                             codegen.append(f"= {tmp};\n")

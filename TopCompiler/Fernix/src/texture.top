@@ -45,7 +45,11 @@ def load(filename: string) Texture =
 
     defer stbi_image_free data
 
-    texImage2D texture_2D, 0, rgb, width, height, 0, rgb, unsigned_byte, Some data
+    internal_color_format :=
+        if nr_channels == 1 then red
+        else rgb
+
+    texImage2D texture_2D, 0, rgb, width, height, 0, internal_color_format, unsigned_byte, Some data
     generateMipmap texture_2D
 
     cached_textures.append filename, Texture{ texture }

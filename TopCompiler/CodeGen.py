@@ -151,11 +151,13 @@ class CodeGen:
     def addSemicolon(self, ast):
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
             self.append(";\n")
-            if False and self.debug:
+            if self.debug:
                 filename = ast.fullFilePath().replace("\\", "\\\\")
-                self.append(f';\n#line {ast.token.line+2} "{filename}.top"\n')
+                self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
 
     def createName(self, name, typ):
+        if typ == "ecs.ID":
+            print("what")
         self.names[-1][name] = (typ, name)
         return name
 
@@ -252,8 +254,6 @@ def buildContext(parser):
 
     parser.typesInContext = list(Types.genericTypes.keys())
 
-    print(Types.genericTypes)
-
     Types.compiledTypes = coll.OrderedDict()
     Types.dataTypes = []
 
@@ -330,7 +330,7 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
     else:
         debug = [] #["-g",  "-gcodeview"]
 
-    clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type"]
+    clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
 
     print(" ".join(clang_commands),"\n")
     try:

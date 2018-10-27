@@ -1,0 +1,113 @@
+import "ecs"
+import "camera"
+import "input"
+from "time" import (get_delta_time)
+import "camera"
+import "key"
+import "math"
+
+type FPSController =
+    mouse_sensitivity: float
+    movement_speed: float
+    camera: &camera.Camera
+    yaw: float
+    pitch: float
+
+    past_movement_speed: [1]math.Vec2
+    past_movement_speed_length: uint
+
+def FPSController.get_entity(&self) &ecs.Entity =
+    self.camera.get_entity!
+
+def FPSController.get_speed(&self) float =
+    inp := input.get_input!
+
+    if inp.key_down key.lshift then self.movement_speed * 2 * get_delta_time!
+    else self.movement_speed * get_delta_time!
+
+import "editor"
+
+def FPSController.update(&self) =
+    inp := input.get_input!
+    entity := self.get_entity!
+
+    //movement
+    facing_rotation := -entity.rotation
+
+    forward := (facing_rotation.mul_vec3 math.Vec3{0,0,-1}).norm!
+    right := (facing_rotation.mul_vec3 math.Vec3{1,0,0}).norm!
+
+    vertical_axis := inp.get_vertical_axis!
+    horizontal_axis := inp.get_horizontal_axis!
+
+    entity.position += forward.scale vertical_axis * self.get_speed!
+    entity.position += right.scale horizontal_axis * self.get_speed!
+
+    //mouse look
+    latest_mouse_offset := inp.mouse_offset.scale self.mouse_sensitivity
+
+    if self.past_movement_speed_length < self.past_movement_speed.length then
+        self.past_movement_speed[self.past_movement_speed_length] = latest_mouse_offset
+        self.past_movement_speed_length += 1
+    else
+        copy_past_movement_speed := self.past_movement_speed
+
+        for i := 0..self.past_movement_speed.length - 1 do
+            self.past_movement_speed[i] = copy_past_movement_speed[i+1]
+
+        self.past_movement_speed[self.past_movement_speed.length - 1] = latest_mouse_offset
+
+    //average mouse speed
+    mouse_offset := math.Vec2{ 0, 0 }
+    for i := 0..self.past_movement_speed_length do
+        mouse_offset += self.past_movement_speed[i]
+
+    mouse_offset =
+        if editor.in_editor! then
+            if inp.mouse_button_down key.Right then
+                inp.capture_mouse true
+                mouse_offset.scale (1.0/self.past_movement_speed_length)
+            else
+                inp.capture_mouse false
+                math.Vec2{0,0}
+        else
+            inp.capture_mouse true
+            mouse_offset.scale (1.0/self.past_movement_speed_length)
+
+    yaw := mouse_offset.x + self.yaw
+    pitch := (-mouse_offset.y) + self.pitch
+
+    self.yaw = yaw
+    self.pitch = pitch
+
+    if pitch > 89 then
+        pitch = 89
+    if pitch < (-89) then
+        pitch = -89
+    if yaw > 360 then
+        yaw -= 360
+    if yaw < (-360) then
+        yaw += 360
+
+    q_pitch := math.make_quat (math.radians pitch), math.Vec3{ 1, 0, 0 }
+    q_yaw := math.make_quat (math.radians yaw), math.Vec3{ 0, 1, 0}
+
+    orientation := q_pitch * q_yaw
+
+    entity.rotation = orientation.norm!
+
+def FPSController.render(&self) =
+
+
+fpsController_system := ecs.make_Store::[FPSController] 5
+
+def make_FPSController(cam: &camera.Camera) &FPSController =
+    fpsController_system.add_component FPSController{
+        camera = cam
+        mouse_sensitivity = 0.005
+        movement_speed = 6
+        yaw = 0
+        pitch = 0
+        past_movement_speed = [1: math.Vec2{0,0}]
+        past_movement_speed_length = 0
+    }

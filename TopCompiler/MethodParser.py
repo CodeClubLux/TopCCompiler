@@ -61,9 +61,9 @@ def checkIfOperator(parser, attachTyp, name, func):
             Error.parseError(parser, "Return type of operator overload op_get: Must be of type pointer, not " + str(func.returnType))
     elif name.startswith("unary_"):
         unary = {
-            "add": Types.FuncPointer([Types.All], attachTyp),
-            "sub": Types.FuncPointer([Types.All], attachTyp),
-            "read": Types.FuncPointer([Types.All], Types.All, do=True),
+            "add": Types.FuncPointer([attachTyp], no_p_AttachTyp),
+            "sub": Types.FuncPointer([attachTyp], no_p_AttachTyp),
+            "read": Types.FuncPointer([attachTyp], Types.All, do=True),
         }
 
         op = name[len("unary_"):]

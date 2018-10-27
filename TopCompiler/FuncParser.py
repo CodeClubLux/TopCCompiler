@@ -306,10 +306,13 @@ def func(parser):
     body = funcBody(parser, name, names, types, header, returnType, do)
     body.method = parser.currentNode.nodes[-3].method
 
-def funcCallBody(parser, paren):
+def funcCallBody(parser, paren, onlyOneArg):
     parser.nodeBookmark.append(1)
 
     def notParen():
+        t = parser.thisToken()
+        if t.token in ["then", "with", "do"]:
+            return False
         return not Parser.isEnd(parser)
 
     if paren :
@@ -317,8 +320,9 @@ def funcCallBody(parser, paren):
     else:
         notEnd = notParen
 
-    while notEnd():
+    while not onlyOneArg and notEnd():
         t = parser.nextToken()
+
         if t.token == "," :
             ExprParser.endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
@@ -331,7 +335,7 @@ def funcCallBody(parser, paren):
 
     parser.nodeBookmark.pop()
 
-def callFunc(parser,paren):
+def callFunc(parser,paren, onlyOneArg):
     if len(parser.currentNode.nodes) == 0:
         Error.parseError(parser, "Expecting identifier")
     tail = Tree.FuncCall(parser)
@@ -346,7 +350,7 @@ def callFunc(parser,paren):
     if not paren:
         Parser.selectExpr(parser, parser.thisToken())
 
-    funcCallBody(parser, paren)
+    funcCallBody(parser, paren, onlyOneArg)
 
     parser.currentNode = tail.owner
 

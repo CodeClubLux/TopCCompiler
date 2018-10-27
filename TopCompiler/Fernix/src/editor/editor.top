@@ -1,0 +1,18 @@
+import "ecs"
+import "input"
+import "key"
+
+type Editor =
+    in_editor: bool
+
+def Editor.update(&self) =
+    inp := input.get_input!
+    
+    if inp.key_pressed key.from_char `P` then
+        log "switch between editor and game"
+        self.in_editor = not self.in_editor
+
+editor := Editor{ false }
+
+def in_editor() bool =
+    editor.in_editor

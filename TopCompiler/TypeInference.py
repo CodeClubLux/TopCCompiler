@@ -49,8 +49,9 @@ def infer(parser, tree):
                 else:
                     _for.implicit = True
                     _for.implicit_index = False
+
                     if condition.type.isType(Types.Array):
-                        it_should_be = condition.type.elemT
+                        it_should_be = condition.type.toRealType().elemT
                     elif condition.type.name == "Range":
                         it_should_be = Types.I32(unsigned=True)
                     else:
@@ -470,7 +471,7 @@ def infer(parser, tree):
                             else:
                                 typ = Types.FuncPointer([startType] * normal, typ)
 
-                        realT = typ.toRealType()
+                        realT = typ #.toRealType()
                         if i.kind == "-" and type(realT) is Types.I32 and realT.unsigned:
                             i.type = Types.I32(size= realT.size, unsigned=True)
                         i.type = typ
@@ -494,7 +495,7 @@ def infer(parser, tree):
                 newArgs = []
 
                 realNumArgs = len(i.nodes)-1
-                if args.__len__() != realNumArgs:
+                if len(args) != realNumArgs:
                     i.error("Expecting "+str(len(args))+ " amount of arguments but got "+str(realNumArgs))
 
                 generics = {}

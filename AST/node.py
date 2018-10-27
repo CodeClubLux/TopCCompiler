@@ -125,6 +125,9 @@ def checkOther(self, parser, function, block, iter=0):
                 actReturnType = self.nodes[0].type
                 function.returnType.duckType(parser,actReturnType, self, self ,0)
                 Tree.insertCast(self, actReturnType, function.returnType, iter)
+            else:
+                if not function.returnType.isType(Types.Null):
+                    self.error("Expecting return value, as function returns " + str(function.returnType))
         except EOFError as e:
             Error.beforeError(e, "Return Type: ")
     else:
@@ -150,6 +153,7 @@ def checkUseless(self):
 
         if type(i) in [Tree.FuncBody, Tree.While, Tree.WhileBlock, Tree.If, Tree.Block, Tree.For]:
             checkUseless(i)
+
 
 def toStr(array):  # turn names list into something for llvm
     return ", ".join(array)

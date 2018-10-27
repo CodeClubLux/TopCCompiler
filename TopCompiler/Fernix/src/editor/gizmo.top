@@ -1,0 +1,256 @@
+import "ecs"
+import "shader"
+import "buffer"
+import "model"
+import "input"
+import "camera"
+from "materialSystem" import (Material, Param_Vec3)
+from "math" import all
+import "key"
+
+gizmo_shader := shader.make "assets/shaders/gizmo.vert", "assets/shaders/gizmo.frag"
+
+translation_model_materials := [
+    materialSystem.Material{
+        name = "Up"
+        shader = gizmo_shader
+        params = box [
+            Param_Vec3 "color", Vec3{ 1, 0, 0}
+        ]
+    }
+    materialSystem.Material{
+        name = "Right"
+        shader = gizmo_shader
+        params = box [
+            Param_Vec3 "color", Vec3{ 0, 1, 0}
+        ]
+    }
+    materialSystem.Material{
+        name = "Forward"
+        shader = gizmo_shader
+        params = box [
+            Param_Vec3 "color", Vec3{ 0, 0, 1}
+        ]
+    }
+]
+
+translation_model := model.load_model "assets/gizmo.fbx", &translation_model_materials
+
+type Axis either
+    Up(Vec3)
+    Right(Vec3)
+    Forward(Vec3)
+    NoAxis
+
+def Axis.toString(&self) string =
+    match *self with
+        Up v -> "Up: {v}"
+        Right v -> "Right: {v}"
+        Forward v -> "Forward: {v}"
+        NoAxis -> "No Axis"
+
+type GizmoType either
+    Translate(Axis)
+    Disabled
+
+type Gizmo =
+    entity: &ecs.Entity
+    model_renderer: &model.ModelRenderer
+    target: Maybe[ecs.ID]
+    kind: GizmoType
+
+def Gizmo.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def Gizmo.set_target(&self, entity: ecs.ID) =
+    self.target = Some entity
+
+def Gizmo.render(&self) =
+
+type Ray =
+    origin: Vec3
+    direction: Vec3
+    t: float
+
+//constants
+let flt_min = 0.001
+let flt_max = 10000.0
+let greatest_distance = 0.1
+
+type Closest_Point_Result =
+    distance: float
+    closest_point_1: Vec3
+    closest_point_2: Vec3
+
+def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
+    line_point1 := r1.origin
+    line_point2 := r2.origin
+
+    line_vec1 := r1.direction
+    line_vec2 := r2.direction
+
+    a := line_vec1.dot line_vec1
+    b := line_vec1.dot line_vec2
+    e := line_vec2.dot line_vec2
+
+    d := a*e - b*b
+
+    if (abs d) > flt_min then
+        r := line_point1 - line_point2
+        c := line_vec1.dot r
+        f := line_vec2.dot r
+
+        s := (b*f - c*e) / d
+        t := (a*f - c*b) / d
+
+        closest_point1 := line_point1 + line_vec1.scale (min r1.t, s)
+        closest_point2 := line_point2 + line_vec2.scale (min r2.t, t)
+
+        Some Closest_Point_Result{
+            distance = (closest_point2 - closest_point1).len!
+            closest_point_1 = line_point1 + line_vec1.scale s
+            closest_point_2 = line_point2 + line_vec2.scale t
+        }
+    else
+        None
+
+def Gizmo.handle_translation(&self, target: &ecs.Entity, axis: Axis) Axis =
+    inp := input.get_input!
+    cam := camera.get_camera!
+
+    if not inp.mouse_button_down key.Left then
+        return NoAxis
+
+    n := inp.to_device_coord inp.mouse_position
+
+    view_proj_inverse := invert (cam.projection_matrix * cam.view_matrix)
+
+    ray_start := (&view_proj_inverse).mul_vec4 Vec4{n.x, n.y, 0, 1}
+    ray_start = ray_start.scale (1.0 / ray_start.w)
+
+    ray_end := (&view_proj_inverse).mul_vec4 Vec4{n.x, n.y, 1, 1.0}
+    ray_end = ray_end.scale (1.0 / ray_end.w)
+
+    ray_start_vec3 := Vec3{ray_start.x, ray_start.y, ray_start.z}
+    ray_end_vec3 := Vec3{ray_end.x, ray_end.y, ray_end.z}
+
+    //define rays
+    view_ray := Ray{
+        origin = ray_start_vec3
+        direction = (ray_end_vec3 - ray_start_vec3).norm!
+        t = flt_max
+    }
+
+    right_ray := Ray{
+        origin = target.position
+        direction = Vec3{1,0,0}
+        t = 1.0
+    }
+
+    up_ray := Ray{
+        origin = target.position
+        direction = Vec3{0,1,0}
+        t = 1.0
+    }
+
+    forward_ray := Ray{
+        origin = target.position
+        direction = Vec3{0,0,-1}
+        t = 1.0
+    }
+
+    failed_intersect := Closest_Point_Result{
+        distance = 1000
+        closest_point_1 = Vec3{0,0,0}
+        closest_point_2 = Vec3{0,0,0}
+    }
+
+    //test for intersection
+    i_right := (closest_point &right_ray, &view_ray).default failed_intersect
+    i_up := (closest_point &up_ray, &view_ray).default failed_intersect
+    i_forward := (closest_point &forward_ray, &view_ray).default failed_intersect
+
+    d1 := i_right.distance
+    d2 := i_up.distance
+    d3 := i_forward.distance
+
+    log "d1: {d1}, d2: {d2}, d3: {d3}"
+
+    match axis with
+        //select axis
+        NoAxis ->
+            if d1 < d2 and d1 < d3 and d1 < greatest_distance then
+                Right i_right.closest_point_1
+
+            elif d2 < d1 and d2 < d3 and d2 < greatest_distance then
+                Up i_up.closest_point_1
+
+            elif d3 < greatest_distance then
+                Forward i_forward.closest_point_1
+
+            else NoAxis
+
+        //move gizmo
+        Right last_intersection ->
+            target.position += (i_right.closest_point_1 - last_intersection)
+            Right i_right.closest_point_1
+
+        Up last_intersection ->
+            target.position += (i_up.closest_point_1 - last_intersection)
+            Up i_up.closest_point_1
+
+        Forward last_intersection ->
+            target.position += (i_forward.closest_point_1 - last_intersection)
+            Forward i_forward.closest_point_1
+
+def Gizmo.update(&self) =
+    inp := input.get_input!
+    model_renderer := self.model_renderer
+    cam := camera.get_camera!
+
+    if inp.key_down key.from_char `G` then
+        self.kind = Translate NoAxis
+    if inp.key_down key.esc then
+        self.kind = Disabled
+
+    model_renderer.visible = match self.target with
+        Some target_id ->
+            match ecs.entity_system.component_by_id target_id with
+                Some target ->
+                    if target.enabled then
+                        match self.kind with
+                            Translate axis ->
+                                self.kind = Translate self.handle_translation target, axis
+                                model_renderer.get_entity!.position = target.position
+
+                                true
+                            Disabled -> false
+                    else false
+                None ->
+                    self.target = None //Object was destroyed
+                    false
+
+        None -> false //No object is selected
+
+
+
+import "layermask"
+
+def make_GizmoSystem() &ecs.Store[Gizmo] =
+    system := ecs.make_Store::[Gizmo] 1
+
+    entity := ecs.make_Entity!
+    entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor
+
+    model_renderer := model.make_ModelRenderer entity, &translation_model
+
+    _ := system.add_component Gizmo{
+        entity = entity
+        target = None
+        kind = Disabled
+        model_renderer = model_renderer
+    }
+
+    system
+
+gizmo_system := make_GizmoSystem!

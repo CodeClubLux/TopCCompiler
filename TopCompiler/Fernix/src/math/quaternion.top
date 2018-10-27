@@ -53,15 +53,46 @@ def make_quat(angle: float, axis: Vec3) Quat =
         w = cos angle / 2
     }
 
-def Quat.op_mul(q1, q2: Quat) Quat =
+def Quat.op_mul(a, b: Quat) Quat =
     Quat{
-        x =  q1.x * q2.w + q1.y * q2.z - q1.z * q2.y + q1.w * q2.x
-        y = -q1.x * q2.z + q1.y * q2.w + q1.z * q2.x + q1.w * q2.y
-        z =  q1.x * q2.y - q1.y * q2.x + q1.z * q2.w + q1.w * q2.z
-        w = -q1.x * q2.x - q1.y * q2.y - q1.z * q2.z + q1.w * q2.w
+        w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+        x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y
+        y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x
+        z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
     }
 
+def Quat.unary_sub(quaternion) Quat =
+    num2 := (((quaternion.x * quaternion.x) + (quaternion.y * quaternion.z)) + (quaternion.z * quaternion.z)) + (quaternion.w * quaternion.w)
+    num := 1.0 / num2
 
+    Quat{
+        x = -quaternion.x * num
+        y = -quaternion.y * num
+        z = -quaternion.z * num
+        w = quaternion.w * num
+    }
+
+def Quat.mul_vec3(&q, v: Vec3) Vec3 =
+    u := Vec3{q.x, q.y, q.z}
+    s := q.w
+
+    a := u.scale 2*(u.dot v)
+    b := v.scale (s*s - (u.dot u))
+    c := (u.cross v).scale 2*s
+
+    a + b + c
+
+q1 := make_quat (radians 90), Vec3{0,0,1}
+v2 := Vec3{1,0,0}
+v2 = q1.mul_vec3 v2
+
+/*
+log v2.x
+log v2.y
+log v2.z
+log "==== quat "
+*/
+//vec := tmp2.mul_vec3 Vec3{0,0,-1}
 
 //def Quat.op_sub(&self, other: &Quat) Quat =
 

@@ -4,37 +4,58 @@ import "buffer"
 import "gi"
 import "shader"
 import "opengl"
-import "imageLoader"
+import "texture"
 import "model"
 import "runner"
 from "materialSystem" import all
 import "ibl"
 import "ecs"
 import "input"
+import "fpsController"
+import "camera"
+import "gizmo"
 
-wet_street_params := [
-    Param_Image "material.diffuse", imageLoader.load "assets/wet_street/Pebble_Wet_street_basecolor.jpg"
-    Param_Image "material.metallic", imageLoader.load "assets/wet_street/Pebble_Wet_street_metallic.jpg"
-    Param_Image "material.roughness", imageLoader.load "assets/wet_street/Pebble_Wet_street_roughness.jpg"
-    Param_Image "material.normal", imageLoader.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
+def substance_params(folder: string, name: string) [4]Param =
+    [
+        Param_Image "material.diffuse", texture.load "assets/{folder}/{name}_basecolor.jpg"
+        Param_Image "material.metallic", texture.load "assets/{folder}/{name}_metallic.jpg"
+        Param_Image "material.roughness", texture.load "assets/{folder}/{name}_roughness.jpg"
+        Param_Image "material.normal", texture.load "assets/{folder}/{name}_normal.jpg"
+    ]
+
+wet_street_params := substance_params "wood", "Stylized_Wood"
+
+/*[
+    Param_Image "material.diffuse", texture.load "assets/wood/Stylized_basecolor.jpg"
+    Param_Image "material.metallic", texture.load "assets/wet_street/Pebble_Wet_street_metallic.jpg"
+    Param_Image "material.roughness", texture.load "assets/wet_street/Pebble_Wet_street_roughness.jpg"
+    Param_Image "material.normal", texture.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
+]*/
+
+cube := model.load_model "assets/cube.fbx", box [
+    Material{
+        name = "DefaultMaterial"
+        shader = shader.make "assets/shaders/pbr.vert", "assets/shaders/pbr.frag"
+        params = &wet_street_params
+    }
 ]
 
-wet_street := box Material{
-    name = "DefaultMaterial"
-    shader = shader.make "assets/shaders/pbr.vert", "assets/shaders/pbr.frag"
-    params = &wet_street_params
-}
+cube_entity := ecs.make_Entity!
+cube_entity.scale = Vec3{ 0.5, 0.5, 0.5 }
 
-materials.append wet_street
-cube := model.load_model "assets/cube.fbx"
+mesh_renderer := model.make_ModelRenderer cube_entity, &cube
 
-mesh_renderer := model.make_ModelRenderer model.ModelRenderer{
-    entity = ecs.make_Entity!
-    model = &cube
-}
+
+floating_camera := fpsController.make_FPSController camera.get_camera!
+
+gizmo_component := gizmo.gizmo_system
+    .get_active!
+    .unwrap!
+
+gizmo_component.set_target cube_entity.id
 
 log "running"
 
-skybox := ibl.make_Skybox "assets/Tropical_Beach_3k.hdr"
+skybox := ibl.make_Skybox "assets/LA_Downtown_Helipad_GoldenHour_3k.hdr"
 
 runner.init!

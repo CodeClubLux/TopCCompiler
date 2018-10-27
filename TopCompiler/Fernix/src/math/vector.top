@@ -34,11 +34,30 @@ def Vec4.op_add(self, other: Vec4) Vec4 =
         self.w + other.w
     }
 
+def Vec3.unary_sub(self) Vec3 =
+    Vec3{
+        -self.x
+        -self.y
+        -self.z
+    }
+
+def Vec2.op_sub(self, other: Vec2) Vec2 =
+    Vec2{
+        self.x - other.x
+        self.y - other.y
+    }
+
 def Vec3.op_sub(self, other: Vec3) Vec3 =
     Vec3{
         self.x - other.x
         self.y - other.y
         self.z - other.z
+    }
+
+def Vec2.scale(self, constant: float) Vec2 =
+    Vec2{
+        self.x * constant
+        self.y * constant
     }
 
 def Vec3.scale(self, constant: float) Vec3 =
@@ -56,18 +75,23 @@ def Vec4.scale(self, constant: float) Vec4 =
         self.w * constant
     }
 
+def Vec4.toString(self) string =
+    "Vec4({self.x}, {self.y}, {self.z}, {self.w})"
+
+def Vec3.toString(self) string =
+    "Vec3({self.x}, {self.y}, {self.z})"
 
 def Vec3.dot(self, other: Vec3) float =
-    self.x * other.x + self.y * other.y + self.z * other.z
+    (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
 
 def Vec4.dot(self, other: Vec4) float =
-    self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+    (self.x * other.x) + (self.y * other.y) + (self.z * other.z) + (self.w * other.w)
 
 def Vec3.len(self) float =
     sqrt self.x^2 + self.y^2 + self.z^2
 
 def Vec4.len(self) float =
-    sqrt self.x^2 + self.y^2 + self.z^2 + self.w^2
+    sqrt self.x^2 + self.y^2 + self.z^2
 
 
 def Vec3.norm(self) Vec3 =

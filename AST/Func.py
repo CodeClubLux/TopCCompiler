@@ -111,6 +111,7 @@ class FuncBody(Node):
             codegen.append("}")
             return
 
+        codegen.addSemicolon(self)
         codegen.incrDeferred()
 
         for i in self.nodes[:-1]:
@@ -121,7 +122,7 @@ class FuncBody(Node):
 
         if self.returnType != Types.Null():
             codegen.append(";")
-            if not type(self.nodes[-1]) in [Tree.Match, Tree.If]:
+            if not (type(self.nodes[-1]) in [Tree.Match, Tree.If] and not (type(self.nodes[-1]) is Tree.If and self.nodes[-1].ternary)):
                 if len(codegen.getDeferred()) > 0:
                     isDeferred = codegen.getName()
                     codegen.append(f"{self.returnType.toCType()} {isDeferred} =")
@@ -143,7 +144,6 @@ class FuncBody(Node):
             codegen.append(f"return {isDeferred};\n }}")
         else:
             codegen.append(";}\n")
-
 
         isToString = self.method and self.name.endswith("toString") and self.types[0].isType(Types.Pointer)
 
@@ -257,8 +257,9 @@ class Return(Node):
 
     def compileToC(self, codegen):
         if len(self.nodes) > 0 and type(self.nodes[0]) in [Tree.Match, Tree.If]:
-            self.nodes[0].compileToC(codegen)
-            return
+            if not (type(self.nodes[0]) is Tree.If and self.nodes[0].ternary):
+                self.nodes[0].compileToC(codegen)
+                return
 
         codegen.append("return ")
         if len(self.nodes) > 0:

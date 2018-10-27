@@ -2,8 +2,17 @@ ext sqrt: |float| -> float = "sqrtf"
 ext cos: |float| -> float = "cosf"
 ext sin: |float| -> float = "sinf"
 ext tan: |float| -> float = "tanf"
+ext abs: |float| -> float = "fabs"
 
 pi := 3.14159265
 
 def radians(degrees: float) float =
     degrees * (pi / 180)
+
+def min(a: float, b: float) float =
+    if a < b then a
+    else b
+
+def max(a: float, b: float) float =
+    if a > b then a
+    else b

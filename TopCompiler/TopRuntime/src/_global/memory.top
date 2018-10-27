@@ -62,7 +62,7 @@ def Malloc.get_occupied(&self) uint =
 
 def Malloc.reset_to(&self, to: uint) =
 
-temporary_storage := new_TemporaryStorage 30000
+temporary_storage := new_TemporaryStorage 100000
 malloc := Malloc{}
 
 temporary_storage_as_allocator := &temporary_storage as Allocator

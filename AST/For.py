@@ -15,7 +15,10 @@ class For(Node):
             typ = self.nodes[0].nodes[1].nodes[0].type
         else:
             typ = self.nodes[0].type
+        typ = typ.toRealType()
         isRange = typ.name == "Range"
+
+        countTyp = Types.I32(unsigned=True)
 
         codegen.append(f"{typ.toCType()} {obj} =")
         if not self.implicit:
@@ -24,16 +27,14 @@ class For(Node):
             self.nodes[0].compileToC(codegen)
         codegen.addSemicolon(self.nodes[0])
 
-        countTyp = Types.I32(unsigned=True)
-
         if isRange:
             iterationTyp = Types.I32(unsigned=True)
         else:
-            iterationTyp = typ.elemT
+            iterationTyp = typ.toRealType().elemT
 
         iteration = codegen.getName()
 
-        codegen.append(f"for ({iterationTyp.toCType()} {iteration} = ")
+        codegen.append(f"for ({countTyp.toCType()} {iteration} = ")
         if isRange:
             codegen.append(f"{obj}.start; {iteration} < {obj}.end; {iteration}++) {{\n")
         else:

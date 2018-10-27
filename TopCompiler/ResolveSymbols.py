@@ -61,6 +61,7 @@ def resolve(self):
     return self
 
 from TopCompiler import ImportParser
+import collections as coll
 
 def _resolve(self, tokens, filename, passN= 0 ):
     target = self.global_target
@@ -122,7 +123,7 @@ def _resolve(self, tokens, filename, passN= 0 ):
                     self.structs[self.package][name].methods = {}
                     #"""
                 elif ofType == "either":
-                    self.interfaces[self.package][name] = Types.Enum(self.package, name, [], {})
+                    self.interfaces[self.package][name] = Types.Enum(self.package, name, coll.OrderedDict(), {})
                 elif ofType == "with":
                     self.interfaces[self.package][name] = Types.Interface(False, {})
                 elif ofType == "is":
