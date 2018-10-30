@@ -23,7 +23,7 @@ def substance_params(folder: string, name: string) [4]Param =
         Param_Image "material.normal", texture.load "assets/{folder}/{name}_normal.jpg"
     ]
 
-wet_street_params := substance_params "wood", "Stylized_Wood"
+wet_street_params := substance_params "wood_2", "Stylized_Wood"
 
 /*[
     Param_Image "material.diffuse", texture.load "assets/wood/Stylized_basecolor.jpg"
@@ -57,5 +57,14 @@ gizmo_component.set_target cube_entity.id
 log "running"
 
 skybox := ibl.make_Skybox "assets/LA_Downtown_Helipad_GoldenHour_3k.hdr"
+
+
+type Point =
+    x: float
+    y: float
+
+s := Point{ 10, 20 }
+
+log *s.get_type!
 
 runner.init!

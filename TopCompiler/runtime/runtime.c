@@ -23,6 +23,20 @@ struct _global_String _global_Bool_toStringByValue(_Bool b, __Context) {
     }
 }
 
+struct BoolType {};
+
+struct BoolType _global_Bool_typ;
+
+struct BoolType* _global_Bool_get_typeByValue(_Bool b, __Context) {
+    return &_global_Bool_typ;
+}
+
+struct BoolType* _global_Bool_get_type(_Bool* b, __Context) {
+    return &_global_Bool_typ;
+}
+
+
+
 struct _global_String _global_Bool_toString(_Bool* b, __Context) {
     return _global_Bool_toStringByValue(*b, context);
 }
@@ -66,6 +80,10 @@ struct _global_String _global_String_op_add(struct _global_String* a, struct _gl
     return _global_String_op_addByValue(*a, b, context);
 }
 
+struct FloatType {
+    unsigned int size;
+};
+
 struct _global_String _global_Float_toStringByValue(float x,__Context) {
     int len = snprintf(NULL, 0, "%f", x);
     char *result = (char *)alloc(context->allocator, len + 1, context);
@@ -75,6 +93,16 @@ struct _global_String _global_Float_toStringByValue(float x,__Context) {
 
 struct _global_String _global_Float_toString(float* x,__Context) {
     return _global_Float_toStringByValue(*x, context);
+}
+
+struct FloatType _global_FloatType;
+
+struct FloatType* _global_Float_get_type(float* x, __Context) {
+    return &_global_FloatType;
+}
+
+struct FloatType* _global_Float_get_typeByValue(float x, __Context) {
+    return &_global_FloatType;
 }
 
 void _reverse_string(struct _global_String * self) {
@@ -147,24 +175,52 @@ char* _global_String_to_c_stringByValue(struct _global_String s, __Context) {
     return s.data;
 }
 
+struct IntType {
+    _Bool sign;
+    unsigned int size;
+};
 
-#define gen_integer(name, typ) struct _global_String _global_##name##_toString(typ* number,__Context) {\
+struct IntType _global_IntType;
+
+#define gen_integer(name, typ, sign_of_int) struct _global_String _global_##name##_toString(typ* number,__Context) {\
 return _global_int_toStringByValue(*number, context); \
 } \
 struct _global_String _global_##name##_toStringByValue(typ number,__Context) {\
 return _global_int_toStringByValue(number, context); \
 } \
+\
+struct IntType _global_##name##Type;\
+void _global_##name##TypeInit() { \
+    _global_##name##Type.sign = sign_of_int; \
+    _global_##name##Type.size = sizeof(typ); \
+} \
+struct IntType* _global_##name##_get_typeByValue(typ number, __Context) { \
+    return &_global_##name##Type; \
+} \
+\
+struct IntType* _global_##name##_get_type(typ* number, __Context) { \
+    return _global_##name##_get_typeByValue(*number, context); \
+}
 
-gen_integer(uint, unsigned int)
-gen_integer(u8, uint8_t)
-gen_integer(u16, uint16_t)
-gen_integer(u32, uint32_t)
-gen_integer(u64, uint64_t)
+struct IntType* _global_int_get_typeByValue(int number, __Context) {
+    return &_global_IntType;
+}
 
-gen_integer(i8, int8_t)
-gen_integer(i16, int16_t)
-gen_integer(i32, int32_t)
-gen_integer(i64, int64_t)
+struct IntType* _global_int_get_type(int* number, __Context) {
+    return &_global_IntType;
+}
+
+
+gen_integer(uint, unsigned int, 0)
+gen_integer(u8, uint8_t, 0)
+gen_integer(u16, uint16_t, 0)
+gen_integer(u32, uint32_t, 0)
+gen_integer(u64, uint64_t, 0)
+
+gen_integer(i8, int8_t, 1)
+gen_integer(i16, int16_t, 1)
+gen_integer(i32, int32_t, 1)
+gen_integer(i64, int64_t, 1)
 
 void _global_c_log(struct _global_String s) {
     printf("%s\n", s.data);
@@ -266,3 +322,47 @@ void printI(int i) {
     printf("%i\n", i);
 };
 */
+
+struct StringType {
+};
+
+struct StringType _global_StringType;
+
+struct StringType* _global_String_get_type(struct _global_String* s, __Context) {
+    return &_global_StringType;
+}
+
+struct StringType* _global_String_get_typeByValue(struct _global_String s, __Context) {
+    return &_global_StringType;
+}
+
+void _global_init_c_runtime() {
+    printf("Initialized types\n");
+    _global_FloatType.size = sizeof(float);
+    _global_IntType.sign = 1;
+    _global_IntType.size = sizeof(int);
+
+    _global_u8TypeInit();
+    _global_u16TypeInit();
+    _global_u32TypeInit();
+    _global_u64TypeInit();
+    _global_uintTypeInit();
+
+    _global_i8TypeInit();
+    _global_i16TypeInit();
+    _global_i32TypeInit();
+    _global_i64TypeInit();
+
+    /*
+    _global_##name##TypeInit()
+    gen_integer(uint, unsigned int, 0)
+gen_integer(u8, uint8_t, 0)
+gen_integer(u16, uint16_t, 0)
+gen_integer(u32, uint32_t, 0)
+gen_integer(u64, uint64_t, 0)
+
+gen_integer(i8, int8_t, 1)
+gen_integer(i16, int16_t, 1)
+gen_integer(i32, int32_t, 1)
+gen_integer(i64, int64_t, 1) */
+}

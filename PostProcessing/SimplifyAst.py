@@ -273,6 +273,9 @@ class Specifications:
         if package == "":
             package = "_global"
 
+        if package == "reflection" and funcName == "typeof":
+            return toUniqueID(package, funcName, replaced)
+
         fullName = package + "_" + funcName
         id = toUniqueID(package, funcName, replaced)
 

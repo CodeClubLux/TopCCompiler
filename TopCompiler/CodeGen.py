@@ -209,7 +209,12 @@ class CodeGen:
 
         includes = self.toCHelp()
 
-        mainCode = "".join(self.main_parts)
+        if self.filename == "main":
+            mainCode = "_global_init_c_runtime();\n"
+        else:
+            mainCode = ""
+
+        mainCode += ("".join(self.main_parts))
         outerCode = "".join(self.out_parts)
         forward_ref = "".join(self.header_parts)
 

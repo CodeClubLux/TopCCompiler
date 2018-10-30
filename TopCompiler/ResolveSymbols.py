@@ -50,6 +50,8 @@ def resolve(self):
             self.opackage = c
 
             for i in range(len(tokens[c])):
+                if self.package == "_global" and i == len(tokens[c])-1:
+                    self.setArrayTypes()
                 _resolve(self, tokens[c][i], self._filename[i][1], passN=n)
 
     self.rootAst = Tree.Root()

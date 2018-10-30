@@ -1,0 +1,73 @@
+type ext IntType =
+    sign: bool
+    size: uint
+
+def IntType.toString(&self) string =
+    if self.sign then "i{self.size * 8}"
+    else "u{self.size * 8}"
+
+type ext FloatType =
+    size: uint
+
+def FloatType.toString(&self) string =
+    "f{self.size*8}"
+
+
+type ext BoolType =
+
+def BoolType.toString(&self) string =
+    "bool"
+
+type ext StringType =
+
+def StringType.toString(&self) string =
+    "string"
+
+type AliasType =
+    name: string
+    package: string
+    real_type: Type
+
+type StructType =
+    name: string
+    package: string
+    real_type: Type
+    fields: []Field
+
+def StructType.toString(&self) string =
+    if self.package == "_global" then self.name
+    else "{self.package}.{self.name}"
+
+type Cases =
+    name: string
+    args: []Type
+
+type Field =
+    name: string
+    offset: uint
+    field_type: Type
+
+type Method =
+    name: string
+    pointer_to_method: &none
+
+type EnumType =
+    name: string
+    package: string
+    cases: []Cases
+    methods: []Method
+
+type FuncType =
+    args: []Type
+    return_type: Type
+
+type InterfaceType =
+    name: string
+    package: string
+    fields: []Field
+    methods: []Method
+
+type Type with
+    def toString() string
+    def get_method(string) Method
+    def get_field(string) Field

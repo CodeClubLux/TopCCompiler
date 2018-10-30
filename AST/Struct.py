@@ -5,6 +5,7 @@ from .node import *
 from .Func import *
 from .Operator import *
 from PostProcessing import SimplifyAst
+from TopCompiler import Parser
 
 class InitStruct(Node):
     def __init__(self, parser):
@@ -119,6 +120,7 @@ class Type(Node):
         self.fields =list(structT.types.keys())
         self.remainingGen = structT.remainingGen
         self.replaced = True
+        self.structT = structT
 
     def compileToC(self, codegen):
         if not self.replaced and not self.externalStruct:
@@ -163,14 +165,59 @@ class Type(Node):
 
         codegen.append("return "+name)
         codegen.append(";\n};\n")
-
-
         #@cleanup Add Serialization for types
         #codegen.append(self.package+"_"+self.normalName+"._fields=[")
         #codegen.append(",".join('"'+i+'"' for i in self.fields))
         #codegen.append("];")
+
+        #Type Introspection
+        nameOfI = f"{self.package}_{self.normalName}Type"
+
+        codegen.append("struct _global_StructType " + nameOfI + ";")
+
+        codegen.append(f"struct _global_StructType* {self.package}_{self.normalName}_get_type({cType} self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.package}_{self.normalName}Type;")
+        codegen.append("}\n")
+
+        codegen.append(f"struct _global_StructType* {self.package}_{self.normalName}_get_typeByValue({cType} self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.package}_{self.normalName}Type;")
+        codegen.append("}\n")
+
         codegen.outFunction()
 
+        field_array = codegen.getName()
+
+
+        try:
+            structType = Parser.StructType
+        except:
+            return
+
+        structType.toCType()
+
+        fieldTypeInArray = "Field" #SimplifyAst.sanitize(structType)
+
+        def as_string(s):
+            return f'_global_StringInit({len(s)}, "{s}")'
+
+        codegen.append(f"struct _global_StructType {field_array}[{len(self.fields)}];")
+        codegen.append(f"{nameOfI}.fields = _global_StaticArray_StaticArray_S_" + fieldTypeInArray + "Init(")
+        codegen.append(field_array)
+        codegen.append("," + str(len(self.fields)))
+        codegen.append(");")
+        codegen.append(f"{nameOfI}.package = " + as_string(self.package) + ";")
+        codegen.append(f"{nameOfI}.name = " + as_string(self.normalName) + ";")
+
+        for (i, field) in enumerate(self.fields):
+            typ = self.structT.types[field]
+
+            codegen.append(f"{field_array}[{i}].name = " + as_string(field) + ";")
+            codegen.append(f"{field_array}[{i}].offset = offsetof({cType}, {field});")
+            codegen.append(f"{field_array}[{i}].type = ")
+
+            Types.output_type(self.structT.types[field], codegen)
+
+            codegen.append(";")
 
     def validate(self, parser): pass
 

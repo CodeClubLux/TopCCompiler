@@ -224,12 +224,14 @@ def getTmpName():
 
 from TopCompiler import CodeGen
 
+gen_info = CodeGen.Info()
+gen_of_names = CodeGen.genNames(gen_info)
+
+
 class TmpCodegen:
     def __init__(self):
         self.out_parts = []
         self.initTypes = []
-        self.info = CodeGen.Info()
-        self.gen = CodeGen.genNames(self.info)
         self.inAFunction = True
 
     def inFunction(self):
@@ -239,7 +241,7 @@ class TmpCodegen:
         self.inAFunction = False
 
     def getName(self):
-        return next(self.gen)
+        return next(gen_of_names)
 
     def append(self, x):
         if self.inAFunction:
@@ -251,6 +253,7 @@ def getGeneratedDataTypes():
     #@cleanup use new way of generating
 
     (namedDataTypes, initializeTypes) = ([], [])
+    gen_info.reset([0], 0)
 
     for i in compiledTypes:
         tmpCodegen = genericTypes[i]
@@ -481,8 +484,11 @@ class String(Type):
             "toString": FuncPointer([self], self),
             "toInt": FuncPointer([self], I32()),
             "toFloat": FuncPointer([self], Float()),
-            "to_c_string": FuncPointer([self], Types.Pointer(Types.Char()))
+            "to_c_string": FuncPointer([self], Types.Pointer(Types.Char())),
         }
+
+        if field == "get_type":
+            return FuncPointer([self], Pointer(Parser.StringType))
 
         try:
             return self.methods[field]
@@ -584,6 +590,9 @@ class Struct(Type):
         #print(self.name)
 
     def hasMethod(self, parser, field, isP= False):
+        if field == "get_type":
+            return FuncPointer([self], Pointer(Parser.StructType))
+
         try:
             m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
         except KeyError:
@@ -679,6 +688,7 @@ class Tuple(Type):
                 i.duckType(parser, othk, node, mynode, iter)
             except EOFError as e:
                 beforeError(e, "Tuple element #" + key + ": ")
+
 
 class Array(Type):
     def __init__(self, elemT, static, numElements=None, both=False, empty=False):
@@ -1219,6 +1229,15 @@ class I32(Type):
 
         return self.__methods__
 
+    def hasMethod(self, parser, field, isP= False):
+        if field == "get_type":
+            return FuncPointer([self], Pointer(Parser.IntType))
+
+        try:
+            return self.methods[field]
+        except:
+            return
+
     def duckType(self, parser, other, node, mynode, iter):
         other = other.toRealType()
         if not type(other) is I32:
@@ -1237,7 +1256,7 @@ class Pointer(Type):
     def __init__(self, pType, mutable=False):
         self.pType = pType
         self.name = "&" + pType.name
-        #self.normalName = pType.normalName
+        self.normalName = pType.normalName
         if not pType.isType(Pointer):
             self.types = pType.types
         else:
@@ -1303,6 +1322,15 @@ class Float(Type):
 
         return self.__methods__
 
+    def hasMethod(self, parser, field, isP= False):
+        if field == "get_type":
+            return FuncPointer([self], Pointer(Parser.FloatType))
+
+        try:
+            return self.methods[field]
+        except:
+            pass
+
     def duckType(self, parser, other, node, mynode, iter):
         if not (other.isType(I32) or other.isType(Float)):
             mynode.error("expecting type " + str(self) + ", or "+str(I32())+" and got type " + str(other))
@@ -1330,6 +1358,15 @@ class Bool(Type):
             }
 
         return self.__methods__
+
+    def hasMethod(self, parser, field, isP= False):
+        if field == "get_type":
+            return FuncPointer([self], Pointer(Parser.BoolType))
+
+        try:
+            return self.methods[field]
+        except:
+            pass
 
 package= "_global"
 types = {"toString": FuncPointer([], String(0))}
@@ -1451,4 +1488,28 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
         return typ
 
 from TopCompiler import topc
+import AST as Tree
+
+def output_type(typ, codegen):
+    class Output:
+        def compileToC(self, codegen):
+            if
+            codegen.append()
+
+    if type(typ) is Types.Pointer:
+        top_typ = Parser.PointerType
+    elif type(typ) is Types.I32:
+        top_typ = Parser.IntType
+    elif type(typ) is Types.Float:
+        top_typ = Parser.FloatType
+    elif type(typ) is Types.Struct:
+        top_typ = Parser.StructType
+    elif type(typ) is Types.Alias:
+        top_typ = Parser.AliasType
+    elif type(typ) is Types.Enum:
+        top_typ = Parser.EnumType
+
+    top_typ = Pointer(top_typ)
+
+    Tree.castFrom(top_typ, Parser.IType, Output(), {}, codegen)
 

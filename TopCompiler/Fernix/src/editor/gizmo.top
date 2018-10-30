@@ -122,6 +122,9 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity, axis: Axis) Axis =
     cam := camera.get_camera!
 
     if not inp.mouse_button_down key.Left then
+        translation_model_materials[0].params[0] = Param_Vec3 "color", Vec3{1,0,0}
+        translation_model_materials[1].params[0] = Param_Vec3 "color", Vec3{0,1,0}
+        translation_model_materials[2].params[0] = Param_Vec3 "color", Vec3{0,0,1}
         return NoAxis
 
     n := inp.to_device_coord inp.mouse_position
@@ -181,12 +184,15 @@ def Gizmo.handle_translation(&self, target: &ecs.Entity, axis: Axis) Axis =
         //select axis
         NoAxis ->
             if d1 < d2 and d1 < d3 and d1 < greatest_distance then
+                translation_model_materials[2].params[0] = Param_Vec3 "color", Vec3{1,1,0}
                 Right i_right.closest_point_1
 
             elif d2 < d1 and d2 < d3 and d2 < greatest_distance then
+                translation_model_materials[1].params[0] = Param_Vec3 "color", Vec3{1,1,0}
                 Up i_up.closest_point_1
 
             elif d3 < greatest_distance then
+                translation_model_materials[0].params[0] = Param_Vec3 "color", Vec3{1,1,0}
                 Forward i_forward.closest_point_1
 
             else NoAxis

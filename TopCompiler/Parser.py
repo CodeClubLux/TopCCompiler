@@ -380,6 +380,14 @@ class Parser:  # all mutable state
         self.order_of_modules = []
 
 
+    def setArrayTypes(self):
+        global StaticArray
+        global DynamicArray
+        tmp = self.structs["_global"]["Array"]
+        tmp3 = self.structs["_global"]["StaticArray"]
+
+        DynamicArray = Types.Struct(False, tmp.normalName, tmp._types, tmp.package, tmp.generic)
+        StaticArray = Types.Struct(False, tmp3.normalName, tmp3._types, tmp3.package, tmp3.generic)
 
     def setGlobalData(self, compileRuntime):
         global Stringable
@@ -395,8 +403,12 @@ class Parser:  # all mutable state
         if not compileRuntime:
             global DynamicArray
             global Range
-            global StaticArray
             global Char
+            global StringType
+            global IntType
+            global BoolType
+            global FloatType
+            global StructType
 
             if not runtimeParser:
                 runtimeParser = saveParser.loadRuntimeTypeData()  # data containing runtime
@@ -418,14 +430,20 @@ class Parser:  # all mutable state
 
             self.structs["_global"]["Context"]._types = self.contextType
 
-            tmp = self.structs["_global"]["Array"]
             tmp2 = self.structs["_global"]["Range"]
-            tmp3 = self.structs["_global"]["StaticArray"]
+            tmp4 = self.structs["_global"]["StringType"]
+            tmp5 = self.structs["_global"]["IntType"]
+            tmp6 = self.structs["_global"]["FloatType"]
+            tmp7 = self.structs["_global"]["BoolType"]
+            tmp8 = self.structs["_global"]["StructType"]
 
-            DynamicArray = Types.Struct(False, tmp.normalName, tmp._types, tmp.package, tmp.generic)
-            StaticArray = Types.Struct(False, tmp3.normalName, tmp3._types, tmp3.package, tmp3.generic)
+            self.setArrayTypes()
             Range = Types.Struct(False, tmp2.normalName, tmp2._types, tmp2.package)
-
+            StringType = Types.Struct(False, tmp4.normalName, tmp4._types, tmp4.package)
+            IntType = Types.Struct(False, tmp5.normalName, tmp5._types, tmp5.package)
+            FloatType = Types.Struct(False, tmp6.normalName, tmp6._types,tmp6.package)
+            BoolType = Types.Struct(False, tmp7.normalName, tmp7._types, tmp7.package)
+            StructType = Types.Struct(False, tmp8.normalName, tmp8._types, tmp8.package)
 
             Types.genericTypes = runtimeParser.generatedGenericTypes
 
