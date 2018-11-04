@@ -559,16 +559,37 @@ class FuncPointer(Type):
             beforeError(e, "Function type return type: ")
 
 def isPart(i, name, package):
-    #if package == "_global": return name == i
+    if package == "_global": return name == ".".join(i.split(".")[:-1])
     return ".".join(i.split(".")[:-1]) == name
 
 def strGen(g):
     return str(g)
 
     if type(g) is T:
-
         return str(g)
     return str(g)
+
+def compareFirstArg(self, firstArg, isP, parser):
+    if type(firstArg) is Pointer and not isP:
+        Error.parseError(parser, "Expecting pointer")
+
+    if type(firstArg) is Types.Pointer:
+        firstArg = firstArg.pType
+
+    generic = firstArg.remainingGen
+
+    for name in generic:
+        a = generic[name]
+        b = self.remainingGen[name]
+
+        if type(a) is T:
+            a = a.type
+        if type(b) is T:
+            b = b.type
+
+        if type(a) is int or type(b) is int: continue
+
+        a.duckType(parser, b, parser, parser, 0)
 
 class Struct(Type):
     def __init__(self, mutable, name, types, package, gen=coll.OrderedDict()):
@@ -601,22 +622,18 @@ class Struct(Type):
             return FuncPointer([self], Pointer(Parser.StructType))
 
         try:
-            m = parser.structs[self.package][self.normalName].hasMethod(parser, field)
+            attachTyp = parser.structs[self.package][self.normalName]
+            m = attachTyp.hasMethod(parser, field)
         except KeyError:
             return False
             # m = parser.interfaces[self.package][self.normalName].types[field]
 
         if m:
             func = replaceT(m, self.gen)
-            m = replaceT(m, self.gen)
-            firstArg = m.args[0]
+            tmp = m.args[0]
 
-            if isP:
-                self = Types.Pointer(self)
+            compareFirstArg(self, m.args[0], isP, parser)
 
-            if not type(firstArg) is Pointer and type(self) is Pointer:
-                self = self.pType
-            firstArg.duckType(parser, self, parser, parser)
             return func
 
     def getMethods(self, parser):
@@ -663,6 +680,8 @@ class Struct(Type):
                 a = a.type
             if type(b) is T:
                 b = b.type
+
+            if type(b) is int: continue
 
             if not (b.isType(T) and b.owner == self.package+"."+self.normalName):
                 try:
@@ -770,6 +789,7 @@ class Array(Type):
         #    return Types.FuncPointer([self, Types.I32(unsigned=True)], self.elemT)
         if field == "get_type":
             return Parser.ArrayType
+
         return self.arrT.hasMethod(parser, field, isP)
 
 def isMutable(typ):
@@ -970,14 +990,8 @@ def hasMethodEnum(attachTyp, parser, name, isP=False):
 
     if b:
         m = replaceT(b, attachTyp.generic)
-        firstArg = m.args[0]
-
-        if isP:
-            attachTyp = Types.Pointer(attachTyp)
-        if not type(firstArg) is Types.Pointer and isP:
-            attachTyp = attachTyp.pType
-
-        firstArg.duckType(parser, attachTyp, parser, parser, 0)
+        firstArg = m.args[0] #replaceT(m.args[0], attachTyp.generic)
+        compareFirstArg(m.args[0], self, isP, parser)
         return m
 
 def isMaybe(typ):

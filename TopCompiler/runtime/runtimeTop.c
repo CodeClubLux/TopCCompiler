@@ -299,7 +299,7 @@ else{return tmp_globalb(_global_None);};
 ;}
 struct _global_String _global_FileAcess_toStringByValue(struct _global_FileAcess _global_self, struct _global_Context* bf){;
 ;struct _global_FileAcess bg =_global_self;
-if(bg.tag==0){return _global_StringInit(1,"r");}if(bg.tag==1){return _global_StringInit(1,"w");};
+if(bg.tag==0){return _global_StringInit(1,"r");}else if(bg.tag==1){return _global_StringInit(1,"w");};
 ;}
 static inline struct _global_String _global_FileAcess_toString(struct _global_FileAcess* bh,struct _global_Context* bf){
 return _global_FileAcess_toStringByValue(*bh,bf);
@@ -311,7 +311,7 @@ return _global_FileAcess_toStringByValue(*bh,bf);
 #define _global_c_read_file(bl,bm,bn) _runtime_read_file(bl,bm)
 struct _global_String _global_File_readByValue(struct _global_File _global_self, struct _global_Context* bp){;
 ;struct _global_FileAcess bq =(_global_self).acess;
-if(bq.tag==0){return _global_c_read_file((_global_self).c_file,bp,bp);}if(1){_global_panic(_global_StringInit(40,"Trying to read from file not set to read"),bp);
+if(bq.tag==0){return _global_c_read_file((_global_self).c_file,bp,bp);}else if(1){_global_panic(_global_StringInit(40,"Trying to read from file not set to read"),bp);
 return _global_StringInit(0,"");};
 ;}
 static inline struct _global_String _global_File_read(struct _global_File* br,struct _global_Context* bp){
@@ -329,7 +329,7 @@ struct _global_Maybe_File _global_open(struct _global_String _global_filename, s
 struct FILE* _global_c_file;_global_c_file = _global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,bp),bp);;
 ;struct FILE* bq =_global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,bp),bp);
 if(bq != NULL){struct FILE* _global_file= bq;
-return _global_Some_File(_global_FileInit(_global_file,_global_acess),bp);}if(bq == NULL){return tmp_globalc(_global_None);};
+return _global_Some_File(_global_FileInit(_global_file,_global_acess),bp);}else if(bq == NULL){return tmp_globalc(_global_None);};
 ;}
 
 #define _global_set_bit_to(bp,bq,br,bs) _global_c_set_bit_to(bp,bq,br)
@@ -383,7 +383,7 @@ return _global_InterfaceType_toString(&by,bx);
 }struct _global_String _global_ArrayType_toString(struct _global_ArrayType* _global_self, struct _global_Context* bx){;
 ;struct _global_ArraySize by =(_global_self)->size;
 if(by.tag==0){unsigned int _global_length = by.cases.Static.field0;
-return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"["),_global_uint_toStringByValue((_global_length),bx),bx),_global_StringInit(1,"]"),bx),_global_Type_toStringByValue(((_global_self)->array_type),bx),bx),_global_StringInit(0,""),bx);}if(by.tag==1){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(4,"[..]"),_global_Type_toStringByValue(((_global_self)->array_type),bx),bx),_global_StringInit(0,""),bx);}if(by.tag==2){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(2,"[]"),_global_Type_toStringByValue(((_global_self)->array_type),bx),bx),_global_StringInit(0,""),bx);};
+return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"["),_global_uint_toStringByValue((_global_length),bx),bx),_global_StringInit(1,"]"),bx),_global_Type_toStringByValue(((_global_self)->array_type),bx),bx),_global_StringInit(0,""),bx);}else if(by.tag==1){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(4,"[..]"),_global_Type_toStringByValue(((_global_self)->array_type),bx),bx),_global_StringInit(0,""),bx);}else if(by.tag==2){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(2,"[]"),_global_Type_toStringByValue(((_global_self)->array_type),bx),bx),_global_StringInit(0,""),bx);};
 ;}
 static inline struct _global_String _global_ArrayType_toStringByValue(struct _global_ArrayType bz,struct _global_Context* bx){
 return _global_ArrayType_toString(&bz,bx);

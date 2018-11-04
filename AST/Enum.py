@@ -206,6 +206,7 @@ class Match(Node):
     def compileToC(self, codegen):
         tmp = codegen.getName()
         self.tmp = tmp
+        self.nodes[1].first = True
 
         if not type(self.type) is Types.Null:
             def genNodes():
@@ -223,7 +224,7 @@ class Match(Node):
             codegen.append(";")
             for iter in range(1, len(self.nodes)):
                 self.nodes[iter].compileToC(codegen)
-                codegen.addSemicolon(self.nodes[iter])
+                codegen.addSemicolon(self.nodes[iter], no_semicolon=True)
 
     def validate(self, parser):
         pass
@@ -232,11 +233,15 @@ class Match(Node):
         return "match"
 
 class Fake:
-    def __init__(self, codegen):
+    def __init__(self, codegen, first):
         self.checking = True
         self.check = []
         self.body = []
         self.codegen = codegen
+        self.first = first
+
+    def getContext(self):
+        return self.codegen.getContext()
 
     def createName(self, a, typ):
         return self.codegen.createName(a, typ)
@@ -254,16 +259,21 @@ class Fake:
             self.body.append(string)
 
     def appendToCodegen(self):
-        tmp = "if("+"".join(self.check)+"){"+"".join(self.body)
+        if self.first:
+            tmp = "if"
+        else:
+            tmp = "else if"
+        tmp += "("+"".join(self.check)+"){"+"".join(self.body)
         self.codegen.append(tmp)
 
 class MatchCase(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
         self.yielding = False
+        self.first = False
 
     def compileToC(self, _codegen):
-        codegen = Fake(_codegen)
+        codegen = Fake(_codegen, self.first)
 
         def loop(node,tmp):
             codegen.checking = True
@@ -396,6 +406,22 @@ class MatchCase(Node):
                 codegen.checking = False
             elif type(node) is Tree.Under:
                 codegen.append("1")
+            elif type(node) is Tree.Operator and node.kind == "as":
+                codegen.checking = True
+                codegen.append(tmp + ".vtable->type.data == ")
+                Tree.Typeof(node, node.type.pType).compileToC(codegen)
+                i = node.nodes[0]
+                if not type(i) is Tree.ReadVar:
+                    codegen.append(" && ")
+                    loop(node.nodes[0], tmp + ".data")
+
+                codegen.checking = False
+
+                if type(i) is Tree.ReadVar:
+                    name = codegen.createName(i.package + "_" + i.name, node.type)
+                    node_typ = node.type.toCType()
+                    codegen.append(f"{node_typ} {name} = ({node_typ}){tmp}.data;")
+
             elif type(node) is Tree.Operator and node.kind == "or":
                 codegen.append(tmp + "==")
                 node.nodes[0].compileToC(codegen)

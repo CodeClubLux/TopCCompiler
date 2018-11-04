@@ -70,8 +70,9 @@ wrapping_s : Any = &s
 typ_of_s := wrapping_s.get_type!
 
 match typ_of_s with
-    x as StructType ->
-        log "s is a struct"
+    x as &StructType ->
+        for field := x.fields do
+            log field.name
 
     _ ->
         log "I dont know what s is"

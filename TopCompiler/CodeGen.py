@@ -148,9 +148,12 @@ class CodeGen:
         else:
             return self.main_parts
 
-    def addSemicolon(self, ast):
+    def addSemicolon(self, ast, no_semicolon=False):
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
-            self.append(";\n")
+            if no_semicolon:
+                self.append("\n")
+            else:
+                self.append(";\n")
             if self.debug:
                 filename = ast.fullFilePath().replace("\\", "\\\\")
                 #self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')

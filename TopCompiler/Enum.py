@@ -83,6 +83,14 @@ def checkCase(parser, case, typ, first=False):
             case.nodes[-1].error("missing "+str(len(pattern) - (len(case.nodes)-1))+" arguments")
 
         case.type = typ
+    elif type(case) is Tree.Operator and case.kind == "as":
+        if not typ.isType(Types.Interface):
+            case.nodes[0].error("Cannot pattern match on type " + str(typ)+ "m as if it were an interface.")
+
+        if not case.type.isType(Types.Pointer):
+            case.error("Can only extract pointer type from interface")
+
+        checkCase(parser, case.nodes[0], case.type)
     elif type(case) is Tree.ReadVar and case.name[0].lower() == case.name[0]:
         Scope.addVar(case, parser, case.name, Scope.Type(True, typ))
     elif type(case) is Tree.ReadVar:
@@ -131,7 +139,7 @@ def checkCase(parser, case, typ, first=False):
             case.error("expecting result of or, to be of type "+str(typ)+" not "+str(typT))
         case.type = Types.Bool()
         case.opT = Types.Bool()
-    elif type(case) in [Tree.String, Tree.Int, Tree.Float]:
+    elif type(case) in [Tree.String, Tree.Int, Tree.Float, Tree.Bool]:
         if case.type != typ:
             case.error("expecting type "+str(case.type)+", not "+str(typ))
     elif type(case) is Tree.Operator and case.kind == ".." and not case.curry and not case.partial:
