@@ -74,6 +74,31 @@ exprType = {}  # depends on parser, needs type information to figure out
 exprToken = {"\n": newLine, "(": parenOpen, ")": parenClose}  # depends on parser, needs token information
 stmts = {}  # for all statements
 
+class TmpType:
+    def __init__(self):
+        self.name = "TmpType"
+        self.package = "_global"
+        self.normalName = "TmpType"
+        self.types = {}
+        self.methods = {}
+
+    def isType(self, typ):
+        return False
+
+StringType = TmpType()
+IntType = TmpType()
+BoolType = TmpType()
+FloatType = TmpType()
+StructType = TmpType()
+AliasType = TmpType()
+CharType = TmpType()
+InterfaceType = TmpType()
+EnumType = TmpType()
+PointerType = TmpType()
+IType = TmpType()
+ArrayType = TmpType()
+NoneType = TmpType()
+
 from .Types import *
 from .Lexer import *
 import AST as Tree
@@ -282,7 +307,7 @@ class Func:
         self.args = args
         self.returnType = returnType
 
-Char = Types.I32(size=8)
+
 
 class Parser:  # all mutable state
     def nextToken(parser):
@@ -389,6 +414,56 @@ class Parser:  # all mutable state
         DynamicArray = Types.Struct(False, tmp.normalName, tmp._types, tmp.package, tmp.generic)
         StaticArray = Types.Struct(False, tmp3.normalName, tmp3._types, tmp3.package, tmp3.generic)
 
+    def setTypeIntrospection(self):
+        global DynamicArray
+        global Range
+        global Char
+
+        global StringType
+        global IntType
+        global BoolType
+        global FloatType
+        global StructType
+        global AliasType
+        global CharType
+        global InterfaceType
+        global EnumType
+        global PointerType
+        global IType
+        global ArrayType
+        global NoneType
+
+        tmp2 = self.structs["_global"]["Range"]
+        tmp4 = self.structs["_global"]["StringType"]
+        tmp5 = self.structs["_global"]["IntType"]
+        tmp6 = self.structs["_global"]["FloatType"]
+        tmp7 = self.structs["_global"]["BoolType"]
+        tmp8 = self.structs["_global"]["StructType"]
+        tmp9 = self.structs["_global"]["AliasType"]
+        tmp10 = self.structs["_global"]["CharType"]
+        tmp11 = self.structs["_global"]["InterfaceType"]
+        tmp12 = self.structs["_global"]["EnumType"]
+        tmp13 = self.structs["_global"]["PointerType"]
+        tmp14 = self.structs["_global"]["ArrayType"]
+        tmp15 = self.structs["_global"]["NoneType"]
+
+        self.setArrayTypes()
+        Range = Types.Struct(False, tmp2.normalName, tmp2._types, tmp2.package)
+        StringType = Types.Struct(False, tmp4.normalName, tmp4._types, tmp4.package)
+        IntType = Types.Struct(False, tmp5.normalName, tmp5._types, tmp5.package)
+        FloatType = Types.Struct(False, tmp6.normalName, tmp6._types, tmp6.package)
+        BoolType = Types.Struct(False, tmp7.normalName, tmp7._types, tmp7.package)
+        StructType = Types.Struct(False, tmp8.normalName, tmp8._types, tmp8.package)
+        AliasType = Types.Struct(False, tmp9.normalName, tmp9._types, tmp9.package)
+        CharType = Types.Struct(False, tmp10.normalName, tmp10._types, tmp10.package)
+        InterfaceType = Types.Struct(False, tmp11.normalName, tmp11._types, tmp11.package)
+        EnumType = Types.Struct(False, tmp12.normalName, tmp12._types, tmp12.package)
+        PointerType = Types.Struct(False, tmp13.normalName, tmp13._types, tmp13.package)
+        IType = self.interfaces["_global"]["Type"]
+        ArrayType = Types.Struct(False, tmp14.normalName, tmp14._types, tmp14.package)
+        NoneType = Types.Struct(False, tmp15.normalName, tmp15._types, tmp15.package)
+
+
     def setGlobalData(self, compileRuntime):
         global Stringable
         global runtimeParser
@@ -397,19 +472,11 @@ class Parser:  # all mutable state
 
         Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0))},
                                      name="Stringer")
+
         All = Types.All
         self.Stringable = Stringable
 
         if not compileRuntime:
-            global DynamicArray
-            global Range
-            global Char
-            global StringType
-            global IntType
-            global BoolType
-            global FloatType
-            global StructType
-
             if not runtimeParser:
                 runtimeParser = saveParser.loadRuntimeTypeData()  # data containing runtime
 
@@ -430,23 +497,10 @@ class Parser:  # all mutable state
 
             self.structs["_global"]["Context"]._types = self.contextType
 
-            tmp2 = self.structs["_global"]["Range"]
-            tmp4 = self.structs["_global"]["StringType"]
-            tmp5 = self.structs["_global"]["IntType"]
-            tmp6 = self.structs["_global"]["FloatType"]
-            tmp7 = self.structs["_global"]["BoolType"]
-            tmp8 = self.structs["_global"]["StructType"]
-
-            self.setArrayTypes()
-            Range = Types.Struct(False, tmp2.normalName, tmp2._types, tmp2.package)
-            StringType = Types.Struct(False, tmp4.normalName, tmp4._types, tmp4.package)
-            IntType = Types.Struct(False, tmp5.normalName, tmp5._types, tmp5.package)
-            FloatType = Types.Struct(False, tmp6.normalName, tmp6._types,tmp6.package)
-            BoolType = Types.Struct(False, tmp7.normalName, tmp7._types, tmp7.package)
-            StructType = Types.Struct(False, tmp8.normalName, tmp8._types, tmp8.package)
-
             Types.genericTypes = runtimeParser.generatedGenericTypes
-
+            Types.inProjectTypes = {name: None for name in Types.genericTypes}
+            Tree.casted = runtimeParser.casted
+            self.setTypeIntrospection()
             return
         tmp = self.tokens
         self.tokens = [0]

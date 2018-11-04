@@ -249,6 +249,9 @@ class TmpCodegen:
         else:
             self.initTypes.append(x)
 
+    def getContext(self):
+        return "(&_global_context)"
+
 def getGeneratedDataTypes():
     #@cleanup use new way of generating
 
@@ -285,6 +288,7 @@ from TopCompiler import topc
 
 genericTypes = {}
 compiledTypes = coll.OrderedDict()
+inProjectTypes = {}
 
 def genGenericCType(struct, func= S.Type):
     replaced = struct.remainingGen
@@ -301,14 +305,15 @@ def genGenericCType(struct, func= S.Type):
         else:
             s.replaceT(struct, newName[newName.find("_")+1:])
 
-
         tmpCodegen = TmpCodegen()
         genericTypes[newName] = tmpCodegen
         s.compileToC(tmpCodegen)
 
         compiledTypes[newName] = None #genericTypes
-    #elif newName in genericTypes and not newName in compiledTypes:
-    #    print("recursive dependency")
+        inProjectTypes[newName] = None
+    elif newName in genericTypes and not newName in inProjectTypes:
+        compiledTypes[newName] = None  # genericTypes
+        inProjectTypes[newName] = None
 
     return "struct " + newName
 
@@ -326,9 +331,11 @@ def genInterface(interface):
         genericTypes[newName] = tmpCodegen
         s.compileToC(tmpCodegen)
 
-        compiledTypes[newName] = tmpCodegen
-    #elif newName in genericTypes and not newName in compiledTypes:
-        #print("recursive dependency")
+        compiledTypes[newName] = None  # genericTypes
+        inProjectTypes[newName] = None
+    elif newName in genericTypes and not newName in inProjectTypes:
+        compiledTypes[newName] = None  # genericTypes
+        inProjectTypes[newName] = None
 
     return "struct " + newName
 
@@ -617,6 +624,7 @@ class Struct(Type):
 
     def toCType(self):
         if self.name == "Context": return "struct _global_Context"
+
         structType = topc.global_parser.structs[self.package][self.normalName]
         if structType.externalStruct:
             return "struct " + self.normalName
@@ -760,6 +768,8 @@ class Array(Type):
     def hasMethod(self, parser, field, isP= False):
         #if self.both and field == "op_get":
         #    return Types.FuncPointer([self, Types.I32(unsigned=True)], self.elemT)
+        if field == "get_type":
+            return Parser.ArrayType
         return self.arrT.hasMethod(parser, field, isP)
 
 def isMutable(typ):
@@ -802,10 +812,7 @@ class Interface(Type):
         self.remainingGen = generic
         self.fullName = name
 
-        if not methods:
-            self.methods = []
-        else:
-            self.methods = methods
+        self.methods = methods
 
     def fromObj(self, obj):
         self.name = obj.name
@@ -815,6 +822,7 @@ class Interface(Type):
         self.types = obj.types
         self.package = obj.package
         self.methods = obj.methods
+        self.remainingGen = obj.remainingGen
 
         return self
 
@@ -878,6 +886,9 @@ class Interface(Type):
 
 
     def hasMethod(self, parser, field, isP=False):
+        if field in "get_type":
+            return FuncPointer([self], Parser.IType)
+
         if field in self.methods:
             meth = self.methods[field]
             return Types.FuncPointer([Types.Pointer(self)] + meth.args, meth.returnType, meth.generic, meth.do)
@@ -1059,6 +1070,10 @@ class Alias(Type):
         return type(self.typ) is other
 
     def toCType(self):
+        def func(package, structName, parser):
+            return Tree.AliasType(self, package, structName, parser)
+
+        genGenericCType(self, func)
         return self.typ.toCType()
 
     def duckType(self, parser, other, node, mynode, iter):
@@ -1083,7 +1098,7 @@ class Alias(Type):
             return hasMethodEnum(attachTyp, parser, field, isP)
 
 
-All = Interface(False, {})
+All = Interface(False, {}, name="All")
 
 def isGeneric(t, unknown=False):
     if unknown: return True
@@ -1490,26 +1505,8 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
 from TopCompiler import topc
 import AST as Tree
 
-def output_type(typ, codegen):
-    class Output:
-        def compileToC(self, codegen):
-            if
-            codegen.append()
-
-    if type(typ) is Types.Pointer:
-        top_typ = Parser.PointerType
-    elif type(typ) is Types.I32:
-        top_typ = Parser.IntType
-    elif type(typ) is Types.Float:
-        top_typ = Parser.FloatType
-    elif type(typ) is Types.Struct:
-        top_typ = Parser.StructType
-    elif type(typ) is Types.Alias:
-        top_typ = Parser.AliasType
-    elif type(typ) is Types.Enum:
-        top_typ = Parser.EnumType
-
-    top_typ = Pointer(top_typ)
-
-    Tree.castFrom(top_typ, Parser.IType, Output(), {}, codegen)
+def output_type(node, typ, codegen):
+    node = Tree.Typeof(node, typ)
+    Parser.IType.toCType()
+    Tree.castFrom(node.type, Parser.IType, node, {}, codegen)
 

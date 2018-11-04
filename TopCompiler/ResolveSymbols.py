@@ -127,7 +127,7 @@ def _resolve(self, tokens, filename, passN= 0 ):
                 elif ofType == "either":
                     self.interfaces[self.package][name] = Types.Enum(self.package, name, coll.OrderedDict(), {})
                 elif ofType == "with":
-                    self.interfaces[self.package][name] = Types.Interface(False, {})
+                    self.interfaces[self.package][name] = Types.Interface(False, {}, name=self.package+"."+name)
                 elif ofType == "is":
                     self.interfaces[self.package][name] = Types.Alias(self.package, name, Types.Null(), {})
 

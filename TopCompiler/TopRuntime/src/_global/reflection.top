@@ -12,7 +12,6 @@ type ext FloatType =
 def FloatType.toString(&self) string =
     "f{self.size*8}"
 
-
 type ext BoolType =
 
 def BoolType.toString(&self) string =
@@ -27,6 +26,15 @@ type AliasType =
     name: string
     package: string
     real_type: Type
+
+def AliasType.toString(&self) string =
+    "{self.package}.{self.name}"
+
+type PointerType =
+    p_type: Type
+
+def PointerType.toString(&self) string =
+    "&{self.p_type}"
 
 type StructType =
     name: string
@@ -57,6 +65,9 @@ type EnumType =
     cases: []Cases
     methods: []Method
 
+def EnumType.toString(&self) string =
+    "{self.package}.{self.name}"
+
 type FuncType =
     args: []Type
     return_type: Type
@@ -65,9 +76,33 @@ type InterfaceType =
     name: string
     package: string
     fields: []Field
-    methods: []Method
+    methods: &[]Method
+
+def InterfaceType.toString(&self) string =
+    "{self.package}.{self.name}"
+
+type ArraySize either
+    Static(uint)
+    Dynamic
+    Both
+
+type ArrayType =
+    size: ArraySize
+    array_type: Type
+
+def ArrayType.toString(&self) string =
+    match self.size with
+        Static length -> "[{length}]{self.array_type}"
+        Dynamic -> "[..]{self.array_type}"
+        Both -> "[]{self.array_type}"
+
+type CharType =
+
+type ext NoneType =
+def NoneType.toString(&self) string =
+    "none"
 
 type Type with
     def toString() string
-    def get_method(string) Method
-    def get_field(string) Field
+    //def get_method(string) Maybe[&Method]
+    //def get_field(string) Maybe[&Field]

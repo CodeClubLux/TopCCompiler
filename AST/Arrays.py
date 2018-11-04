@@ -109,6 +109,8 @@ class ArrRead(Node):
 
     def validate(self, parser): pass
 
+from AST import Cast
+
 class ArrDataType(Node):
     def __init__(self, package, structName,  parser):
         Node.__init__(self, parser)
@@ -120,6 +122,8 @@ class ArrDataType(Node):
         self.arrType = arrType
 
     def compileToC(self, codegen):
+        codegen.inFunction()
+
         elemT = self.arrType.remainingGen["StaticArray.T"]
         numElements = self.arrType.remainingGen["StaticArray.S"]
 
@@ -135,6 +139,7 @@ class ArrDataType(Node):
         codegen.append(f"for (unsigned int i = 0; i < {numElements}; i++) {{\n")
         codegen.append("tmp.data[i] = with;\n")
         codegen.append("}; return tmp; }\n")
+
 
         codegen.append(f"struct {self.structName} {self.structName}Init(")
 
@@ -152,4 +157,40 @@ class ArrDataType(Node):
         for (it, name) in enumerate(names):
             codegen.append(f"tmp.data[{it}] = {name};\n")
         codegen.append("return tmp; }\n")
+
+
+        # Introspection
+        def as_string(s):
+            return f'_global_StringInit({len(s)}, "{s}")'
+        structName = self.structName
+
+
+
+        nameOfI = f"{structName}Type"
+
+        codegen.append("struct _global_ArrayType " + nameOfI + ";")
+
+        codegen.append(f"struct _global_ArrayType* {self.structName}_get_type(struct {structName}* self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.structName}Type;")
+        codegen.append("}\n")
+
+        codegen.append(f"struct _global_ArrayType* {self.structName}_get_typeByValue(struct {structName} self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.structName}Type;")
+        codegen.append("}\n")
+
+        codegen.append(f"{Parser.ArrayType.toCType()} {self.structName}Type;")
+
+        codegen.outFunction()
+
+
+        codegen.append(f"{nameOfI}.size.tag = 0;")
+        codegen.append(f"{nameOfI}.size.cases.Static.field0 = {numElements};" )
+        codegen.append(f"{nameOfI}.array_type = ")
+
+        t = Tree.Typeof(self, elemT)
+        Cast.castFrom(t.type, Parser.IType, t, "", codegen)
+
+        codegen.append(";")
+
+
 

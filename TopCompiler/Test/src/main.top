@@ -1,8 +1,3 @@
-type Point =
-    x: int
-    y: int
+i := 10
 
-def Point.toString(using &self) string =
-    "{x}, {y}"
-
-log (typeof i)
+log i.type

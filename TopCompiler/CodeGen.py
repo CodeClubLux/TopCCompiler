@@ -138,7 +138,7 @@ class CodeGen:
             except:
                 pass
 
-        raise Exception("could not find variable" + name)
+        raise Exception("could not find variable " + name)
 
     def getParts(self):
         if self.inAFunction > 0:
@@ -153,11 +153,9 @@ class CodeGen:
             self.append(";\n")
             if self.debug:
                 filename = ast.fullFilePath().replace("\\", "\\\\")
-                self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
+                #self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
 
     def createName(self, name, typ):
-        if typ == "ecs.ID":
-            print("what")
         self.names[-1][name] = (typ, name)
         return name
 
@@ -209,10 +207,8 @@ class CodeGen:
 
         includes = self.toCHelp()
 
-        if self.filename == "main":
-            mainCode = "_global_init_c_runtime();\n"
-        else:
-            mainCode = ""
+        mainCode = ""
+
 
         mainCode += ("".join(self.main_parts))
         outerCode = "".join(self.out_parts)
@@ -244,11 +240,23 @@ class Info:
         self.array = lastArr
         self.pointer = pointer
 
+
+
 def buildContext(parser):
+    from TopCompiler import Parser
+
     contextType = parser.contextType
     # build context data type
     context = "_global_context"
     typesGeneratedByContext = ""
+
+    from TopCompiler import Parser
+    from TopCompiler import topc
+
+    if type(Parser.IType) is Parser.TmpType:
+        topc.global_parser.setTypeIntrospection()
+
+    Parser.PointerType.toCType()
 
     types = {}
     for field in contextType:
@@ -297,7 +305,7 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
         linkedCode.append(f.read())
         f.close()
 
-    linkedCode.append(f"int main() {{ \n {mainC}; \n_globalInit(); \n mainInit(); return 0; }};")
+    linkedCode.append(f"int main() {{ \n_globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInit(); return 0; }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))

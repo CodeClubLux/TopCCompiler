@@ -358,6 +358,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.outputFile = outputFile
             declarations.usedModules = {}
             declarations.path = os.path.abspath("")
+            declarations.compilingRuntime = compileRuntime
 
             global_parser = declarations
 
@@ -463,7 +464,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                         else:
                             del Types.tmpTypes[name]
 
-
                 for i in parser.compiled:
                     parser.package = i
                     if parser.compiled[i][0]:
@@ -506,7 +506,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     deleteQue = []
                     for c in parser.generatedGenericTypes:
                         parser.generatedGenericTypes[c] = None
-                        if c in ["_global_Allocator"]:
+                        if c in ["_global_Allocator", "_global_Type"]:
                             deleteQue.append(c)
 
                     for c in deleteQue:

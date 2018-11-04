@@ -115,6 +115,16 @@ void _reverse_string(struct _global_String * self) {
     }
 }
 
+
+struct NoneType {};
+
+struct NoneType _global_NoneTypeInit() {
+    struct NoneType s;
+    return s;
+}
+
+struct NoneType None_Type;
+
 /*
 void itoa(int value, char* str, int base) {
 	static char num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -199,7 +209,7 @@ struct IntType* _global_##name##_get_typeByValue(typ number, __Context) { \
 } \
 \
 struct IntType* _global_##name##_get_type(typ* number, __Context) { \
-    return _global_##name##_get_typeByValue(*number, context); \
+    return &_global_##name##Type; \
 }
 
 struct IntType* _global_int_get_typeByValue(int number, __Context) {
@@ -227,7 +237,7 @@ void _global_c_log(struct _global_String s) {
     fflush(stdout);
 };
 
-static inline void* _global_offsetPtr(void* ptr, int offset,__Context) {
+static inline void* _global_offsetPtr(void* ptr, int offset, __Context) {
     return ((char*)ptr) + offset;
 };
 
@@ -336,8 +346,22 @@ struct StringType* _global_String_get_typeByValue(struct _global_String s, __Con
     return &_global_StringType;
 }
 
+struct _global_PointerType pointerTypes[100];
+unsigned int pointerTypeCounter;
+
+struct _global_PointerType* _global_boxPointerType(struct _global_PointerType p, __Context) {
+    if (pointerTypeCounter > 99) {
+        printf("More pointer types than available");
+    }
+
+    pointerTypes[pointerTypeCounter++] = p;
+    return &pointerTypes[pointerTypeCounter - 1];
+}
+
 void _global_init_c_runtime() {
     printf("Initialized types\n");
+
+    pointerTypeCounter = 0;
     _global_FloatType.size = sizeof(float);
     _global_IntType.sign = 1;
     _global_IntType.size = sizeof(int);

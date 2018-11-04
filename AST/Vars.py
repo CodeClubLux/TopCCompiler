@@ -113,7 +113,6 @@ def canMutate(self, isMutating= True):
         isMutable = not readVar.imutable
 
         if not isMutable and isMutating:
-            print(readVar.imutable)
             self.error("Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
 
     if not readVar is None:
@@ -227,10 +226,12 @@ class Assign(Node):
             self.nodes[0].error("cannot assign nothing")
 
 def getVar(self, codegen):
-    return codegen.readName(
-            self.package + "_" + self.name) if not self.isGlobal else \
-            (self.package+"_"+self.name if self.package != "" else "_global_" + self.name
-        )
+    name = (self.package+"_"+self.name) if self.package != "" else "_global_" + self.name
+
+    if self.isGlobal:
+        return name
+    else:
+        return codegen.readName(name)
 
 class ReadVar(Node):
     def __init__(self, name, isGlobal, parser):

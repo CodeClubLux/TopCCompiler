@@ -122,7 +122,31 @@ class Enum(Node):
                     codegen.append(f"{self.package}_{name}.tag = {iter};")
                     codegen.inFunction()
 
+        # Type Introspection
+        nameOfI = f"{self.package}_{self.normalName}Type"
+
+        codegen.append("struct _global_StructType " + nameOfI + ";")
+
+        codegen.append(
+                    f"struct _global_StructType* {self.package}_{self.normalName}_get_type({cType}* self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.package}_{self.normalName}Type;")
+        codegen.append("}\n")
+
+        codegen.append(
+                    f"struct _global_StructType* {self.package}_{self.normalName}_get_typeByValue({cType} self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.package}_{self.normalName}Type;")
+        codegen.append("}\n")
         codegen.outFunction()
+
+        fieldTypeInArray = "Field"  # SimplifyAst.sanitize(structType)
+
+        def as_string(s):
+            return f'_global_StringInit({len(s)}, "{s}")'
+
+
+        codegen.append(f"{nameOfI}.fields = _global_StaticArray_StaticArray_S_" + fieldTypeInArray + "Init(NULL, 0);")
+        codegen.append(f"{nameOfI}.package = " + as_string(self.package) + ";")
+        codegen.append(f"{nameOfI}.name = " + as_string(self.normalName) + ";")
 
     def validate(self, parser):
         pass

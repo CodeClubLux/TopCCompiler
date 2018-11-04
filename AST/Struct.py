@@ -104,6 +104,8 @@ class Type(Node):
         self.remainingGen = {}
         self.externalStruct = False
         self.replaced = False
+        self.isArray = False
+        self.dynamicArray = False
 
     def __str__(self):
         return "type "+self.package+"."+self.name
@@ -112,6 +114,12 @@ class Type(Node):
         return ""
 
     def replaceT(self, structT, newName):
+        if self.name == "StaticArray" and self.package == "_global":
+            self.isArray = True
+
+        if self.name == "Array" and self.package == "_global":
+            self.dynamicArray = True
+
         self.package = structT.package
         self.normalName = newName
 
@@ -125,7 +133,7 @@ class Type(Node):
     def compileToC(self, codegen):
         if not self.replaced and not self.externalStruct:
             return
-        if self.package and self.normalName.startswith("StaticArray") and type(self.remainingGen["StaticArray.S"]) is int:
+        if self.isArray and type(self.remainingGen["StaticArray.S"]) is int:  #self.package and self.normalName.startswith("StaticArray")
             staticArrDataType = Tree.ArrDataType(self.package, self.normalName, self)
 
             staticArrDataType.replaceT(self, self.normalName)
@@ -171,11 +179,66 @@ class Type(Node):
         #codegen.append("];")
 
         #Type Introspection
+        if self.isArray or self.dynamicArray:
+            def as_string(s):
+                return f'_global_StringInit({len(s)}, "{s}")'
+
+
+            structName = self.package + "_" + self.normalName
+
+            if self.isArray:
+                elemT = self.remainingGen["StaticArray.T"]
+            else:
+                elemT = self.remainingGen["Array.T"]
+
+            if elemT.name == "Method":
+                codegen.append(
+                    f"struct _global_ArrayType* {structName}_get_type(struct {structName}* self, struct _global_Context* c)" + "{")
+                codegen.append(f"return NULL;")
+                codegen.append("}\n")
+
+                codegen.append(
+                    f"struct _global_ArrayType* {structName}_get_typeByValue(struct {structName} self, struct _global_Context* c)" + "{")
+                codegen.append(f"return NULL;")
+                codegen.append("}\n")
+                return
+
+            nameOfI = f"{structName}Type"
+
+            codegen.append("struct _global_ArrayType " + nameOfI + ";")
+
+            codegen.append(
+                f"struct _global_ArrayType* {structName}_get_type(struct {structName}* self, struct _global_Context* c)" + "{")
+            codegen.append(f"return &{structName}Type;")
+            codegen.append("}\n")
+
+            codegen.append(
+                f"struct _global_ArrayType* {structName}_get_typeByValue(struct {structName} self, struct _global_Context* c)" + "{")
+            codegen.append(f"return &{structName}Type;")
+            codegen.append("}\n")
+
+            codegen.append(f"{Parser.ArrayType.toCType()} {structName}Type;")
+
+            codegen.outFunction()
+
+            if self.isArray:
+                codegen.append(f"{nameOfI}.size.tag = 2;")
+            else:
+                codegen.append(f"{nameOfI}.size.tag = 1;")
+
+            codegen.append(f"{nameOfI}.array_type = ")
+
+            t = Tree.Typeof(self, elemT)
+            Cast.castFrom(t.type, Parser.IType, t, "", codegen)
+
+            codegen.append(";")
+            return
+
         nameOfI = f"{self.package}_{self.normalName}Type"
 
         codegen.append("struct _global_StructType " + nameOfI + ";")
 
-        codegen.append(f"struct _global_StructType* {self.package}_{self.normalName}_get_type({cType} self, struct _global_Context* c)" + "{")
+        codegen.append(f"struct _global_StructType* {self.package}_{self.normalName}_get_type({cType}* self, struct _global_Context* c)" + "{")
         codegen.append(f"return &{self.package}_{self.normalName}Type;")
         codegen.append("}\n")
 
@@ -187,10 +250,8 @@ class Type(Node):
 
         field_array = codegen.getName()
 
-
-        try:
-            structType = Parser.StructType
-        except:
+        structType = Parser.StructType
+        if type(structType) is Parser.TmpType:
             return
 
         structType.toCType()
@@ -200,7 +261,7 @@ class Type(Node):
         def as_string(s):
             return f'_global_StringInit({len(s)}, "{s}")'
 
-        codegen.append(f"struct _global_StructType {field_array}[{len(self.fields)}];")
+        codegen.append(f"struct _global_Field {field_array}[{len(self.fields)}];")
         codegen.append(f"{nameOfI}.fields = _global_StaticArray_StaticArray_S_" + fieldTypeInArray + "Init(")
         codegen.append(field_array)
         codegen.append("," + str(len(self.fields)))
@@ -213,9 +274,9 @@ class Type(Node):
 
             codegen.append(f"{field_array}[{i}].name = " + as_string(field) + ";")
             codegen.append(f"{field_array}[{i}].offset = offsetof({cType}, {field});")
-            codegen.append(f"{field_array}[{i}].type = ")
+            codegen.append(f"{field_array}[{i}].field_type = ")
 
-            Types.output_type(self.structT.types[field], codegen)
+            Types.output_type(self, self.structT.types[field], codegen)
 
             codegen.append(";")
 
