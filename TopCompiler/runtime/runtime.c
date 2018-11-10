@@ -23,8 +23,6 @@ struct _global_String _global_Bool_toStringByValue(_Bool b, __Context) {
     }
 }
 
-struct BoolType {};
-
 struct BoolType _global_Bool_typ;
 
 struct BoolType* _global_Bool_get_typeByValue(_Bool b, __Context) {
@@ -80,10 +78,6 @@ struct _global_String _global_String_op_add(struct _global_String* a, struct _gl
     return _global_String_op_addByValue(*a, b, context);
 }
 
-struct FloatType {
-    unsigned int size;
-};
-
 struct _global_String _global_Float_toStringByValue(float x,__Context) {
     int len = snprintf(NULL, 0, "%f", x);
     char *result = (char *)alloc(context->allocator, len + 1, context);
@@ -114,9 +108,6 @@ void _reverse_string(struct _global_String * self) {
         self->data[self->length - 1 - i] = tmp;
     }
 }
-
-
-struct NoneType {};
 
 struct NoneType _global_NoneTypeInit() {
     struct NoneType s;
@@ -184,11 +175,6 @@ char* _global_String_to_c_string(struct _global_String* s, __Context) {
 char* _global_String_to_c_stringByValue(struct _global_String s, __Context) {
     return s.data;
 }
-
-struct IntType {
-    _Bool sign;
-    unsigned int size;
-};
 
 struct IntType _global_IntType;
 
@@ -326,6 +312,7 @@ uint8_t _global_char_toU8(char* self, __Context) {
 #define _global_indexPtr(value, by, c) value + by
 #define _global_c_set_bit_to(number, n, x) (number & ~(1U << n) | (x << n))
 #define _global_c_is_bit_set(number, n) ((number >> n) & 1U)
+#define _global_c_bit_and(x,y) x & y
 
 /*
 void printI(int i) {
@@ -333,8 +320,6 @@ void printI(int i) {
 };
 */
 
-struct StringType {
-};
 
 struct StringType _global_StringType;
 

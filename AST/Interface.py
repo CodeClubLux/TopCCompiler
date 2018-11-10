@@ -65,6 +65,8 @@ class Interface(Node):
         codegen.append(f"{tmp}.vtable->type = typ;\n")
         codegen.append(f"return {tmp}; \n}}")
 
+        codegen.append(f"void* {self.name}_get_pointer_to_data(struct {self.name}* self, struct _global_Context* context) {{ return self->data; }}")
+
         #helper function to call methods
         for field in methods:
             typ = methods[field]

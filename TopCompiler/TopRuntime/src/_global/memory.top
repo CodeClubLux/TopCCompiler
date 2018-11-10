@@ -10,6 +10,7 @@ type Allocator with
     def alloc(SizeT) &none
     def dealloc(&none)
     def reset_to(uint)
+    def free_allocator()
 
 type TemporaryStorage =
     occupied: SizeT
@@ -60,6 +61,8 @@ def Malloc.dealloc(&self, pointer: &none) =
 def Malloc.get_occupied(&self) uint =
     0
 
+def Malloc.free_allocator(&self) =
+
 def Malloc.reset_to(&self, to: uint) =
 
 temporary_storage := new_TemporaryStorage 100000
@@ -85,3 +88,6 @@ def box[T](value: T) &T =
 
 def free(p: &none) =
     context.allocator.dealloc p
+
+def TemporaryStorage.free_allocator(&self) =
+    context.longterm_storage.dealloc self.data

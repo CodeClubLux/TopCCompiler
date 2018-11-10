@@ -92,7 +92,7 @@ def checkCase(parser, case, typ, first=False):
 
         checkCase(parser, case.nodes[0], case.type)
     elif type(case) is Tree.ReadVar and case.name[0].lower() == case.name[0]:
-        Scope.addVar(case, parser, case.name, Scope.Type(True, typ))
+        Scope.addVar(case, parser, case.name, Scope.Type(False, typ))
     elif type(case) is Tree.ReadVar:
         if not typ.isType(Types.Enum):
             case.error("cannot pattern match on type " + str(typ) + ", as if it were a ADT")
@@ -105,7 +105,7 @@ def checkCase(parser, case, typ, first=False):
         if not typ.isType(Types.String):
             case.nodes[0].error("unexpected string")
         if type(case.nodes[1]) is Tree.Tuple:
-            Scope.addVar(case.nodes[1].nodes[0], parser, case.nodes[1].nodes[0].name, Scope.Type(True, typ))
+            Scope.addVar(case.nodes[1].nodes[0], parser, case.nodes[1].nodes[0].name, Scope.Type(False, typ))
         else:
             checkCase(parser, case.nodes[0], typ)
             checkCase(parser, case.nodes[1], typ)

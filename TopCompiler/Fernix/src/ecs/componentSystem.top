@@ -7,6 +7,7 @@ type System with
     def render(Layermask)
     def update(Layermask)
     def free_component_by_id(ID)
+    def get_component_by_id(ID) Maybe[Component]
 
 component_types := [..]System
 
@@ -40,9 +41,16 @@ def Store[T].component_id_to_index(&self, id: ID) Maybe[uint] =
         if key < 0 then None
         else Some key cast uint
 
+//get actuall type
 def Store[T].component_by_id(&self, id: ID) Maybe[&T] =
     match self.component_id_to_index id with
         Some key -> Some &self.components[key]
+        None -> None
+
+//get component
+def Store[T].get_component_by_id(&self, id: ID) Maybe[Component] =
+    match self.component_by_id id with
+        Some ptr -> Some ptr as Component
         None -> None
 
 def Store[T].free_component_by_id(&self, id: ID) =
@@ -122,3 +130,13 @@ def render(layer_mask: Layermask) =
 def update(layer_mask: Layermask) =
     for i := 0..component_types.length do
         component_types[i].update layer_mask
+
+def components_by_id(id: ID) [..]Component =
+    components := [..]Component
+
+    for system := component_types do
+        match system.get_component_by_id id with
+            Some comp -> components.append comp
+            _ ->
+
+    components

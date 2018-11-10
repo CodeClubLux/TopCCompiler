@@ -290,7 +290,7 @@ genericTypes = {}
 compiledTypes = coll.OrderedDict()
 inProjectTypes = {}
 
-def genGenericCType(struct, func= S.Type):
+def genGenericCType(struct, func= S.Type, externalStruct= False):
     replaced = struct.remainingGen
     structName = struct.normalName
     package = struct.package
@@ -299,7 +299,10 @@ def genGenericCType(struct, func= S.Type):
     newName = SimplifyAst.toUniqueID(package, structName, replaced)
 
     if not newName in genericTypes:
-        s = func(package, structName, topc.global_parser)
+        if externalStruct:
+            s = func(package, structName, topc.global_parser, True)
+        else:
+            s = func(package, structName, topc.global_parser)
         if struct.package in ["", "_global"]:
             s.replaceT(struct, newName.replace("_global_", ""))
         else:
@@ -619,7 +622,7 @@ class Struct(Type):
 
     def hasMethod(self, parser, field, isP= False):
         if field == "get_type":
-            return FuncPointer([self], Pointer(Parser.StructType))
+            return FuncPointer([Pointer(self)], Pointer(Parser.StructType))
 
         try:
             attachTyp = parser.structs[self.package][self.normalName]
@@ -644,6 +647,7 @@ class Struct(Type):
 
         structType = topc.global_parser.structs[self.package][self.normalName]
         if structType.externalStruct:
+            genGenericCType(self, externalStruct=True)
             return "struct " + self.normalName
 
         return genGenericCType(self)
@@ -906,8 +910,10 @@ class Interface(Type):
 
 
     def hasMethod(self, parser, field, isP=False):
-        if field in "get_type":
+        if field == "get_type":
             return FuncPointer([self], Parser.IType)
+        elif field == "get_pointer_to_data":
+            return FuncPointer([Pointer(self)], Pointer(Null()))
 
         if field in self.methods:
             meth = self.methods[field]
@@ -1039,14 +1045,14 @@ class Enum(Type):
         return hasMethodEnum(attachTyp, parser, name, isP)
 
     def toCType(self):
+        #if self.remainingGen:
+        val = genGenericCType(self, E)
         if isMaybe(self):
             return self.remainingGen["Maybe.T"].toCType()
-
-        #if self.remainingGen:
-        return genGenericCType(self, E)
         #else:
         #    return "struct " + self.package + "_" + self.normalName
 
+        return val
     def duckType(self, parser, other, node, mynode, iter):
         if self.normalName != other.normalName:
             node.error("expecting type "+self.name+", not "+str(other))
@@ -1286,6 +1292,7 @@ class Pointer(Type):
         self.pType = pType
         self.name = "&" + pType.name
         self.normalName = pType.normalName
+
         if not pType.isType(Pointer):
             self.types = pType.types
         else:

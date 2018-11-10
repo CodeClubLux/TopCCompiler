@@ -7,6 +7,7 @@
         "linkWith": [
           "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glfw3.lib",
           "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glad.o",
+          "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\nuklear.o",
           "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\assimp-vc140-mt.lib",
           "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.17134.0\\um\\x64\\gdi32.lib",
           "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.17134.0\\um\\x64\\user32.lib",

@@ -22,9 +22,13 @@ class Enum(Node):
         self.generic = structT.remainingGen
         self.replaced = True
         self.realNormalName = structT.normalName
+        self.type = structT
+
         #Types.replaceT(i, structT.gen) for i in structT.types.values()]
 
     def compileToC(self, codegen):
+        isMaybe = Types.isMaybe(self.type)
+
         if not self.replaced:
             return
 
@@ -46,81 +50,84 @@ class Enum(Node):
         };
         """
 
-        cType = f"struct {self.package}_{self.normalName}"
+        if not isMaybe:
+            cType = f"struct {self.package}_{self.normalName}"
 
-        for name in self.const:
-            args = self.const[name]
+            for name in self.const:
+                args = self.const[name]
 
-            if len(args) > 0:
-                codegen.append(f"struct {self.package}_{self.normalName}_{name} {{\n")
-                names = ["field" + str(iter) for iter in range(len(args))]
+                if len(args) > 0:
+                    codegen.append(f"struct {self.package}_{self.normalName}_{name} {{\n")
+                    names = ["field" + str(iter) for iter in range(len(args))]
 
-                for i in range(len(args)):
-                    codegen.append(f"{args[i].toCType()} field{i};\n")
-                codegen.append("\n};")
+                    for i in range(len(args)):
+                        codegen.append(f"{args[i].toCType()} field{i};\n")
+                    codegen.append("\n};")
 
-        numCases = len(self.const)
+            numCases = len(self.const)
 
-        tag = ""
-        if numCases <= 2:
-            tag = "_Bool"
-        else:
-            sizes = ["char", "short", "int", "long"]
-            for (iter, size) in enumerate(sizes):
-                if numCases < 2 ^ ((iter+1) * 8):
-                    tag = size
-                    break
-
-        tag += " tag;"
-
-        codegen.append(f"union {self.package}_{self.normalName}_cases {{\n")
-        for name in self.const:
-            if len(self.const[name]) > 0:
-                codegen.append(f"struct {self.package}_{self.normalName}_{name} {name};\n")
-        codegen.append("\n};\n")
-
-        codegen.append(f"struct {self.package}_{self.normalName} {{\n {tag}\n")
-        codegen.append(f"union {self.package}_{self.normalName}_cases cases;\n")
-        codegen.append("\n};\n")
-
-        index = 0
-
-        for (iter, name) in enumerate(self.const):
-            args = self.const[name]
-            if len(args) > 0:
-
-                codegen.append(f"{cType} {self.package}_{name}{self.onlyGenericName}(")
-                vars = [codegen.getName() for i in args + [0]]
-                types = [i.toCType() for i in args]
-                types.append("struct _global_Context*")
-
-                codegen.append(",".join(a + " " + b for (a,b) in zip(types, vars)))
-                codegen.append("){\n")
-
-                tmp = codegen.getName()
-                codegen.append(f"{cType} {tmp};\n")
-
-                for (c, i) in enumerate(vars[:-1]):
-                    codegen.append(tmp + ".cases." + name + ".field" + str(c) + " = " + i + ";")
-                codegen.append(f"{tmp}.tag = {iter};\n")
-                codegen.append("return " + tmp + ";}\n")
-                index += 1
+            tag = ""
+            if numCases <= 2:
+                tag = "_Bool"
             else:
-                noGenericsDefined = True
-                for cName in self.generic:
-                    c = self.generic[cName]
-                    if not (type(c) is Types.T and (c.owner == self.package+"."+self.normalName if self.package != "_global" else c.owner == self.realNormalName)):
-                        noGenericsDefined = False
+                sizes = ["char", "short", "int", "long"]
+                for (iter, size) in enumerate(sizes):
+                    if numCases < 2 ^ ((iter+1) * 8):
+                        tag = size
                         break
 
-                if not self.generic or noGenericsDefined:
-                    codegen.append(f"{cType} {self.package}_{name};\n")
+            tag += " tag;"
 
-                    codegen.outFunction()
-                    alreadyOut = True
+            codegen.append(f"union {self.package}_{self.normalName}_cases {{\n")
+            for name in self.const:
+                if len(self.const[name]) > 0:
+                    codegen.append(f"struct {self.package}_{self.normalName}_{name} {name};\n")
+            codegen.append("\n};\n")
 
-                    codegen.append(f"{self.package}_{name}.tag = {iter};")
-                    codegen.inFunction()
+            codegen.append(f"struct {self.package}_{self.normalName} {{\n {tag}\n")
+            codegen.append(f"union {self.package}_{self.normalName}_cases cases;\n")
+            codegen.append("\n};\n")
+
+            index = 0
+
+            for (iter, name) in enumerate(self.const):
+                args = self.const[name]
+                if len(args) > 0:
+
+                    codegen.append(f"{cType} {self.package}_{name}{self.onlyGenericName}(")
+                    vars = [codegen.getName() for i in args + [0]]
+                    types = [i.toCType() for i in args]
+                    types.append("struct _global_Context*")
+
+                    codegen.append(",".join(a + " " + b for (a,b) in zip(types, vars)))
+                    codegen.append("){\n")
+
+                    tmp = codegen.getName()
+                    codegen.append(f"{cType} {tmp};\n")
+
+                    for (c, i) in enumerate(vars[:-1]):
+                        codegen.append(tmp + ".cases." + name + ".field" + str(c) + " = " + i + ";")
+                    codegen.append(f"{tmp}.tag = {iter};\n")
+                    codegen.append("return " + tmp + ";}\n")
+                    index += 1
+                else:
+                    noGenericsDefined = True
+                    for cName in self.generic:
+                        c = self.generic[cName]
+                        if not (type(c) is Types.T and (c.owner == self.package+"."+self.normalName if self.package != "_global" else c.owner == self.realNormalName)):
+                            noGenericsDefined = False
+                            break
+
+                    if not self.generic or noGenericsDefined:
+                        codegen.append(f"{cType} {self.package}_{name};\n")
+
+                        codegen.outFunction()
+                        alreadyOut = True
+
+                        codegen.append(f"{self.package}_{name}.tag = {iter};")
+                        codegen.inFunction()
+        else:
+            cType = self.type.remainingGen["Maybe.T"].toCType() + "*"
 
         # Type Introspection
         nameOfI = f"{self.package}_{self.normalName}Type"

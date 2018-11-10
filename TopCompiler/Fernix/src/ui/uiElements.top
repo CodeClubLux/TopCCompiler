@@ -1,0 +1,42 @@
+from "math" import Vec2
+
+type SurfaceOptions =
+    title: string
+    size: Vec2
+    position: Vec2
+
+default_surface := SurfaceOptions{
+    title = ""
+    size = Vec2{100,100}
+    position = Vec2{0,0}
+}
+
+type LabelOptions =
+    text: string
+
+default_label := LabelOptions{
+    text = ""
+}
+
+type PropertyfOptions =
+    text: string
+    value: &float
+    min: float
+    max: float
+    step: float
+    inc_per_pixel: float
+
+tmp_f := 0.0
+default_propertyf := PropertyfOptions{
+    text = ""
+    value = &tmp_f
+    min = -10000
+    max = 10000
+    step = 0.1
+    inc_per_pixel = 0.01
+}
+
+type UIElement either
+    Label(LabelOptions)
+    Propertyf(PropertyfOptions)
+

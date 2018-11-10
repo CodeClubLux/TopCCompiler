@@ -10,3 +10,15 @@ struct _global_String {
     unsigned int length;
     char* data;
 };
+
+struct BoolType {};
+struct StringType {};
+struct NoneType {};
+struct IntType {
+    _Bool sign;
+    unsigned int size;
+};
+
+struct FloatType {
+    unsigned int size;
+};

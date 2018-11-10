@@ -7,6 +7,7 @@ import "camera"
 from "materialSystem" import (Material, Param_Vec3)
 from "math" import all
 import "key"
+import "editor"
 
 gizmo_shader := shader.make "assets/shaders/gizmo.vert", "assets/shaders/gizmo.frag"
 
@@ -56,14 +57,10 @@ type GizmoType either
 type Gizmo =
     entity: &ecs.Entity
     model_renderer: &model.ModelRenderer
-    target: Maybe[ecs.ID]
     kind: GizmoType
 
 def Gizmo.get_entity(&self) &ecs.Entity =
     self.entity
-
-def Gizmo.set_target(&self, entity: ecs.ID) =
-    self.target = Some entity
 
 def Gizmo.render(&self) =
 
@@ -215,12 +212,12 @@ def Gizmo.update(&self) =
     model_renderer := self.model_renderer
     cam := camera.get_camera!
 
-    if inp.key_down key.from_char `G` then
+    if inp.key_down key.from_char `T` then
         self.kind = Translate NoAxis
     if inp.key_down key.esc then
         self.kind = Disabled
 
-    model_renderer.visible = match self.target with
+    model_renderer.visible = match editor.editor.selected with
         Some target_id ->
             match ecs.entity_system.component_by_id target_id with
                 Some target ->
@@ -234,12 +231,9 @@ def Gizmo.update(&self) =
                             Disabled -> false
                     else false
                 None ->
-                    self.target = None //Object was destroyed
                     false
 
         None -> false //No object is selected
-
-
 
 import "layermask"
 
@@ -253,7 +247,6 @@ def make_GizmoSystem() &ecs.Store[Gizmo] =
 
     _ := system.add_component Gizmo{
         entity = entity
-        target = None
         kind = Disabled
         model_renderer = model_renderer
     }

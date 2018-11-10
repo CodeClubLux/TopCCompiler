@@ -134,9 +134,9 @@ class Typeof(Node):
     def compileToC(self, codegen):
         self.typ.toCType()
 
-        if self.typ.package == "_global" and type(self.typ) in [Types.Struct, Types.Enum]:
-            codegen.append("NULL")
-            return
+        #if self.typ.package == "_global" and type(self.typ) in [Types.Struct, Types.Enum]:
+        #    codegen.append("NULL")
+        #    return
 
         package = self.typ.package if self.typ.package != "" else "_global"
         fullName = SimplifyAst.toUniqueID(package, self.typ.normalName, self.typ.remainingGen)

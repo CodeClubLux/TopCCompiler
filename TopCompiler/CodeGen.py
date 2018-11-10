@@ -221,8 +221,9 @@ class CodeGen:
         Types.compiledTypes = coll.OrderedDict()
         Types.dataTypes = []
 
-        headerCode = f"{includes}\n{generatedTypes}\n{forward_ref}"
-        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
+        headerCode = f"{generatedTypes}\n{forward_ref}"
+        print_code = "printf(" + '"' + self.filename + '\\n");'
+        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ {print_code}\n{mainC}\n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
@@ -233,6 +234,8 @@ class CodeGen:
         f = open("lib/" + self.filename + ".h", mode="w")
         f.write(headerCode)
         f.close()
+
+        return includes
 
 class Info:
     def __init__(self):
@@ -288,7 +291,7 @@ import os
 
 
 
-def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
+def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
     topRuntime = ""
     (context, mainC) = context
     if not runtimeBuild:
@@ -296,7 +299,9 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
 
         topRuntime = topRuntime.read()
 
-    linkedCode = [hRuntimeCode,  context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
+    includes = "".join(includes)
+
+    linkedCode = [includes, hRuntimeCode,  context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
 
     for c in compiled:
         f = open("lib/" + c + ".h", mode="r")

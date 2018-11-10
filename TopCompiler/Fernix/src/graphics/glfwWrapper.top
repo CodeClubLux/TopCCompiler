@@ -36,6 +36,8 @@ ext glfw_key_left_shift: uint = "GLFW_KEY_LEFT_SHIFT"
 ext glfw_key_right_shift: uint = "GLFW_KEY_RIGHT_SHIFT"
 ext glfw_key_escape: uint = "GLFW_KEY_ESCAPE"
 
+ext glfw_mod_control: uint = "GLFW_MOD_CONTROL"
+
 ext glfw_mouse_button_right: uint = "GLFW_MOUSE_BUTTON_RIGHT"
 ext glfw_mouse_button_middle: uint = "GLFW_MOUSE_BUTTON_MIDDLE"
 ext glfw_mouse_button_left: uint = "GLFW_MOUSE_BUTTON_LEFT"
