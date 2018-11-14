@@ -90,7 +90,7 @@ def isMutable(parser, package, name):
     if package == parser.package:
         for i in parser.scope["_global"]:
             if name in i:
-                return i[name].imutable
+                return not i[name].imutable
 
     if package == "": package = "_global"
 

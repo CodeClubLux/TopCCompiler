@@ -27,7 +27,8 @@ class PushContext(Node):
         Node.__init__(self, parser)
 
     def compileToC(self, codegen):
-        codegen.contexts.append("&" + Vars.getVar(self.nodes[0], codegen))
+        varName = Vars.getVar(self.nodes[0], codegen)
+        codegen.contexts.append("&" + varName)
 
         for i in self.nodes[1:]:
             i.compileToC(codegen)

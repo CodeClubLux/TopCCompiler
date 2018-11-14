@@ -1,5 +1,7 @@
 from .node import *
 
+from TopCompiler import Parser
+
 class Interface(Node):
     def __init__(self, iType, name):
         self.iType = iType
@@ -20,25 +22,30 @@ class Interface(Node):
             methods[methName] = f
 
         #interface as c struct
-        codegen.append("struct " + self.name + " {\n")
-        codegen.append("void* type; /* is always null, for now */ \n") #@cleanup change to real type once type introspection is possible
-        codegen.append("void* data;\n")
+        vtable_name = self.name + "_VTABLE"
 
-        for field in iType.types:
-            codegen.append(f"unsigned short field_{field};\n") #just store offset, should be long enough let's see
+        codegen.append("struct " + self.name + " {\n")
+        codegen.append(f"struct {vtable_name}* vtable;\n")
+        codegen.append("void* data;\n")
+        codegen.append("};")
+
+        type_interface = "struct _global_Type"
+
+        codegen.append(f"struct {vtable_name} {{")
+        codegen.append(f"{type_interface} type;")
         for field in methods:
             codegen.append(f"{methods[field].toCType()} method_{field};\n")
         codegen.append("};")
 
-        #helper function from struct to interface
-        codegen.append(f"static inline struct {self.name} {self.name}FromStruct(void* data")
-        field_names = []
-        method_names = []
+        type_interface = Parser.IType.toCType()
 
-        for field in iType.types:
-            n = codegen.getName()
-            codegen.append(f", short {n}")
-            field_names.append(n)
+
+        #for field in iType.types:
+        #    codegen.append(f"unsigned short field_{field};\n") #just store offset, should be long enough let's see
+
+        #helper function from struct to interface
+        codegen.append(f"static inline struct {self.name} {self.name}FromStruct(void* data, struct {vtable_name}* vtable, {type_interface} typ")
+        method_names = []
 
         for field in methods:
             n = codegen.getName()
@@ -52,22 +59,13 @@ class Interface(Node):
         codegen.append(f"struct {self.name} {tmp};\n")
 
         codegen.append(f"{tmp}.data = data;")
-        for (name, field) in zip(field_names, iType.types):
-            codegen.append(f"{tmp}.field_{field} = {name};\n")
+        codegen.append(f"{tmp}.vtable = vtable;")
         for (name, field) in zip(method_names, methods):
-            codegen.append(f"{tmp}.method_{field} = {name};\n")
+            codegen.append(f"{tmp}.vtable->method_{field} = {name};\n")
+        codegen.append(f"{tmp}.vtable->type = typ;\n")
         codegen.append(f"return {tmp}; \n}}")
 
-        #helper function to access fields
-        for field in iType.types:
-            typ = iType.types[field].toCType()
-            codegen.append(f"static inline {typ}* {self.name}_{field}ByValue(struct {self.name} {tmp}){{\n")
-            codegen.append(f"return ({typ}*)({tmp}.data + {tmp}.field_{field});")
-            codegen.append("\n};")
-
-            codegen.append(f"static inline {typ}* {self.name}_{field}(struct {self.name}* {tmp}){{\n")
-            codegen.append(f"return ({typ}*)({tmp}->data + {tmp}->field_{field});")
-            codegen.append("\n};")
+        codegen.append(f"void* {self.name}_get_pointer_to_data(struct {self.name}* self, struct _global_Context* context) {{ return self->data; }}")
 
         #helper function to call methods
         for field in methods:
@@ -81,7 +79,7 @@ class Interface(Node):
             codegen.append(f",struct _global_Context* {context}")
 
             codegen.append(f"){{\n")
-            codegen.append(f"return {tmp}->method_{field}({tmp}->data")
+            codegen.append(f"return {tmp}->vtable->method_{field}({tmp}->data")
             for i in names:
                 codegen.append(f",{n}")
             codegen.append(f",{context}")
@@ -93,16 +91,33 @@ class Interface(Node):
                 codegen.append(f",{i.toCType()} {names[iter]}")
             codegen.append(f",struct _global_Context* {context}")
             codegen.append(f"){{\n")
-
             data = codegen.getName()
-            codegen.append(f"return {tmp}.method_{field}({tmp}.data")
+            codegen.append(f"return {tmp}.vtable->method_{field}({tmp}.data")
             for i in names:
                 codegen.append(f",{n}")
             codegen.append(f",{context}")
             codegen.append(");")
             codegen.append("\n};")
 
+        codegen.append(f"{type_interface} {self.name}_get_type(struct {self.name}* {tmp}, struct _global_Context* context)")
+        codegen.append("{ return " + tmp + "->vtable->type; }")
+
+        codegen.append(f"{type_interface} {self.name}_get_typeByValue(struct {self.name} {tmp}, struct _global_Context* context)")
+        codegen.append("{ return " + tmp + ".vtable->type; }\n")
+
+        interface_type = Parser.InterfaceType.toCType()
+
+        typ_name = f"{self.name}_Type"
+        codegen.append(f"{interface_type} {typ_name};")
+
         codegen.outFunction()
+
+
+        def as_string(s):
+            return f'_global_StringInit({len(s)}, "{s}")'
+
+        codegen.append(f"{typ_name}.name = " + as_string(iType.normalName))
+        codegen.append(f";{typ_name}.package = " + as_string(iType.package) + ";")
 
 
         """

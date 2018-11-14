@@ -27,17 +27,25 @@ def set_shader_scene_params(_shader: shader.Shader) =
     ibl.get_skybox!
         .set_ibl_params_for _shader
 
+import "ui"
+
 def init() =
     w := window.get_window!
+    ui_ctx := ui.get_ui!
 
-    opengl.enable opengl.depth_test
-    opengl.enable opengl.multisample
-    opengl.enable opengl.texture_cube_map_seamless
-    opengl.depthFunc opengl.lequal
+    defer w.close!
+    defer ui_ctx.free!
+    defer context.allocator.free_allocator!
 
     opengl.viewport 0, 0, w.width, w.height
 
     while not w.should_close! do
+        //set opengl settins as nuklear resets them
+        opengl.enable opengl.depth_test
+        opengl.enable opengl.multisample
+        opengl.enable opengl.texture_cube_map_seamless
+        opengl.depthFunc opengl.lequal
+
         defer context.allocator.reset_to context.allocator.get_occupied!
         //update all systems
         //@todo move these systems into the entity component system
@@ -48,6 +56,8 @@ def init() =
         inp := input.get_input!
         inp.clear!
         inp.update_inputs!
+
+
 
         time.update_delta_time!
         editor.editor.update!
@@ -66,8 +76,12 @@ def init() =
         render_mask = layermask.enable render_mask, mask
         render_mask = layermask.enable render_mask, layermask.game
 
+        ui_ctx.new_frame!
+
+        editor.editor.render!
         ecs.render render_mask
 
+        ui_ctx.render!
         w.swap_buffers!
 
 def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =

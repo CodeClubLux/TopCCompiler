@@ -14,11 +14,7 @@ def layer_in_mask(layermask: Layermask, layer: Layer) bool =
     is_bit_set layermask, layer
 
 def mask(layermask_to_be_masked: Layermask, use_mask: Layermask) bool =
-    for i := 0..(8 * sizeof Layermask) do
-        if (layer_in_mask use_mask, i) and (layer_in_mask layermask_to_be_masked, i) then
-            return false
-
-    true
+    not bit_and layermask_to_be_masked, use_mask
 
 game := 1
 editor := 2

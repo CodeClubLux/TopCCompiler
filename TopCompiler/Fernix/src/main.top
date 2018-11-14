@@ -14,6 +14,7 @@ import "input"
 import "fpsController"
 import "camera"
 import "gizmo"
+import "editor"
 
 def substance_params(folder: string, name: string) [4]Param =
     [
@@ -23,7 +24,7 @@ def substance_params(folder: string, name: string) [4]Param =
         Param_Image "material.normal", texture.load "assets/{folder}/{name}_normal.jpg"
     ]
 
-wet_street_params := substance_params "wood", "Stylized_Wood"
+wet_street_params := substance_params "wood_2", "Stylized_Wood"
 
 /*[
     Param_Image "material.diffuse", texture.load "assets/wood/Stylized_basecolor.jpg"
@@ -52,7 +53,7 @@ gizmo_component := gizmo.gizmo_system
     .get_active!
     .unwrap!
 
-gizmo_component.set_target cube_entity.id
+editor.editor.select cube_entity.id
 
 log "running"
 

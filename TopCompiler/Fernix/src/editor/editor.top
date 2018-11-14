@@ -1,9 +1,14 @@
 import "ecs"
 import "input"
 import "key"
+import "ui"
+from "ui" import all
+import "runner"
+import "window"
 
 type Editor =
     in_editor: bool
+    selected: Maybe[ecs.ID]
 
 def Editor.update(&self) =
     inp := input.get_input!
@@ -12,7 +17,56 @@ def Editor.update(&self) =
         log "switch between editor and game"
         self.in_editor = not self.in_editor
 
-editor := Editor{ false }
+def Editor.select(&self, id: ecs.ID) =
+    self.selected = Some id
+
+def render_field(rendered: &[..]ui.UIElement, obj: &none, field: Field) =
+    match field.field_type with
+        float_type as &FloatType ->
+            value_of_field := (offsetPtr obj, field.offset) cast &float
+            rendered.append Propertyf default_propertyf{ text = field.name, value = value_of_field }
+
+        struct_type as &StructType ->
+            render_object rendered, (offsetPtr obj, field.offset), struct_type
+
+        _ ->
+
+def render_object(rendered: &[..]ui.UIElement, obj: &none, obj_typ: Type) =
+    rendered.append Label default_label{ text = obj_typ.toString! }
+
+    match obj_typ with
+        typ as &StructType ->
+            for field := typ.fields do
+                render_field rendered, obj, field
+
+        _ ->
+
+def Editor.render_properties(&self) =
+    w := window.get_window!
+
+    rendered := [..]ui.UIElement
+
+    match self.selected with
+        Some selected ->
+            components := ecs.components_by_id selected
+
+            for comp := components do
+                comp_typ := comp.get_type!
+                render_object &rendered, comp.get_pointer_to_data!, comp_typ
+
+        None ->
+
+    render_ui default_surface{
+        title = "Editor"
+        size = Vec2{(w.width cast float * 0.2) cast int, w.height}
+        position = Vec2{0, 0}
+    }, rendered
+
+def Editor.render(&self) =
+    if not self.in_editor then return
+    self.render_properties!
+
+editor := Editor{ false, None }
 
 def in_editor() bool =
     editor.in_editor

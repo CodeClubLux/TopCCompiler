@@ -1,0 +1,63 @@
+from "nuklearWrapper" import all
+import "window"
+
+type UI =
+    nk_ptr: &nk_context
+
+def make_ui() &UI =
+    let max_vertex_buffer = 512 * 1024
+    let max_element_buffer = 128 * 1024
+
+    w := window.get_window!
+
+    nk_ptr := nk_glfw3_init w.window_ptr.unwrap!, nk_glfw3_install_callbacks, max_vertex_buffer, max_element_buffer
+
+    atlas : &nk_font_atlas = _
+    nk_glfw3_font_stash_begin &atlas
+    segoe := nk_font_atlas_add_from_file atlas, "assets/fonts/segoeui.ttf".to_c_string!, 50, None
+    nk_glfw3_font_stash_end!
+    nk_style_set_font nk_ptr, &segoe.handle
+
+    box UI{
+        nk_ptr = nk_ptr
+    }
+
+def UI.render(&self) =
+    nk_glfw3_render nk_anti_aliasing_on
+
+def UI.new_frame(&self) =
+    nk_glfw3_new_frame!
+
+def UI.free(&self) =
+    nk_glfw3_shutdown!
+
+#addToContext ui := make_ui!
+
+def get_ui() &UI = context.ui
+
+def UIElement.render(&self) =
+    ui := get_ui!
+
+    match *self with
+        Label options ->
+            nk_label ui.nk_ptr, options.text.to_c_string!, nk_text_left
+
+        Propertyf options ->
+            field_with_id := "#{options.text}"
+            *options.value = nk_propertyf ui.nk_ptr, field_with_id.to_c_string!, options.min, *options.value, options.max, options.step, options.inc_per_pixel
+
+ext nk_window_options: uint = "NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE"
+
+def render_ui(surface: SurfaceOptions, children: []UIElement) =
+    ui := get_ui!
+
+    c_title := surface.title.to_c_string!
+    window_rect := nk_make_rect surface.position.x, surface.position.y, surface.size.x, surface.size.y
+
+    if nk_begin ui.nk_ptr, c_title, window_rect, nk_window_options then
+        nk_layout_row_dynamic ui.nk_ptr, 60, 1
+
+        for child := children do
+            child.render!
+
+    nk_end ui.nk_ptr

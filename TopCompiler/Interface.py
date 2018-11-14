@@ -9,7 +9,9 @@ from AST import PlaceHolder
 import AST as Tree
 
 def traitParser(parser, name, decl, generic):
+    interface = parser.interfaces[parser.package][name]
     meth = {}
+
     while not Parser.isEnd(parser):
         parser.nextToken()
 
@@ -37,7 +39,7 @@ def traitParser(parser, name, decl, generic):
     #fields = parser.currentNode.nodes
 
     if decl:
-        i = Types.Interface(False, names, generic, parser.package+"."+name if parser.package != "_global" else name, methods= meth)
+        i = interface.fromObj(Types.Interface(False, names, generic, parser.package+"."+name if parser.package != "_global" else name, methods= meth))
         parser.interfaces[parser.package][name] = i
 
     Scope.decrScope(parser)

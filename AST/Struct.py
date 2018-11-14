@@ -5,6 +5,7 @@ from .node import *
 from .Func import *
 from .Operator import *
 from PostProcessing import SimplifyAst
+from TopCompiler import Parser
 
 class InitStruct(Node):
     def __init__(self, parser):
@@ -93,7 +94,7 @@ class InitStruct(Node):
 from TopCompiler import Types
 
 class Type(Node):
-    def __init__(self, package, name, parser):
+    def __init__(self, package, name, parser, externalStruct=False):
         super(Type, self).__init__(parser)
         self.package = package
         self.name = name
@@ -101,8 +102,10 @@ class Type(Node):
         self.fields = []
         self.generics = {}
         self.remainingGen = {}
-        self.externalStruct = False
+        self.externalStruct = externalStruct
         self.replaced = False
+        self.isArray = False
+        self.dynamicArray = False
 
     def __str__(self):
         return "type "+self.package+"."+self.name
@@ -111,6 +114,12 @@ class Type(Node):
         return ""
 
     def replaceT(self, structT, newName):
+        if self.name == "StaticArray" and self.package == "_global":
+            self.isArray = True
+
+        if self.name == "Array" and self.package == "_global":
+            self.dynamicArray = True
+
         self.package = structT.package
         self.normalName = newName
 
@@ -119,11 +128,12 @@ class Type(Node):
         self.fields =list(structT.types.keys())
         self.remainingGen = structT.remainingGen
         self.replaced = True
+        self.structT = structT
 
     def compileToC(self, codegen):
-        if not self.replaced and not self.externalStruct:
+        if not self.replaced:
             return
-        if self.package and self.normalName.startswith("StaticArray") and type(self.remainingGen["StaticArray.S"]) is int:
+        if self.isArray and type(self.remainingGen["StaticArray.S"]) is int:  #self.package and self.normalName.startswith("StaticArray")
             staticArrDataType = Tree.ArrDataType(self.package, self.normalName, self)
 
             staticArrDataType.replaceT(self, self.normalName)
@@ -138,39 +148,142 @@ class Type(Node):
         if not self.externalStruct:
             cType = "struct " + self.package + "_" + self.normalName
         else:
-            cType = self.package + "_" + self.normalName
+            cType = "struct " + self.normalName
 
-        codegen.append("struct "+self.package+"_"+self.normalName+" {\n")
-        for i in range(len(self.fields)):
-            typ = self.args[i].toCType()
-            codegen.append(typ + " " + self.fields[i]+";\n")
-        codegen.append("};\n")
+        if not self.externalStruct:
+            codegen.append("struct "+self.package+"_"+self.normalName+" {\n")
+            for i in range(len(self.fields)):
+                typ = self.args[i].toCType()
+                codegen.append(typ + " " + self.fields[i]+";\n")
+            codegen.append("};\n")
 
-        codegen.append("static inline " + cType +" " + self.package+"_"+self.normalName + "Init(")
+            codegen.append("static inline " + cType +" " + self.package+"_"+self.normalName + "Init(")
 
-        for i in range(len(self.fields)):
-            codegen.append(self.args[i].toCType() + " " + names[i])
-            if i < len(self.fields) - 1:
-                codegen.append(",")
+            for i in range(len(self.fields)):
+                codegen.append(self.args[i].toCType() + " " + names[i])
+                if i < len(self.fields) - 1:
+                    codegen.append(",")
 
-        codegen.append("){\n")
-        name = codegen.getName()
-        codegen.append(cType + " " + name + ";\n")
+            codegen.append("){\n")
+            name = codegen.getName()
+            codegen.append(cType + " " + name + ";\n")
 
-        for i in range(len(self.fields)):
-            codegen.append(name + "." + self.fields[i] + "=" + names[i])
-            codegen.append(";")
+            for i in range(len(self.fields)):
+                codegen.append(name + "." + self.fields[i] + "=" + names[i])
+                codegen.append(";")
 
-        codegen.append("return "+name)
-        codegen.append(";\n};\n")
-
-
+            codegen.append("return "+name)
+            codegen.append(";\n};\n")
         #@cleanup Add Serialization for types
         #codegen.append(self.package+"_"+self.normalName+"._fields=[")
         #codegen.append(",".join('"'+i+'"' for i in self.fields))
         #codegen.append("];")
+
+        #Type Introspection
+        if self.isArray or self.dynamicArray:
+            def as_string(s):
+                return f'_global_StringInit({len(s)}, "{s}")'
+
+            structName = self.package + "_" + self.normalName
+
+            if self.isArray:
+                elemT = self.remainingGen["StaticArray.T"]
+            else:
+                elemT = self.remainingGen["Array.T"]
+
+            if elemT.name == "Method":
+                codegen.append(
+                    f"struct _global_ArrayType* {structName}_get_type(struct {structName}* self, struct _global_Context* c)" + "{")
+                codegen.append(f"return NULL;")
+                codegen.append("}\n")
+
+                codegen.append(
+                    f"struct _global_ArrayType* {structName}_get_typeByValue(struct {structName} self, struct _global_Context* c)" + "{")
+                codegen.append(f"return NULL;")
+                codegen.append("}\n")
+                return
+
+            nameOfI = f"{structName}Type"
+
+            codegen.append("struct _global_ArrayType " + nameOfI + ";")
+
+            codegen.append(
+                f"struct _global_ArrayType* {structName}_get_type(struct {structName}* self, struct _global_Context* c)" + "{")
+            codegen.append(f"return &{structName}Type;")
+            codegen.append("}\n")
+
+            codegen.append(
+                f"struct _global_ArrayType* {structName}_get_typeByValue(struct {structName} self, struct _global_Context* c)" + "{")
+            codegen.append(f"return &{structName}Type;")
+            codegen.append("}\n")
+
+            codegen.append(f"{Parser.ArrayType.toCType()} {structName}Type;")
+
+            codegen.outFunction()
+
+            if self.isArray:
+                codegen.append(f"{nameOfI}.size.tag = 2;")
+            else:
+                codegen.append(f"{nameOfI}.size.tag = 1;")
+
+            codegen.append(f"{nameOfI}.array_type = ")
+
+            t = Tree.Typeof(self, elemT)
+            Cast.castFrom(t.type, Parser.IType, t, "", codegen)
+
+            codegen.append(";")
+            return
+
+        nameOfI = f"{self.package}_{self.normalName}Type"
+
+        codegen.append("struct _global_StructType " + nameOfI + ";")
+
+        codegen.append(f"struct _global_StructType* {self.package}_{self.normalName}_get_type({cType}* self, struct _global_Context* c)" + "{")
+        codegen.append(f"return &{self.package}_{self.normalName}Type;")
+        codegen.append("}\n")
+
+        field_array = nameOfI + "_fields"
+        len_fields = len(self.fields)
+        if self.externalStruct:
+            len_fields = 0
+
+        structType = Parser.StructType
+
+        structType.toCType()
+
+        codegen.append(f"struct _global_Field* {field_array};\n")
+
+        #codegen.append(f"struct _global_StructType* {self.package}_{self.normalName}_get_typeByValue({cType} self, struct _global_Context* c)" + "{")
+        #codegen.append(f"return &{self.package}_{self.normalName}Type;")
+        #codegen.append("}\n")
+
         codegen.outFunction()
 
+        codegen.append(f"{field_array} = (struct _global_Field*) malloc(sizeof(struct _global_Field) * {len_fields});")
+
+        fieldTypeInArray = "Field" #SimplifyAst.sanitize(structType)
+
+        def as_string(s):
+            return f'_global_StringInit({len(s)}, "{s}")'
+
+        codegen.append(f"{nameOfI}.fields = _global_StaticArray_StaticArray_S_" + fieldTypeInArray + "Init(")
+        codegen.append(field_array)
+        codegen.append("," + str(len_fields))
+        codegen.append(");")
+        codegen.append(f"{nameOfI}.package = " + as_string(self.package) + ";")
+        codegen.append(f"{nameOfI}.name = " + as_string(self.normalName) + ";")
+
+        if not self.externalStruct:
+            for (i, field) in enumerate(self.fields):
+                typ = self.structT.types[field]
+
+                codegen.append(f"{field_array}[{i}].name = " + as_string(field) + ";")
+                codegen.append(f"{field_array}[{i}].offset = offsetof({cType}, {field});")
+                codegen.append(f"{field_array}[{i}].field_type = ")
+
+                Types.output_type(self, self.structT.types[field], codegen)
+
+                codegen.append(";")
 
     def validate(self, parser): pass
 

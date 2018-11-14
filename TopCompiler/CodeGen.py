@@ -138,7 +138,7 @@ class CodeGen:
             except:
                 pass
 
-        raise Exception("could not find variable" + name)
+        raise Exception("could not find variable " + name)
 
     def getParts(self):
         if self.inAFunction > 0:
@@ -148,16 +148,17 @@ class CodeGen:
         else:
             return self.main_parts
 
-    def addSemicolon(self, ast):
+    def addSemicolon(self, ast, no_semicolon=False):
         if not type(ast) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
-            self.append(";\n")
+            if no_semicolon:
+                self.append("\n")
+            else:
+                self.append(";\n")
             if self.debug:
                 filename = ast.fullFilePath().replace("\\", "\\\\")
-                self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
+                #self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
 
     def createName(self, name, typ):
-        if typ == "ecs.ID":
-            print("what")
         self.names[-1][name] = (typ, name)
         return name
 
@@ -209,7 +210,10 @@ class CodeGen:
 
         includes = self.toCHelp()
 
-        mainCode = "".join(self.main_parts)
+        mainCode = ""
+
+
+        mainCode += ("".join(self.main_parts))
         outerCode = "".join(self.out_parts)
         forward_ref = "".join(self.header_parts)
 
@@ -217,8 +221,9 @@ class CodeGen:
         Types.compiledTypes = coll.OrderedDict()
         Types.dataTypes = []
 
-        headerCode = f"{includes}\n{generatedTypes}\n{forward_ref}"
-        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
+        headerCode = f"{generatedTypes}\n{forward_ref}"
+        print_code = "printf(" + '"' + self.filename + '\\n");'
+        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ {print_code}\n{mainC}\n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
@@ -230,6 +235,8 @@ class CodeGen:
         f.write(headerCode)
         f.close()
 
+        return includes
+
 class Info:
     def __init__(self):
         self.pointer = 0
@@ -239,11 +246,23 @@ class Info:
         self.array = lastArr
         self.pointer = pointer
 
+
+
 def buildContext(parser):
+    from TopCompiler import Parser
+
     contextType = parser.contextType
     # build context data type
     context = "_global_context"
     typesGeneratedByContext = ""
+
+    from TopCompiler import Parser
+    from TopCompiler import topc
+
+    if type(Parser.IType) is Parser.TmpType:
+        topc.global_parser.setTypeIntrospection()
+
+    Parser.PointerType.toCType()
 
     types = {}
     for field in contextType:
@@ -272,7 +291,7 @@ import os
 
 
 
-def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
+def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
     topRuntime = ""
     (context, mainC) = context
     if not runtimeBuild:
@@ -280,7 +299,9 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
 
         topRuntime = topRuntime.read()
 
-    linkedCode = [hRuntimeCode,  context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
+    includes = "".join(includes)
+
+    linkedCode = [includes, hRuntimeCode,  context, cRuntimeCode, topRuntime, "struct _global_Context _global_context;"]
 
     for c in compiled:
         f = open("lib/" + c + ".h", mode="r")
@@ -292,7 +313,7 @@ def link(compiled, outputFile, opt, hotswap, debug, linkWith, headerIncludePath,
         linkedCode.append(f.read())
         f.close()
 
-    linkedCode.append(f"int main() {{ \n {mainC}; \n_globalInit(); \n mainInit(); return 0; }};")
+    linkedCode.append(f"int main() {{ \n_globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInit(); return 0; }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))

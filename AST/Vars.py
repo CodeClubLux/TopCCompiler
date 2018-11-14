@@ -94,7 +94,7 @@ class CreateAssign(Node):
 
     def validate(self, parser): pass
 
-def canMutate(self, tryingToMutate):
+def canMutate(self, isMutating= True):
     def getReadVar(node):
         i = node
         if type(i) is Tree.FuncCall:
@@ -109,22 +109,14 @@ def canMutate(self, tryingToMutate):
             return getReadVar(i)
 
     readVar = getReadVar(self)
+    def checkIfImutable(readVar, createTyp):
+        isMutable = not readVar.imutable
 
-    def checkIfImutable(node, createTyp):
-        iter = 0
-        for i in node:
-            isMutable = not readVar.imutable
-            if type(node.nodes[0].type) is Types.Pointer:
-                createTyp = node.nodes[0].type
-            elif tryingToMutate:
-                if not isMutable:
-                    self.nodes[0].error(
-                        "Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
+        if not isMutable and isMutating:
+            self.error("Immutable variable " + readVar.name + ": cannot mutate an immutable variable")
 
-            return
-
-    if readVar:
-        checkIfImutable(self, readVar.type)
+    if not readVar is None:
+        checkIfImutable(readVar, readVar.type)
 
 class Assign(Node):
     def __init__(self, name, parser):
@@ -169,6 +161,7 @@ class Assign(Node):
                     codegen.out_parts.append(tmp)
                 codegen.out_parts.append("\n")
             else:
+
                 codegen.append(name + " = ")
                 self.nodes[0].compileToC(codegen)
                 codegen.append(";")
@@ -215,7 +208,7 @@ class Assign(Node):
             createTyp = self.createTyp
         else:
             varNode = self.nodes[0]
-            canMutate(self.nodes[0], True)
+            canMutate(self.nodes[0])
 
         if len(node.nodes) == 0:
            self.error( "expecting expression")
@@ -233,10 +226,12 @@ class Assign(Node):
             self.nodes[0].error("cannot assign nothing")
 
 def getVar(self, codegen):
-    return codegen.readName(
-            self.package + "_" + self.name) if not self.isGlobal else \
-            (self.package+"_"+self.name if self.package != "" else "_global_" + self.name
-        )
+    name = (self.package+"_"+self.name) if self.package != "" else "_global_" + self.name
+
+    if self.isGlobal:
+        return name
+    else:
+        return codegen.readName(name)
 
 class ReadVar(Node):
     def __init__(self, name, isGlobal, parser):

@@ -73,16 +73,50 @@ def checkCast(originalType, newType, node, parser):
         if not type(originalType) is Types.Pointer:
             node.error("Can only upcast to interface from pointer, not "+str(originalType))
 
+casted = {}
+
+from AST import BasicTypes
+from TopCompiler import Parser
+from TopCompiler import CodeGen
+
 def castFrom(originalType, newType, node, realName, codegen):
+    key_cast = (originalType.name, newType.name)
+
     if originalType.isType(Types.FuncPointer):
         return node.compileToC(codegen)
     elif type(newType) is Types.I32:
         return node.compileToC(codegen)
     elif type(newType) is Types.Interface:
+        n = SimplifyAst.sanitize(newType.name if newType.package != "_global" else "_global_" + newType.name)
+
+
+        if not key_cast in casted:
+            from TopCompiler import topc
+
+            tmp = SimplifyAst.sanitize(originalType.name + "_VTABLE_FOR_" + newType.name)  #CodeGen.genGlobalTmp(codegen.filename)
+
+            codegen.inFunction()
+            codegen.append("struct " + n + "_VTABLE " + tmp + ";")
+            codegen.outFunction()
+        else:
+            tmp = casted[key_cast]
+
         originalType = originalType.pType
-        n = SimplifyAst.sanitize(newType.name if newType.package != "_global" else "_global_" + newType.name )
-        codegen.append(n+"FromStruct(")
+        codegen.append(n + "FromStruct(")
         node.compileToC(codegen)
+        codegen.append(",")
+
+        codegen.append("&" + tmp)
+        codegen.append(",")
+
+        if not key_cast in casted:
+            get_type = BasicTypes.Typeof(node, originalType)
+            casted[key_cast] = tmp
+            castFrom(get_type.type, Parser.IType, get_type, "", codegen)
+        else:
+            codegen.append(tmp + ".type")
+
+
         for field in newType.types: #@cleanup handle recursive cast
             codegen.append(f", offsetof({originalType.toCType()},{field})")
         for field in newType.methods:
@@ -92,6 +126,8 @@ def castFrom(originalType, newType, node, realName, codegen):
                 name = f"{originalType.package}_{originalType.normalName}_{field}"
             codegen.append(f", &{name}")
         codegen.append(")")
+
+
         return
     elif type(newType) is Types.Array:
         if type(originalType) is Types.Alias:
@@ -99,19 +135,22 @@ def castFrom(originalType, newType, node, realName, codegen):
             return
 
         if newType.both and originalType.isType(Types.Pointer) and originalType.pType.static:
+            if key_cast in casted:
+                funcName = casted[key_cast]
+            else:
+                funcName = CodeGen.genGlobalTmp(codegen.filename)
+                codegen.inGenerateFunction()
 
-            funcName = CodeGen.genGlobalTmp(codegen.filename)
-            codegen.inGenerateFunction()
+                inputT = codegen.getName()
+                typNewC = newType.toCType()
 
-            inputT = codegen.getName()
-            typNewC = newType.toCType()
+                initCall = typNewC.replace("struct ", "") + "Init"
 
-            initCall = typNewC.replace("struct ", "") + "Init"
-
-            codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
-            codegen.append(f"return {initCall}({inputT}->data, {originalType.pType.numElements});")
-            codegen.append("};\n")
-            codegen.outFunction()
+                codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
+                codegen.append(f"return {initCall}({inputT}->data, {originalType.pType.numElements});")
+                codegen.append("};\n")
+                codegen.outFunction()
+                casted[key_cast] = funcName
 
             codegen.append(f"{funcName}(")
             node.compileToC(codegen)
@@ -137,16 +176,21 @@ def castFrom(originalType, newType, node, realName, codegen):
             return
 
         elif originalType.empty:
-            funcName = CodeGen.genGlobalTmp(codegen.filename)
-            codegen.inGenerateFunction()
+            if key_cast in casted:
+                funcName = casted[key_cast]
+            else:
+                funcName = CodeGen.genGlobalTmp(codegen.filename)
+                codegen.inGenerateFunction()
 
-            inputT = codegen.getName()
-            typNewC = newType.toCType()
+                inputT = codegen.getName()
+                typNewC = newType.toCType()
 
-            codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
-            codegen.append(f"return *(({typNewC}*) &{inputT});")
-            codegen.append("};\n")
-            codegen.outFunction()
+                codegen.append(f"{typNewC} {funcName}({originalType.toCType()} {inputT}) {{\n")
+                codegen.append(f"return *(({typNewC}*) &{inputT});")
+                codegen.append("};\n")
+                codegen.outFunction()
+
+                casted[key_cast] = funcName
 
             codegen.append(f"{funcName}(")
             node.compileToC(codegen)

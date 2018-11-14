@@ -82,60 +82,127 @@ class Char(Node):
     def compileToC(self, codegen):
         codegen.append(f"'{self.string}'")
 
-class Decoder(Node):
-    def __init__(self, parser):
-        Node.__init__(self, parser)
-
-    def validate(self, parser): pass
-
-    def compileToJS(self, codegen):
-        typ = self.shouldBeTyp
-
-        def loop(typ):
-            if type(typ) in [Types.I32, Types.Float, Types.Bool, Types.String]:
-                codegen.append("core_json_"+typ.name)
-            elif type(typ) in [Types.Struct, Types.Interface]:
-                if type(typ) is Types.Struct:
-                    codegen.append(f"core_json_struct{typ.package}_{typ.normalName},")
-                elif type(typ) is Types.Interface:
-                    codegen.append("core_json_interface(")
-
-                codegen.append("[")
-                for n in typ.types:
-                    codegen.append(f"['{n}',")
-                    loop(typ.types[n])
-                    codegen.append("],")
-
-                codegen.append("])")
-            elif type(typ) is Types.Enum:
-                codegen.append("core_json_enum([")
-                const = typ.const
-                for n in const:
-                    codegen.append("[")
-                    [loop(i) for i in const[n]]
-                    codegen.append("],")
-                codegen.append("])")
-            elif type(typ) is Types.Array:
-                codegen.append("core_json_vector(")
-                loop(typ.elemT)
-                codegen.append(")")
-            elif type(typ) is Types.Tuple:
-                codegen.append("core_json_tuple([")
-                for i in typ.list:
-                    loop(i)
-                    codegen.append(",")
-                codegen.append("])")
-            else:
-                codegen.append("function(arg) { return arg }")
-
-        loop(typ)
-
 class Sizeof(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
 
     def compileToC(self, codegen):
         codegen.append("sizeof(" + self.typ.toCType() + ")")
+
+from TopCompiler import Parser
+from PostProcessing import SimplifyAst
+from AST import Cast
+
+class Typeof(Node):
+    def __init__(self, parser, typ):
+        Node.__init__(self, parser)
+        self.typ = typ
+
+        if type(typ) is Types.T:
+            typ = Types.Null()
+            self.typ = typ
+
+        if type(self.typ) is Types.I32:
+            self.type = Types.Pointer(Parser.IntType)
+        elif type(self.typ) is Types.Float:
+            self.type = Types.Pointer(Parser.FloatType)
+        elif type(self.typ) is Types.String:
+            self.type = Types.Pointer(Parser.StringType)
+        elif type(self.typ) is Types.Bool:
+            self.type = Types.Pointer(Parser.BoolType)
+        elif type(self.typ) is Types.Struct:
+            self.type = Types.Pointer(Parser.StructType)
+        elif type(self.typ) is Types.Alias:
+            self.type = Types.Pointer(Parser.AliasType)
+        elif type(self.typ) is Types.Enum:
+            self.type = Types.Pointer(Parser.EnumType)
+        elif type(self.typ) is Types.Pointer:
+            self.type = Types.Pointer(Parser.PointerType)
+        elif type(self.typ) is Types.Interface:
+            self.type = Types.Pointer(Parser.InterfaceType)
+        elif type(self.typ) is Types.Array:
+            self.type = Types.Pointer(Parser.ArrayType)
+        elif type(self.typ) is Types.FuncPointer:
+            self.type = Types.Pointer(Parser.FuncPointerType)
+        elif type(self.typ) is Types.Char:
+            self.type = Types.Pointer(Parser.CharType)
+        elif type(self.typ) is Types.Null:
+            self.type = Types.Pointer(Parser.NoneType)
+        else:
+            print("hey")
+
+    def compileToC(self, codegen):
+        self.typ.toCType()
+
+        #if self.typ.package == "_global" and type(self.typ) in [Types.Struct, Types.Enum]:
+        #    codegen.append("NULL")
+        #    return
+
+        package = self.typ.package if self.typ.package != "" else "_global"
+        fullName = SimplifyAst.toUniqueID(package, self.typ.normalName, self.typ.remainingGen)
+
+
+        if not type(self.typ) in [Types.Interface, Types.Pointer, Types.Alias, Types.Null]:
+            codegen.append(f"{fullName}_get_type(NULL," + codegen.getContext() + ")")
+        else:
+            if type(self.typ) is Types.Pointer:
+                codegen.append("_global_boxPointerType(_global_PointerTypeInit(")
+                tmp = Typeof(self, self.typ.pType)
+                Cast.castFrom(tmp.type, Parser.IType, tmp, "", codegen)
+                codegen.append(")," + codegen.getContext() + ")")
+            elif type(self.typ) is Types.Null:
+                codegen.append(f"&None_Type")
+            else:
+                codegen.append(f"&{fullName}_Type")
+
+class AliasType(Node):
+    def __init__(self, typ, package, structName, parser):
+        Node.__init__(self, parser)
+        self.package = package
+        self.structName = structName
+        self.typ = typ
+
+    def replaceT(self, s, newName):
+        self.structName = newName
+
+    def compileToC(self, codegen):
+        def as_string(s):
+            return f'_global_StringInit({len(s)}, "{s}")'
+
+        iName = f"{self.package}_{self.structName}_Type"
+
+        if type(Parser.AliasType) is Parser.TmpType: return
+
+        codegen.inFunction()
+        codegen.append(f"{Parser.AliasType.toCType()} {iName};")
+        codegen.outFunction()
+
+        codegen.append(f"{iName}.name = {as_string(self.structName)};" )
+        codegen.append(f"{iName}.package = {as_string(self.package)};")
+        codegen.append(f"{iName}.real_type = ")
+
+        tmp = Typeof(self, self.typ)
+        Cast.castFrom(tmp.type, Parser.IType, tmp, "", codegen)
+        codegen.append(";")
+
+class PointerType(Node):
+    def __init__(self, parser, pType):
+        self.pType = pType
+
+    def replaceT(self, s, newName):
+        self.newName = newName
+
+    def compileToC(self, codegen):
+        codegen.inFunction()
+
+        iName = f"{self.newName}_Type;"
+        codegen.append(f"{Parser.PointerType.toCType()} {iName};")
+        codegen.outFunction()
+
+        codegen.append(f"{iName}.pType = ")
+        tmp = Typeof(self, self.pType)
+        Cast.castFrom(tmp.type, Parser.IType, tmp, "", codegen)
+        codegen.append(";")
 
 class Offsetof(Node):
     def __init__(self, parser):

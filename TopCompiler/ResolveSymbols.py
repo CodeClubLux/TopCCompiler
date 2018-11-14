@@ -50,6 +50,8 @@ def resolve(self):
             self.opackage = c
 
             for i in range(len(tokens[c])):
+                if self.package == "_global" and i == len(tokens[c])-1:
+                    self.setArrayTypes()
                 _resolve(self, tokens[c][i], self._filename[i][1], passN=n)
 
     self.rootAst = Tree.Root()
@@ -125,7 +127,7 @@ def _resolve(self, tokens, filename, passN= 0 ):
                 elif ofType == "either":
                     self.interfaces[self.package][name] = Types.Enum(self.package, name, coll.OrderedDict(), {})
                 elif ofType == "with":
-                    self.interfaces[self.package][name] = Types.Interface(False, {})
+                    self.interfaces[self.package][name] = Types.Interface(False, {}, name=self.package+"."+name)
                 elif ofType == "is":
                     self.interfaces[self.package][name] = Types.Alias(self.package, name, Types.Null(), {})
 

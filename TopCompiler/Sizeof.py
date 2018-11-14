@@ -48,7 +48,14 @@ def castParser(parser):
     parser.currentNode.nodes[-1] = node
     node.owner = parser.currentNode
 
+def typeofParser(parser):
+    parser.nextToken()
+
+    typ = Types.parseType(parser)
+    node = Tree.Typeof(parser, typ)
+    parser.currentNode.addNode(node)
 
 Parser.exprToken["sizeof"] = sizeofParser
 Parser.exprToken["offsetof"] = offsetof
 Parser.exprToken["cast"] = castParser
+Parser.exprToken["get_type"] = typeofParser

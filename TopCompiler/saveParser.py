@@ -5,6 +5,8 @@ import AST as Tree
 
 import copy
 
+from AST import Cast
+
 def save(parser, runtimeBuild):
     #return
 
@@ -34,6 +36,7 @@ def save(parser, runtimeBuild):
     parser._token = None
     parser.__filename = None
     parser.compiledTypes = None
+    parser.casted = Cast.casted
 
     for typ in parser.typesInContext:
         if typ in parser.generatedGenericTypes:

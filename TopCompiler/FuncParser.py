@@ -165,9 +165,9 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
         self = self.token
 
         if pointer:
-            pType = Types.Pointer(typ)
+            pType = Types.Pointer(attachTyp)
         else:
-            pType = typ
+            pType = attachTyp
 
         selfNode = Tree.Create(self, pType, parser)
         selfNode.package = parser.package

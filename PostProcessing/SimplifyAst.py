@@ -9,14 +9,17 @@ def print(s):
     realPrint(s)
 """
 
+
 def callMethodCode(node, name, typ, parser, unary):
+    isMethod = False
     if type(typ) is Types.Pointer and type(typ.pType) is Types.Alias:
         method = typ.pType.typ.hasMethod(parser, name, isP=True)
         if method:
             typ = typ.pType.typ
+            isMethod = True
 
     elif type(typ) is Types.Alias:
-        method = typ.typ.hasMethod(parser, name)
+        method = typ.typ.hasMethod(parser, name, isP= isMethod)
         if method:
             typ = typ.typ
 
@@ -46,13 +49,14 @@ def callMethodCode(node, name, typ, parser, unary):
 
     return var
 
+
 def simplifyArrRead(operator, iter, parser):
     readMethodName = callMethodCode(operator.nodes[0], "op_get", operator.nodes[0].type, parser, False)
     readMethodName.type.args[1] = operator.nodes[1].type
     readMethodName.type.returnType = operator.type
-    #if operator.nodes[0].type.isType(Types.Pointer):
+    # if operator.nodes[0].type.isType(Types.Pointer):
     #    readMethodName.replaced = operator.nodes[0].type.pType.remainingGen
-    #else:
+    # else:
     #    readMethodName.replaced = operator.nodes[0].type.remainingGen
 
     deref = Tree.Operator("*", operator)
@@ -67,23 +71,23 @@ def simplifyArrRead(operator, iter, parser):
     func.addNode(operator.nodes[0])
     func.addNode(operator.nodes[1])
 
-
     deref.addNode(func)
 
     operator.owner.nodes[iter] = deref
 
     return deref
 
+
 def simplifyOperator(operator, iter, parser):
     def overloaded(methodName):
         func = Tree.FuncCall(operator)
         func.addNode(methodName)
 
-        #array = []
+        # array = []
 
         for node in operator.nodes:
             func.addNode(node)
-            #array.append(node.type)
+            # array.append(node.type)
 
         func.type = operator.type
         operator.owner.nodes[iter] = func
@@ -109,7 +113,7 @@ def simplifyOperator(operator, iter, parser):
         func = Tree.FuncCall(operator)
         if operator.kind == "concat":
             r = Tree.ReadVar("String_op_addByValue", True, parser)
-            #r.type = Types.FuncPointer([Types.String(0), Types.String(0)], Types.String(0))
+            # r.type = Types.FuncPointer([Types.String(0), Types.String(0)], Types.String(0))
 
             func.addNode(r)
             func.nodes[0].type = Types.String(0).hasMethod(parser, "op_add", isP=True)
@@ -133,17 +137,23 @@ def simplifyOperator(operator, iter, parser):
         elif operator.kind == "==":
             return overloaded(callMethodCode(operator.nodes[0], "op_eq", typ, parser, operator.unary))
     elif operator.overload and not typ.isType(Types.I32) and not typ.isType(Types.Float) and not typ.isType(Types.Bool):
-        return overloaded(callMethodCode(operator.nodes[0], operator.name[operator.name.find("_")+1:], operator.opT, parser, operator.unary))
+        return overloaded(
+            callMethodCode(operator.nodes[0], operator.name[operator.name.find("_") + 1:], operator.opT, parser,
+                           operator.unary))
     else:
         operator.overload = False
         return operator
+
+
 import copy
+
 
 def splitPackageAndName(identifier):
     if identifier.startswith("_global"):
-        return ("_global",  identifier[len("_global") + 1:])
+        return ("_global", identifier[len("_global") + 1:])
     else:
-        return (identifier[:identifier.find("_")], identifier[identifier.find("_")+1:])
+        return (identifier[:identifier.find("_")], identifier[identifier.find("_") + 1:])
+
 
 class FuncSpecification:
     def __init__(self, identifier, funcStart, funcBrace, funcBody, replaced):
@@ -155,7 +165,7 @@ class FuncSpecification:
         self.identifier = identifier
 
     def replace(self, parser):
-        def loop(ast): #loop will copy
+        def loop(ast):  # loop will copy
             newAST = copy.copy(ast)
             newAST.nodes = []
             for i in ast.nodes:
@@ -171,17 +181,18 @@ class FuncSpecification:
                 newAST.ftype = Types.replaceT(newAST.ftype, self.replaced)
             elif type(newAST) in [Tree.Sizeof, Tree.Offsetof] and Types.isGeneric(newAST.typ):
                 newAST.typ = Types.replaceT(newAST.typ, self.replaced)
-            elif type(newAST) is Tree.Cast.Cast: #@cleanup add for cast which is an operator for some reason
+            elif type(newAST) is Tree.Cast.Cast:  # @cleanup add for cast which is an operator for some reason
                 newAST.f = Types.replaceT(newAST.f, self.replaced)
-                newAST.to =  Types.replaceT(newAST.to, self.replaced)
+                newAST.to = Types.replaceT(newAST.to, self.replaced)
                 newAST.type = newAST.to
             elif type(newAST) is Tree.FuncCall:
-                newAST.replaced = {name: Types.replaceT(newAST.replaced[name], self.replaced) for name in newAST.replaced}
+                newAST.replaced = {name: Types.replaceT(newAST.replaced[name], self.replaced) for name in
+                                   newAST.replaced}
 
             return newAST
 
-        #if self.identifier == "ecs_Store_index_is_active_ecs_Entity":
-            #print("gadeem")
+        # if self.identifier == "ecs_Store_index_is_active_ecs_Entity":
+        # print("gadeem")
 
         funcStart = copy.copy(self.funcStart)
         funcStart.ftype = Types.replaceT(funcStart.ftype, self.replaced)
@@ -203,10 +214,10 @@ class FuncSpecification:
         p = Tree.PlaceHolder(funcBody)
         p.addNode(funcBody)
 
-        #if n == "sort_array_int":
+        # if n == "sort_array_int":
         #    print("hey")
 
-        simplifyAst(parser, p, specifications= parser.specifications[parser.package], dontGen=True)
+        simplifyAst(parser, p, specifications=parser.specifications[parser.package], dontGen=True)
 
         funcBody.owner = owner
 
@@ -215,24 +226,30 @@ class FuncSpecification:
 
 import re
 
-#credit to mmj, https://stackoverflow.com/questions/6116978/how-to-replace-multiple-substrings-of-a-string
+
+# credit to mmj, https://stackoverflow.com/questions/6116978/how-to-replace-multiple-substrings-of-a-string
 
 
 def multiple_replace(rep_dict):
-    pattern = re.compile("|".join([re.escape(k) for k in sorted(rep_dict,key=len,reverse=True)]))
+    pattern = re.compile("|".join([re.escape(k) for k in sorted(rep_dict, key=len, reverse=True)]))
+
     def replace(string):
         return pattern.sub(lambda x: rep_dict[x.group(0)], string).replace(".", "_")
 
     return replace
 
-sanitize = multiple_replace({" ": "_", "[": "_", "]": "_", "|": "p", "->": "_", "&": "r", ",": "c", "{": "b", "}": "b", ".": "_", ":": "_"})
+
+sanitize = multiple_replace(
+    {" ": "_", "[": "_", "]": "_", "|": "p", "->": "_", "&": "r", ",": "c", "{": "b", "}": "b", ".": "_", ":": "_"})
+
 
 def stringify(typ):
-    #return typ
-    #if type(typ) is Types.T:
+    # return typ
+    # if type(typ) is Types.T:
     #    return typ.type.name
-    #else:
-    return str(typ) #.name
+    # else:
+    return str(typ)  # .name
+
 
 def toUniqueID(package, funcName, replaced):
     keys = sorted(replaced.keys())
@@ -241,6 +258,7 @@ def toUniqueID(package, funcName, replaced):
         return package + "_" + funcName
     else:
         return package + "_" + funcName + "_" + sanitize(joinedKeys)
+
 
 class Specifications:
     def __init__(self, root, inImports, genericFuncsFromDifferentPackage):
@@ -251,16 +269,19 @@ class Specifications:
         self.delayed = {}
         self.funcsToBeProcessed = {}
 
-    def addSpecification(self, package, funcName, replaced, forceFound= False):
+    def addSpecification(self, package, funcName, replaced, forceFound=False):
         if package == "":
             package = "_global"
 
-        fullName = package+"_"+funcName
+        if package == "reflection" and funcName == "typeof":
+            return toUniqueID(package, funcName, replaced)
+
+        fullName = package + "_" + funcName
         id = toUniqueID(package, funcName, replaced)
 
         if not fullName in self.genericFuncs:
             if forceFound: pass
-            #raise EOFError("Could not find generic function " + fullName)
+            # raise EOFError("Could not find generic function " + fullName)
             self.delayed[fullName] = (package, funcName, replaced)
             return id
 
@@ -271,16 +292,16 @@ class Specifications:
         if not id in self.funcs:
             self.funcs[id] = FuncSpecification(id, funcStart, funcBrace, funcBody, replaced)
             self.funcsToBeProcessed[id] = self.funcs[id]
-            #print("adding specification", id)
+            # print("adding specification", id)
         return id
 
     def addGenericFunc(self, package, name, funcStart, funcBrace, funcBody):
-        self.genericFuncs[package+ "_" + name] = (funcStart, funcBrace, funcBody)
+        self.genericFuncs[package + "_" + name] = (funcStart, funcBrace, funcBody)
 
     def genAST(self, parser):
         groups = []
 
-        #print("gen ast")
+        # print("gen ast")
 
         while (len(self.funcsToBeProcessed) > 0 or len(self.delayed) > 0):
             groups.append([])
@@ -293,28 +314,28 @@ class Specifications:
             _keys = list(self.funcsToBeProcessed.keys())
 
             for id in _keys:
-                #if not id in self.funcsToBeProcessed: #this can happen cause specification replace might handle this func
+                # if not id in self.funcsToBeProcessed: #this can happen cause specification replace might handle this func
                 #    continue
                 specification = self.funcsToBeProcessed[id]
                 del self.funcsToBeProcessed[id]
                 groups[-1].append(specification.replace(parser))
 
-        #print("outputting")
+        # print("outputting")
         for group in reversed(groups):
             for (funcStart, funcBrace, funcBody) in group:
-                #print(funcStart.name)
+                # print(funcStart.name)
                 self.root.addNode(funcStart)
                 self.root.addNode(funcBrace)
                 self.root.addNode(funcBody)
 
-        #print("ending")
+        # print("ending")
 
 
 def isGenericMethod(ast):
     if ast.method:
-        t = ast.ftype.args[0].toRealType()
+        t = ast.ftype.args[0]
         if type(t) is Types.Pointer:
-            g = t.pType.toRealType().remainingGen
+            g = t.pType.remainingGen
             return g
         else:
             return t.remainingGen
@@ -323,10 +344,11 @@ def isGenericMethod(ast):
 
 
 def isGenericFunc(ast):
-    return ast.ftype.generic or isGenericMethod(ast) #pass by reference
+    return ast.ftype.generic or isGenericMethod(ast)  # pass by reference
+
 
 def resolveGeneric(parser, root):
-    specifications = Specifications(root, {}, {}) #@cleanup add support for modules
+    specifications = Specifications(root, {}, {})  # @cleanup add support for modules
     parser.specifications[parser.package] = specifications
 
     for (iter, ast) in enumerate(root.nodes):
@@ -335,6 +357,7 @@ def resolveGeneric(parser, root):
             funcBrace = ast.owner.nodes[iter + 1]
             funcBody = ast.owner.nodes[iter + 2]
             specifications.addGenericFunc(funcStart.package, funcStart.name, funcStart, funcBrace, funcBody)
+
 
 class Replacer():
     def __init__(self):
@@ -348,6 +371,8 @@ class Replacer():
                     ast.owner.nodes[it] = a
                     return a
 
+        return ast
+
     def incrScope(self):
         self.scope.append([])
 
@@ -356,6 +381,7 @@ class Replacer():
 
     def add(self, replacement):
         self.scope[-1].append(replacement)
+
 
 def simplifyAst(parser, ast, specifications=None, dontGen=False):
     replacer = Replacer()
@@ -385,7 +411,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         if type(ast) in [Tree.ReadVar]:
             ast = replacer.replace(ast, iter)
 
-        if not (type(ast) is Tree.FuncBody and len(ast.owner.nodes) >= 3 and isGenericFunc(ast.owner.nodes[iter-2])):
+        if not (type(ast) is Tree.FuncBody and len(ast.owner.nodes) >= 3 and isGenericFunc(ast.owner.nodes[iter - 2])):
             for (it, i) in enumerate(ast.nodes):
                 simplify(i, it, deleteQueue)
         if type(ast) is Tree.Operator:
@@ -424,20 +450,22 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 toT = ast.to.toRealType()
                 fromT = ast.f.toRealType()
 
-                if type(fromT) is Types.Pointer: #has to be but type checking this hasnt happened yet
+                if type(fromT) is Types.Pointer:  # has to be but type checking this hasnt happened yet
                     fromT = fromT.pType
 
                     if fromT.remainingGen:
                         for name in toT.methods:
                             package = toT.package
 
-                            newName = specifications.addSpecification(package, fromT.normalName + "_" + name, fromT.remainingGen)
+                            newName = specifications.addSpecification(package, fromT.normalName + "_" + name,
+                                                                      fromT.remainingGen)
                             ast.realName[name] = newName
-                        #readVar.name = splitPackageAndName(newName)[1]
+                        # readVar.name = splitPackageAndName(newName)[1]
 
         elif type(ast) is Tree.For:
             condition = ast.condition_type
-            ast.op_get = specifications.addSpecification(condition.package, condition.normalName + "_op_get", condition.remainingGen)
+            ast.op_get = specifications.addSpecification(condition.package, condition.normalName + "_op_get",
+                                                         condition.remainingGen)
         elif type(ast) is Tree.Array:
             ast = Tree.simplifyArray(parser, ast, iter)
         elif type(ast) is Tree.Field and ast.indexPackage:
@@ -456,30 +484,34 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             ast.owner.nodes[iter] = ast.nodes[0]
         elif type(ast) is Tree.FuncStart and isGenericFunc(ast):
             funcStart = ast
-            funcBrace = ast.owner.nodes[iter+1]
-            funcBody = ast.owner.nodes[iter+2]
-            upperDeleteQueue.append(funcStart) #remove funcStart, funcBrace, funcBody, since specialized version is useless
+            funcBrace = ast.owner.nodes[iter + 1]
+            funcBody = ast.owner.nodes[iter + 2]
+            upperDeleteQueue.append(
+                funcStart)  # remove funcStart, funcBrace, funcBody, since specialized version is useless
             upperDeleteQueue.append(funcBrace)
             upperDeleteQueue.append(funcBody)
 
         elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar and not ast.nodes[0].name == "indexPtr":
             readVar = ast.nodes[0]
-            if readVar.replaced: #for method calls
+            if readVar.replaced:  # for method calls
                 if readVar.name.endswith("ByValue"):
-                    newName = specifications.addSpecification(readVar.package, readVar.name[:-7], {**readVar.replaced, **ast.replaced})
-                    readVar.name = splitPackageAndName(newName)[1] + "ByValue"  # remove package which will be added later
+                    newName = specifications.addSpecification(readVar.package, readVar.name[:-7],
+                                                              {**readVar.replaced, **ast.replaced})
+                    readVar.name = splitPackageAndName(newName)[
+                                       1] + "ByValue"  # remove package which will be added later
                 else:
-                    newName = specifications.addSpecification(readVar.package, readVar.name, {**readVar.replaced, **ast.replaced})
-                    readVar.name = splitPackageAndName(newName)[1] #remove package which will be added later
+                    newName = specifications.addSpecification(readVar.package, readVar.name,
+                                                              {**readVar.replaced, **ast.replaced})
+                    readVar.name = splitPackageAndName(newName)[1]  # remove package which will be added later
             elif readVar.type.generic and Tree.funcIsCase(ast):
                 newName = toUniqueID(readVar.package, readVar.name, ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]
             elif readVar.type.generic:
-                newName = specifications.addSpecification(readVar.package, readVar.name,ast.replaced)
+                newName = specifications.addSpecification(readVar.package, readVar.name, ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]  # remove package which will be added later
-        #elif type(ast) is Tree.Cast and type(ast.nodes[0]) is Tree.InitStruct and ast.fromT in [Types.Enum, Types.Struct] and Tree.Cast.notSpecified(ast.fromT):  @cleanup add optimization
-        #    print("happens")
-        #    ast.nodes[0].constructor = ast.toT
+            # elif type(ast) is Tree.Cast and type(ast.nodes[0]) is Tree.InitStruct and ast.fromT in [Types.Enum, Types.Struct] and Tree.Cast.notSpecified(ast.fromT):  @cleanup add optimization
+            #    print("happens")
+            #    ast.nodes[0].constructor = ast.toT
             readVar.replaced = {}
             ast.replaced = {}
         elif type(ast) is Tree.Field:
@@ -494,13 +526,13 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 isP = True
 
             if type(typ) is Types.Alias:
-                method = typ.typ.hasMethod(parser, self.field, isP= isP)
+                method = typ.typ.hasMethod(parser, self.field, isP=isP)
                 if method:
                     typ = typ.typ
                 else:
-                    method = typ.hasMethod(parser, self.field, isP= isP)
+                    method = typ.hasMethod(parser, self.field, isP=isP)
             else:
-                method = typ.hasMethod(parser, self.field, isP= isP)
+                method = typ.hasMethod(parser, self.field, isP=isP)
 
             if method:
                 self.type = method
@@ -526,6 +558,9 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
 
                     if type(typ) in [Types.Struct, Types.Alias, Types.Enum, Types.Array]:
                         r.replaced = typ.remainingGen
+
+        if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
+            replacer.decrScope()
 
         for e in deleteQueue:
             ast.nodes.remove(e)

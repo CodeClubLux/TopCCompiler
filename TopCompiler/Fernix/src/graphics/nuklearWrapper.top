@@ -1,0 +1,57 @@
+from "glfwWrapper" import GLFWwindow
+
+ext _ = "#define NK_INCLUDE_FIXED_TYPES"
+ext _ = "#define NK_INCLUDE_STANDARD_IO"
+ext _ = "#define NK_INCLUDE_STANDARD_VARARGS"
+ext _ = "#define NK_INCLUDE_DEFAULT_ALLOCATOR"
+ext _ = "#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT"
+ext _ = "#define NK_INCLUDE_FONT_BAKING"
+ext _ = "#define NK_INCLUDE_DEFAULT_FONT"
+ext _ = "#define NK_KEYSTATE_BASED_INPUT"
+
+ext _ = "#include <nuklear.h>"
+ext _ = "#include <nuklear_glfw_gl4.h>"
+
+type ext nk_context =
+type ext nk_colorf =
+type ext nk_image =
+type ext nk_font_atlas =
+type ext nk_rect =
+type ext nk_font_config =
+type ext nk_user_font =
+type ext nk_font =
+    handle: nk_user_font
+
+ext nk_glfw3_init: |&GLFWwindow, uint, int, int| -> &nk_context = "nk_glfw3_init"
+ext nk_glfw3_shutdown: || -> none = "nk_glfw3_shutdown"
+ext nk_glfw3_font_stash_begin: |&&nk_font_atlas| -> none = "nk_glfw3_font_stash_begin"
+ext nk_glfw3_font_stash_end: || -> none = "nk_glfw3_font_stash_end"
+ext nk_glfw3_new_frame: || -> none = "nk_glfw3_new_frame"
+ext nk_glfw3_render: |uint| -> none = "nk_glfw3_render"
+
+ext nk_glfw3_device_destroy: || -> none = "nk_glfw3_device_destroy"
+ext nk_glfw3_device_create: || -> none = "nk_glfw3_device_create"
+
+ext nk_char_callback: |&GLFWwindow, uint| -> none = "nk_char_callback"
+ext nk_glfw3_scroll_callback: |&GLFWwindow, f64, f64| -> none = "nk_glfw3_scroll_callback"
+ext nk_glfw3_mouse_button_callback: |&GLFWwindow, int, int, int| -> none = "nk_glfw3_mouse_button_callback"
+
+ext nk_glfw3_default: uint = "NK_GLFW3_DEFAULT"
+ext nk_glfw3_install_callbacks: uint = "NK_GLFW3_INSTALL_CALLBACKS"
+ext nk_anti_aliasing_on: uint = "NK_ANTI_ALIASING_ON"
+
+ext nk_layout_row_dynamic: |&nk_context, float, int| -> none = "nk_layout_row_dynamic"
+ext nk_layout_row_static: |&nk_context, float, float, int| -> none = "nk_layout_row_static"
+
+ext nk_font_atlas_add_default: |&nk_font_atlas, float, Maybe[&nk_font_config]| -> &nk_font = "nk_font_atlas_add_default"
+ext nk_style_set_font: |&nk_context, &nk_user_font| -> none = "nk_style_set_font"
+ext nk_font_atlas_add_from_file: |&nk_font_atlas, &char, float, Maybe[&nk_font_config]| -> &nk_font = "nk_font_atlas_add_from_file"
+
+ext nk_propertyf: |&nk_context, &char, float, float, float, float, float| -> float = "nk_propertyf"
+
+ext nk_begin: |&nk_context, &char, nk_rect, uint| -> bool = "nk_begin"
+ext nk_label: |&nk_context, &char, uint| -> none = "nk_label"
+ext nk_make_rect: |float, float, float, float| -> nk_rect = "nk_rect"
+ext nk_end: |&nk_context| -> none = "nk_end"
+
+ext nk_text_left: uint = "NK_TEXT_LEFT"
