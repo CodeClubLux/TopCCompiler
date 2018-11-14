@@ -1,8 +1,2 @@
-type Point =
-    x: int
-    y: int
 
-def Point.toString(using &self) string =
-    "{x}, {y}"
-
-log Point{0,0}
+log "hey"
