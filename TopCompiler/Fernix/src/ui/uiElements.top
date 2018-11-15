@@ -1,11 +1,11 @@
 from "math" import Vec2
 
-type SurfaceOptions =
+type WindowOptions =
     title: string
     size: Vec2
     position: Vec2
 
-default_surface := SurfaceOptions{
+default_window := WindowOptions{
     title = ""
     size = Vec2{100,100}
     position = Vec2{0,0}
@@ -16,6 +16,15 @@ type LabelOptions =
 
 default_label := LabelOptions{
     text = ""
+}
+
+type ButtonOptions =
+    text: string
+    selected: bool
+
+default_button := ButtonOptions{
+    text = ""
+    selected = false
 }
 
 type PropertyfOptions =
@@ -36,7 +45,15 @@ default_propertyf := PropertyfOptions{
     inc_per_pixel = 0.01
 }
 
-type UIElement either
-    Label(LabelOptions)
-    Propertyf(PropertyfOptions)
+type GroupOptions =
+    title: string
+
+default_group := GroupOptions{ title = "" }
+
+type InputOptions =
+    value: &string
+    max_length: uint
+
+tmp_s := ""
+default_input := InputOptions{ &tmp_s, max_length = 20 }
 

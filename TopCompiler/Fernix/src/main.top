@@ -18,10 +18,10 @@ import "editor"
 
 def substance_params(folder: string, name: string) [4]Param =
     [
-        Param_Image "material.diffuse", texture.load "assets/{folder}/{name}_basecolor.jpg"
-        Param_Image "material.metallic", texture.load "assets/{folder}/{name}_metallic.jpg"
-        Param_Image "material.roughness", texture.load "assets/{folder}/{name}_roughness.jpg"
-        Param_Image "material.normal", texture.load "assets/{folder}/{name}_normal.jpg"
+        Param_Image "material.diffuse", texture.load "{folder}/{name}_basecolor.jpg"
+        Param_Image "material.metallic", texture.load "{folder}/{name}_metallic.jpg"
+        Param_Image "material.roughness", texture.load "{folder}/{name}_roughness.jpg"
+        Param_Image "material.normal", texture.load "{folder}/{name}_normal.jpg"
     ]
 
 wet_street_params := substance_params "wood_2", "Stylized_Wood"
@@ -33,7 +33,22 @@ wet_street_params := substance_params "wood_2", "Stylized_Wood"
     Param_Image "material.normal", texture.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
 ]*/
 
-cube := model.load_model "assets/cube.fbx", box [
+cube := model.load_model "HOVERTANK.fbx", box [
+    Material{
+        name = "DefaultMaterial"
+        shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
+        params = &wet_street_params
+    }
+]
+
+cube_entity := ecs.make_Entity ecs.make_ID!
+cube_entity.scale = Vec3{ 0.5, 0.5, 0.5 }
+
+mesh_renderer := model.make_ModelRenderer cube_entity.id
+mesh_renderer.model = Some &cube
+
+/*
+editor_plane := model.load_model "assets/editor_plane.fbx", box [
     Material{
         name = "DefaultMaterial"
         shader = shader.make "assets/shaders/pbr.vert", "assets/shaders/pbr.frag"
@@ -41,13 +56,12 @@ cube := model.load_model "assets/cube.fbx", box [
     }
 ]
 
-cube_entity := ecs.make_Entity!
-cube_entity.scale = Vec3{ 0.5, 0.5, 0.5 }
+editor_plane_entity := ecs.make_Entity!
 
-mesh_renderer := model.make_ModelRenderer cube_entity, &cube
+editor_plane_renderer := model.make_ModelRenderer editor_plane_entity, &editor_plane
+*/
 
-
-floating_camera := fpsController.make_FPSController camera.get_camera!
+floating_camera := fpsController.make_FPSController camera.get_camera!.get_entity!.id
 
 gizmo_component := gizmo.gizmo_system
     .get_active!
@@ -57,6 +71,6 @@ editor.editor.select cube_entity.id
 
 log "running"
 
-skybox := ibl.make_Skybox "assets/LA_Downtown_Helipad_GoldenHour_3k.hdr"
+skybox := ibl.make_Skybox ecs.make_ID!, "LA_Downtown_Helipad_GoldenHour_3k.hdr"
 
 runner.init!

@@ -96,9 +96,11 @@ def FPSController.update(using &self) =
 def FPSController.render(&self) =
 
 
-fpsController_system := ecs.make_Store::[FPSController] 5
+fpsController_system := ecs.make_Store::[FPSController] make_FPSController, 5
 
-def make_FPSController(cam: &camera.Camera) &FPSController =
+def make_FPSController(id: ecs.ID) &FPSController =
+    cam := (camera.camera_system.component_by_id id).unwrap!
+
     fpsController_system.add_component FPSController{
         camera = cam
         mouse_sensitivity = 0.005

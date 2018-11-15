@@ -4,6 +4,8 @@ type Component with
     def update()
 
 type System with
+    def get_component_type() Type
+    def make_component(ID)
     def render(Layermask)
     def update(Layermask)
     def free_component_by_id(ID)
@@ -12,12 +14,13 @@ type System with
 component_types := [..]System
 
 type Store[T: Component] =
+    make_component_func: |ID| -> &T
     id_to_key: [..]int
     components_alive: [..]bool
     components: [..]T
     max_number: uint
 
-def make_Store[T: Component](max_number: uint) &Store[T] =
+def make_Store[T: Component](make_component: |ID| -> &T, max_number: uint) &Store[T] =
     id_to_key := [..]int
     id_to_key.allocator = Some &malloc_as_allocator
 
@@ -27,11 +30,17 @@ def make_Store[T: Component](max_number: uint) &Store[T] =
     components := [..]T
     components.reserve max_number
 
-    self := box Store{ id_to_key, components_alive, components, max_number }
+    self := box Store{ make_component, id_to_key, components_alive, components, max_number }
 
     component_types.append self
 
     self
+
+def Store[T: Component].get_component_type(&self) Type =
+    get_type T
+
+def Store[T].make_component(&self, id: ID) =
+    _ := self.make_component_func id
 
 def Store[T].component_id_to_index(&self, id: ID) Maybe[uint] =
     if id >= self.id_to_key.length then None

@@ -1,8 +1,9 @@
-entity_system := make_Store::[Entity] 1000
+entity_system := make_Store::[Entity] make_Entity, 1000
 
-def make_Entity() &Entity =
-    id := entity_system.components.length
+def make_ID() ID =
+    entity_system.components.length
 
+def make_Entity(id: ID) &Entity =
     entity_system.add_component Entity{
         id = id
         position = Vec3{ 0, 0, 0}

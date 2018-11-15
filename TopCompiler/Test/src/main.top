@@ -1,3 +1,5 @@
-i := 10
+p := 10
+a := &p
 
-log i.type
+match get_type a with
+    x as &PointerType ->

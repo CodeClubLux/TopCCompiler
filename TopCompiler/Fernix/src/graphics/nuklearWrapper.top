@@ -22,6 +22,8 @@ type ext nk_user_font =
 type ext nk_font =
     handle: nk_user_font
 
+type ext nk_text_edit =
+
 ext nk_glfw3_init: |&GLFWwindow, uint, int, int| -> &nk_context = "nk_glfw3_init"
 ext nk_glfw3_shutdown: || -> none = "nk_glfw3_shutdown"
 ext nk_glfw3_font_stash_begin: |&&nk_font_atlas| -> none = "nk_glfw3_font_stash_begin"
@@ -49,9 +51,23 @@ ext nk_font_atlas_add_from_file: |&nk_font_atlas, &char, float, Maybe[&nk_font_c
 
 ext nk_propertyf: |&nk_context, &char, float, float, float, float, float| -> float = "nk_propertyf"
 
+//ext nk_group_begin_titled: |&nk_context, &char, &char, uint| -> bool = "nk_group_begin_titled"
+ext nk_group_begin: |&nk_context, &char, uint| -> bool = "nk_group_begin"
+
+ext nk_group_end: |&nk_context| -> none = "nk_group_end"
+
 ext nk_begin: |&nk_context, &char, nk_rect, uint| -> bool = "nk_begin"
 ext nk_label: |&nk_context, &char, uint| -> none = "nk_label"
+ext nk_selectable_label: |&nk_context, &char, uint, &int| -> bool = "nk_selectable_label"
 ext nk_make_rect: |float, float, float, float| -> nk_rect = "nk_rect"
 ext nk_end: |&nk_context| -> none = "nk_end"
 
 ext nk_text_left: uint = "NK_TEXT_LEFT"
+
+ext nk_layout_row_begin: |&nk_context, uint, float, int| -> none = "nk_layout_row_begin"
+ext nk_layout_row_end: |&nk_context| -> none = "nk_layout_row_end"
+
+ext nk_dynamic: uint = "NK_DYNAMIC"
+ext nk_edit_simple: uint = "NK_EDIT_SIMPLE"
+
+ext nk_edit_string_zero_terminated: |&nk_context, uint, &char, int, Maybe[&none]| -> none = "nk_edit_string_zero_terminated"

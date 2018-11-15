@@ -1,0 +1,38 @@
+import "ui"
+import "input"
+import "key"
+import "editor"
+
+selected_id := -1
+
+filter := ""
+
+def render_asset_tab() =
+    inp := input.get_input!
+
+    previous_length := filter.length
+    ui.input ui.default_input{ value = &filter }
+
+    if filter.length < previous_length then
+        selected_id = -1
+
+    for filename := model_cache.filenames do
+        if not filename.starts_with filter then continue
+
+        selected := i == selected_id
+
+        if ui.button ui.default_button{
+            text = filename
+            selected = (i == selected_id)
+        } then
+            log filename + " was pressed"
+            selected_id = i
+
+    if inp.key_pressed key.from_char `N` then
+        if selected_id < 0 then return
+
+        entity := ecs.make_Entity ecs.make_ID!
+        edit := editor.get_editor!
+        edit.select entity.id
+        model_renderer := make_ModelRenderer entity.id
+        model_renderer.model = Some &model_cache.assets[selected_id cast uint]

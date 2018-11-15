@@ -302,10 +302,10 @@ uint8_t _global_char_toU8(char* self, __Context) {
     return (uint8_t) *self;
 }
 
-
-
-
-
+_Bool _global_String_starts_withByValue(struct _global_String str, struct _global_String pre, __Context) {
+    if (str.length < pre.length) { return 0; }
+    return strncmp(pre.data, str.data, pre.length) == 0;
+}
 
 
 
@@ -342,6 +342,7 @@ struct _global_PointerType* _global_boxPointerType(struct _global_PointerType p,
     pointerTypes[pointerTypeCounter++] = p;
     return &pointerTypes[pointerTypeCounter - 1];
 }
+
 
 void _global_init_c_runtime() {
     printf("Initialized types\n");

@@ -9,15 +9,16 @@ ext stbi_set_flip_vertically_on_load: |bool| -> none = "stbi_set_flip_vertically
 
 from "opengl" import all
 import "shader"
+import "vfs"
 
 type Texture =
     id: uint
 
 cached_textures := assetManager.make_asset_cache::[Texture]!
 
-
-
 def load(filename: string) Texture =
+    real_filename := vfs.asset_path filename
+
     match cached_textures.in_cache filename with
         Some texture -> return texture
         None ->
@@ -37,7 +38,7 @@ def load(filename: string) Texture =
     texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
     texParameteri texture_2D, texture_mag_filter, linear
 
-    data := match stbi_load filename.to_c_string!, &width, &height, &nr_channels, 0 with
+    data := match stbi_load real_filename.to_c_string!, &width, &height, &nr_channels, 0 with
         Some d -> d
         None ->
             panic "Could not load image {filename}"

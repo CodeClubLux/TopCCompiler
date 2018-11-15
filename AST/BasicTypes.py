@@ -123,7 +123,8 @@ class Typeof(Node):
         elif type(self.typ) is Types.Array:
             self.type = Types.Pointer(Parser.ArrayType)
         elif type(self.typ) is Types.FuncPointer:
-            self.type = Types.Pointer(Parser.FuncPointerType)
+            self.typ = Types.Null()
+            self.type = Types.Pointer(Parser.NoneType) #Types.Pointer(Parser.FuncPointerType)
         elif type(self.typ) is Types.Char:
             self.type = Types.Pointer(Parser.CharType)
         elif type(self.typ) is Types.Null:

@@ -61,6 +61,9 @@ class Enum(Node):
                     names = ["field" + str(iter) for iter in range(len(args))]
 
                     for i in range(len(args)):
+                        if args[i].name == "ui.InputOptions":
+                            print("hwat")
+
                         codegen.append(f"{args[i].toCType()} field{i};\n")
                     codegen.append("\n};")
 
@@ -215,6 +218,8 @@ class Match(Node):
         self.tmp = tmp
         self.nodes[1].first = True
 
+        codegen.incrScope()
+
         if not type(self.type) is Types.Null:
             def genNodes():
                 codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
@@ -232,6 +237,8 @@ class Match(Node):
             for iter in range(1, len(self.nodes)):
                 self.nodes[iter].compileToC(codegen)
                 codegen.addSemicolon(self.nodes[iter], no_semicolon=True)
+
+        codegen.decrScope()
 
     def validate(self, parser):
         pass

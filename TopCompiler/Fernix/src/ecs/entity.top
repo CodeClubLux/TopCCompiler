@@ -4,8 +4,6 @@ from "layermask" import all
 //Never store entity by reference, only id (unless as a component)
 type ID is uint
 
-
-
 type Entity =
     id: ID
     enabled: bool

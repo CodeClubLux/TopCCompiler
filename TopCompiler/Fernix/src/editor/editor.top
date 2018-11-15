@@ -2,13 +2,18 @@ import "ecs"
 import "input"
 import "key"
 import "ui"
-from "ui" import all
+import "ui"
 import "runner"
 import "window"
+import "model"
+from "math" import Vec2
 
 type Editor =
     in_editor: bool
     selected: Maybe[ecs.ID]
+    editor_tab_width: float
+    asset_tab_height: float
+    model_tab_width: float
 
 def Editor.update(&self) =
     inp := input.get_input!
@@ -17,56 +22,112 @@ def Editor.update(&self) =
         log "switch between editor and game"
         self.in_editor = not self.in_editor
 
+    if inp.key_pressed key.from_char `X` then
+        self.selected = match self.selected with
+            Some id ->
+                ecs.free_entity id
+                None
+
+            None -> None
+
 def Editor.select(&self, id: ecs.ID) =
     self.selected = Some id
 
-def render_field(rendered: &[..]ui.UIElement, obj: &none, field: Field) =
+def render_model_renderer(obj: &model.ModelRenderer) =
+    match obj.model with
+        Some m -> ui.label ui.default_label{ text = "name : '{m.path}'" }
+        None -> ui.label ui.default_label{ text = "name : unselected" }
+
+def render_field(obj: &none, field: Field) =
     match field.field_type with
         float_type as &FloatType ->
             value_of_field := (offsetPtr obj, field.offset) cast &float
-            rendered.append Propertyf default_propertyf{ text = field.name, value = value_of_field }
+            ui.propertyf ui.default_propertyf{ text = field.name, value = value_of_field }
 
         struct_type as &StructType ->
-            render_object rendered, (offsetPtr obj, field.offset), struct_type
+            ui.label ui.default_label{ text = "{field.name} : {struct_type}"}
+            render_object (offsetPtr obj, field.offset), struct_type
 
         _ ->
 
-def render_object(rendered: &[..]ui.UIElement, obj: &none, obj_typ: Type) =
-    rendered.append Label default_label{ text = obj_typ.toString! }
-
+def render_object(obj: &none, obj_typ: Type) =
     match obj_typ with
         typ as &StructType ->
-            for field := typ.fields do
-                render_field rendered, obj, field
+            if typ.name == "ModelRenderer" and typ.package == "model" then
+                render_model_renderer obj cast &model.ModelRenderer
+            else
+                for field := typ.fields do
+                    render_field obj, field
 
         _ ->
+
+
+def render_add_component(id: ecs.ID) =
+    ui.label ui.default_label{ text = "Add component" }
+
+    for system := ecs.component_types do
+        component_type := system.get_component_type!
+
+        if ui.button ui.default_button{ text = component_type.toString! } then
+            log "component was pressed"
+
+from "model" import (render_asset_tab)
 
 def Editor.render_properties(&self) =
     w := window.get_window!
 
-    rendered := [..]ui.UIElement
-
-    match self.selected with
-        Some selected ->
-            components := ecs.components_by_id selected
-
-            for comp := components do
-                comp_typ := comp.get_type!
-                render_object &rendered, comp.get_pointer_to_data!, comp_typ
-
-        None ->
-
-    render_ui default_surface{
+    if ui.begin_window ui.default_window{
         title = "Editor"
-        size = Vec2{(w.width cast float * 0.2) cast int, w.height}
+        size = Vec2{w.width * self.editor_tab_width, w.height}
         position = Vec2{0, 0}
-    }, rendered
+    } then
+        ui.push_layout_row ui.DynamicLayout 50, 1
+
+        match self.selected with
+            Some selected ->
+                components := ecs.components_by_id selected
+
+                for comp := components do
+                    comp_typ := comp.get_type!
+
+                    ui.label ui.default_label{ text = "Component {comp_typ}"}
+
+                    render_object comp.get_pointer_to_data!, comp_typ
+
+                render_add_component selected
+
+            None ->
+
+        ui.pop_layout_row!
+
+    ui.end_window!
+
+    if ui.begin_window ui.default_window{
+        title = "Models"
+        size = Vec2{w.width * (self.model_tab_width), w.height * self.asset_tab_height}
+        position = Vec2{w.width * self.editor_tab_width, w.height * (1 - self.asset_tab_height)}
+    } then
+        ui.push_layout_row ui.DynamicLayout 50, 1
+        render_asset_tab!
+        ui.pop_layout_row!
+
+    ui.end_window!
+
 
 def Editor.render(&self) =
     if not self.in_editor then return
     self.render_properties!
 
-editor := Editor{ false, None }
+editor := Editor{
+    in_editor = false
+    selected = None
+    editor_tab_width = 0.15
+    asset_tab_height = 0.3
+    model_tab_width = 0.2
+}
 
 def in_editor() bool =
     editor.in_editor
+
+def get_editor() &Editor =
+    &editor
