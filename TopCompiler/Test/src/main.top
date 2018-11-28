@@ -1,2 +1,56 @@
+type Slot[T] either
+    Free(Maybe[&Slot[T]])
+    Active(T)
 
-log "hey"
+type BlockAllocator[T] =
+    slots: [..]Slot[T] //reallocating this array will break all pointers, move to [] array
+    free_node: Maybe[&Slot[T]]
+
+def make_BlockAllocator[T](num: uint) BlockAllocator[T] =
+    assert num > 0, "Minimum number of elements has to be bigger than 0"
+
+    slots := [..]Slot[T]
+    slots.reserve num
+
+    for i := 0..num do
+        slots.append Free None
+
+    allocator := BlockAllocator{
+        free_node = Some &slots[0]
+        slots = slots
+    }
+
+    for i := 0..(num - 1) do
+        slots[i] = Free Some &slots[i + 1]
+
+    allocator
+
+def BlockAllocator[T].alloc(&self, obj: T) &T =
+    guard Some free_node := self.free_node
+    else panic "Out of memory"
+
+    guard Free next_free_node := *free_node
+    else panic "Node that was said to be free is active"
+
+    self.free_node = next_free_node
+    *free_node = Active obj
+
+    free_node cast &T //take advantage of the fact that tag is last, and it is a union
+
+def BlockAllocator[T].dealloc(&self, obj: &T) =
+    slot := obj cast &Slot[T]
+    *slot = Free self.free_node
+    self.free_node = Some slot
+
+def BlockAllocator[T: Stringer].log(&self) =
+    for slot := self.slots do
+        guard Active object := slot
+        else continue
+
+        log object
+
+allocator := make_BlockAllocator::[int] 10
+
+c := allocator.alloc 20
+allocator.log!
+allocator.dealloc c

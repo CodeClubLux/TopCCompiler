@@ -387,7 +387,7 @@ class Type:
         return self.name
 
     def __hash__(self):
-        return id(self)
+        return id(self) #hash(self.name) #id(self)
 
     def toRealType(self):
         return self
@@ -720,7 +720,6 @@ class Tuple(Type):
             except EOFError as e:
                 beforeError(e, "Tuple element #" + key + ": ")
 
-
 class Array(Type):
     def __init__(self, elemT, static, numElements=None, both=False, empty=False):
         if static:
@@ -795,6 +794,8 @@ class Array(Type):
             return Parser.ArrayType
 
         return self.arrT.hasMethod(parser, field, isP)
+        #args = [Types.Pointer(self)] + func.args[1:]
+        #return FuncPointer(args, func.returnType, func.generic, func.do)
 
 def isMutable(typ):
     if type(typ) in [Struct, Array]:
@@ -851,6 +852,9 @@ class Interface(Type):
         return self
 
     def toCType(self):
+        if self.normalName == "Stringer":
+            print("what!")
+
         return genInterface(self)
 
     def duckType(self, parser, other, node, mynode, iter):
@@ -939,7 +943,7 @@ class T(Type):
         self.realName = other.realName
 
     def toCType(self):
-        return self.type.toCType()
+        return "void*" #self.type.toCType()
 
     def duckType(self, parser, other, node, mynode, iter):
         if self.name == other.name:
@@ -1006,6 +1010,10 @@ def isMaybe(typ):
 
 class Enum(Type):
     def __init__(self, package, name, const, generic):
+        for i in generic:
+            if generic[i].name == "main.Slot":
+                print("what")
+
         self.generic = generic
         self.gen = generic
 
@@ -1483,10 +1491,10 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
 
         c = Enum(typ.package, typ.normalName, const, g)
 
-        if acc == {}:
-            acc = {typ: c}
-        else:
-            acc[typ] = c
+        #if acc == {}:
+        #    acc = {typ: c}
+        #else:
+        acc[typ] = c
 
         for name in typ.const:
             const[name] = [replaceT(i, gen, acc, unknown) for i in typ.const[name]]

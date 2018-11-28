@@ -311,7 +311,7 @@ def funcCallBody(parser, paren, onlyOneArg):
 
     def notParen():
         t = parser.thisToken()
-        if t.token in ["then", "with", "do"]:
+        if t.token in ["then", "with", "do", ":="]:
             return False
         return not Parser.isEnd(parser)
 
@@ -327,7 +327,7 @@ def funcCallBody(parser, paren, onlyOneArg):
             ExprParser.endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)
             continue
-        if t.token in ["then", "with", "do"]:
+        if t.token in ["then", "with", "do", ":="]:
             break
         Parser.callToken(parser)
 

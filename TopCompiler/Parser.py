@@ -120,6 +120,7 @@ from .Array import *
 from .MethodParser import *
 from .Struct import *
 from .ForParser import *
+from .GuardParser import *
 from .TypeInference import *
 from .Enum import *
 from .ParseJson import *
@@ -141,9 +142,12 @@ def isEnd(parser):
         parser.fired = False
         return True
 
-    if token.token in [ "->", "\n", "with", "do"] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
+    if token.token in [ "->", "\n", "with", "do", ":="] or parser.parenBookmark[-1] > parser.paren or parser.bracketBookmark[-1] > parser.bracket or parser.curlyBookmark[-1] > parser.curly:
         #if token.token == "!" and len(parser.currentNode.nodes) > 1:
         #    return False
+
+        if token.token == ":=" and type(parser.currentNode) == Tree.Assign:
+            return False
 
         #"""
         if token.token == "|>" and type(parser.currentNode) in [Tree.Assign, Tree.CreateAssign, Tree.Block, Tree.FuncBody, Tree.Root]:
@@ -486,6 +490,7 @@ class Parser:  # all mutable state
             self.contextFields["_global"] = runtimeParser.contextFields["_global"]
             self.contextType = runtimeParser.contextType
             self.specifications["_global"] = runtimeParser.specifications["_global"]
+            self.scope["_global"][0]["console_input"] = Scope.Type(True, Types.FuncPointer([Types.String(0)], Types.String(0)))
 
             tmp = self.tokens
             self.tokens = [0]

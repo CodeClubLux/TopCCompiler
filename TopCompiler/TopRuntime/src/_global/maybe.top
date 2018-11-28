@@ -11,12 +11,19 @@ def Maybe[T: Stringer].toString(self) =
             "None"
 
 def Maybe[T].unwrap(self) T =
+    guard Some x := self
+    else panic "Trying to unwrap maybe, which was None"
+
+    x
+
+    /*
     match self with
         Some x -> x
         None ->
             panic "Trying to unwrap maybe, which was None"
 
             *((alloc 0) cast &T)
+    */
 
 def Maybe[T].default(self, value: T) T =
     match self with

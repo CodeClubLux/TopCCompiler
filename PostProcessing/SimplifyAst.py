@@ -9,7 +9,6 @@ def print(s):
     realPrint(s)
 """
 
-
 def callMethodCode(node, name, typ, parser, unary):
     isMethod = False
     if type(typ) is Types.Pointer and type(typ.pType) is Types.Alias:
@@ -165,11 +164,11 @@ class FuncSpecification:
         self.identifier = identifier
 
     def replace(self, parser):
-        def loop(ast):  # loop will copy
+        def loop(ast, iter, owner):  # loop will copy
             newAST = copy.copy(ast)
             newAST.nodes = []
-            for i in ast.nodes:
-                newAST.addNode(loop(i))
+            for inner_iter, i in enumerate(ast.nodes):
+                newAST.addNode(loop(i, inner_iter, newAST))
 
             if Types.isGeneric(newAST.type):
                 newAST.type = Types.replaceT(newAST.type, self.replaced)
@@ -185,6 +184,11 @@ class FuncSpecification:
                 newAST.f = Types.replaceT(newAST.f, self.replaced)
                 newAST.to = Types.replaceT(newAST.to, self.replaced)
                 newAST.type = newAST.to
+            elif type(newAST) is Tree.For:
+                newAST.condition_type = Types.replaceT(ast.condition_type, self.replaced)
+            elif type(newAST) is Tree.Match:
+                if newAST.guard:
+                    newAST.place = owner.nodes[iter-1]
             elif type(newAST) is Tree.FuncCall:
                 newAST.replaced = {name: Types.replaceT(newAST.replaced[name], self.replaced) for name in
                                    newAST.replaced}
@@ -196,8 +200,8 @@ class FuncSpecification:
 
         funcStart = copy.copy(self.funcStart)
         funcStart.ftype = Types.replaceT(funcStart.ftype, self.replaced)
-        funcBrace = loop(self.funcBrace)
-        funcBody = loop(self.funcBody)
+        funcBrace = loop(self.funcBrace, 0, None)
+        funcBody = loop(self.funcBody, 0, None)
         funcBody.returnType = funcStart.ftype.returnType
 
         inGlobal = False
@@ -385,6 +389,7 @@ class Replacer():
 
 def simplifyAst(parser, ast, specifications=None, dontGen=False):
     replacer = Replacer()
+    real_ast = ast
 
     if not specifications:
         inImports = {}
@@ -468,6 +473,23 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                                                          condition.remainingGen)
         elif type(ast) is Tree.Array:
             ast = Tree.simplifyArray(parser, ast, iter)
+        elif type(ast) is Tree.Match and ast.guard:
+            for case in ast.nodes[1::2]:
+                def loop(x):
+                    if type(x) is Tree.ReadVar:
+                        c = Tree.Create(x.name, x.type, parser)
+                        c.package = x.package
+                        ast.place.addNode(c)
+
+                    nodes = x.nodes
+                    if type(x) is Tree.FuncCall:
+                        nodes = nodes[1:]
+
+                    for i in nodes:
+                        loop(i)
+
+                loop(case)
+
         elif type(ast) is Tree.Field and ast.indexPackage:
             package = ast.nodes[0].package
             name = ast.field

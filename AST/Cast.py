@@ -38,6 +38,7 @@ def canTakeRef(ast, struct):
     return loop(ast)
 
 def insertCast(ast, fromT, toT, iter, onlyToP=False):
+
     if fromT != toT:
         if toT.isType(Types.Pointer) and not fromT.isType(Types.Pointer):
             takeRef = Tree.Operator("&", ast)

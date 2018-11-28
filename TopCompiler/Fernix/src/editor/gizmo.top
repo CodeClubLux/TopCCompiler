@@ -235,6 +235,23 @@ def Gizmo.update(&self) =
 
         None -> false //No object is selected
 
+    /*
+    guard Some target_id := editor.editor.selected
+    else return
+
+    guard Some target := ecs.entity_system.component_by_id target_id
+    else return
+
+    if not target.enabled then return
+
+    match self.kind with
+        Translate axis ->
+            self.kind = Translate self.handle_translation target, axis
+            model_renderer.get_entity!.position = target.position
+
+        Disabled ->
+    */
+
 import "layermask"
 
 def make_GizmoSystem() &ecs.Store[Gizmo] =

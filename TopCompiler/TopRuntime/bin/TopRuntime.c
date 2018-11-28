@@ -477,16 +477,12 @@ static inline void* _global_offsetPtr(void* ptr, int offset, __Context) {
     return ((char*)ptr) + offset;
 };
 
-
-
 struct _global_String _global_console_input(struct _global_String text, __Context) {
     char string[40];
     fputs(text.data, stdout);
     fflush(stdout);
     fgets(string, sizeof(string), stdin);
     fflush(stdin);
-
-
 
     unsigned int length = strlen(string);
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
@@ -977,7 +973,7 @@ struct _global_Maybe_File _global_open(struct _global_String _global_filename, s
 ;
 struct FILE* _global_c_file;_global_c_file = _global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,br),br);;
 ;struct FILE* bs =_global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,br),br);
-if(bs != NULL){struct FILE* _global_file= bs;
+if(bs != NULL){struct FILE* _global_file = bs;
 return _global_Some_File(_global_FileInit(_global_file,_global_acess),br);}else if(bs == NULL){return tmp_globalc(_global_None);};
 ;}
 

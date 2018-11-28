@@ -38,16 +38,17 @@ def checkIf(parser, i):
         if len(it.nodes) > 0:
             Tree.insertCast(it.nodes[-1], it.type, typ, -1)
 
-def elseExpr(parser):
+def elseExpr(parser, canHaveElse=False):
     toplevel = Tree.Else(parser)
 
-    try:
-        inside = parser.currentNode.nodes[-1].nodes[-2]
-    except IndexError:
-        Error.parseError(parser, "unexpected else")
+    if not canHaveElse:
+        try:
+            inside = parser.currentNode.nodes[-1].nodes[-2]
+        except IndexError:
+            Error.parseError(parser, "unexpected else")
 
-    if not type(inside) is Tree.IfCondition:
-        Error.parseError(parser, "unexpected else")
+        if not type(inside) is Tree.IfCondition:
+            Error.parseError(parser, "unexpected else")
 
     parser.currentNode.nodes[-1].addNode(toplevel)
     parser.currentNode = toplevel

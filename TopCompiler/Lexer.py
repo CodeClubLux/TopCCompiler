@@ -23,7 +23,6 @@ def lex(target, stream, filename, modifiers, hotswap, lexed):
             lexed[c] = []
             for i in range(len(stream[c])):
                 lexed[c].append(tokenize(c, filename[c][i][1], stream[c][i]))
-
     return lexed
 
 import re
@@ -60,7 +59,7 @@ keywords = fastacess([
         "i32", "i8", "i16", "i32", "i64",
         "u32", "u8", "u16", "i32", "i64",
         "for",
-        "offsetof", "sizeof", "char"
+        "offsetof", "sizeof", "char", "guard"
     ])
 
 slSymbols = fastacess([

@@ -81,7 +81,7 @@ def infer(parser, tree):
                     if i.method:
                         parser.func.append(parser.package+"."+i.name[:i.name.find("_")])
                     else:
-                        parser.func.append(parser.package+"."+i.name.replace("_", "."))
+                        parser.func.append(parser.package+"."+i.name)
 
                 loop(i, o_iter)
 
@@ -94,12 +94,16 @@ def infer(parser, tree):
                 for c in range(1,len(i.nodes),2):
                     body = i.nodes[c+1]
 
-                    Scope.incrScope(parser)
+                    if not i.guard:
+                        Scope.incrScope(parser)
                     Enum.checkCase(parser, i.nodes[c].nodes[0], typ, True)
 
                     loop(body, o_iter)
                     body.type = body.nodes[-1].type if len(body.nodes) > 0 else Types.Null()
-                    Scope.decrScope(parser)
+
+                    if not i.guard:
+                        Scope.decrScope(parser)
+
                     if first:
                         try:
                             thisTyp = body.type
@@ -505,8 +509,10 @@ def infer(parser, tree):
 
                         if Types.isGeneric(xnormalTyp) or isGen:
                             normalTyp = resolveGen(xnormalTyp, myNode.type, generics, parser, myNode, i)
+
                             if isGen:
                                 myTyp = Types.replaceT(myTyp, generics)
+
                         else:
                             normalTyp = xnormalTyp
 
@@ -822,7 +828,7 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
             normalTyp.duckType(parser, newTyp, myNode, other, 0)
             normalTyp = newTyp
     """
-    if type(shouldBeTyp) is Types.T:
+    if type(shouldBeTyp) is Types.T and not (shouldBeTyp.owner in parser.func):
         if shouldBeTyp.normalName in generics:
             tmp = generics[shouldBeTyp.normalName]
             return tmp
@@ -839,6 +845,7 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
         #if Types.isGeneric(tmp):
         #    resolveGen(tmp, normalTyp, generics, parser, myNode, other)
         #else:
+
         return normalTyp
 
     elif type(shouldBeTyp) is Types.Array:

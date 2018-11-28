@@ -345,7 +345,7 @@ struct _global_Maybe_File _global_open(struct _global_String _global_filename, s
 ;
 struct FILE* _global_c_file;_global_c_file = _global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,br),br);;
 ;struct FILE* bs =_global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,br),br);
-if(bs != NULL){struct FILE* _global_file= bs;
+if(bs != NULL){struct FILE* _global_file = bs;
 return _global_Some_File(_global_FileInit(_global_file,_global_acess),br);}else if(bs == NULL){return tmp_globalc(_global_None);};
 ;}
 

@@ -227,16 +227,12 @@ static inline void* _global_offsetPtr(void* ptr, int offset, __Context) {
     return ((char*)ptr) + offset;
 };
 
-
-
 struct _global_String _global_console_input(struct _global_String text, __Context) {
     char string[40];
     fputs(text.data, stdout);
     fflush(stdout);
     fgets(string, sizeof(string), stdin);
     fflush(stdin);
-
-
 
     unsigned int length = strlen(string);
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);

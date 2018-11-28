@@ -10,9 +10,11 @@ import collections as coll
 
 def enumParser(parser, name, decl, generic):
     const = parser.interfaces[parser.package][name].const
+    existing_generics = parser.interfaces[parser.package][name].generic
+    existing_generics.update(generic)
 
     #const = coll.OrderedDict()
-    enum = Types.Enum(parser.package, name, const, generic)
+    enum = Types.Enum(parser.package, name, const, existing_generics)
 
     if decl:
         parser.interfaces[parser.package][name] = enum
@@ -92,6 +94,7 @@ def checkCase(parser, case, typ, first=False):
 
         checkCase(parser, case.nodes[0], case.type)
     elif type(case) is Tree.ReadVar and case.name[0].lower() == case.name[0]:
+        case.type = typ
         Scope.addVar(case, parser, case.name, Scope.Type(False, typ))
     elif type(case) is Tree.ReadVar:
         if not typ.isType(Types.Enum):

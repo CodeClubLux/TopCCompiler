@@ -84,8 +84,8 @@ class Enum(Node):
                     codegen.append(f"struct {self.package}_{self.normalName}_{name} {name};\n")
             codegen.append("\n};\n")
 
-            codegen.append(f"struct {self.package}_{self.normalName} {{\n {tag}\n")
-            codegen.append(f"union {self.package}_{self.normalName}_cases cases;\n")
+            codegen.append(f"struct {self.package}_{self.normalName} {{\n")
+            codegen.append(f"union {self.package}_{self.normalName}_cases cases;\n{tag}")
             codegen.append("\n};\n")
 
             index = 0
@@ -209,6 +209,7 @@ class Match(Node):
         self.ternary = False
         self.next = ""
         self.ending = ""
+        self.guard = False
 
     def compileToC(self, codegen):
         tmp = codegen.getName()
@@ -246,12 +247,18 @@ class Fake:
         self.body = []
         self.codegen = codegen
         self.first = first
+        self.guard = False
 
     def getContext(self):
         return self.codegen.getContext()
 
     def createName(self, a, typ):
-        return self.codegen.createName(a, typ)
+        if self.guard:
+            return self.codegen.readName(a)
+        else:
+            return self.codegen.createName(a, typ)
+
+        #return self.codegen.createName(a, typ)
 
     def getName(self):
         return self.codegen.getName()
@@ -278,9 +285,11 @@ class MatchCase(Node):
         Node.__init__(self, parser)
         self.yielding = False
         self.first = False
+        self.incrScope = True
 
     def compileToC(self, _codegen):
         codegen = Fake(_codegen, self.first)
+        codegen.guard = bool(self.owner.guard)
 
         def loop(node,tmp):
             codegen.checking = True
@@ -338,11 +347,14 @@ class MatchCase(Node):
                     if type(i) is Tree.ReadVar:
                         typ = node.type.const[nameOfCase][index]
                         name = codegen.createName(i.package + "_" + i.name, typ.toCType())
-                        codegen.append(f"{typ.toCType()} {name}")
+                        if not self.owner.guard:
+                            codegen.append(f"{typ.toCType()} ")
+
+                        codegen.append(f"{name} = ")
                         if maybeOptimization:
-                            codegen.append(f"= {tmp};\n")
+                            codegen.append(f"{tmp};\n")
                         else:
-                            codegen.append(f" = {tmp}.cases.{nameOfCase}.field{index};\n")
+                            codegen.append(f"{tmp}.cases.{nameOfCase}.field{index};\n")
             elif type(node) is Tree.Tuple:
                 if len(node.nodes) == 1:
                     loop(node.nodes[0], tmp)

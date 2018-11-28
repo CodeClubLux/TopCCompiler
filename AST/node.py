@@ -227,4 +227,5 @@ class PlaceHolder(Node):
         pass
 
     def compileToC(self, codegen):
-        pass
+        for i in self.nodes:
+            i.compileToC(codegen)
