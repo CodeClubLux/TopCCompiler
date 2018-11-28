@@ -55,5 +55,5 @@ type InputOptions =
     max_length: uint
 
 tmp_s := ""
-default_input := InputOptions{ &tmp_s, max_length = 20 }
+default_input := InputOptions{ &tmp_s, max_length = 50 }
 

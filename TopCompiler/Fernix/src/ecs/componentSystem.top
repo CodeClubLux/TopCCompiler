@@ -94,11 +94,25 @@ def Store[T].add_component(&self, comp: T) &T =
 
     //no components to replace
     if self.components.length == self.max_number then
-        panic "Overflowing entity buffer"
+        panic "Overflowing component buffer for {get_type T}"
 
     self.components.append comp
     self.components_alive.append true
     self.register_component id, self.components.length - 1
+
+def Store[T].get_all_active(&self) [..]&T =
+    active_components := [..]&T
+
+    for i := 0..self.components.length do
+        if not self.components_alive[i] then continue
+
+        comp := &self.components[i]
+        entity := comp.get_entity!
+
+        if entity.enabled then
+            active_components.append comp
+
+    active_components
 
 def Store[T].get_active(&self) Maybe[&T] =
     for i := 0..self.components.length do

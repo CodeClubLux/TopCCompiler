@@ -3,7 +3,7 @@ import "math"
 import "vfs"
 
 type Shader =
-    name: string
+    filename: string
     id: uint
 
 def Shader.free(self) =

@@ -100,6 +100,12 @@ def Vec3.norm(self) Vec3 =
 def Vec4.norm(self) Vec4 =
     self.scale 1.0 / self.len!
 
+def Vec3.op_mul(a, b: Vec3) Vec3 =
+    Vec3{
+        a.x * b.x
+        a.y * b.y
+        a.z * b.z
+    }
 
 def Vec3.cross(a, b: Vec3) Vec3 =
     Vec3{
