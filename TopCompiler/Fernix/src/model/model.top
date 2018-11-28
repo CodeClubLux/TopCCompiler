@@ -2,6 +2,7 @@ import "opengl"
 import "ecs"
 
 type Model =
+    path: string
     meshes: [..]Mesh
 
 ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
@@ -72,8 +73,19 @@ def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh, materials: [
     for i := 0..node.mNumChildren do
         process_node *(indexPtr node.mChildren, i), scene, meshes, materials
 
+import "assetManager"
+import "vfs"
+
+model_cache := assetManager.make_asset_cache::[Model]!
+
 def load_model(path: string, materials: []Material) Model =
-    scene := match aiImportFile path.to_c_string!, triangulate_and_flip with
+    match model_cache.in_cache path with
+        Some m -> return m
+        None ->
+
+    real_path := vfs.asset_path path
+
+    scene := match aiImportFile real_path.to_c_string!, triangulate_and_flip with
         Some s -> s
         None ->
             panic "Assimp could not load model, {path}"
@@ -83,7 +95,7 @@ def load_model(path: string, materials: []Material) Model =
     meshes.allocator = Some &malloc_as_allocator
     process_node scene.mRootNode, scene, &meshes, materials
 
-    Model{ meshes }
+    model_cache.append path, Model{ path, meshes }
 
 def Model.render(&self, entity: &ecs.Entity) =
     meshes := self.meshes
@@ -95,24 +107,40 @@ def Model.render(&self, entity: &ecs.Entity) =
 //Model Renderer
 type ModelRenderer =
     entity: &ecs.Entity
-    model: &Model
+    model: Maybe[&Model]
     visible: bool
 
 def ModelRenderer.get_entity(&self) &ecs.Entity =
     self.entity
 
 def ModelRenderer.render(&self) =
-    if self.visible then
-        self.model.render self.get_entity!
+    match self.model with
+        Some model -> if self.visible then
+            model.render self.get_entity!
+
+        None ->
 
 def ModelRenderer.update(&self) =
 
 //setup model renderer system
-model_renderer_system := ecs.make_Store::[ModelRenderer] 100
+model_renderer_system := ecs.make_Store::[ModelRenderer] make_ModelRenderer, 100
 
+def make_ModelRenderer(id: ecs.ID) &ModelRenderer =
+    entity := match ecs.entity_system.component_by_id id with
+        Some e -> e
+        None -> ecs.make_Entity id
+
+    model_renderer_system.add_component ModelRenderer{
+        entity = entity
+        model = None
+        visible = true
+    }
+
+/*
 def make_ModelRenderer(entity: &ecs.Entity, model: &Model) &ModelRenderer =
     model_renderer_system.add_component ModelRenderer{
         entity = entity
         model = model
         visible = true
     }
+*/

@@ -4,7 +4,9 @@ type AssetCache[T] =
 
 def make_asset_cache[T]() AssetCache[T] =
     filenames := [..]string
+    filenames.allocator = Some context.longterm_storage
     assets := [..]T
+    assets.allocator = Some context.longterm_storage
 
     AssetCache{
         filenames = filenames
@@ -20,10 +22,6 @@ def AssetCache[T].append(&self, filename: string, asset: T) T =
 def AssetCache[T].in_cache(&self, filename: string) Maybe[T] =
     for i := 0..self.filenames.length do
         if self.filenames[i] == filename then
-            log "in cache"
-            log filename
-            log self.filenames[i]
-
             return Some self.assets[i]
 
     None

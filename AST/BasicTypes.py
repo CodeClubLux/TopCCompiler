@@ -99,10 +99,9 @@ class Typeof(Node):
         self.typ = typ
 
         if type(typ) is Types.T:
-            typ = Types.Null()
             self.typ = typ
-
-        if type(self.typ) is Types.I32:
+            self.type = Parser.IType
+        elif type(self.typ) is Types.I32:
             self.type = Types.Pointer(Parser.IntType)
         elif type(self.typ) is Types.Float:
             self.type = Types.Pointer(Parser.FloatType)
@@ -123,7 +122,8 @@ class Typeof(Node):
         elif type(self.typ) is Types.Array:
             self.type = Types.Pointer(Parser.ArrayType)
         elif type(self.typ) is Types.FuncPointer:
-            self.type = Types.Pointer(Parser.FuncPointerType)
+            self.typ = Types.Null()
+            self.type = Types.Pointer(Parser.NoneType) #Types.Pointer(Parser.FuncPointerType)
         elif type(self.typ) is Types.Char:
             self.type = Types.Pointer(Parser.CharType)
         elif type(self.typ) is Types.Null:

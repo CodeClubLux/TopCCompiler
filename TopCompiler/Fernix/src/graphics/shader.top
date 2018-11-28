@@ -1,8 +1,9 @@
 import "opengl"
 import "math"
+import "vfs"
 
 type Shader =
-    name: string
+    filename: string
     id: uint
 
 def Shader.free(self) =
@@ -28,7 +29,7 @@ def make_shader(filename: string, source: string, kind: uint, info_log: &char) u
     shader
 
 def read_shader_file(filename: string) string =
-    match open filename, ReadFile with
+    match vfs.open_file filename, ReadFile with
         Some file -> file.read!
         None ->
             panic "Failed to read shader source file {filename}"

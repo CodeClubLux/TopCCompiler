@@ -52,12 +52,12 @@ def KeyActionMap.clear(&self) =
 
 def make_KeyActionMap() KeyActionMap =
     keys := [..]Key
-    keys.reserve 10
     keys.allocator = Some &malloc_as_allocator
+    keys.reserve 10
 
     actions := [..]KeyAction
-    actions.reserve 10
     actions.allocator = Some &malloc_as_allocator
+    actions.reserve 10
 
     KeyActionMap{
         keys = keys

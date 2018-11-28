@@ -40,6 +40,9 @@ def Array[T].shorten(&self, num: uint) =
         panic "shorten out of bounds"
 
 def Array[T].pop(&self) T =
+    if self.length == 0 then
+        panic "trying to pop empty array"
+
     tmp := self[self.length - 1]
     self.length -= 1
     tmp

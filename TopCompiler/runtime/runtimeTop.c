@@ -222,18 +222,18 @@ struct _global_String _global_NoneType_toString(struct NoneType*,struct _global_
 void _global_log_string(struct _global_String _global_s, struct _global_Context* Q);
 
 #define _global_exit(Q,R) exit(Q)
-void _global_panic(struct _global_String _global_s, struct _global_Context* S){;
-_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"panic: "),(_global_s),S),_global_StringInit(0,""),S),S);
-_global_exit(1,S);
-;}
-void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* S){;
-;
-if(!(_global_b)){;
-_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),S),_global_StringInit(0,""),S),S);
-;};
-;}
 
 #define _global_c_log(S,T) _global_c_log(S)
+void _global_panic(struct _global_String _global_s, struct _global_Context* V){;
+_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"panic: "),(_global_s),V),_global_StringInit(0,""),V),V);
+_global_exit(1,V);
+;}
+void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* V){;
+;
+if(!(_global_b)){;
+_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),V),_global_StringInit(0,""),V),V);
+;};
+;}
 
 #define _global_memcpy(V,W,X,Y) memcpy(V,W,X)
 
@@ -354,6 +354,8 @@ return _global_Some_File(_global_FileInit(_global_file,_global_acess),br);}else 
 #define _global_is_bit_set(bw,bx,by) _global_c_is_bit_set(bw,bx)
 
 #define _global_bit_and(bz,bB,bC) _global_c_bit_and(bz,bB)
+
+#define _global_null_char '\0'
 struct _global_String _global_IntType_toString(struct IntType* _global_self, struct _global_Context* bD){;
 ;return ((_global_self)->sign ? _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"i"),_global_uint_toStringByValue(((_global_self)->size*8),bD),bD),_global_StringInit(0,""),bD):(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"u"),_global_uint_toStringByValue(((_global_self)->size*8),bD),bD),_global_StringInit(0,""),bD)));
 ;}
@@ -415,7 +417,7 @@ return _global_NoneType_toString(&bF,bD);
 _global_c_log(_global_String_toString(&(_global_s),bD),bD);
 ;}
 
-void _globalInit() { printf("_global\n");
+void _globalInit() { 
 _global_TemporaryStorageType_fields = (struct _global_Field*) malloc(sizeof(struct _global_Field) * 4);
 _global_TemporaryStorageType.fields = _global_StaticArray_StaticArray_S_FieldInit(
 _global_TemporaryStorageType_fields
@@ -642,6 +644,7 @@ _global_temporary_storage_as_allocator = _global_AllocatorFromStruct(&(_global_t
 _global_malloc_as_allocator = _global_AllocatorFromStruct(&(_global_malloc),&rMalloc_VTABLE_FOR_Allocator,_global_TypeFromStruct(_global_Malloc_get_type(NULL,(&_global_context)),&rStructType_VTABLE_FOR_Type,rStructType_VTABLE_FOR_Type.type, &_global_StructType_toString), &_global_Malloc_get_occupied, &_global_Malloc_alloc, &_global_Malloc_dealloc, &_global_Malloc_reset_to, &_global_Malloc_free_allocator);;
 (&_global_context)->allocator = &(_global_temporary_storage_as_allocator);
 (&_global_context)->longterm_storage = &(_global_malloc_as_allocator);
+;
 ;
 ;
 ;

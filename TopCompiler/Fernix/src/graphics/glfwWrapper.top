@@ -25,7 +25,7 @@ ext glfwSetCursorPosCallback: |&GLFWwindow, |&GLFWwindow, f64, f64| -> none| -> 
 ext glfwSetInputMode: |&GLFWwindow, uint, uint| -> none = "glfwSetInputMode"
 ext glfwGetWindowUserPointer: |&GLFWwindow| -> &none = "glfwGetWindowUserPointer"
 ext glfwSetKeyCallback: |&GLFWwindow, |&GLFWwindow, int, int, int, int| -> none| -> none = "glfwSetKeyCallback"
-
+ext glfwSetDropCallback: |&GLFWwindow, |&GLFWwindow, int, &&char| -> none| -> none = "glfwSetDropCallback"
 ext glfwGetMouseButton: |&GLFWwindow, uint| -> int = "glfwGetMouseButton"
 
 ext glfw_cursor: uint = "GLFW_CURSOR"

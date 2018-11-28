@@ -1,8 +1,10 @@
 from "nuklearWrapper" import all
 import "window"
+import "vfs"
 
 type UI =
     nk_ptr: &nk_context
+    pushed_row_layout: [..]LayoutOptions
 
 def make_ui() &UI =
     let max_vertex_buffer = 512 * 1024
@@ -14,12 +16,13 @@ def make_ui() &UI =
 
     atlas : &nk_font_atlas = _
     nk_glfw3_font_stash_begin &atlas
-    segoe := nk_font_atlas_add_from_file atlas, "assets/fonts/segoeui.ttf".to_c_string!, 50, None
+    segoe := nk_font_atlas_add_from_file atlas, (vfs.asset_path "fonts/segoeui.ttf").to_c_string!, 40, None
     nk_glfw3_font_stash_end!
     nk_style_set_font nk_ptr, &segoe.handle
 
     box UI{
         nk_ptr = nk_ptr
+        pushed_row_layout = [..]LayoutOptions
     }
 
 def UI.render(&self) =
@@ -35,29 +38,68 @@ def UI.free(&self) =
 
 def get_ui() &UI = context.ui
 
-def UIElement.render(&self) =
+ext nk_window_options: uint = "NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE|NK_WINDOW_BORDER"
+ext nk_group_options: uint = "NK_WINDOW_TITLE"
+
+def label(options: LabelOptions) =
+    ui := get_ui!
+    nk_label ui.nk_ptr, options.text.to_c_string!, nk_text_left
+
+def button(options: ButtonOptions) bool =
+    ui := get_ui!
+    selected := options.selected cast int
+    nk_selectable_label ui.nk_ptr, options.text.to_c_string!, nk_text_left, &selected
+
+def propertyf(options: PropertyfOptions) =
     ui := get_ui!
 
-    match *self with
-        Label options ->
-            nk_label ui.nk_ptr, options.text.to_c_string!, nk_text_left
+    field_with_id := "#{options.text}"
+    *options.value = nk_propertyf ui.nk_ptr, field_with_id.to_c_string!, options.min, *options.value, options.max, options.step, options.inc_per_pixel
 
-        Propertyf options ->
-            field_with_id := "#{options.text}"
-            *options.value = nk_propertyf ui.nk_ptr, field_with_id.to_c_string!, options.min, *options.value, options.max, options.step, options.inc_per_pixel
+def group_begin(options: GroupOptions) bool =
+    ui := get_ui!
 
-ext nk_window_options: uint = "NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE"
+    nk_group_begin ui.nk_ptr, options.title.to_c_string!, nk_group_options
 
-def render_ui(surface: SurfaceOptions, children: []UIElement) =
+def group_end() =
+    ui := get_ui!
+    nk_group_end ui.nk_ptr
+
+def input(options: InputOptions) =
+    ui := get_ui!
+
+    buffer := (context.longterm_allocator.alloc options.max_length * sizeof char) cast &char
+    log options.value.length
+    memcpy buffer, options.value.to_c_string!, options.value.length + 1
+    nk_edit_string_zero_terminated ui.nk_ptr, nk_edit_simple, buffer, options.max_length, None
+    *options.value = char_buffer_toString buffer
+
+def begin_window(surface: WindowOptions) bool =
     ui := get_ui!
 
     c_title := surface.title.to_c_string!
     window_rect := nk_make_rect surface.position.x, surface.position.y, surface.size.x, surface.size.y
 
-    if nk_begin ui.nk_ptr, c_title, window_rect, nk_window_options then
-        nk_layout_row_dynamic ui.nk_ptr, 60, 1
+    nk_begin ui.nk_ptr, c_title, window_rect, nk_window_options
 
-        for child := children do
-            child.render!
+type LayoutOptions either
+    DynamicLayout(float, uint)
 
-    nk_end ui.nk_ptr
+def internal_set_layout_row(ui: &UI, options: LayoutOptions) =
+    match options with
+        DynamicLayout height, columns ->
+            nk_layout_row_dynamic ui.nk_ptr, height, columns
+
+def push_layout_row(options: LayoutOptions) =
+    ui := get_ui!
+
+    ui.pushed_row_layout.append options
+    internal_set_layout_row ui, options
+
+def pop_layout_row() =
+    ui := get_ui!
+    options := ui.pushed_row_layout.pop!
+    internal_set_layout_row ui, options
+
+def end_window() =
+    nk_end get_ui!.nk_ptr

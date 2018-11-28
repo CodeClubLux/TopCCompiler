@@ -108,6 +108,8 @@ def importParser(parser, decl= False):
 
     parser.imports.append(oname)
 
+from TopCompiler import Struct
+
 def fromParser(parser, decl= False, stage=False):
     place = Tree.PlaceHolder(parser)
 
@@ -157,14 +159,23 @@ def fromParser(parser, decl= False, stage=False):
     if token.token == "all":
         _names = set()
         for i in parser.structs[name]:
+            s = parser.structs[name][i]
+            if s.package != name:
+                continue
+
             _names.add(i)
 
         for i in parser.interfaces[name]:
+            s = parser.interfaces[name][i]
+            if s.package != name:
+                continue
             _names.add(i)
 
         for i in parser.scope[name][0]:
-            if not type(parser.scope[name][0][i]) is Scope.Alias:
-                _names.add(i)
+            scope_typ = parser.scope[name][0][i]
+            if not type(scope_typ) is Scope.Alias:
+                if not (type(scope_typ.type) is Struct.Struct and scope_typ.type.package != name):
+                    _names.add(i)
 
         for i in _names:
             getName(token, i)

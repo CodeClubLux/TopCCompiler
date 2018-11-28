@@ -481,11 +481,12 @@ class String(Type):
     def __init__(self, length):
         self.name = "string"
         self.normalName = "String"
-        self.types = {"length": I32()}
+        self.types = {"length": I32(unsigned=True)}
 
     def hasMethod(self, parser, field, isP= False):
         self.methods = {
             "slice": FuncPointer([self, I32(), I32()], self),
+            "starts_with": FuncPointer([self, self], Bool()),
             "indexOf": FuncPointer([self, self], I32()),
             "replace": FuncPointer([self, self, self], self),
             "toLowerCase": FuncPointer([self], self),
@@ -755,8 +756,14 @@ class Array(Type):
         if self.empty:
             return "struct _global_Array_Array_T"
         if not self.static and not self.both:
+            newName = SimplifyAst.toUniqueID(self.arrT.package, self.arrT.normalName, self.arrT.remainingGen)
+            if not newName in genericTypes:
+                compiledTypes[newName] = None
             return self.arrT.toCType()
         elif self.both:
+            newName = SimplifyAst.toUniqueID(self.arrT.package, self.arrT.normalName, self.arrT.remainingGen)
+            if not newName in genericTypes:
+                compiledTypes[newName] = None
             return self.arrT.toCType()
         else:
             return genGenericCType(self, Tree.ArrDataType)

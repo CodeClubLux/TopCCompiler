@@ -1,0 +1,7 @@
+prefix := "assets/"
+
+def asset_path(filename: string) string =
+    prefix + filename
+
+def open_file(filename: string, acess: FileAcess) Maybe[File] =
+    open (asset_path filename), acess

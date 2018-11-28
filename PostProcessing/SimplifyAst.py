@@ -153,6 +153,7 @@ def splitPackageAndName(identifier):
     else:
         return (identifier[:identifier.find("_")], identifier[identifier.find("_") + 1:])
 
+from TopCompiler import Parser
 
 class FuncSpecification:
     def __init__(self, identifier, funcStart, funcBrace, funcBody, replaced):
@@ -180,6 +181,13 @@ class FuncSpecification:
                 newAST.ftype = Types.replaceT(newAST.ftype, self.replaced)
             elif type(newAST) in [Tree.Sizeof, Tree.Offsetof] and Types.isGeneric(newAST.typ):
                 newAST.typ = Types.replaceT(newAST.typ, self.replaced)
+            elif type(newAST) is Tree.Typeof and newAST.type == Parser.IType:
+                #print("hey")
+                typeof = Tree.Typeof(ast, Types.replaceT(newAST.typ, self.replaced))
+
+                cast = Tree.Cast.Cast(typeof.type, newAST.type, ast)
+                cast.addNode(typeof)
+                newAST = cast
             elif type(newAST) is Tree.Cast.Cast:  # @cleanup add for cast which is an operator for some reason
                 newAST.f = Types.replaceT(newAST.f, self.replaced)
                 newAST.to = Types.replaceT(newAST.to, self.replaced)

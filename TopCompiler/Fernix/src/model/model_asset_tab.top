@@ -1,0 +1,41 @@
+import "ui"
+import "input"
+import "key"
+import "editor"
+
+selected_id := -1
+
+filter := ""
+
+def render_asset_tab() =
+    inp := input.get_input!
+
+    previous_length := filter.length
+    ui.input ui.default_input{ value = &filter }
+
+    if filter.length < previous_length then
+        selected_id = -1
+
+    model_settings := editor.model_settings_system.get_all_active!
+
+
+    for model_setting := model_settings do
+        log model_setting.filename
+        if not model_setting.filename.starts_with filter then continue
+
+        selected := i == selected_id
+
+        if ui.button ui.default_button{
+            text = model_setting.filename
+            selected = (i == selected_id)
+        } then
+            selected_id = i
+
+    if inp.key_pressed key.from_char `N` then
+        if selected_id < 0 then return
+
+        entity := ecs.make_Entity ecs.make_ID!
+        edit := editor.get_editor!
+        edit.select entity.id
+        model_renderer := make_ModelRenderer entity.id
+        model_renderer.model = Some &model_cache.assets[selected_id cast uint]

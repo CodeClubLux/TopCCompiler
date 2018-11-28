@@ -223,7 +223,7 @@ class CodeGen:
 
         headerCode = f"{generatedTypes}\n{forward_ref}"
         print_code = "printf(" + '"' + self.filename + '\\n");'
-        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ {print_code}\n{mainC}\n{mainCode};\n}};"
+        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 

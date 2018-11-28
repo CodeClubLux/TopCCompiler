@@ -23,6 +23,7 @@ type Window =
 
     cursor_pos_callback: Maybe[|Vec2| -> none]
     key_callback: Maybe[|Key, KeyAction| -> none]
+    dropped_filepaths: []string
 
 def Window.init(&self) =
     glfwInit!
@@ -47,6 +48,7 @@ def Window.init(&self) =
             glfwSetCursorPosCallback window_ptr, cursor_pos_callback
             glfwSetKeyCallback window_ptr, key_callback
             glfwSetInputMode window_ptr, glfw_cursor, glfw_cursor_disabled
+            glfwSetDropCallback window_ptr, drop_callback
 
             gi.load getProcAddress
             self.update_context!
@@ -69,6 +71,7 @@ def Window.should_close(&self) bool =
         None -> true
 
 def Window.update_inputs(&self) =
+    self.dropped_filepaths = []
     glfwPollEvents!
 
 def Window.swap_buffers(&self) =
@@ -96,6 +99,21 @@ def key_callback(glfwWindow: &GLFWwindow, _key: int, scancode: int, action: int,
             elif action == glfw_release then
                 callback (_key cast Key), Released
         None ->
+
+
+def drop_callback(glfwWindow: &GLFWwindow, count: int, c_paths: &&char) =
+    arr := [..]string
+    context = (glfwGetWindowUserPointer glfwWindow) cast &Context
+    w := get_window!
+
+    for i := 0..(count cast uint) do
+        path := char_buffer_toString *(indexPtr c_paths, i)
+        buffer := (alloc (path.length + 1) * sizeof char) cast &char
+        memcpy buffer, *(indexPtr c_paths, i), (path.length + 1) * sizeof char
+
+        arr.append char_buffer_toString buffer
+
+    w.dropped_filepaths = arr
 
 def Window.set_cursor_pos_callback(&self, func: |Vec2| -> none) =
     self.cursor_pos_callback = Some func
@@ -132,6 +150,7 @@ def make_Window() &Window =
         window_ptr = None
         cursor_pos_callback = None
         key_callback = None
+        dropped_filepaths = []
     }
 
     w.init!

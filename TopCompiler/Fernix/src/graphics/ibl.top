@@ -9,7 +9,7 @@ import "camera"
 import "runner"
 import "ecs"
 
-skybox_shader := shader.make "assets/shaders/skybox.vert", "assets/shaders/skybox.frag"
+skybox_shader := shader.make "shaders/skybox.vert", "shaders/skybox.frag"
 
 type Skybox =
     entity: &ecs.Entity
@@ -36,7 +36,7 @@ def Skybox.render(&self) =
 
     primitives.render_cube!
 
-brdf_LUT_texture2 := texture.load "assets/ibl_brdf_lut.png"
+brdf_LUT_texture2 := texture.load "ibl_brdf_lut.png"
 
 def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
     self.irradiance_cubemap.bind_to 0
@@ -51,20 +51,20 @@ def Skybox.set_ibl_params_for(&self, s: shader.Shader) =
 
 
 //Skybox system
-def make_Skybox_System() &ecs.Store[Skybox] =
-    ecs.make_Store::[Skybox] 1
+skybox_system := ecs.make_Store make_default_Skybox, 1
 
-skybox_system := make_Skybox_System!
+def make_default_Skybox(id: ecs.ID) &Skybox =
+    make_Skybox id, "Tropical_Beach_3k.hdr"
 
 def get_skybox() &Skybox =
     skybox_system
         .get_active!
         .unwrap!
 
-def make_Skybox(name: string) &Skybox =
+def make_Skybox(id: ecs.ID, name: string) &Skybox =
     opengl.enable opengl.texture_cube_map_seamless
 
-    equirectangular_to_cubemap_shader := shader.make "assets/shaders/eToCubemap.vert", "assets/shaders/eToCubemap.frag"
+    equirectangular_to_cubemap_shader := shader.make "shaders/eToCubemap.vert", "shaders/eToCubemap.frag"
 
     capture_FBO : uint = _
     capture_RBO : uint = _
@@ -144,7 +144,7 @@ def make_Skybox(name: string) &Skybox =
     opengl.bindTexture opengl.texture_cube_map, env_cubemap
     opengl.generateMipmap opengl.texture_cube_map
 
-    irradiance_shader := shader.make "assets/shaders/irradiance.vert", "assets/shaders/irradiance.frag"
+    irradiance_shader := shader.make "shaders/irradiance.vert", "shaders/irradiance.frag"
 
     irradiance_map : uint = _
 
@@ -216,7 +216,7 @@ def make_Skybox(name: string) &Skybox =
 
     opengl.generateMipmap opengl.texture_cube_map
 
-    prefilter_shader := shader.make "assets/shaders/prefilter.vert", "assets/shaders/prefilter.frag"
+    prefilter_shader := shader.make "shaders/prefilter.vert", "shaders/prefilter.frag"
 
     prefilter_shader.bind!
     prefilter_shader.set_int "environmentMap", 0
@@ -256,7 +256,7 @@ def make_Skybox(name: string) &Skybox =
 
     opengl.bindFramebuffer opengl.framebuffer, 0
 
-    brdf_shader := shader.make "assets/shaders/brdf_convultion.vert", "assets/shaders/brdf_convultion.frag"
+    brdf_shader := shader.make "shaders/brdf_convultion.vert", "shaders/brdf_convultion.frag"
 
     brdf_LUT_texture : uint = _
     opengl.genTextures 1, &brdf_LUT_texture
@@ -282,9 +282,12 @@ def make_Skybox(name: string) &Skybox =
     opengl.bindTexture opengl.texture_2D, 0
     opengl.bindTexture opengl.texture_cube_map, 0
 
-    skybox_system.add_component Skybox{
-        entity = ecs.make_Entity!
+    entity := match ecs.entity_system.component_by_id id with
+        Some e -> e
+        None -> ecs.make_Entity id
 
+    skybox_system.add_component Skybox{
+        entity = entity
         env_cubemap = texture.Cubemap{ env_cubemap }
         irradiance_cubemap = texture.Cubemap{ irradiance_map }
         prefilter_cubemap = texture.Cubemap{ prefilter_map }

@@ -95,36 +95,6 @@ struct _global_ArraySize _global_Dynamic;
 struct _global_ArraySize _global_Both;
 struct _global_StructType _global_ArraySizeType;struct _global_StructType* _global_ArraySize_get_type(struct _global_ArraySize* self, struct _global_Context* c){return &_global_ArraySizeType;}
 struct _global_StructType* _global_ArraySize_get_typeByValue(struct _global_ArraySize self, struct _global_Context* c){return &_global_ArraySizeType;}
-struct _global_ArrayType {
-struct _global_ArraySize size;
-struct _global_Type array_type;
-};
-static inline struct _global_ArrayType _global_ArrayTypeInit(struct _global_ArraySize size,struct _global_Type array_type){
-struct _global_ArrayType m;
-m.size=size;m.array_type=array_type;return m;
-};
-struct _global_StructType _global_ArrayTypeType;struct _global_StructType* _global_ArrayType_get_type(struct _global_ArrayType* self, struct _global_Context* c){return &_global_ArrayTypeType;}
-struct _global_Field* _global_ArrayTypeType_fields;
-struct _global_Type_VTABLE rEnumType_VTABLE_FOR_Type;struct _global_StaticArray_StaticArray_S_Type {
-struct _global_Type* data;
-unsigned int length;
-};
-static inline struct _global_StaticArray_StaticArray_S_Type _global_StaticArray_StaticArray_S_TypeInit(struct _global_Type* data,unsigned int length){
-struct _global_StaticArray_StaticArray_S_Type n;
-n.data=data;n.length=length;return n;
-};
-struct _global_ArrayType _global_StaticArray_StaticArray_S_TypeType;struct _global_ArrayType* _global_StaticArray_StaticArray_S_Type_get_type(struct _global_StaticArray_StaticArray_S_Type* self, struct _global_Context* c){return &_global_StaticArray_StaticArray_S_TypeType;}
-struct _global_ArrayType* _global_StaticArray_StaticArray_S_Type_get_typeByValue(struct _global_StaticArray_StaticArray_S_Type self, struct _global_Context* c){return &_global_StaticArray_StaticArray_S_TypeType;}
-struct _global_ArrayType _global_StaticArray_StaticArray_S_TypeType;struct _global_Cases {
-struct _global_String name;
-struct _global_StaticArray_StaticArray_S_Type args;
-};
-static inline struct _global_Cases _global_CasesInit(struct _global_String name,struct _global_StaticArray_StaticArray_S_Type args){
-struct _global_Cases p;
-p.name=name;p.args=args;return p;
-};
-struct _global_StructType _global_CasesType;struct _global_StructType* _global_Cases_get_type(struct _global_Cases* self, struct _global_Context* c){return &_global_CasesType;}
-struct _global_Field* _global_CasesType_fields;
 struct _global_StaticArray_StaticArray_S_Cases {
 struct _global_Cases* data;
 unsigned int length;
@@ -135,7 +105,47 @@ q.data=data;q.length=length;return q;
 };
 struct _global_ArrayType _global_StaticArray_StaticArray_S_CasesType;struct _global_ArrayType* _global_StaticArray_StaticArray_S_Cases_get_type(struct _global_StaticArray_StaticArray_S_Cases* self, struct _global_Context* c){return &_global_StaticArray_StaticArray_S_CasesType;}
 struct _global_ArrayType* _global_StaticArray_StaticArray_S_Cases_get_typeByValue(struct _global_StaticArray_StaticArray_S_Cases self, struct _global_Context* c){return &_global_StaticArray_StaticArray_S_CasesType;}
-struct _global_ArrayType _global_StaticArray_StaticArray_S_CasesType;struct _global_StructType _global_NoneTypeType;struct _global_StructType* _global_NoneType_get_type(struct NoneType* self, struct _global_Context* c){return &_global_NoneTypeType;}
+struct _global_ArrayType _global_StaticArray_StaticArray_S_CasesType;struct _global_StaticArray_StaticArray_S_Type {
+struct _global_Type* data;
+unsigned int length;
+};
+static inline struct _global_StaticArray_StaticArray_S_Type _global_StaticArray_StaticArray_S_TypeInit(struct _global_Type* data,unsigned int length){
+struct _global_StaticArray_StaticArray_S_Type n;
+n.data=data;n.length=length;return n;
+};
+struct _global_ArrayType _global_StaticArray_StaticArray_S_TypeType;struct _global_ArrayType* _global_StaticArray_StaticArray_S_Type_get_type(struct _global_StaticArray_StaticArray_S_Type* self, struct _global_Context* c){return &_global_StaticArray_StaticArray_S_TypeType;}
+struct _global_ArrayType* _global_StaticArray_StaticArray_S_Type_get_typeByValue(struct _global_StaticArray_StaticArray_S_Type self, struct _global_Context* c){return &_global_StaticArray_StaticArray_S_TypeType;}
+struct _global_ArrayType _global_StaticArray_StaticArray_S_TypeType;struct _global_ArrayType {
+struct _global_ArraySize size;
+struct _global_Type array_type;
+};
+static inline struct _global_ArrayType _global_ArrayTypeInit(struct _global_ArraySize size,struct _global_Type array_type){
+struct _global_ArrayType m;
+m.size=size;m.array_type=array_type;return m;
+};
+struct _global_StructType _global_ArrayTypeType;struct _global_StructType* _global_ArrayType_get_type(struct _global_ArrayType* self, struct _global_Context* c){return &_global_ArrayTypeType;}
+struct _global_Field* _global_ArrayTypeType_fields;
+struct _global_Type_VTABLE rEnumType_VTABLE_FOR_Type;struct _global_Cases {
+struct _global_String name;
+struct _global_StaticArray_StaticArray_S_Type args;
+};
+static inline struct _global_Cases _global_CasesInit(struct _global_String name,struct _global_StaticArray_StaticArray_S_Type args){
+struct _global_Cases p;
+p.name=name;p.args=args;return p;
+};
+struct _global_StructType _global_CasesType;struct _global_StructType* _global_Cases_get_type(struct _global_Cases* self, struct _global_Context* c){return &_global_CasesType;}
+struct _global_Field* _global_CasesType_fields;
+struct _global_StaticArray_StaticArray_S_Method {
+struct _global_Method* data;
+unsigned int length;
+};
+static inline struct _global_StaticArray_StaticArray_S_Method _global_StaticArray_StaticArray_S_MethodInit(struct _global_Method* data,unsigned int length){
+struct _global_StaticArray_StaticArray_S_Method s;
+s.data=data;s.length=length;return s;
+};
+struct _global_ArrayType* _global_StaticArray_StaticArray_S_Method_get_type(struct _global_StaticArray_StaticArray_S_Method* self, struct _global_Context* c){return NULL;}
+struct _global_ArrayType* _global_StaticArray_StaticArray_S_Method_get_typeByValue(struct _global_StaticArray_StaticArray_S_Method self, struct _global_Context* c){return NULL;}
+struct _global_StructType _global_NoneTypeType;struct _global_StructType* _global_NoneType_get_type(struct NoneType* self, struct _global_Context* c){return &_global_NoneTypeType;}
 struct _global_Field* _global_NoneTypeType_fields;
 struct _global_PointerType {
 struct _global_Type p_type;
@@ -156,17 +166,7 @@ r.name=name;r.pointer_to_method=pointer_to_method;return r;
 };
 struct _global_StructType _global_MethodType;struct _global_StructType* _global_Method_get_type(struct _global_Method* self, struct _global_Context* c){return &_global_MethodType;}
 struct _global_Field* _global_MethodType_fields;
-struct _global_Type_VTABLE rPointerType_VTABLE_FOR_Type;struct _global_Type_VTABLE rNoneType_VTABLE_FOR_Type;struct _global_StaticArray_StaticArray_S_Method {
-struct _global_Method* data;
-unsigned int length;
-};
-static inline struct _global_StaticArray_StaticArray_S_Method _global_StaticArray_StaticArray_S_MethodInit(struct _global_Method* data,unsigned int length){
-struct _global_StaticArray_StaticArray_S_Method s;
-s.data=data;s.length=length;return s;
-};
-struct _global_ArrayType* _global_StaticArray_StaticArray_S_Method_get_type(struct _global_StaticArray_StaticArray_S_Method* self, struct _global_Context* c){return NULL;}
-struct _global_ArrayType* _global_StaticArray_StaticArray_S_Method_get_typeByValue(struct _global_StaticArray_StaticArray_S_Method self, struct _global_Context* c){return NULL;}
-struct _global_EnumType {
+struct _global_Type_VTABLE rPointerType_VTABLE_FOR_Type;struct _global_Type_VTABLE rNoneType_VTABLE_FOR_Type;struct _global_EnumType {
 struct _global_String name;
 struct _global_String package;
 struct _global_StaticArray_StaticArray_S_Cases cases;
@@ -548,10 +548,10 @@ uint8_t _global_char_toU8(char* self, __Context) {
     return (uint8_t) *self;
 }
 
-
-
-
-
+_Bool _global_String_starts_withByValue(struct _global_String str, struct _global_String pre, __Context) {
+    if (str.length < pre.length) { return 0; }
+    return strncmp(pre.data, str.data, pre.length) == 0;
+}
 
 
 
@@ -588,6 +588,7 @@ struct _global_PointerType* _global_boxPointerType(struct _global_PointerType p,
     pointerTypes[pointerTypeCounter++] = p;
     return &pointerTypes[pointerTypeCounter - 1];
 }
+
 
 void _global_init_c_runtime() {
     printf("Initialized types\n");
@@ -850,18 +851,18 @@ struct _global_String _global_NoneType_toString(struct NoneType*,struct _global_
 void _global_log_string(struct _global_String _global_s, struct _global_Context* Q);
 
 #define _global_exit(Q,R) exit(Q)
-void _global_panic(struct _global_String _global_s, struct _global_Context* S){;
-_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"panic: "),(_global_s),S),_global_StringInit(0,""),S),S);
-_global_exit(1,S);
-;}
-void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* S){;
-;
-if(!(_global_b)){;
-_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),S),_global_StringInit(0,""),S),S);
-;};
-;}
 
 #define _global_c_log(S,T) _global_c_log(S)
+void _global_panic(struct _global_String _global_s, struct _global_Context* V){;
+_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"panic: "),(_global_s),V),_global_StringInit(0,""),V),V);
+_global_exit(1,V);
+;}
+void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* V){;
+;
+if(!(_global_b)){;
+_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),V),_global_StringInit(0,""),V),V);
+;};
+;}
 
 #define _global_memcpy(V,W,X,Y) memcpy(V,W,X)
 
@@ -982,6 +983,8 @@ return _global_Some_File(_global_FileInit(_global_file,_global_acess),br);}else 
 #define _global_is_bit_set(bw,bx,by) _global_c_is_bit_set(bw,bx)
 
 #define _global_bit_and(bz,bB,bC) _global_c_bit_and(bz,bB)
+
+#define _global_null_char '\0'
 struct _global_String _global_IntType_toString(struct IntType* _global_self, struct _global_Context* bD){;
 ;return ((_global_self)->sign ? _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"i"),_global_uint_toStringByValue(((_global_self)->size*8),bD),bD),_global_StringInit(0,""),bD):(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"u"),_global_uint_toStringByValue(((_global_self)->size*8),bD),bD),_global_StringInit(0,""),bD)));
 ;}
@@ -1043,7 +1046,7 @@ return _global_NoneType_toString(&bF,bD);
 _global_c_log(_global_String_toString(&(_global_s),bD),bD);
 ;}
 
-void _globalInit() { printf("_global\n");
+void _globalInit() { 
 _global_TemporaryStorageType_fields = (struct _global_Field*) malloc(sizeof(struct _global_Field) * 4);
 _global_TemporaryStorageType.fields = _global_StaticArray_StaticArray_S_FieldInit(
 _global_TemporaryStorageType_fields
@@ -1278,9 +1281,10 @@ _global_malloc_as_allocator = _global_AllocatorFromStruct(&(_global_malloc),&rMa
 ;
 ;
 ;
+;
 };
 
-void mainInit() { printf("main\n");
+void mainInit() { 
 
 _globalInit();;
 ;
@@ -1453,7 +1457,27 @@ rPointerType_VTABLE_FOR_Type.type
 _global_Both.tag = 2;
 _global_ArraySizeType.fields = _global_StaticArray_StaticArray_S_FieldInit(NULL, 0);
 _global_ArraySizeType.package = _global_StringInit(7, "_global");
-_global_ArraySizeType.name = _global_StringInit(9, "ArraySize");_global_ArrayTypeType_fields = (struct _global_Field*) malloc(sizeof(struct _global_Field) * 2);
+_global_ArraySizeType.name = _global_StringInit(9, "ArraySize");_global_StaticArray_StaticArray_S_CasesType.size.tag = 2;
+_global_StaticArray_StaticArray_S_CasesType.array_type = 
+_global_TypeFromStruct(
+_global_Cases_get_type(NULL,(&_global_context))
+,
+&rStructType_VTABLE_FOR_Type
+,
+rStructType_VTABLE_FOR_Type.type
+, &_global_StructType_toString
+)
+;_global_StaticArray_StaticArray_S_TypeType.size.tag = 2;
+_global_StaticArray_StaticArray_S_TypeType.array_type = 
+_global_TypeFromStruct(
+&_global_Type_Type
+,
+&rInterfaceType_VTABLE_FOR_Type
+,
+rInterfaceType_VTABLE_FOR_Type.type
+, &_global_InterfaceType_toString
+)
+;_global_ArrayTypeType_fields = (struct _global_Field*) malloc(sizeof(struct _global_Field) * 2);
 _global_ArrayTypeType.fields = _global_StaticArray_StaticArray_S_FieldInit(
 _global_ArrayTypeType_fields
 ,2
@@ -1482,16 +1506,6 @@ rStructType_VTABLE_FOR_Type.type
 _global_ArrayTypeType_fields[1].name = _global_StringInit(10, "array_type");
 _global_ArrayTypeType_fields[1].offset = offsetof(struct _global_ArrayType, array_type);
 _global_ArrayTypeType_fields[1].field_type = 
-_global_TypeFromStruct(
-&_global_Type_Type
-,
-&rInterfaceType_VTABLE_FOR_Type
-,
-rInterfaceType_VTABLE_FOR_Type.type
-, &_global_InterfaceType_toString
-)
-;_global_StaticArray_StaticArray_S_TypeType.size.tag = 2;
-_global_StaticArray_StaticArray_S_TypeType.array_type = 
 _global_TypeFromStruct(
 &_global_Type_Type
 ,
@@ -1529,16 +1543,6 @@ _global_StaticArray_StaticArray_S_Type_get_type(NULL,(&_global_context))
 ,
 rArrayType_VTABLE_FOR_Type.type
 , &_global_ArrayType_toString
-)
-;_global_StaticArray_StaticArray_S_CasesType.size.tag = 2;
-_global_StaticArray_StaticArray_S_CasesType.array_type = 
-_global_TypeFromStruct(
-_global_Cases_get_type(NULL,(&_global_context))
-,
-&rStructType_VTABLE_FOR_Type
-,
-rStructType_VTABLE_FOR_Type.type
-, &_global_StructType_toString
 )
 ;_global_NoneTypeType_fields = (struct _global_Field*) malloc(sizeof(struct _global_Field) * 0);
 _global_NoneTypeType.fields = _global_StaticArray_StaticArray_S_FieldInit(
