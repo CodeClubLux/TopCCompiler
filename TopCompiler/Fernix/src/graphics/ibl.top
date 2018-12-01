@@ -17,7 +17,7 @@ type Skybox =
     env_cubemap: texture.Cubemap
     irradiance_cubemap: texture.Cubemap
     prefilter_cubemap: texture.Cubemap
-    brdf_LUT: texture.Texture
+    brdf_LUT: &texture.Texture
 
 def Skybox.get_entity(&self) &ecs.Entity =
     self.entity
@@ -121,7 +121,7 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
     equirectangular_to_cubemap_shader.set_mat4x4 "projection", &capture_projection
 
     opengl.activeTexture opengl.texture0
-    opengl.bindTexture opengl.texture_2D, hdr_texture.id
+    hdr_texture.bind_to 0
 
     opengl.viewport 0, 0, 2048, 2048
     opengl.bindFramebuffer opengl.framebuffer, capture_FBO
@@ -286,10 +286,14 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
         Some e -> e
         None -> ecs.make_Entity id
 
+    brdf_LUT_as_texture := texture.make_Texture ecs.make_ID!
+    brdf_LUT_as_texture.filename = "brdf_LUT"
+    brdf_LUT_as_texture.texture_id = brdf_LUT_texture
+
     skybox_system.add_component Skybox{
         entity = entity
         env_cubemap = texture.Cubemap{ env_cubemap }
         irradiance_cubemap = texture.Cubemap{ irradiance_map }
         prefilter_cubemap = texture.Cubemap{ prefilter_map }
-        brdf_LUT = texture.Texture{ brdf_LUT_texture }
+        brdf_LUT = brdf_LUT_as_texture
     }

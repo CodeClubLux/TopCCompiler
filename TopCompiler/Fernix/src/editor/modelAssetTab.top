@@ -1,0 +1,49 @@
+import "ui"
+import "input"
+import "key"
+import "editor"
+import "model"
+import "ecs"
+from "modelSettings" import (model_settings_system)
+import "layermask"
+
+selected_id := -1
+
+filter_buffer := (alloc 50 * sizeof char) cast &char
+*filter_buffer = null_terminated
+
+def render_asset_tab() =
+    inp := input.get_input!
+
+    filter := ui.input ui.default_input{ buffer = filter_buffer, max_length = 50 }
+
+    model_settings := model_settings_system.get_all_active!
+
+    for model_setting := model_settings do
+        id := model_setting.get_entity!.id
+
+        if not model_setting.filename.starts_with filter then continue
+
+        selected := id == selected_id
+
+        if ui.button ui.default_button{
+            text = model_setting.filename
+            selected = selected
+        } then
+            selected_id = id
+
+    if inp.key_pressed key.from_char `N` then
+        if selected_id < 0 then return
+
+        entity := ecs.make_Entity ecs.make_ID!
+
+        edit := editor.get_editor!
+        edit.select entity.id
+
+        model_system := model.get_model_system!
+
+        model_renderer := model.make_ModelRenderer entity.id
+        model_renderer.model = model_system.component_by_id (selected_id cast uint)
+
+        match model_renderer.model with
+            Some x -> x

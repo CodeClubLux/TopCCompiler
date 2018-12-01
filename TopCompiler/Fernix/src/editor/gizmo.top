@@ -246,11 +246,13 @@ def Gizmo.update(&self) =
                     match self.kind with
                         Translate axis ->
                             self.kind = Translate handle_gizmo_intersection target.position, axis, s, &target.position, false
-                            model_renderer.model = Some &translation_model
+                            model_renderer.model = Some translation_model
+                            model_renderer_entity.position = target.position
 
                         Scale axis ->
                             self.kind = Scale handle_gizmo_intersection target.position, axis, s * target.scale, &target.scale, true
-                            model_renderer.model = Some &scale_model
+                            model_renderer.model = Some scale_model
+                            model_renderer_entity.scale = target.scale
                             s_multiplier = target.scale
 
                         Disabled ->
@@ -270,14 +272,13 @@ def make_Gizmo(id: ecs.ID) &Gizmo =
     entity := match ecs.entity_system.component_by_id id with
         Some e -> e
         None ->
-            entity := ecs.make_Entity ecs.make_ID!
+            entity := ecs.make_Entity id
             entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor
             entity
 
     model_renderer := match model.model_renderer_system.component_by_id id with
         Some m -> m
-        None ->
-            model.make_ModelRenderer entity.id
+        None -> model.make_ModelRenderer id
 
     gizmo_system.add_component Gizmo{
         entity = entity

@@ -51,9 +51,9 @@ type GroupOptions =
 default_group := GroupOptions{ title = "" }
 
 type InputOptions =
-    value: &string
+    buffer: &char
     max_length: uint
 
-tmp_s := ""
-default_input := InputOptions{ &tmp_s, max_length = 50 }
+tmp_s := (alloc 50 * sizeof char) cast &char
+default_input := InputOptions{ tmp_s, max_length = 50 }
 

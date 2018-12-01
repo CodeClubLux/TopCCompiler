@@ -194,9 +194,9 @@ linesOfCode = 0
 
 def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
     def notBack(iter):
-        if state.iter == 0: return True
-        if state.s[state.iter - 1] != "\\": return True
-        return not notBack(state.iter - 1)
+        if iter == 0: return True
+        if state.s[iter - 1] != "\\": return True
+        return not notBack(iter - 1)
 
     state = LexerState(s)
     state.iter = spos

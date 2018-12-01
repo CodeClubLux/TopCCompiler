@@ -1,36 +1,38 @@
-type Component with
-    def get_entity() &Entity
-    def render()
-    def update()
-
-type System with
-    def get_component_type() Type
-    def make_component(ID)
-    def render(Layermask)
-    def update(Layermask)
-    def free_component_by_id(ID)
-    def get_component_by_id(ID) Maybe[Component]
-
-component_types := [..]System
+type Slot[T] either
+    Free(Maybe[&Slot[T]])
+    Active(T)
 
 type Store[T: Component] =
     make_component_func: |ID| -> &T
-    id_to_key: [..]int
-    components_alive: [..]bool
-    components: [..]T
+    id_to_obj: [..]Maybe[&T]
+    components: []Slot[T]
+    free_node: Maybe[&Slot[T]]
     max_number: uint
+    added: uint
 
 def make_Store[T: Component](make_component: |ID| -> &T, max_number: uint) &Store[T] =
-    id_to_key := [..]int
-    id_to_key.allocator = Some &malloc_as_allocator
+    assert max_number > 0, "Minimum number of elements has to be bigger than 0"
 
-    components_alive := [..]bool //array cant resize as this would case all pointers to become invalidated
-    components_alive.reserve max_number
+    id_to_key := [..]Maybe[&T]
+    id_to_key.allocator = Some context.longterm_storage
 
-    components := [..]T
-    components.reserve max_number
+    slots := [..]Slot[T]
+    slots.reserve max_number
 
-    self := box Store{ make_component, id_to_key, components_alive, components, max_number }
+    for i := 0..max_number do
+        slots.append Free None
+
+    for i := 0..max_number - 1 do
+        slots[i] = Free Some &slots[i+1]
+
+    self := box Store{
+        make_component_func = make_component
+        id_to_obj = id_to_key
+        free_node = Some &slots[0]
+        components = slots
+        max_number = max_number
+        added = 0
+    }
 
     component_types.append self
 
@@ -42,19 +44,10 @@ def Store[T: Component].get_component_type(&self) Type =
 def Store[T].make_component(&self, id: ID) =
     _ := self.make_component_func id
 
-def Store[T].component_id_to_index(&self, id: ID) Maybe[uint] =
-    if id >= self.id_to_key.length then None
-    else
-        key := self.id_to_key[id]
-
-        if key < 0 then None
-        else Some key cast uint
-
 //get actuall type
 def Store[T].component_by_id(&self, id: ID) Maybe[&T] =
-    match self.component_id_to_index id with
-        Some key -> Some &self.components[key]
-        None -> None
+    if id >= self.id_to_obj.length then return None
+    self.id_to_obj[id]
 
 //get component
 def Store[T].get_component_by_id(&self, id: ID) Maybe[Component] =
@@ -63,50 +56,53 @@ def Store[T].get_component_by_id(&self, id: ID) Maybe[Component] =
         None -> None
 
 def Store[T].free_component_by_id(&self, id: ID) =
-    match self.component_id_to_index id with
-        Some key ->
-            self.id_to_key[id] = -1
-            self.components_alive[key] = false
+    match self.component_by_id id with
+        Some obj_ptr ->
+            self.id_to_obj[id] = None
+            slot := obj_ptr cast &Slot[T]
+            *slot = Free self.free_node
+            self.free_node = Some slot
 
         None ->
 
-//function sets the id_to_key array which allows components to be indexed by global id
-def Store[T].register_component(&self, id: ID, index: uint) &T =
-    if id >= self.id_to_key.length then
-        self.id_to_key.reserve id + 1
-        for i := self.id_to_key.length..id do
-            self.id_to_key.append -1
-        self.id_to_key.append index
-    else
-        self.id_to_key[id] = index
+//function sets the id_to_obj array which allows components to be indexed by global id
+//@cleanup remove all use of dynamic memory allocation
 
-    &self.components[index]
+def Store[T].register_component(&self, id: ID, obj_ptr: &T) &T =
+    if id >= self.id_to_obj.length then
+        self.id_to_obj.reserve id + 1
+        for i := self.id_to_obj.length..(id+1) do
+            self.id_to_obj.append None
+
+    self.id_to_obj[id] = Some obj_ptr
+
+    obj_ptr
 
 def Store[T].add_component(&self, comp: T) &T =
     id := (comp.get_entity!).id
 
-    //try finding a dead component
-    for i := 0..self.components_alive.length do
-        if not self.components_alive[i] then
-            self.components[i] = comp
-            self.components_alive[i] = true
-            return self.register_component id, i
+    guard Some free_node := self.free_node
+    else panic "Out of memory for system: {get_type T}"
 
-    //no components to replace
-    if self.components.length == self.max_number then
-        panic "Overflowing component buffer for {get_type T}"
+    guard Free next_free_node := *free_node
+    else panic "Node that was said to be free is active"
 
-    self.components.append comp
-    self.components_alive.append true
-    self.register_component id, self.components.length - 1
+    self.free_node = next_free_node
+    *free_node = Active comp
+
+    obj_ptr := free_node cast &T //take advantage of the fact that tag is last and since its a union there is enough space for T
+
+    self.added += 1
+    self.register_component id, obj_ptr
 
 def Store[T].get_all_active(&self) [..]&T =
     active_components := [..]&T
 
-    for i := 0..self.components.length do
-        if not self.components_alive[i] then continue
+    for slot := self.components do
+        guard Active _ := slot
+        else continue
 
-        comp := &self.components[i]
+        comp := (&self.components[i]) cast &T
         entity := comp.get_entity!
 
         if entity.enabled then
@@ -114,37 +110,39 @@ def Store[T].get_all_active(&self) [..]&T =
 
     active_components
 
-def Store[T].get_active(&self) Maybe[&T] =
-    for i := 0..self.components.length do
-        if self.components_alive[i] then
-            comp := &self.components[i]
-            entity := comp.get_entity!
+def Store[T].index_active(&self, i: uint) Maybe[&T] =
+    guard Active hey := self.components[i]
+    else return None
 
-            if entity.enabled then
-                return Some comp
+    comp := (&self.components[i]) cast &T
+    if not comp.get_entity!.enabled then return None
+
+    Some comp
+
+def Store[T].get_active(&self) Maybe[&T] =
+    for slot := self.components do
+        guard Some active_comp := self.index_active i
+        else continue
+
+        return Some active_comp
 
     None
 
-def Store[T].index_is_active(&self, i: uint) bool =
-    comp := &self.components[i]
-    alive := self.components_alive[i]
-
-    alive and comp.get_entity!.enabled
-
 def Store[T].render(&self, layer_mask: Layer) =
     for i := 0..self.components.length do
-        if self.index_is_active i then
-            comp := &self.components[i]
+        guard Some comp := self.index_active i
+        else continue
 
-            if not mask comp.get_entity!.layermask, layer_mask then //only render objects
-                self.components[i].render!
+        if not mask comp.get_entity!.layermask, layer_mask then
+            comp.render!
 
 def Store[T].update(&self, layer_mask: Layermask) =
     for i := 0..self.components.length do
-        if self.index_is_active i then
-            comp := &self.components[i]
-            if not mask comp.get_entity!.layermask, layer_mask then
-                self.components[i].update!
+        guard Some comp := self.index_active i
+        else continue
+
+        if not mask comp.get_entity!.layermask, layer_mask then
+            comp.update!
 
 def render(layer_mask: Layermask) =
     for i := 0..component_types.length do

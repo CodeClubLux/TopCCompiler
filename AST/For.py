@@ -3,6 +3,7 @@ from .node import *
 class For(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
+        self.package = parser.package
         self.implicit = False
         self.implicit_index = False
         self.op_get = None
@@ -55,7 +56,7 @@ class For(Node):
 
             if self.implicit_index:
                 c = Tree.Create("i", iterationTyp, self)
-                c.package = codegen.filename
+                c.package = self.package
                 c.varType = countTyp
                 i = c.compileToC(codegen)
         else:

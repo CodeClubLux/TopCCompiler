@@ -1,0 +1,19 @@
+import "ecs"
+
+//Model Renderer
+type ModelRenderer =
+    entity: &ecs.Entity
+    model: Maybe[&Model]
+    visible: bool
+
+def ModelRenderer.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def ModelRenderer.render(&self) =
+    match self.model with
+        Some model -> if self.visible then
+            model.render_model_for self.get_entity!
+
+        None ->
+
+def ModelRenderer.update(&self) =

@@ -16,6 +16,8 @@ struct _global_String {
 struct BoolType {};
 struct StringType {};
 struct NoneType {};
+struct CharType {};
+
 struct IntType {
     _Bool sign;
     unsigned int size;
@@ -83,9 +85,8 @@ struct _global_ArraySize_Static Static;
 
 };
 struct _global_ArraySize {
- char tag;
 union _global_ArraySize_cases cases;
-
+char tag;
 };
 struct _global_ArraySize _global_Static(unsigned int j,struct _global_Context* k){
 struct _global_ArraySize l;
@@ -283,10 +284,31 @@ struct BoolType* _global_Bool_get_type(_Bool* b, __Context) {
     return &_global_Bool_typ;
 }
 
+struct CharType _global_Char_typ;
 
+struct CharType* _global_char_get_typeByValue(char b, __Context) {
+    return &_global_Char_typ;
+}
+
+struct CharType* _global_char_get_type(char* b, __Context) {
+    return &_global_Char_typ;
+}
+
+struct _global_String _global_CharType_toString(struct CharType* self, __Context) {
+    return _global_StringInit(4, "char");
+}
 
 struct _global_String _global_Bool_toString(_Bool* b, __Context) {
     return _global_Bool_toStringByValue(*b, context);
+}
+
+
+struct _global_String _global_String_sliceByValue(struct _global_String s, unsigned int from, unsigned int end, __Context) {
+    int length = end - from;
+    char* buffer = alloc(context->allocator, sizeof(char) * length + 1, context);
+    memcpy(buffer, s.data + from, length);
+    buffer[length] = '\0';
+    return _global_StringInit(length, buffer);
 }
 
 _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_String other, __Context) {
@@ -646,25 +668,17 @@ struct _global_StructType _global_MallocType;struct _global_StructType* _global_
 struct _global_Field* _global_MallocType_fields;
 struct _global_StructType _global_Maybe_rAllocatorType;struct _global_StructType* _global_Maybe_rAllocator_get_type(struct _global_Allocator*** self, struct _global_Context* c){return &_global_Maybe_rAllocatorType;}
 struct _global_StructType* _global_Maybe_rAllocator_get_typeByValue(struct _global_Allocator** self, struct _global_Context* c){return &_global_Maybe_rAllocatorType;}
-struct _global_All {
-struct _global_All_VTABLE* vtable;
-void* data;
-};struct _global_All_VTABLE {struct _global_Type type;};static inline struct _global_All _global_AllFromStruct(void* data, struct _global_All_VTABLE* vtable, struct _global_Type typ){ 
-struct _global_All g;
-g.data = data;g.vtable = vtable;g.vtable->type = typ;
-return g; 
-}void* _global_All_get_pointer_to_data(struct _global_All* self, struct _global_Context* context) { return self->data; }struct _global_Type _global_All_get_type(struct _global_All* g, struct _global_Context* context){ return g->vtable->type; }struct _global_Type _global_All_get_typeByValue(struct _global_All g, struct _global_Context* context){ return g.vtable->type; }
-struct _global_InterfaceType _global_All_Type;struct _global_StructType _global_Maybe_rArray_TType;struct _global_StructType* _global_Maybe_rArray_T_get_type(struct _global_All*** self, struct _global_Context* c){return &_global_Maybe_rArray_TType;}
-struct _global_StructType* _global_Maybe_rArray_T_get_typeByValue(struct _global_All** self, struct _global_Context* c){return &_global_Maybe_rArray_TType;}
+struct _global_StructType _global_Maybe_rArray_TType;struct _global_StructType* _global_Maybe_rArray_T_get_type(void**** self, struct _global_Context* c){return &_global_Maybe_rArray_TType;}
+struct _global_StructType* _global_Maybe_rArray_T_get_typeByValue(void*** self, struct _global_Context* c){return &_global_Maybe_rArray_TType;}
 struct _global_Array_Array_T {
 unsigned int length;
 unsigned int capacity;
 struct _global_Allocator* allocator;
-struct _global_All* data;
+void** data;
 };
-static inline struct _global_Array_Array_T _global_Array_Array_TInit(unsigned int length,unsigned int capacity,struct _global_Allocator* allocator,struct _global_All* data){
-struct _global_Array_Array_T h;
-h.length=length;h.capacity=capacity;h.allocator=allocator;h.data=data;return h;
+static inline struct _global_Array_Array_T _global_Array_Array_TInit(unsigned int length,unsigned int capacity,struct _global_Allocator* allocator,void** data){
+struct _global_Array_Array_T f;
+f.length=length;f.capacity=capacity;f.allocator=allocator;f.data=data;return f;
 };
 struct _global_ArrayType _global_Array_Array_TType;struct _global_ArrayType* _global_Array_Array_T_get_type(struct _global_Array_Array_T* self, struct _global_Context* c){return &_global_Array_Array_TType;}
 struct _global_ArrayType* _global_Array_Array_T_get_typeByValue(struct _global_Array_Array_T self, struct _global_Context* c){return &_global_Array_Array_TType;}
@@ -673,8 +687,8 @@ unsigned int start;
 unsigned int end;
 };
 static inline struct _global_Range _global_RangeInit(unsigned int start,unsigned int end){
-struct _global_Range j;
-j.start=start;j.end=end;return j;
+struct _global_Range g;
+g.start=start;g.end=end;return g;
 };
 struct _global_StructType _global_RangeType;struct _global_StructType* _global_Range_get_type(struct _global_Range* self, struct _global_Context* c){return &_global_RangeType;}
 struct _global_Field* _global_RangeType_fields;
@@ -686,14 +700,13 @@ struct _global_Maybe_uint_Some Some;
 
 };
 struct _global_Maybe_uint {
- _Bool tag;
 union _global_Maybe_uint_cases cases;
-
+_Bool tag;
 };
-struct _global_Maybe_uint _global_Some_uint(unsigned int k,struct _global_Context* l){
-struct _global_Maybe_uint m;
-m.cases.Some.field0 = k;m.tag = 0;
-return m;}
+struct _global_Maybe_uint _global_Some_uint(unsigned int h,struct _global_Context* j){
+struct _global_Maybe_uint k;
+k.cases.Some.field0 = h;k.tag = 0;
+return k;}
 struct _global_StructType _global_Maybe_uintType;struct _global_StructType* _global_Maybe_uint_get_type(struct _global_Maybe_uint* self, struct _global_Context* c){return &_global_Maybe_uintType;}
 struct _global_StructType* _global_Maybe_uint_get_typeByValue(struct _global_Maybe_uint self, struct _global_Context* c){return &_global_Maybe_uintType;}
 struct _global_RangeIterator {
@@ -701,8 +714,8 @@ struct _global_Range range;
 unsigned int it;
 };
 static inline struct _global_RangeIterator _global_RangeIteratorInit(struct _global_Range range,unsigned int it){
-struct _global_RangeIterator n;
-n.range=range;n.it=it;return n;
+struct _global_RangeIterator l;
+l.range=range;l.it=it;return l;
 };
 struct _global_StructType _global_RangeIteratorType;struct _global_StructType* _global_RangeIterator_get_type(struct _global_RangeIterator* self, struct _global_Context* c){return &_global_RangeIteratorType;}
 struct _global_Field* _global_RangeIteratorType_fields;
@@ -710,9 +723,8 @@ union _global_FileAcess_cases {
 
 };
 struct _global_FileAcess {
- _Bool tag;
 union _global_FileAcess_cases cases;
-
+_Bool tag;
 };
 struct _global_FileAcess _global_ReadFile;
 struct _global_FileAcess _global_WriteFile;
@@ -725,8 +737,8 @@ struct FILE* c_file;
 struct _global_FileAcess acess;
 };
 static inline struct _global_File _global_FileInit(struct FILE* c_file,struct _global_FileAcess acess){
-struct _global_File p;
-p.c_file=c_file;p.acess=acess;return p;
+struct _global_File m;
+m.c_file=c_file;m.acess=acess;return m;
 };
 struct _global_StructType _global_FileType;struct _global_StructType* _global_File_get_type(struct _global_File* self, struct _global_Context* c){return &_global_FileType;}
 struct _global_Field* _global_FileType_fields;
@@ -738,14 +750,13 @@ struct _global_Maybe_File_Some Some;
 
 };
 struct _global_Maybe_File {
- _Bool tag;
 union _global_Maybe_File_cases cases;
-
+_Bool tag;
 };
-struct _global_Maybe_File _global_Some_File(struct _global_File q,struct _global_Context* r){
-struct _global_Maybe_File s;
-s.cases.Some.field0 = q;s.tag = 0;
-return s;}
+struct _global_Maybe_File _global_Some_File(struct _global_File n,struct _global_Context* p){
+struct _global_Maybe_File q;
+q.cases.Some.field0 = n;q.tag = 0;
+return q;}
 struct _global_StructType _global_Maybe_FileType;struct _global_StructType* _global_Maybe_File_get_type(struct _global_Maybe_File* self, struct _global_Context* c){return &_global_Maybe_FileType;}
 struct _global_StructType* _global_Maybe_File_get_typeByValue(struct _global_Maybe_File self, struct _global_Context* c){return &_global_Maybe_FileType;}
 struct _global_StructType _global_FloatTypeType;struct _global_StructType* _global_FloatType_get_type(struct FloatType* self, struct _global_Context* c){return &_global_FloatTypeType;}
@@ -753,21 +764,20 @@ struct _global_Field* _global_FloatTypeType_fields;
 struct _global_StructType _global_BoolTypeType;struct _global_StructType* _global_BoolType_get_type(struct BoolType* self, struct _global_Context* c){return &_global_BoolTypeType;}
 struct _global_Field* _global_BoolTypeType_fields;
 struct _global_Maybe_Maybe_T_Some {
-struct _global_All field0;
+void* field0;
 
 };union _global_Maybe_Maybe_T_cases {
 struct _global_Maybe_Maybe_T_Some Some;
 
 };
 struct _global_Maybe_Maybe_T {
- _Bool tag;
 union _global_Maybe_Maybe_T_cases cases;
-
+_Bool tag;
 };
-struct _global_Maybe_Maybe_T _global_Some_Maybe_T(struct _global_All t,struct _global_Context* v){
-struct _global_Maybe_Maybe_T w;
-w.cases.Some.field0 = t;w.tag = 0;
-return w;}
+struct _global_Maybe_Maybe_T _global_Some_Maybe_T(void* r,struct _global_Context* s){
+struct _global_Maybe_Maybe_T t;
+t.cases.Some.field0 = r;t.tag = 0;
+return t;}
 struct _global_Maybe_Maybe_T _global_None;
 struct _global_StructType _global_Maybe_Maybe_TType;struct _global_StructType* _global_Maybe_Maybe_T_get_type(struct _global_Maybe_Maybe_T* self, struct _global_Context* c){return &_global_Maybe_Maybe_TType;}
 struct _global_StructType* _global_Maybe_Maybe_T_get_typeByValue(struct _global_Maybe_Maybe_T self, struct _global_Context* c){return &_global_Maybe_Maybe_TType;}
@@ -925,6 +935,8 @@ _global_Allocator_dealloc((bf)->longterm_storage,(_global_self)->data,bf);
 ;}
 
 #define _global_char_buffer_toString(bf,bg) _runtime_char_buffer_toString(bf)
+
+#define _global_null_terminated '\0'
 struct _global_Array_Array_T _global_empty_array(struct _global_Context* bh){;return _global_Array_Array_TInit(0,0,NULL,NULL);
 ;}
 void _global_Range_iteratorByValue(struct _global_Range _global_self, struct _global_Context* bh){;
@@ -1118,8 +1130,7 @@ _global_MallocType_fields
 _global_MallocType.package = _global_StringInit(7, "_global");
 _global_MallocType.name = _global_StringInit(6, "Malloc");_global_Maybe_rAllocatorType.fields = _global_StaticArray_StaticArray_S_FieldInit(NULL, 0);
 _global_Maybe_rAllocatorType.package = _global_StringInit(7, "_global");
-_global_Maybe_rAllocatorType.name = _global_StringInit(16, "Maybe_rAllocator");_global_All_Type.name = _global_StringInit(3, "All")
-;_global_All_Type.package = _global_StringInit(7, "_global");_global_Maybe_rArray_TType.fields = _global_StaticArray_StaticArray_S_FieldInit(NULL, 0);
+_global_Maybe_rAllocatorType.name = _global_StringInit(16, "Maybe_rAllocator");_global_Maybe_rArray_TType.fields = _global_StaticArray_StaticArray_S_FieldInit(NULL, 0);
 _global_Maybe_rArray_TType.package = _global_StringInit(7, "_global");
 _global_Maybe_rArray_TType.name = _global_StringInit(14, "Maybe_rArray_T");_global_Array_Array_TType.size.tag = 1;
 _global_Array_Array_TType.array_type = 
@@ -1273,6 +1284,7 @@ _global_temporary_storage_as_allocator = _global_AllocatorFromStruct(&(_global_t
 _global_malloc_as_allocator = _global_AllocatorFromStruct(&(_global_malloc),&rMalloc_VTABLE_FOR_Allocator,_global_TypeFromStruct(_global_Malloc_get_type(NULL,(&_global_context)),&rStructType_VTABLE_FOR_Type,rStructType_VTABLE_FOR_Type.type, &_global_StructType_toString), &_global_Malloc_get_occupied, &_global_Malloc_alloc, &_global_Malloc_dealloc, &_global_Malloc_reset_to, &_global_Malloc_free_allocator);;
 (&_global_context)->allocator = &(_global_temporary_storage_as_allocator);
 (&_global_context)->longterm_storage = &(_global_malloc_as_allocator);
+;
 ;
 ;
 ;

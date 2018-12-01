@@ -14,6 +14,8 @@ struct _global_String {
 struct BoolType {};
 struct StringType {};
 struct NoneType {};
+struct CharType {};
+
 struct IntType {
     _Bool sign;
     unsigned int size;

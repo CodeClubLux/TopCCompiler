@@ -156,7 +156,7 @@ class CodeGen:
                 self.append(";\n")
             if self.debug:
                 filename = ast.fullFilePath().replace("\\", "\\\\")
-                #self.append(f';\n#line {ast.token.line+1} "{filename}.top"\n')
+                #self.append(f'#line {ast.token.line+1} "{filename}.top"\n')
 
     def createName(self, name, typ):
         self.names[-1][name] = (typ, name)
@@ -313,7 +313,8 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
         linkedCode.append(f.read())
         f.close()
 
-    linkedCode.append(f"int main() {{ \n_globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInit(); return 0; }};")
+    print_size = 'printf("offset of cases %llu, %llu", sizeof(struct ecs_Slot_model_ModelRenderer), sizeof(struct model_ModelRenderer)); return 0;'
+    linkedCode.append(f"int main() {{ \n_globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInit(); return 0;  }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))

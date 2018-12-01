@@ -83,13 +83,16 @@ from TopCompiler import CodeGen
 def castFrom(originalType, newType, node, realName, codegen):
     key_cast = (originalType.name, newType.name)
 
+    if originalType == newType:
+        node.compileToC(codegen)
+        return
+
     if originalType.isType(Types.FuncPointer):
         return node.compileToC(codegen)
     elif type(newType) is Types.I32:
         return node.compileToC(codegen)
     elif type(newType) is Types.Interface:
         n = SimplifyAst.sanitize(newType.name if newType.package != "_global" else "_global_" + newType.name)
-
 
         if not key_cast in casted:
             from TopCompiler import topc
@@ -101,6 +104,9 @@ def castFrom(originalType, newType, node, realName, codegen):
             codegen.outFunction()
         else:
             tmp = casted[key_cast]
+
+        if not type(originalType) is Types.Pointer:
+            node.error("Can only convert to interface from pointer")
 
         originalType = originalType.pType
         codegen.append(n + "FromStruct(")
@@ -125,9 +131,9 @@ def castFrom(originalType, newType, node, realName, codegen):
                 name = realName[field]
             else:
                 name = f"{originalType.package}_{originalType.normalName}_{field}"
+
             codegen.append(f", &{name}")
         codegen.append(")")
-
 
         return
     elif type(newType) is Types.Array:

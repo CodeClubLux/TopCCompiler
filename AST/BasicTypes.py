@@ -69,7 +69,8 @@ class String(Node):
 
     def compileToC(self, codegen):
         stringified = self.toString()
-        codegen.append(f"_global_StringInit({(len(stringified)-2)},{stringified})")
+        length = len(stringified) -2 - stringified.count(r"\\")
+        codegen.append(f"_global_StringInit({length},{stringified})")
 
     def validate(self, parser): pass
 
@@ -141,9 +142,12 @@ class Typeof(Node):
         package = self.typ.package if self.typ.package != "" else "_global"
         fullName = SimplifyAst.toUniqueID(package, self.typ.normalName, self.typ.remainingGen)
 
-
         if not type(self.typ) in [Types.Interface, Types.Pointer, Types.Alias, Types.Null]:
-            codegen.append(f"{fullName}_get_type(NULL," + codegen.getContext() + ")")
+            if type(self.typ) is Types.T:
+                typeof_none = Typeof(self, Types.Null())
+                Tree.castFrom(typeof_none.type, Parser.IType, typeof_none, "", codegen)
+            else:
+                codegen.append(f"{fullName}_get_type(NULL," + codegen.getContext() + ")")
         else:
             if type(self.typ) is Types.Pointer:
                 codegen.append("_global_boxPointerType(_global_PointerTypeInit(")

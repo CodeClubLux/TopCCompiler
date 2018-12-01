@@ -45,7 +45,7 @@ cube_entity := ecs.make_Entity ecs.make_ID!
 cube_entity.scale = Vec3{ 0.5, 0.5, 0.5 }
 
 mesh_renderer := model.make_ModelRenderer cube_entity.id
-mesh_renderer.model = Some &cube
+mesh_renderer.model = Some cube
 
 /*
 editor_plane := model.load_model "assets/editor_plane.fbx", box [

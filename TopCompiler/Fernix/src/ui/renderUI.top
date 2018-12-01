@@ -4,7 +4,7 @@ import "vfs"
 
 type UI =
     nk_ptr: &nk_context
-    pushed_row_layout: [..]LayoutOptions
+    pushed_row_layout: &[..]LayoutOptions
 
 def make_ui() &UI =
     let max_vertex_buffer = 512 * 1024
@@ -20,9 +20,12 @@ def make_ui() &UI =
     nk_glfw3_font_stash_end!
     nk_style_set_font nk_ptr, &segoe.handle
 
+    pushed_row_layout := box [..]LayoutOptions
+    pushed_row_layout.allocator = Some context.longterm_storage
+
     box UI{
         nk_ptr = nk_ptr
-        pushed_row_layout = [..]LayoutOptions
+        pushed_row_layout = box [..]LayoutOptions
     }
 
 def UI.render(&self) =
@@ -65,14 +68,11 @@ def group_end() =
     ui := get_ui!
     nk_group_end ui.nk_ptr
 
-def input(options: InputOptions) =
+def input(options: InputOptions) string =
     ui := get_ui!
-
-    buffer := (context.longterm_allocator.alloc options.max_length * sizeof char) cast &char
-    log options.value.length
-    memcpy buffer, options.value.to_c_string!, options.value.length + 1
+    buffer := options.buffer
     nk_edit_string_zero_terminated ui.nk_ptr, nk_edit_simple, buffer, options.max_length, None
-    *options.value = char_buffer_toString buffer
+    char_buffer_toString buffer
 
 def begin_window(surface: WindowOptions) bool =
     ui := get_ui!
@@ -85,6 +85,13 @@ def begin_window(surface: WindowOptions) bool =
 type LayoutOptions either
     DynamicLayout(float, uint)
 
+def LayoutOptions.toString(&self) string =
+    match *self with
+        DynamicLayout height, rows ->
+            //if rows > 10 then
+            //    panic "What!"
+            toString (rows as int)
+
 def internal_set_layout_row(ui: &UI, options: LayoutOptions) =
     match options with
         DynamicLayout height, columns ->
@@ -92,7 +99,6 @@ def internal_set_layout_row(ui: &UI, options: LayoutOptions) =
 
 def push_layout_row(options: LayoutOptions) =
     ui := get_ui!
-
     ui.pushed_row_layout.append options
     internal_set_layout_row ui, options
 

@@ -7,7 +7,7 @@ import "ecs"
 type Param either
     Param_Vec3(string, math.Vec3)
     Param_Mat4x4(string, math.Mat4x4)
-    Param_Image(string, texture.Texture)
+    Param_Image(string, &texture.Texture)
 
 type Material =
     name: string

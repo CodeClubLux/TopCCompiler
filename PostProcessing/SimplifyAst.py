@@ -192,6 +192,7 @@ class FuncSpecification:
                 newAST.f = Types.replaceT(newAST.f, self.replaced)
                 newAST.to = Types.replaceT(newAST.to, self.replaced)
                 newAST.type = newAST.to
+                newAST.realName = copy.copy(newAST.realName)
             elif type(newAST) is Tree.For:
                 newAST.condition_type = Types.replaceT(ast.condition_type, self.replaced)
             elif type(newAST) is Tree.Match:

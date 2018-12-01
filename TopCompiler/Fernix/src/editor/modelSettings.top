@@ -1,0 +1,36 @@
+import "materialSystem"
+import "ecs"
+import "layermask"
+
+type MaterialSettings =
+    shader_filename: string
+    params: [..]materialSystem.Param
+
+type ModelSettings =
+    entity: &ecs.Entity
+    filename: string
+    materials: [..]MaterialSettings
+
+def ModelSettings.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def ModelSettings.render(&self) =
+def ModelSettings.update(&self) =
+
+model_settings_system := ecs.make_Store make_ModelSetting, 10
+
+def make_ModelSetting(id: ecs.ID) &ModelSettings =
+    entity := match ecs.entity_system.component_by_id id with
+        Some comp -> comp
+        None -> ecs.make_Entity id
+
+    entity.layermask = layermask.make_Layermask!
+
+    materials := [..]MaterialSettings
+    materials.allocator = Some context.longterm_storage
+
+    model_settings_system.add_component ModelSettings{
+        entity = entity
+        filename = ""
+        materials = materials
+    }

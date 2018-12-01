@@ -1,7 +1,10 @@
-entity_system := make_Store::[Entity] make_Entity, 1000
+entity_system := make_Store::[Entity] make_Entity, 100
+
+last_assigned_id := 0
 
 def make_ID() ID =
-    entity_system.components.length
+    last_assigned_id += 1
+    last_assigned_id - 1
 
 def make_Entity(id: ID) &Entity =
     entity_system.add_component Entity{
@@ -14,6 +17,9 @@ def make_Entity(id: ID) &Entity =
     }
 
 def free_entity(id: ID) =
-    for i := 0..component_types.length do
-        system := component_types[i]
+    i := component_types.length - 1
+    while not i == 0 do
+        system := &component_types[i]
         system.free_component_by_id id
+
+        i -= 1

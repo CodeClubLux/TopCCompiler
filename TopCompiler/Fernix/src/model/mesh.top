@@ -2,6 +2,7 @@ import "buffer"
 from "materialSystem" import (Material, material_by_name)
 from "math" import all
 import "ecs"
+import "opengl"
 
 type Vertex =
     position: Vec3

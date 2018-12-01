@@ -912,7 +912,7 @@ class Interface(Type):
                             #mynode.error("field "+str(other)+"."+field+" is supposed to be type "+str(self.types[field])+", not "+str(meth))
                 else:
                     notInField = True
-                    mynode.error("type "+str(other)+" missing field "+field+" to be upcasted to "+str(self))
+                    node.error("type "+str(other)+" missing field "+field+" to be upcasted to "+str(self))
         except EOFError as e:
             if notInField:
                 beforeError(e, "")
@@ -1006,9 +1006,10 @@ def hasMethodEnum(attachTyp, parser, name, isP=False):
                 packages[:-1]) + " and " + packages[-1])
 
     if b:
+        firstArg = b.args[0]
         m = replaceT(b, attachTyp.generic)
-        firstArg = m.args[0] #replaceT(m.args[0], attachTyp.generic)
-        compareFirstArg(m.args[0], self, isP, parser)
+        #replaceT(m.args[0], attachTyp.generic)
+        compareFirstArg(self, firstArg, isP, parser)
         return m
 
 def isMaybe(typ):
