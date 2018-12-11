@@ -27,6 +27,7 @@ ext glfwGetWindowUserPointer: |&GLFWwindow| -> &none = "glfwGetWindowUserPointer
 ext glfwSetKeyCallback: |&GLFWwindow, |&GLFWwindow, int, int, int, int| -> none| -> none = "glfwSetKeyCallback"
 ext glfwSetDropCallback: |&GLFWwindow, |&GLFWwindow, int, &&char| -> none| -> none = "glfwSetDropCallback"
 ext glfwGetMouseButton: |&GLFWwindow, uint| -> int = "glfwGetMouseButton"
+ext glfwSwapInterval: |int| -> none = "glfwSwapInterval"
 
 ext glfw_cursor: uint = "GLFW_CURSOR"
 ext glfw_cursor_disabled: uint = "GLFW_CURSOR_DISABLED"
@@ -46,6 +47,7 @@ ext glfw_press: int = "GLFW_PRESS"
 ext glfw_release: int = "GLFW_RELEASE"
 
 ext getTime: || -> float = "glfwGetTime"
+
 
 
 ext getProcAddress: &none = "glfwGetProcAddress"

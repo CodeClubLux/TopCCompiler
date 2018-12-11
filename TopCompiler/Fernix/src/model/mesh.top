@@ -1,5 +1,4 @@
 import "buffer"
-from "materialSystem" import (Material, material_by_name)
 from "math" import all
 import "ecs"
 import "opengl"
@@ -15,9 +14,9 @@ type Mesh =
     buffer: buffer.VertexBuffer
     vertices: []Vertex
     indices: []uint
-    material: &Material
+    material_id: uint
 
-def make_Mesh(vertices: []Vertex, indices: []uint, material: &Material) Mesh =
+def make_Mesh(vertices: []Vertex, indices: []uint, material_id: uint) Mesh =
     attributes := [
         buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, position }
         buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, normal }
@@ -30,11 +29,13 @@ def make_Mesh(vertices: []Vertex, indices: []uint, material: &Material) Mesh =
         buffer = buffer.make_vertex_buffer vertices, indices, &attributes
         vertices = vertices
         indices = indices
-        material = material
+        material_id = material_id
     }
 
-def Mesh.render(&self, entity: &ecs.Entity) =
-    self.material.bind entity
+def Mesh.render(&self, entity: &ecs.Entity, materials: []Material) =
+    material := &materials[self.material_id]
+
+    material.bind entity
     self.buffer.bind!
 
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0

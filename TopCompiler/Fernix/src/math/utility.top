@@ -3,16 +3,18 @@ ext cos: |float| -> float = "cosf"
 ext sin: |float| -> float = "sinf"
 ext tan: |float| -> float = "tanf"
 ext abs: |float| -> float = "fabs"
+ext atan2: |float, float| -> float = "atan2f"
+ext asin: |float| -> float = "asinf"
 
 pi := 3.14159265
 
 def radians(degrees: float) float =
     degrees * (pi / 180)
 
-def min(a: float, b: float) float =
-    if a < b then a
+def min[T: Number[T]](a: T, b: T) T =
+    if &a < &b then a
     else b
 
-def max(a: float, b: float) float =
-    if a > b then a
+def max[T: Number[T]](a: T, b: T) T =
+    if &a > &b then a
     else b

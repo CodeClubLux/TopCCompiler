@@ -7,33 +7,37 @@ import "ecs"
 from "modelSettings" import (model_settings_system)
 import "layermask"
 
-selected_id := -1
+type ModelAssetTabEvents either
+    SelectedModel(uint)
 
-filter_buffer := (alloc 50 * sizeof char) cast &char
-*filter_buffer = null_terminated
+type ModelAssetTab =
+    ui_mesg_queue: ui.MesgQueue[ModelAssetTabEvents]
+    selected_id: int
+    filter_buffer: &char
 
-def render_asset_tab() =
+def make_ModelAssetTab() ModelAssetTab =
+    filter_buffer := (alloc 50 * sizeof char) cast &char
+    *filter_buffer = null_terminated
+
+    ModelAssetTab{
+        ui_mesg_queue = ui.make_MesgQueue::[ModelAssetTabEvents] 10
+        filter_buffer = filter_buffer
+        selected_id = -1
+    }
+
+def ModelAssetTab.update(&self) =
     inp := input.get_input!
+    self.ui_mesg_queue.clear!
 
-    filter := ui.input ui.default_input{ buffer = filter_buffer, max_length = 50 }
-
-    model_settings := model_settings_system.get_all_active!
-
-    for model_setting := model_settings do
-        id := model_setting.get_entity!.id
-
-        if not model_setting.filename.starts_with filter then continue
-
-        selected := id == selected_id
-
-        if ui.button ui.default_button{
-            text = model_setting.filename
-            selected = selected
-        } then
-            selected_id = id
+    for mesg := self.ui_mesg_queue.messages do
+        match mesg with
+            SelectedModel id ->
+                self.selected_id = id
+                edit := editor.get_editor!
+                edit.select id
 
     if inp.key_pressed key.from_char `N` then
-        if selected_id < 0 then return
+        if self.selected_id < 0 then return
 
         entity := ecs.make_Entity ecs.make_ID!
 
@@ -42,8 +46,28 @@ def render_asset_tab() =
 
         model_system := model.get_model_system!
 
-        model_renderer := model.make_ModelRenderer entity.id
-        model_renderer.model = model_system.component_by_id (selected_id cast uint)
+        guard Some model_setting := model_settings_system.component_by_id (self.selected_id cast uint)
+        else return
 
-        match model_renderer.model with
-            Some x -> x
+        model_renderer := model.make_ModelRenderer entity.id
+        model_renderer.materials = model_setting.materials
+        model_renderer.model_id = model_setting.model_id
+
+def ModelAssetTab.render_ui(&self, window: &ui.Window) =
+    filter := ""
+
+    inp := ui.input window, 50, self.filter_buffer, &filter
+    inp.style.width = ui.Perc 1
+
+    model_settings := model_settings_system.get_all_active!
+
+    for model_setting := model_settings do
+        id := model_setting.get_entity!.id
+
+        if not model_setting.filename.starts_with filter then continue
+
+        selected := id == self.selected_id
+
+        button := ui.button window, model_setting.filename
+        button.selected = selected
+        button.ev_handler = Some ui.dispatch &self.ui_mesg_queue, ui.Pressed, SelectedModel id

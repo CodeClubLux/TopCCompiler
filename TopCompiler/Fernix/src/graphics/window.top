@@ -41,21 +41,26 @@ def Window.init(&self) =
         else
             glfwCreateWindow self.width, self.height, c_title, None, None
 
-    match self.window_ptr with
-        Some window_ptr ->
-            glfwMakeContextCurrent window_ptr
-            glfwSetFramebufferSizeCallback window_ptr, framebuffer_size_callback
-            glfwSetCursorPosCallback window_ptr, cursor_pos_callback
-            glfwSetKeyCallback window_ptr, key_callback
-            glfwSetInputMode window_ptr, glfw_cursor, glfw_cursor_disabled
-            glfwSetDropCallback window_ptr, drop_callback
+    guard Some window_ptr := self.window_ptr
+    else
+        glfwTerminate!
+        panic "Failed to create window"
 
-            gi.load getProcAddress
-            self.update_context!
 
-        None ->
-            glfwTerminate!
-            panic "Failed to create window"
+    glfwMakeContextCurrent window_ptr
+    glfwSetFramebufferSizeCallback window_ptr, framebuffer_size_callback
+    glfwSetCursorPosCallback window_ptr, cursor_pos_callback
+    glfwSetKeyCallback window_ptr, key_callback
+    glfwSetInputMode window_ptr, glfw_cursor, glfw_cursor_disabled
+    glfwSetDropCallback window_ptr, drop_callback
+
+    gi.load getProcAddress
+    self.update_context!
+
+    if self.vSync then
+        glfwSwapInterval 1
+    else
+        glfwSwapInterval 0
 
 def Window.update_context(&self) =
     glfwSetWindowUserPointer self.window_ptr.unwrap!, context

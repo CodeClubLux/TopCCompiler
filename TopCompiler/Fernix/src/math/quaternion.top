@@ -82,6 +82,30 @@ def Quat.mul_vec3(&q, v: Vec3) Vec3 =
 
     a + b + c
 
+def Quat.toString(&self) string =
+    "Quat({self.w}, {self.x}, {self.y}, {self.z})"
+
+def Quat.to_vec3(&rotation) Vec3 =
+    x := Vec3{1,0,0}
+    y := Vec3{0,1,0}
+    z := Vec3{0,0,1}
+
+    rot_x := rotation.mul_vec3 x
+    rot_y := rotation.mul_vec3 y
+    rot_z := rotation.mul_vec3 z
+
+    vec := Vec3{rot_x.x * 180 - 180, rot_y.y * 180 - 180, rot_z.z * 180 - 180}
+    if vec.x > 360 then vec.x -= 360
+    elif vec.x < (-360) then vec.x += 360
+    
+    if vec.y > 360 then vec.y -= 360
+    elif vec.y < (-360) then vec.y += 360
+    
+    if vec.z > 360 then vec.z -= 360
+    elif vec.z < (-360) then vec.z += 360
+
+    vec
+
 q1 := make_quat (radians 90), Vec3{0,0,1}
 v2 := Vec3{1,0,0}
 v2 = q1.mul_vec3 v2

@@ -201,6 +201,10 @@ class FuncSpecification:
             elif type(newAST) is Tree.FuncCall:
                 newAST.replaced = {name: Types.replaceT(newAST.replaced[name], self.replaced) for name in
                                    newAST.replaced}
+            elif type(newAST) is Tree.Operator and newAST.kind == "&" and newAST.insertedCast:
+                opT = Types.replaceT(newAST.nodes[0].type, self.replaced)
+                if opT.isType(Types.Pointer):
+                    return newAST.nodes[0]
 
             return newAST
 

@@ -47,6 +47,7 @@ def insertCast(ast, fromT, toT, iter, onlyToP=False):
             ast.owner.nodes[iter] = takeRef
             takeRef.addNode(ast)
             takeRef.type = Types.Pointer(ast.type)
+            takeRef.insertedCast = True
 
             #insertCast(takeRef, takeRef.type, toT, iter)
             return
@@ -183,6 +184,11 @@ def castFrom(originalType, newType, node, realName, codegen):
             return
 
         elif originalType.empty:
+            structName = newType.toCType()[len("struct "):]
+            codegen.append(structName + "Init(0, 0, NULL, NULL)")
+
+            """ 
+            print(structName)
             if key_cast in casted:
                 funcName = casted[key_cast]
             else:
@@ -202,6 +208,7 @@ def castFrom(originalType, newType, node, realName, codegen):
             codegen.append(f"{funcName}(")
             node.compileToC(codegen)
             codegen.append(")")
+            """
             return
 
         print(newType.name)

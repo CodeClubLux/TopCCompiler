@@ -12,3 +12,6 @@ type System with
     def get_component_by_id(ID) Maybe[Component]
 
 component_types := [..]System
+
+def get_id_for[T: Component](c: &T) ID =
+    c.get_entity!.id

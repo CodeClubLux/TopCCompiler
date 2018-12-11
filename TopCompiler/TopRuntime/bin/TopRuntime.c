@@ -879,7 +879,7 @@ _global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_
 #define _global_c_alloc(Z,bb) malloc(Z)
 
 #define _global_c_free(bc,bd) free(bc)
-struct _global_TemporaryStorage _global_new_TemporaryStorage(unsigned int _global_maxSize, struct _global_Context* bf){;
+struct _global_TemporaryStorage _global_temporary_storage;struct _global_Malloc _global_malloc;struct _global_Allocator _global_temporary_storage_as_allocator;struct _global_Allocator_VTABLE rTemporaryStorage_VTABLE_FOR_Allocator;struct _global_Allocator _global_malloc_as_allocator;struct _global_Allocator_VTABLE rMalloc_VTABLE_FOR_Allocator;struct _global_TemporaryStorage _global_new_TemporaryStorage(unsigned int _global_maxSize, struct _global_Context* bf){;
 ;return _global_TemporaryStorageInit(0,0,_global_c_alloc(_global_maxSize,bf),_global_maxSize);
 ;}
 unsigned int _global_TemporaryStorage_get_occupied(struct _global_TemporaryStorage* _global_self, struct _global_Context* bf){;
@@ -893,8 +893,8 @@ if((_global_self)->occupied>(_global_self)->highest){;
 (_global_self)->highest=(_global_self)->occupied;;
 ;};
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-_global_log_string(_global_StringInit(48,"panic: used more temporary memory than available"),bf);
-_global_exit(1,bf);
+(bf)->allocator=(bf)->longterm_storage;;
+_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_uint_toStringByValue(((_global_self)->maxSize),bf),bf),_global_StringInit(0,""),bf),bf);
 ;};
 ;return _global_offsetPtr((_global_self)->data,_global_occupied,bf);
 ;}
@@ -905,7 +905,8 @@ void _global_TemporaryStorage_reset_to(struct _global_TemporaryStorage* _global_
 ;
 (_global_self)->occupied=_global_occupied;;
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-_global_panic(_global_StringInit(41,"used more temporary memory than available"),bf);
+(bf)->allocator=(bf)->longterm_storage;;
+_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_uint_toStringByValue(((_global_self)->occupied),bf),bf),_global_StringInit(0,""),bf),bf);
 ;};
 ;}
 void* _global_Malloc_alloc(struct _global_Malloc* _global_self, unsigned int _global_size, struct _global_Context* bf){;
@@ -924,7 +925,7 @@ void _global_Malloc_free_allocator(struct _global_Malloc* _global_self, struct _
 void _global_Malloc_reset_to(struct _global_Malloc* _global_self, unsigned int _global_to, struct _global_Context* bf){;
 ;
 ;}
-struct _global_TemporaryStorage _global_temporary_storage;struct _global_Malloc _global_malloc;struct _global_Allocator _global_temporary_storage_as_allocator;struct _global_Allocator_VTABLE rTemporaryStorage_VTABLE_FOR_Allocator;struct _global_Allocator _global_malloc_as_allocator;struct _global_Allocator_VTABLE rMalloc_VTABLE_FOR_Allocator;void* _global_alloc(unsigned int _global_size, struct _global_Context* bf){;
+void* _global_alloc(unsigned int _global_size, struct _global_Context* bf){;
 ;return _global_Allocator_alloc((bf)->allocator,_global_size,bf);
 ;}
 void _global_free(void* _global_p, struct _global_Context* bf){;
@@ -1804,4 +1805,4 @@ rStructType_VTABLE_FOR_Type.type
 )
 ;_global_Allocator_Type.name = _global_StringInit(9, "Allocator")
 ;_global_Allocator_Type.package = _global_StringInit(7, "_global");; 
- mainInit(); return 0; };
+ mainInit(); return 0;  };

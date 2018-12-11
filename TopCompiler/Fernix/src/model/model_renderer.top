@@ -1,19 +1,61 @@
 import "ecs"
+from "materialSystem" import (material_by_name)
 
 //Model Renderer
 type ModelRenderer =
     entity: &ecs.Entity
-    model: Maybe[&Model]
+    model_id: Maybe[ecs.ID]
+    materials: []Material
     visible: bool
 
 def ModelRenderer.get_entity(&self) &ecs.Entity =
     self.entity
 
 def ModelRenderer.render(&self) =
-    match self.model with
-        Some model -> if self.visible then
-            model.render_model_for self.get_entity!
+    guard Some model_id := self.model_id
+    else return
 
-        None ->
+    guard Some model := model_system.component_by_id model_id
+    else return
+
+    assert model.materials.length == self.materials.length, "Material length is not the same for model and model renderer"
+
+    model.render_model_for self.get_entity!, self.materials
 
 def ModelRenderer.update(&self) =
+
+
+//setup model renderer system
+model_renderer_system := ecs.make_Store make_ModelRenderer, 10
+
+def make_ModelRenderer(id: ecs.ID) &ModelRenderer =
+    entity := match ecs.entity_system.component_by_id id with
+        Some e -> e
+        None -> ecs.make_Entity id
+
+    model_renderer_system.add_component ModelRenderer{
+        entity = entity
+        model_id = None
+        visible = true
+        materials = []
+    }
+
+def get_model_renderer_system() &ecs.Store[ModelRenderer] =
+    model_renderer_system
+
+def ModelRenderer.set_materials(&self, materials: []Material) =
+    materials_in_order := [..]Material
+
+    guard Some model_id := self.model_id
+    else return
+
+    guard Some model := model_system.component_by_id model_id
+    else return
+
+    for mat_name := model.materials do
+        guard Some mat := material_by_name materials, mat_name
+        else panic "Missing material {mat_name} for model {model.path}"
+
+        materials_in_order.append *mat
+
+    self.materials = materials_in_order

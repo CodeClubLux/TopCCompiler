@@ -1,59 +1,168 @@
 from "math" import Vec2
 
-type WindowOptions =
+type UIElement either
+    Element_Label(&Label)
+    Element_Button(&Button)
+    Element_Propertyf(&Propertyf)
+    Element_Input(&Input)
+    Element_NewLine
+    Element_Group(&Window)
+
+def UIElement.toString(&self) string =
+    match *self with
+        Element_Label x -> "Label"
+        Element_Button x -> "Button"
+        Element_Propertyf _ -> "Property"
+        Element_Input _ -> "Input"
+        Element_NewLine -> "Newline"
+        Element_Group _ -> "Group"
+
+type Size either
+    Auto
+    Px(uint)
+    Perc(float)
+
+type Position either
+    Absolute(uint, uint)
+    Relative
+
+type BoxSize =
+    right: Size
+    left: Size
+    top: Size
+    bottom: Size
+
+type Style =
+    width: Size
+    height: Size
+    margin: BoxSize
+    padding: BoxSize
+
+type Container with
+    def add_child(UIElement)
+
+type Window =
     title: string
-    size: Vec2
-    position: Vec2
+    style: Style
+    position: Position
+    children: [..]UIElement
 
-default_window := WindowOptions{
-    title = ""
-    size = Vec2{100,100}
-    position = Vec2{0,0}
-}
+def Window.add_child(&self, child: UIElement) =
+    self.children.append child
 
-type LabelOptions =
+type Event either
+    Pressed
+
+type EventHandler with
+    def handle(Event)
+
+def window(title: string) &Window =
+    ui := get_ui!
+    self := box Window{
+        title = title
+        style = Style{
+            width = Px 100
+            height = Px 100
+            margin = BoxSize{ (Px 0), (Px 0), (Px 0), (Px 0)}
+            padding = BoxSize{ (Px 0), (Px 0), (Px 0), (Px 0)}
+        }
+        position = Absolute 0, 0
+        children = []
+    }
+    ui.windows.append self
+    self
+
+def group[T: Container](w: &T, title: string) &Window =
+    self := box Window{
+        title = title
+        style = Style{
+            width = Auto
+            height = Auto
+            margin = BoxSize{ (Px 0), (Px 0), (Px 0), (Px 0)}
+            padding = BoxSize{ (Px 0), (Px 0), (Px 85), (Px 0)}
+        }
+        position = Relative
+        children = []
+    }
+    w.add_child Element_Group self
+    self
+
+type Label =
     text: string
+    style: Style
 
-default_label := LabelOptions{
-    text = ""
+default_style := Style{
+    width = Auto
+    height = Auto
+    margin = BoxSize{ Auto, Auto, Auto, Auto }
+    padding = BoxSize{ Auto, Auto, Auto, Auto }
 }
 
-type ButtonOptions =
+def label[T: Container](w: &T, text: string) &Label =
+    self := box Label{
+        text = text
+        style = default_style
+    }
+
+    w.add_child Element_Label self
+    self
+
+type Button =
     text: string
     selected: bool
+    ev_handler: Maybe[EventHandler]
+    style: Style
 
-default_button := ButtonOptions{
-    text = ""
-    selected = false
-}
+def button[T: Container](w: &T, text: string) &Button =
+    self := box Button{
+        text = text
+        selected = false
+        ev_handler = None
+        style = default_style
+    }
 
-type PropertyfOptions =
+    w.add_child Element_Button self
+    self
+
+type Propertyf =
     text: string
     value: &float
     min: float
     max: float
     step: float
     inc_per_pixel: float
+    style: Style
 
-tmp_f := 0.0
-default_propertyf := PropertyfOptions{
-    text = ""
-    value = &tmp_f
-    min = -10000
-    max = 10000
-    step = 0.1
-    inc_per_pixel = 0.01
-}
+def propertyf[T: Container](w: &T, text: string, value: &float) &Propertyf =
+    self := box Propertyf{
+        text = text
+        value = value
+        min = -10000
+        max = 10000
+        step = 0.1
+        inc_per_pixel = 0.01
+        style = default_style
+    }
 
-type GroupOptions =
-    title: string
+    w.add_child Element_Propertyf self
+    self
 
-default_group := GroupOptions{ title = "" }
-
-type InputOptions =
-    buffer: &char
+type Input =
     max_length: uint
+    buffer: &char
+    value: &string
+    style: Style
 
-tmp_s := (alloc 50 * sizeof char) cast &char
-default_input := InputOptions{ tmp_s, max_length = 50 }
+def input[T: Container](w: &T, max_length: uint, buffer: &char, value: &string) &Input =
+    self := box Input{
+        max_length = max_length
+        buffer = buffer
+        value = value
+        style = default_style
+    }
 
+    w.add_child Element_Input self
+    self
+
+def new_line[T: Container](w: &T) =
+    w.add_child Element_NewLine

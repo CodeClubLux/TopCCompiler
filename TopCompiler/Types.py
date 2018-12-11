@@ -595,14 +595,16 @@ def compareFirstArg(self, firstArg, isP, parser):
 
         a.duckType(parser, b, parser, parser, 0)
 
-class Struct(Type):
-    def __init__(self, mutable, name, types, package, gen=coll.OrderedDict()):
-        self.types = types
 
-        if gen:
-            self.types = {i: replaceT(types[i], gen) for i in types}
-        else:
-            self.types = types
+class Struct(Type):
+    def __init__(self, mutable, name, types, package, gen=coll.OrderedDict(), replaced=False):
+        self._types = types
+        self.lastReplace = 0
+
+        #if gen:
+        #    self.types = {i: replaceT(types[i], gen) for i in types}
+        #else:
+        #    self.types = types
 
         self.package = package
 
@@ -612,7 +614,10 @@ class Struct(Type):
         fullName = package + "." + name if package != "_global" else name
 
         self.gen = gen
+
         self.remainingGen = areParts(gen, fullName, self.package)
+        if replaced:
+            self.lastReplace = len(self.remainingGen)
 
         gen = self.remainingGen
 
@@ -620,6 +625,24 @@ class Struct(Type):
 
         self.name = fullName + genericS
         #print(self.name)
+
+
+    @property
+    def types(self):
+        if self.remainingGen:
+            if len(self.remainingGen) != self.lastReplace:
+                types = self._types
+                self.lastReplace = len(self.remainingGen)
+
+                self._types = {i: replaceT(types[i], self.remainingGen) for i in types}
+
+            return self._types
+        else:
+            return self._types
+
+    @types.getter
+    def set_types(self, typ):
+        self._types = typ
 
     def hasMethod(self, parser, field, isP= False):
         if field == "get_type":
@@ -658,8 +681,10 @@ class Struct(Type):
         #    return "struct " + self.package + "_" + self.normalName
 
     def duckType(self, parser, other, node, mynode, iter=0):
-        if self.gen != {} and self.name == other.name:
+        if self.remainingGen == {} and self.name == other.name:
             return
+
+        #if self.name == "ui.UIElement":
 
         if not other.isType(Struct):
             node.error("expecting type "+str(self)+", not "+str(other))
@@ -787,10 +812,8 @@ class Array(Type):
 
         if (dynamic and otherDynamic) or (self.both) or (self.static and other.static):
             if not other.empty:
-                try:
-                    self.elemT.duckType(parser, other.elemT, node, mynode, iter)
-                except EOFError as e:
-                    beforeError(e, "Element type in array: ")
+                if self.elemT != other.elemT:
+                    node.error(f"Element type in array: Expecting {self.elemT} not {other.elemT}")
         else:
             node.error("Could not upcast from type " + str(other) + " to " + str(self))
 
@@ -1070,7 +1093,7 @@ class Enum(Type):
 
         return val
     def duckType(self, parser, other, node, mynode, iter):
-        if self.normalName != other.normalName:
+        if self.normalName != other.normalName or not other.isType(Types.Enum):
             node.error("expecting type "+self.name+", not "+str(other))
 
         for name in self.remainingGen:
@@ -1328,11 +1351,11 @@ class Pointer(Type):
 
     def duckType(self, parser, other, node, mynode, iter=0):
         if not other.isType(Pointer):
-            mynode.error("Expecting pointer, not type "+other.name)
+            node.error("Expecting pointer, not type "+other.name)
 
         if self.name == "&none":
             return
-        Type.duckType(self, parser, other, node, mynode, iter)
+        Type.duckType(self, parser, other, node, node, iter)
 
     def hasMethod(self, parser, field, isP= False):
         if self.pType.isType(Pointer): return
@@ -1369,7 +1392,9 @@ class Float(Type):
                 "op_add": FuncPointer([self,self], self),
                 "op_sub": FuncPointer([self,self], self),
                 "op_div": FuncPointer([self,self], self),
-                "op_mul": FuncPointer([self,self], self)
+                "op_mul": FuncPointer([self,self], self),
+                "op_gt": FuncPointer([self, self], Bool()),
+                "op_lt": FuncPointer([self, self], Bool())
             }
 
         return self.__methods__
@@ -1458,13 +1483,17 @@ def replaceT(typ, gen, acc=False, unknown=False): #with bool replaces all
             return T(typ.realName, replaceT(typ.type, gen, acc, unknown), typ.owner)
             #return typ
     elif type(typ) is Struct:
-        rem = gen
+        rem = {} #gen
+        types = typ._types
         for i in typ.remainingGen:
             if i in gen:
                 rem[i] = gen[i]  #T(i[i.find(".")+1:], gen[i], i[:i.find(".")])
             else:
                 rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
-        return Struct(False, typ.normalName, typ.types, typ.package, rem)
+
+        types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
+
+        return Struct(False, typ.normalName, types, typ.package, rem, replaced= True)
     elif type(typ) is Alias:
         rem = {}
         for i in typ.generic:

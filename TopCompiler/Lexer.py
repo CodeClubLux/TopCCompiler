@@ -68,13 +68,12 @@ slSymbols = fastacess([
     "(", ")",
     ";",
     "$",
-    "!",
     ",",
 ]) #Single length delimeters
 
 mlSymbols = fastacess([
     "::",
-    ":=", "=", ":", "."
+    ":=", "=", ":", ".", "!"
 ])
 
 slOperator = fastacess(["|", "^", "&"])
@@ -90,7 +89,7 @@ ml2Operators = fastacess([
     ])
 
 ml1Operators = fastacess([
-    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+", "."
+    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+", ".", "!"
 ])
 
 def intRegex(ending):

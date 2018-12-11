@@ -1,21 +1,37 @@
-import "materialSystem"
+from "materialSystem" import Material
 import "ecs"
 import "layermask"
-
-type MaterialSettings =
-    shader_filename: string
-    params: [..]materialSystem.Param
+import "model"
+import "shader"
 
 type ModelSettings =
     entity: &ecs.Entity
     filename: string
-    materials: [..]MaterialSettings
+    materials: []Material
+    model_id: Maybe[ecs.ID]
 
 def ModelSettings.get_entity(&self) &ecs.Entity =
     self.entity
 
 def ModelSettings.render(&self) =
 def ModelSettings.update(&self) =
+
+def ModelSettings.load(&self) =
+    m := model.load_model self.filename
+    self.model_id = Some ecs.get_id_for m
+
+    materials := [..]Material
+    materials.allocator = Some context.longterm_storage
+
+    for mat_name := m.materials do
+        log mat_name
+        materials.append Material{
+            name = mat_name
+            shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
+            params = []
+        }
+
+    self.materials = materials
 
 model_settings_system := ecs.make_Store make_ModelSetting, 10
 
@@ -26,11 +42,9 @@ def make_ModelSetting(id: ecs.ID) &ModelSettings =
 
     entity.layermask = layermask.make_Layermask!
 
-    materials := [..]MaterialSettings
-    materials.allocator = Some context.longterm_storage
-
     model_settings_system.add_component ModelSettings{
         entity = entity
         filename = ""
-        materials = materials
+        materials = []
+        model_id = None
     }

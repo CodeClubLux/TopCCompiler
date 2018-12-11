@@ -3,12 +3,15 @@ import "layermask"
 import "assetManager"
 import "vfs"
 
+model_system := ecs.make_Store::[Model] make_Model, 10
+
+from "materialSystem" import Material
+
 type Model =
     entity: &ecs.Entity
     path: string
-    meshes: [..]Mesh
-
-model_system := ecs.make_Store::[Model] make_Model, 10
+    meshes: []Mesh
+    materials: []string
 
 def make_Model(id: ecs.ID) &Model =
     entity := ecs.make_Entity id
@@ -22,7 +25,8 @@ def make_Model(id: ecs.ID) &Model =
     model_system.add_component Model{
         entity = entity
         path = ""
-        meshes = [..]Mesh
+        meshes = []
+        materials = []
     }
 
 def get_model_system() &ecs.Store[Model] =
@@ -36,24 +40,9 @@ def Model.get_entity(&self) &ecs.Entity =
 def Model.get_filename(&self) string =
     self.path
 
-def Model.render_model_for(&self, entity: &ecs.Entity) =
+def Model.render_model_for(&self, entity: &ecs.Entity, materials: []Material) =
     meshes := self.meshes
 
     for i := 0..meshes.length do
         mesh := meshes[i]
-        mesh.render entity
-
-
-//setup model renderer system
-model_renderer_system := ecs.make_Store make_ModelRenderer, 10
-
-def make_ModelRenderer(id: ecs.ID) &ModelRenderer =
-    entity := match ecs.entity_system.component_by_id id with
-        Some e -> e
-        None -> ecs.make_Entity id
-
-    model_renderer_system.add_component ModelRenderer{
-        entity = entity
-        model = None
-        visible = true
-    }
+        mesh.render entity, materials

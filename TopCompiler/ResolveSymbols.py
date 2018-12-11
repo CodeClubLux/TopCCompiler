@@ -110,26 +110,30 @@ def _resolve(self, tokens, filename, passN= 0 ):
                     name = self.nextToken().token
 
                 ofType = None
+                gen = {}
 
-                for i in range(0,100):
-                    if self.nextToken().token in ["either", "=", "is", "with"]:
-                        ofType = self.thisToken().token
-                        break
+                if self.nextToken().token == "[":
+                    Scope.incrScope(self)
+                    gen = FuncParser.generics(self, name)
+                    Scope.decrScope(self)
+                    ofType = self.thisToken().token
+                else:
+                    ofType = self.thisToken().token
 
                 Scope.addVar(Tree.Node(self), self, name,
                              Scope.Type(True, Types.StructInit(name)))
 
                 if ofType is None or ofType == "=":
                     #"""
-                    self.structs[self.package][name] = Struct.Struct(name, [],[], {}, self, self.package)
+                    self.structs[self.package][name] = Struct.Struct(name, [],[], gen, self, self.package)
                     self.structs[self.package][name].methods = {}
                     #"""
                 elif ofType == "either":
-                    self.interfaces[self.package][name] = Types.Enum(self.package, name, coll.OrderedDict(), {})
+                    self.interfaces[self.package][name] = Types.Enum(self.package, name, coll.OrderedDict(), gen)
                 elif ofType == "with":
                     self.interfaces[self.package][name] = Types.Interface(False, {}, name=self.package+"."+name)
                 elif ofType == "is":
-                    self.interfaces[self.package][name] = Types.Alias(self.package, name, Types.Null(), {})
+                    self.interfaces[self.package][name] = Types.Alias(self.package, name, Types.Null(), gen)
 
         if b == "\n":
             Parser.addBookmark(self)
