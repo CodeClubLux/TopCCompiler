@@ -31,7 +31,6 @@ def fill_array[T](numTimes: uint, elem: T) Array[T] =
 
 def Array[T].op_get(&self, index: uint) &T =
     assert index < self.length, "Out of bounds"
-
     indexPtr self.data.unwrap!, index
 
 def Array[T].shorten(&self, num: uint) =

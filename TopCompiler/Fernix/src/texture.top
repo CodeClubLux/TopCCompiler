@@ -1,50 +1,74 @@
 ext _ = "#define STB_IMAGE_IMPLEMENTATION"
 ext _ = '#include "stb_image.h"'
 
+import "stbi"
 import "assetManager"
-
-ext stbi_load: |&char, &int, &int, &int, uint| -> Maybe[&Byte] = "stbi_load"
-ext stbi_image_free: |&Byte| -> none = "stbi_image_free"
-ext stbi_set_flip_vertically_on_load: |bool| -> none = "stbi_set_flip_vertically_on_load"
-
 from "opengl" import all
 import "shader"
 import "vfs"
+import "ecs"
+import "layermask"
+
+type TextureID is uint
 
 type Texture =
-    id: uint
+    entity: &ecs.Entity
+    filename: string
+    texture_id: TextureID
 
-cached_textures := assetManager.make_asset_cache::[Texture]!
+textures_system := ecs.make_Store make_Texture, 20
 
-def load(filename: string) Texture =
+def make_Texture(id: ecs.ID) &Texture =
+    entity := match ecs.entity_system.component_by_id id with
+        Some x -> x
+        None -> ecs.make_Entity id
+
+    entity.layermask = layermask.make_Layermask!
+
+    textures_system.add_component Texture{
+        entity = entity
+        texture_id = 0
+        filename = ""
+    }
+
+def Texture.render(&self) =
+def Texture.update(&self) =
+def Texture.get_entity(&self) &ecs.Entity =
+    self.entity
+
+def Texture.get_filename(&self) string =
+    self.filename
+
+
+def load(filename: string) &Texture =
     real_filename := vfs.asset_path filename
 
-    match cached_textures.in_cache filename with
+    match assetManager.in_cache textures_system, filename with
         Some texture -> return texture
         None ->
 
-    stbi_set_flip_vertically_on_load true
+    stbi.set_flip_vertically_on_load true
 
     width : int = 0
     height : int = 0
     nr_channels : int = 0
-    texture := 0
+    texture_id := 0
 
-    genTextures 1, &texture
-    bindTexture opengl.texture_2D, texture
+    genTextures 1, &texture_id
+    bindTexture opengl.texture_2D, texture_id
 
     texParameteri texture_2D, texture_wrap_s, repeat
     texParameteri texture_2D, texture_wrap_t, repeat
     texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
     texParameteri texture_2D, texture_mag_filter, linear
 
-    data := match stbi_load real_filename.to_c_string!, &width, &height, &nr_channels, 0 with
+    data := match stbi.load real_filename.to_c_string!, &width, &height, &nr_channels, 0 with
         Some d -> d
         None ->
             panic "Could not load image {filename}"
             0 cast &Byte
 
-    defer stbi_image_free data
+    defer stbi.image_free data
 
     internal_color_format :=
         if nr_channels == 1 then red
@@ -53,12 +77,15 @@ def load(filename: string) Texture =
     texImage2D texture_2D, 0, rgb, width, height, 0, internal_color_format, unsigned_byte, Some data
     generateMipmap texture_2D
 
-    cached_textures.append filename, Texture{ texture }
+    texture := make_Texture ecs.make_ID!
+    texture.filename = filename
+    texture.texture_id = texture_id
+
+    texture
 
 def Texture.bind_to(self, num: uint) =
     activeTexture texture0 + num
-    bindTexture opengl.texture_2D, self.id
-
+    bindTexture opengl.texture_2D, self.texture_id
 
 type Cubemap =
     id: uint

@@ -7,39 +7,10 @@ import "runner"
 import "window"
 import "model"
 from "math" import Vec2
-import "materialSystem"
+from "modelSettings" import (make_ModelSetting, model_settings_system)
 import "layermask"
-
-type MaterialSettings =
-    shader_filename: string
-    params: [..]materialSystem.Param
-
-type ModelSettings =
-    entity: &ecs.Entity
-    filename: string
-    materials: [..]MaterialSettings
-
-def ModelSettings.get_entity(&self) &ecs.Entity = self.entity
-def ModelSettings.render(&self) =
-def ModelSettings.update(&self) =
-
-model_settings_system := ecs.make_Store make_ModelSetting, 10
-
-def make_ModelSetting(id: ecs.ID) &ModelSettings =
-    entity := match ecs.entity_system.component_by_id id with
-        Some comp -> comp
-        None -> ecs.make_Entity ecs.make_ID!
-
-    entity.layermask = layermask.make_Layermask!
-
-    materials := [..]MaterialSettings
-    materials.reserve 10 //if more than ten this will crash
-
-    model_settings_system.add_component ModelSettings{
-        entity = entity
-        filename = ""
-        materials = materials
-    }
+from "displayComponents" import (render_properties)
+from "modelAssetTab" import (ModelAssetTab, make_ModelAssetTab)
 
 type Editor =
     in_editor: bool
@@ -47,6 +18,10 @@ type Editor =
     editor_tab_width: float
     asset_tab_height: float
     model_tab_width: float
+    asset_tab: ModelAssetTab
+
+asset_folder := "C:\\Users\\User\\Desktop\\TopCCompiler\\TopCompiler\\Fernix\\assets\\"
+log "asset folder length {asset_folder.length}"
 
 def Editor.update(&self) =
     inp := input.get_input!
@@ -65,10 +40,22 @@ def Editor.update(&self) =
             None -> None
 
     for file := win.dropped_filepaths do
+        if not file.starts_with asset_folder then
+            log "file {file} not in assets folder"
+            continue
+
+        new_context := *context
+        new_context.allocator = context.longterm_storage
+
+        #pushContext new_context do
+            file = file.slice asset_folder.length, file.length
+
         id := ecs.make_ID!
 
         model_setting := make_ModelSetting id
         model_setting.filename = file
+
+        model_setting.load!
 
         self.selected = Some id
 
@@ -78,109 +65,17 @@ def Editor.update(&self) =
 def Editor.select(&self, id: ecs.ID) =
     self.selected = Some id
 
-def render_model_renderer(obj: &model.ModelRenderer) =
-    match obj.model with
-        Some m -> ui.label ui.default_label{ text = "name : '{m.path}'" }
-        None -> ui.label ui.default_label{ text = "name : unselected" }
-
-def render_field(obj: &none, field: Field) =
-    match field.field_type with
-        float_type as &FloatType ->
-            value_of_field := (offsetPtr obj, field.offset) cast &float
-            ui.propertyf ui.default_propertyf{ text = field.name, value = value_of_field }
-
-        struct_type as &StructType ->
-            ui.label ui.default_label{ text = "{field.name} : {struct_type}"}
-            render_object (offsetPtr obj, field.offset), struct_type
-
-        _ ->
-
-def render_object(obj: &none, obj_typ: Type) =
-    match obj_typ with
-        typ as &StructType ->
-
-            if typ.name == "ModelRenderer" and typ.package == "model" then
-                render_model_renderer obj cast &model.ModelRenderer
-            else
-                for field := typ.fields do
-                    render_field obj, field
-
-
-        _ ->
-
-def render_add_component(id: ecs.ID, components: []ecs.Component) =
-    ui.label ui.default_label{ text = "Add component" }
-
-    for system := ecs.component_types do
-        component_type := system.get_component_type!
-        component_type_string := component_type.toString!
-
-        already_active := false
-
-        for comp := components do
-            comp_typ := comp.get_type!.toString!
-            if comp_typ == component_type_string then
-                already_active = true
-                break
-
-        if already_active then continue
-        if ui.button ui.default_button{ text = component_type_string } then
-            log "component was pressed"
-            system.make_component id
-
-from "model" import (render_asset_tab)
-
-def Editor.render_properties(&self) =
-    w := window.get_window!
-
-    if ui.begin_window ui.default_window{
-        title = "Editor"
-        size = Vec2{w.width * self.editor_tab_width, w.height}
-        position = Vec2{0, 0}
-    } then
-        ui.push_layout_row ui.DynamicLayout 0, 1
-
-        match self.selected with
-            Some selected ->
-                components := ecs.components_by_id selected
-
-                for comp := components do
-                    comp_typ := comp.get_type!
-
-                    ui.label ui.default_label{ text = "Component {comp_typ}"} then
-                    render_object comp.get_pointer_to_data!, comp_typ
-                    ui.label ui.default_label{ text = "" }
-
-                render_add_component selected, components
-
-            None ->
-
-        ui.pop_layout_row!
-
-    ui.end_window!
-
-    if ui.begin_window ui.default_window{
-        title = "Models"
-        size = Vec2{w.width * (self.model_tab_width), w.height * self.asset_tab_height}
-        position = Vec2{w.width * self.editor_tab_width, w.height * (1 - self.asset_tab_height)}
-    } then
-        ui.push_layout_row ui.DynamicLayout 0, 1
-        render_asset_tab!
-        ui.pop_layout_row!
-
-    ui.end_window!
-
-
 def Editor.render(&self) =
     if not self.in_editor then return
-    self.render_properties!
+    render_properties!
 
 editor := Editor{
     in_editor = false
     selected = None
-    editor_tab_width = 0.15
+    editor_tab_width = 0.2
     asset_tab_height = 0.3
     model_tab_width = 0.2
+    asset_tab = make_ModelAssetTab!
 }
 
 def in_editor() bool =

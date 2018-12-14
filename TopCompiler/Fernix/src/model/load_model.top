@@ -1,0 +1,109 @@
+import "assetManager"
+
+ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
+
+def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string) Mesh =
+    vertices := [..]Vertex
+    vertices.allocator = Some context.longterm_storage
+    vertices.reserve mesh.mNumVertices
+
+    indices := [..]uint
+    indices.allocator = Some context.longterm_storage
+    indices.reserve mesh.mNumVertices
+
+    for i := 0..mesh.mNumVertices do
+        position := indexPtr mesh.mVertices, i
+        tangent := indexPtr mesh.mTangents, i
+        bitangent := indexPtr mesh.mBitangents, i
+
+        tex_coords := match (*indexPtr mesh.mTextureCoords, 0) with
+            Some coords ->
+                first_coords := *indexPtr coords, i
+                Vec2{ first_coords.x, first_coords.y }
+
+            None ->
+                panic "Mesh doesn't have uvs"
+                Vec2{ 0, 0 }
+
+        normals := indexPtr mesh.mNormals, i
+
+        vertices.append Vertex{
+            position = Vec3{ position.x, position.y, position.z }
+            tex_coord = tex_coords
+            normal = Vec3{ normals.x, normals.y, normals.z }
+            tangent = Vec3{ tangent.x, tangent.y, tangent.z }
+            bitangent = Vec3{ bitangent.x, bitangent.y, bitangent.z }
+        }
+
+    for i := 0..mesh.mNumFaces do
+        face := *indexPtr mesh.mFaces, i
+        for j := 0..face.mNumIndices do
+            indices.append (*indexPtr face.mIndices, j)
+
+    material_id :=
+        if mesh.mMaterialIndex >= 0 then
+            aMat := *indexPtr scene.mMaterials, mesh.mMaterialIndex
+            c_name : aiString = _
+            aiGetMaterialString aMat, ai_matkey_name, &c_name
+
+            name : string = char_buffer_toString c_name.data
+            name = name.slice 0, name.length //want to copy string
+
+            id : Maybe[uint] = None
+            for mat_name := *materials do
+                if mat_name == name then
+                    id = Some i
+
+            match id with
+                Some x -> x
+                None ->
+                    materials.append name
+                    materials.length - 1
+        else
+            panic "No material defined for mesh"
+            0
+
+    make_Mesh vertices, indices, material_id
+
+def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh, materials: &[..]string) =
+    meshes.reserve meshes.length + node.mNumMeshes
+
+    for i := 0..node.mNumMeshes do
+        mesh := *indexPtr scene.mMeshes, i
+        meshes.append process_mesh mesh, scene, materials
+
+    for i := 0..node.mNumChildren do
+        process_node *(indexPtr node.mChildren, i), scene, meshes, materials
+
+def load_in_place(model: &Model) =
+    real_path := vfs.asset_path model.path
+    path := model.path
+
+    scene := match aiImportFile real_path.to_c_string!, triangulate_and_flip with
+        Some s -> s
+        None ->
+            panic "Assimp could not load model, {path}"
+            0 cast &aiScene
+
+    meshes := [..]Mesh
+    meshes.allocator = Some context.longterm_storage
+
+    materials := [..]string
+    materials.allocator = Some context.longterm_storage
+
+    process_node scene.mRootNode, scene, &meshes, &materials
+
+    model.meshes = meshes
+    model.materials = materials
+
+def load_model(path: string) &Model =
+    match assetManager.in_cache model_system, path with
+        Some m -> return m
+        None ->
+
+    model := make_Model ecs.make_ID!
+    model.path = path
+
+    load_in_place model
+
+    model

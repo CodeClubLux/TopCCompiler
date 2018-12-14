@@ -40,3 +40,4 @@ def String.multiply(&self, times: uint) String =
 */
 
 ext char_buffer_toString: |&char| -> string = "_runtime_char_buffer_toString"
+ext null_terminated: char = "'\0'"

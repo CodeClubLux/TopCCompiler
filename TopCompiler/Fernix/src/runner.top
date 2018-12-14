@@ -30,6 +30,7 @@ def set_shader_scene_params(_shader: shader.Shader) =
 import "ui"
 
 def init() =
+    log "initializing"
     w := window.get_window!
     ui_ctx := ui.get_ui!
 

@@ -12,6 +12,15 @@ type Allocator with
     def reset_to(uint)
     def free_allocator()
 
+temporary_storage := new_TemporaryStorage 100_000
+malloc := Malloc{}
+
+temporary_storage_as_allocator := &temporary_storage as Allocator
+malloc_as_allocator := &malloc as Allocator
+
+#addToContext allocator := &temporary_storage_as_allocator
+#addToContext longterm_storage := &malloc_as_allocator
+
 type TemporaryStorage =
     occupied: SizeT
     highest: SizeT
@@ -37,8 +46,9 @@ def TemporaryStorage.alloc(&self, size: SizeT) &none =
         self.highest = self.occupied
 
     if self.occupied >= self.maxSize then
-        log "panic: used more temporary memory than available"
-        exit 1
+        context.allocator = context.longterm_storage
+
+        log "ERROR: used more tempory memory than available: {self.maxSize}"
 
     offsetPtr self.data, occupied
 
@@ -48,7 +58,8 @@ def TemporaryStorage.reset_to(&self, occupied: SizeT) =
     self.occupied = occupied
 
     if self.occupied >= self.maxSize then
-        panic "used more temporary memory than available"
+        context.allocator = context.longterm_storage
+        log "ERROR: used more tempory memory than available: {self.occupied}"
 
 type Malloc =
 
@@ -65,15 +76,9 @@ def Malloc.free_allocator(&self) =
 
 def Malloc.reset_to(&self, to: uint) =
 
-temporary_storage := new_TemporaryStorage 100000
-malloc := Malloc{}
 
-temporary_storage_as_allocator := &temporary_storage as Allocator
-malloc_as_allocator := &malloc as Allocator
 
-#addToContext allocator := &temporary_storage_as_allocator
-#addToContext longterm_storage := &malloc_as_allocator
-
+//helper functions
 def alloc(size: SizeT) &none =
     context.allocator.alloc size
 

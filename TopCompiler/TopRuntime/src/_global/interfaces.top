@@ -14,8 +14,9 @@ type Divider[T] with
 type Number[T] with
     def op_add(T) T
     def op_sub(T) T
-    def unary_add() T
     def op_div(T) T
+    def op_gt(T) bool
+    def op_lt(T) bool
     def toString() string
 
 type Byte is u8

@@ -1,0 +1,10 @@
+from "nuklearWrapper" import all
+
+type UI =
+    nk_ptr: &nk_context
+    windows: [..]&Window
+
+#addToContext ui := make_ui!
+
+def get_ui() &UI =
+    context.ui

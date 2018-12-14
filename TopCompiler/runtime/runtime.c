@@ -33,10 +33,31 @@ struct BoolType* _global_Bool_get_type(_Bool* b, __Context) {
     return &_global_Bool_typ;
 }
 
+struct CharType _global_Char_typ;
 
+struct CharType* _global_char_get_typeByValue(char b, __Context) {
+    return &_global_Char_typ;
+}
+
+struct CharType* _global_char_get_type(char* b, __Context) {
+    return &_global_Char_typ;
+}
+
+struct _global_String _global_CharType_toString(struct CharType* self, __Context) {
+    return _global_StringInit(4, "char");
+}
 
 struct _global_String _global_Bool_toString(_Bool* b, __Context) {
     return _global_Bool_toStringByValue(*b, context);
+}
+
+
+struct _global_String _global_String_sliceByValue(struct _global_String s, unsigned int from, unsigned int end, __Context) {
+    int length = end - from;
+    char* buffer = alloc(context->allocator, sizeof(char) * length + 1, context);
+    memcpy(buffer, s.data + from, length);
+    buffer[length] = '\0';
+    return _global_StringInit(length, buffer);
 }
 
 _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_String other, __Context) {

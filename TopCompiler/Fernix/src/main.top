@@ -33,7 +33,7 @@ wet_street_params := substance_params "wood_2", "Stylized_Wood"
     Param_Image "material.normal", texture.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
 ]*/
 
-cube := model.load_model "HOVERTANK.fbx", box [
+cube_materials := [
     Material{
         name = "DefaultMaterial"
         shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
@@ -41,11 +41,14 @@ cube := model.load_model "HOVERTANK.fbx", box [
     }
 ]
 
+cube := model.load_model "HOVERTANK.fbx"
+
 cube_entity := ecs.make_Entity ecs.make_ID!
 cube_entity.scale = Vec3{ 0.5, 0.5, 0.5 }
 
 mesh_renderer := model.make_ModelRenderer cube_entity.id
-mesh_renderer.model = Some &cube
+mesh_renderer.model_id = Some ecs.get_id_for cube
+mesh_renderer.set_materials &cube_materials
 
 /*
 editor_plane := model.load_model "assets/editor_plane.fbx", box [
@@ -74,3 +77,4 @@ log "running"
 skybox := ibl.make_Skybox ecs.make_ID!, "LA_Downtown_Helipad_GoldenHour_3k.hdr"
 
 runner.init!
+

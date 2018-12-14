@@ -17,6 +17,7 @@ class Operator(Node):
         self.interface = False
         self.name = False
         self.opT = Types.Null()
+        self.insertedCast = False
 
     def __str__(self):
         return self.kind
@@ -144,6 +145,7 @@ def checkOperator(self, parser):
         ops = {
             "int": int_operators,
             "uint": int_operators,
+            "u64": int_operators,
             "u8": int_operators,
             "u16": int_operators,
             "float": ["+", "-", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],

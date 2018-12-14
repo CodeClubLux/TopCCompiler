@@ -35,8 +35,8 @@ translation_model_materials := [
     }
 ]
 
-translation_model := model.load_model "gizmo.fbx", &translation_model_materials
-scale_model := model.load_model "scale_gizmo.fbx", &translation_model_materials
+translation_model := model.load_model "gizmo.fbx"
+scale_model := model.load_model "scale_gizmo.fbx"
 
 type Axis either
     Up(Vec3)
@@ -105,8 +105,8 @@ def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
         s := (b*f - c*e) / d
         t := (a*f - c*b) / d
 
-        closest_point1 := line_point1 + line_vec1.scale (max 0, (min r1.t, s))
-        closest_point2 := line_point2 + line_vec2.scale (max 0, (min r2.t, t))
+        closest_point1 := line_point1 + line_vec1.scale (max 0.0, (min r1.t, s))
+        closest_point2 := line_point2 + line_vec2.scale (max 0.0, (min r2.t, t))
 
         Some Closest_Point_Result{
             distance = (closest_point2 - closest_point1).len!
@@ -246,15 +246,18 @@ def Gizmo.update(&self) =
                     match self.kind with
                         Translate axis ->
                             self.kind = Translate handle_gizmo_intersection target.position, axis, s, &target.position, false
-                            model_renderer.model = Some &translation_model
+                            model_renderer.model_id = Some ecs.get_id_for translation_model
+                            model_renderer.set_materials &translation_model_materials
+
+                            model_renderer_entity.position = target.position
 
                         Scale axis ->
-                            self.kind = Scale handle_gizmo_intersection target.position, axis, s * target.scale, &target.scale, true
-                            model_renderer.model = Some &scale_model
-                            s_multiplier = target.scale
+                            self.kind = Scale handle_gizmo_intersection target.position, axis, s, &target.scale, true
+                            model_renderer.model_id = Some ecs.get_id_for scale_model
+                            model_renderer.set_materials &translation_model_materials
 
                         Disabled ->
-                            model_renderer.visible = false
+                            model_renderer.model_id = None
 
                     model_renderer_entity.scale = s_multiplier.scale scale_of_gizmo (cam.get_entity!.position - model_renderer_entity.position)
 
@@ -270,14 +273,13 @@ def make_Gizmo(id: ecs.ID) &Gizmo =
     entity := match ecs.entity_system.component_by_id id with
         Some e -> e
         None ->
-            entity := ecs.make_Entity ecs.make_ID!
+            entity := ecs.make_Entity id
             entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor
             entity
 
     model_renderer := match model.model_renderer_system.component_by_id id with
         Some m -> m
-        None ->
-            model.make_ModelRenderer entity.id
+        None -> model.make_ModelRenderer id
 
     gizmo_system.add_component Gizmo{
         entity = entity

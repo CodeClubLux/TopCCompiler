@@ -1,0 +1,17 @@
+type Component with
+    def get_entity() &Entity
+    def render()
+    def update()
+
+type System with
+    def get_component_type() Type
+    def make_component(ID)
+    def render(Layermask)
+    def update(Layermask)
+    def free_component_by_id(ID)
+    def get_component_by_id(ID) Maybe[Component]
+
+component_types := [..]System
+
+def get_id_for[T: Component](c: &T) ID =
+    c.get_entity!.id

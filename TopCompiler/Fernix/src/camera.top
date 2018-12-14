@@ -8,9 +8,6 @@ type Camera =
     projection_matrix: math.Mat4x4
     view_matrix: math.Mat4x4
 
-    position: math.Vec3
-    direction: math.Vec3
-
     fov: uint
 
 def Camera.get_entity(&self) &ecs.Entity =
@@ -44,7 +41,7 @@ def make_Camera(id: ecs.ID) &Camera =
     entity := match ecs.entity_system.component_by_id id with
         Some e -> e
         None ->
-            entity := ecs.make_Entity ecs.make_ID!
+            entity := ecs.make_Entity id
             entity.position = math.Vec3{ 0, 0, 1.8 }
             entity.layermask = layermask.enable entity.layermask, layermask.editor
             entity
@@ -54,9 +51,6 @@ def make_Camera(id: ecs.ID) &Camera =
 
         projection_matrix = math.identity_mat!
         view_matrix = math.identity_mat!
-
-        position = math.Vec3{0,0,0}
-        direction = math.Vec3{0,0,0}
 
         fov = 60
     }

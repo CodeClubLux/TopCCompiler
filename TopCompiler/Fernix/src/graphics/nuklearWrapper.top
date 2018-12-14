@@ -67,6 +67,8 @@ ext nk_text_left: uint = "NK_TEXT_LEFT"
 ext nk_layout_row_begin: |&nk_context, uint, float, int| -> none = "nk_layout_row_begin"
 ext nk_layout_row_end: |&nk_context| -> none = "nk_layout_row_end"
 
+ext nk_layout_row: |&nk_context, uint, float, uint, &float| -> none = "nk_layout_row"
+
 ext nk_dynamic: uint = "NK_DYNAMIC"
 ext nk_edit_simple: uint = "NK_EDIT_SIMPLE"
 

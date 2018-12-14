@@ -1,27 +1,16 @@
-type AssetCache[T] =
-    filenames: [..]string
-    assets: [..]T
+import "ecs"
 
-def make_asset_cache[T]() AssetCache[T] =
-    filenames := [..]string
-    filenames.allocator = Some context.longterm_storage
-    assets := [..]T
-    assets.allocator = Some context.longterm_storage
+type Cacher with
+    def get_filename() string
+    def get_entity() &ecs.Entity
+    def render()
+    def update()
 
-    AssetCache{
-        filenames = filenames
-        assets = assets
-    }
+def in_cache[T: Cacher](store: &ecs.Store[T], filename: string) Maybe[&T] =
+    items := store.get_all_active!
 
-def AssetCache[T].append(&self, filename: string, asset: T) T =
-    self.filenames.append filename
-    self.assets.append asset
-
-    asset
-
-def AssetCache[T].in_cache(&self, filename: string) Maybe[T] =
-    for i := 0..self.filenames.length do
-        if self.filenames[i] == filename then
-            return Some self.assets[i]
+    for item := items do
+        if item.get_filename! == filename then
+            return Some item
 
     None

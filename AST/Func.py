@@ -254,6 +254,7 @@ class FuncCall(Node):
 class Return(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
+        self.package = parser.package
 
     def compileToC(self, codegen):
         if len(self.nodes) > 0 and type(self.nodes[0]) in [Tree.Match, Tree.If]:
