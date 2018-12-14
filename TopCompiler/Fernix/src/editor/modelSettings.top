@@ -1,8 +1,9 @@
-from "materialSystem" import Material
+from "materialSystem" import all
 import "ecs"
 import "layermask"
 import "model"
 import "shader"
+import "texture"
 
 type ModelSettings =
     entity: &ecs.Entity
@@ -16,7 +17,13 @@ def ModelSettings.get_entity(&self) &ecs.Entity =
 def ModelSettings.render(&self) =
 def ModelSettings.update(&self) =
 
+checker_board_texture : Maybe[&texture.Texture] = None
+
 def ModelSettings.load(&self) =
+    checker_board := match checker_board_texture with
+        Some tex -> tex
+        None -> texture.load "Checkerboard.png"
+
     m := model.load_model self.filename
     self.model_id = Some ecs.get_id_for m
 
@@ -24,11 +31,21 @@ def ModelSettings.load(&self) =
     materials.allocator = Some context.longterm_storage
 
     for mat_name := m.materials do
-        log mat_name
+        longterm_context := *context
+        longterm_context.allocator = context.longterm_storage
+
+        #pushContext longterm_context do
+            params := box [
+                Param_Image "material.diffuse", checker_board
+                Param_Image "material.metallic", checker_board
+                Param_Image "material.roughness", checker_board
+                Param_Image "material.normal", checker_board
+            ]
+
         materials.append Material{
             name = mat_name
             shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
-            params = []
+            params = params
         }
 
     self.materials = materials

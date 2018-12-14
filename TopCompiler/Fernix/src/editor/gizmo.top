@@ -74,7 +74,6 @@ type Ray =
 //constants
 let flt_min = 0.001
 let flt_max = 10000.0
-let greatest_distance = 0.15
 
 type Closest_Point_Result =
     distance: float
@@ -117,6 +116,7 @@ def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
         None
 
 def handle_gizmo_intersection(position: Vec3, axis: Axis, gizmo_scale: Vec3, vector: &Vec3, reverse_z: bool) Axis =
+    greatest_distance := 0.15 * gizmo_scale.x
     inp := input.get_input!
     cam := camera.get_camera!
 
@@ -230,6 +230,39 @@ def Gizmo.update(&self) =
 
     model_renderer.visible = false
 
+    guard Some target_id := editor.editor.selected
+    else return
+
+    guard Some target := ecs.entity_system.component_by_id target_id
+    else return
+
+    if not target.enabled then return
+
+    model_renderer_entity := model_renderer.get_entity!
+    model_renderer_entity.position = target.position
+    model_renderer.visible = true
+
+    s := model_renderer_entity.scale
+    s_multiplier := Vec3{1,1,1}
+
+    match self.kind with
+        Translate axis ->
+            self.kind = Translate handle_gizmo_intersection target.position, axis, s, &target.position, false
+            model_renderer.model_id = Some ecs.get_id_for translation_model
+            model_renderer.set_materials &translation_model_materials
+            model_renderer_entity.position = target.position
+
+        Scale axis ->
+            self.kind = Scale handle_gizmo_intersection target.position, axis, s, &target.scale, true
+            model_renderer.model_id = Some ecs.get_id_for scale_model
+            model_renderer.set_materials &translation_model_materials
+
+        Disabled ->
+            model_renderer.model_id = None
+
+    model_renderer_entity.scale = s_multiplier.scale scale_of_gizmo (cam.get_entity!.position - model_renderer_entity.position)
+
+    /*
     match editor.editor.selected with
         Some target_id ->
             match ecs.entity_system.component_by_id target_id with
@@ -248,7 +281,6 @@ def Gizmo.update(&self) =
                             self.kind = Translate handle_gizmo_intersection target.position, axis, s, &target.position, false
                             model_renderer.model_id = Some ecs.get_id_for translation_model
                             model_renderer.set_materials &translation_model_materials
-
                             model_renderer_entity.position = target.position
 
                         Scale axis ->
@@ -264,6 +296,7 @@ def Gizmo.update(&self) =
                 _ ->
 
         _ ->
+    */
 import "layermask"
 
 gizmo_system := ecs.make_Store make_Gizmo, 1

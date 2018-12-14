@@ -487,6 +487,7 @@ class String(Type):
         self.methods = {
             "slice": FuncPointer([self, I32(), I32()], self),
             "starts_with": FuncPointer([self, self], Bool()),
+            "ends_with": FuncPointer([self, self], Bool()),
             "indexOf": FuncPointer([self, self], I32()),
             "replace": FuncPointer([self, self, self], self),
             "toLowerCase": FuncPointer([self], self),

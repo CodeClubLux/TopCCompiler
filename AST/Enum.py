@@ -219,8 +219,6 @@ class Match(Node):
         self.tmp = tmp
         self.nodes[1].first = True
 
-        codegen.incrScope()
-
         if not type(self.type) is Types.Null:
             def genNodes():
                 codegen.append(f"{self.nodes[0].type.toCType()} {tmp} =")
@@ -228,7 +226,11 @@ class Match(Node):
                 codegen.append(";\n")
 
                 for iter in range(1, len(self.nodes)):
+                    if iter % 2 != 0:
+                        codegen.incrScope()
                     self.nodes[iter].compileToC(codegen)
+                    if iter % 2 == 0:
+                        codegen.decrScope()
 
             genFunction(genNodes, codegen, self.type, self.owner, self)
         else:
@@ -236,10 +238,12 @@ class Match(Node):
             self.nodes[0].compileToC(codegen)
             codegen.append(";")
             for iter in range(1, len(self.nodes)):
+                if iter % 2 != 0:
+                    codegen.incrScope()
                 self.nodes[iter].compileToC(codegen)
                 codegen.addSemicolon(self.nodes[iter], no_semicolon=True)
-
-        codegen.decrScope()
+                if iter % 2 == 0:
+                    codegen.decrScope()
 
     def validate(self, parser):
         pass

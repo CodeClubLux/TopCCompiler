@@ -74,7 +74,7 @@ editor.editor.select cube_entity.id
 
 log "running"
 
-skybox := ibl.make_Skybox ecs.make_ID!, "LA_Downtown_Helipad_GoldenHour_3k.hdr"
+skybox := ibl.make_Skybox ecs.make_ID!, "Tropical_Beach_3k.hdr"
 
 runner.init!
 

@@ -1,7 +1,14 @@
 prefix := "assets/"
+full_path := "C:\\Users\\User\\Desktop\\TopCCompiler\\TopCompiler\\Fernix\\assets\\"
 
 def asset_path(filename: string) string =
     prefix + filename
+
+def to_asset_path(filename: string) Maybe[string] =
+    if filename.starts_with full_path then
+        Some filename.slice full_path.length, filename.length
+    else
+        None
 
 def open_file(filename: string, acess: FileAcess) Maybe[File] =
     open (asset_path filename), acess

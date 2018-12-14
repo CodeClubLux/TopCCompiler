@@ -2,15 +2,24 @@ import "ecs"
 import "input"
 import "key"
 import "ui"
-import "ui"
-import "runner"
 import "window"
 import "model"
-from "math" import Vec2
+from "math" import all
 from "modelSettings" import (make_ModelSetting, model_settings_system)
 import "layermask"
-from "displayComponents" import (render_properties)
+from "displayComponents" import (render_properties, update_properties)
 from "modelAssetTab" import (ModelAssetTab, make_ModelAssetTab)
+from "materialSystem" import (Param_Image)
+import "texture"
+import "key"
+
+type DroppableField =
+    ptr: &none
+    id: ecs.ID
+
+type EditorEvents either
+    SelectedField(DroppableField)
+    AddComponent(ecs.ID, ecs.System)
 
 type Editor =
     in_editor: bool
@@ -19,9 +28,15 @@ type Editor =
     asset_tab_height: float
     model_tab_width: float
     asset_tab: ModelAssetTab
+    droppable_field: Maybe[DroppableField]
+    ui_mesg_queue: ui.MesgQueue[EditorEvents]
 
 asset_folder := "C:\\Users\\User\\Desktop\\TopCCompiler\\TopCompiler\\Fernix\\assets\\"
 log "asset folder length {asset_folder.length}"
+
+def project(mat: &Mat4x4, vec: Vec3) Vec4 =
+    vec2 := mat.mul_vec4 Vec4{ vec.x, vec.y, vec.z, 1}
+    vec2.scale (1.0/vec2.w)
 
 def Editor.update(&self) =
     inp := input.get_input!
@@ -39,28 +54,9 @@ def Editor.update(&self) =
 
             None -> None
 
-    for file := win.dropped_filepaths do
-        if not file.starts_with asset_folder then
-            log "file {file} not in assets folder"
-            continue
-
-        new_context := *context
-        new_context.allocator = context.longterm_storage
-
-        #pushContext new_context do
-            file = file.slice asset_folder.length, file.length
-
-        id := ecs.make_ID!
-
-        model_setting := make_ModelSetting id
-        model_setting.filename = file
-
-        model_setting.load!
-
-        self.selected = Some id
-
-        log "dropped file {file}"
-        break
+    self.asset_tab.update!
+    update_properties!
+    self.ui_mesg_queue.clear!
 
 def Editor.select(&self, id: ecs.ID) =
     self.selected = Some id
@@ -69,13 +65,24 @@ def Editor.render(&self) =
     if not self.in_editor then return
     render_properties!
 
+    w := window.get_window!
+
+    panel := ui.window "Models"
+    panel.style.width = ui.Perc self.model_tab_width
+    panel.style.height = ui.Perc self.asset_tab_height
+    panel.position = ui.Absolute (w.width * self.editor_tab_width) cast uint, (w.height * (1 - self.asset_tab_height)) cast uint
+
+    self.asset_tab.render_ui panel
+
 editor := Editor{
     in_editor = false
     selected = None
+    droppable_field = None
     editor_tab_width = 0.2
     asset_tab_height = 0.3
     model_tab_width = 0.2
     asset_tab = make_ModelAssetTab!
+    ui_mesg_queue = ui.make_MesgQueue::[EditorEvents] 10
 }
 
 def in_editor() bool =
@@ -83,3 +90,17 @@ def in_editor() bool =
 
 def get_editor() &Editor =
     &editor
+
+def handle_dropped_image(file: string) =
+    self := get_editor!
+
+    guard Some selected_field := self.droppable_field
+    else return
+
+    param := selected_field.ptr cast &materialSystem.Param
+
+    guard Param_Image param_name, _ := *param
+    else return
+
+    *param = Param_Image param_name, texture.load file
+

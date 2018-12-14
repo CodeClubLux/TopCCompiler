@@ -2,7 +2,7 @@ import "assetManager"
 
 ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
 
-def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string) Mesh =
+def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, bounding_box: &BoundingBox) Mesh =
     vertices := [..]Vertex
     vertices.allocator = Some context.longterm_storage
     vertices.reserve mesh.mNumVertices
@@ -13,6 +13,14 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string) Mesh =
 
     for i := 0..mesh.mNumVertices do
         position := indexPtr mesh.mVertices, i
+
+        bounding_box.right = math.max position.x, bounding_box.right
+        bounding_box.left = math.min position.x, bounding_box.left
+        bounding_box.up = math.max position.y, bounding_box.up
+        bounding_box.down = math.min position.y, bounding_box.down
+        bounding_box.forward = math.max position.z, bounding_box.forward
+        bounding_box.backwards = math.min position.z, bounding_box.backwards
+
         tangent := indexPtr mesh.mTangents, i
         bitangent := indexPtr mesh.mBitangents, i
 
@@ -65,15 +73,15 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string) Mesh =
 
     make_Mesh vertices, indices, material_id
 
-def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh, materials: &[..]string) =
+def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh, materials: &[..]string, bounding_box: &BoundingBox) =
     meshes.reserve meshes.length + node.mNumMeshes
 
     for i := 0..node.mNumMeshes do
         mesh := *indexPtr scene.mMeshes, i
-        meshes.append process_mesh mesh, scene, materials
+        meshes.append process_mesh mesh, scene, materials, bounding_box
 
     for i := 0..node.mNumChildren do
-        process_node *(indexPtr node.mChildren, i), scene, meshes, materials
+        process_node *(indexPtr node.mChildren, i), scene, meshes, materials, bounding_box
 
 def load_in_place(model: &Model) =
     real_path := vfs.asset_path model.path
@@ -91,7 +99,7 @@ def load_in_place(model: &Model) =
     materials := [..]string
     materials.allocator = Some context.longterm_storage
 
-    process_node scene.mRootNode, scene, &meshes, &materials
+    process_node scene.mRootNode, scene, &meshes, &materials, &model.bounding_box
 
     model.meshes = meshes
     model.materials = materials

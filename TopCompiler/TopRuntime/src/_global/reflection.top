@@ -41,6 +41,7 @@ type StructType =
     package: string
     real_type: Type
     fields: []Field
+    size: SizeT
 
 def StructType.toString(&self) string =
     if self.package == "_global" then self.name

@@ -24,7 +24,7 @@ type CommandBuffer =
 def call(command: DrawCommand) =
     match context.command_buffer with
         Some command_buffer ->
-            &(command_buffer.commands).append command
+            command_buffer.commands.append command
 
         None ->
             panic "Command buffer not setup"
@@ -32,7 +32,7 @@ def call(command: DrawCommand) =
 def render() =
     match context.command_buffer with
         Some command_buffer ->
-            commands := &(command_buffer.commands)
+            commands := &command_buffer.commands
 
             for i := 0..commands.length do
 
