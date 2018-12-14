@@ -234,7 +234,7 @@ struct _global_String _global_console_input(struct _global_String text, __Contex
     fgets(string, sizeof(string), stdin);
     fflush(stdin);
 
-    unsigned int length = strlen(string);
+    unsigned int length = strlen(string) - 1;
     char* memory = alloc(context->allocator, sizeof(char) * (length + 1), context);
     memcpy(memory, string, length + 1);
     return _global_StringInit(length, memory);
