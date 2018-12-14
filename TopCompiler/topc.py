@@ -97,7 +97,17 @@ def newPack(name):
 
 global_parser = None
 
-def getCompilationFiles(target):
+def condition_not_met(file, tags):
+    f = open(file, "r")
+    jsonLoads = json.loads(f.read())
+
+    for key in jsonLoads:
+        if not key in tags: Error.error(file + ", unknown tag " + key)
+        if jsonLoads[key] != tags[key]:
+            return True
+    return False
+
+def getCompilationFiles(target, tags):
     try:
         proj = open("src/port.json", mode="r")
         proj.close()
@@ -110,14 +120,20 @@ def getCompilationFiles(target):
         linkWith = []
         headerIncludePath = []
 
-
         for root, dirs, files in os.walk(dir, topdown=False, followlinks=True):
             hasPort = False
+            should_continue = False
 
             if root != "src/":
                 for i in files:
                     if i == "port.json":
                         hasPort = True
+                    if i == "condition.json":
+                        if condition_not_met(root + "/" + i, tags):
+                            should_continue = True
+                            break
+
+            if should_continue: continue
 
             for i in files:
                 if not hasPort and i != "port.json" and i.endswith(".top"):
@@ -266,6 +282,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
         except Exception as e:
             Error.error("invalid json in port.json, "+str(e))
 
+        tags = {}
+        if "tags" in jsonLoad:
+            tags = jsonLoad["tags"]
+
         try:
             target = jsonLoad["target"]
             if not target in ["osx", "windows"]:
@@ -277,7 +297,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
         (linkWith, headerIncludePath, files) = [
             [("", c) for c in i] for i in (linkWith, headerIncludePath, files)]
 
-        (_linkWith, _headerIncludePath, files) = getCompilationFiles(target)
+        (_linkWith, _headerIncludePath, files) = getCompilationFiles(target, tags)
 
         linkWith += _linkWith
         headerIncludePath += _headerIncludePath

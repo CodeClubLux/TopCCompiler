@@ -1,5 +1,8 @@
 {
         "name": "Test",
         "target": "windows",
-        "version": 0
+        "version": 0,
+        "tags": {
+                "render_backend": "Opengl"
+        }
 }
