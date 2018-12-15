@@ -21,6 +21,7 @@ type VertexAttrib =
 
 type VertexBuffer =
     vao: uint
+    length: uint
 
 def make_vertex_buffer[T](vertices: []T, indices: []uint, vertexAttribs: []VertexAttrib) VertexBuffer =
     vao := 0
@@ -47,7 +48,28 @@ def make_vertex_buffer[T](vertices: []T, indices: []uint, vertexAttribs: []Verte
 
     opengl.bindVertexArray 0
 
-    VertexBuffer{ vao }
+    VertexBuffer{ vao, indices.length }
 
 def VertexBuffer.bind(self) =
     opengl.bindVertexArray self.vao
+
+type FrameBuffer =
+    fbo: uint
+    rbo: uint
+
+def make_frame_buffer(width: uint, height: uint) =
+    capture_fbo: uint = _
+    capture_rbo: uint = _
+
+    opengl.bindFramebuffer opengl.framebuffer, capture_fbo
+    opengl.bindRenderbuffer opengl.renderbuffer, capture_rbo
+    opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, width, height
+    opengl.framebufferRenderbuffer opengl.framebuffer, opengl.depth_attachment, opengl.renderbuffer, capture_rbo
+
+    FrameBuffer{
+        fbo = capture_fbo
+        rbo = capture_rbo
+    }
+
+def FrameBuffer.bind(&self) =
+    opengl.bindFramebuffer opengl.framebuffer, self.fbo

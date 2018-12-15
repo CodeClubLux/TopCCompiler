@@ -3,40 +3,19 @@ import "math"
 import "texture"
 import "runner"
 import "ecs"
+import "draw"
 
 type Param either
     Param_Vec3(string, math.Vec3)
     Param_Mat4x4(string, math.Mat4x4)
     Param_Image(string, &texture.Texture)
+    Param_Cubemap(string, texture.Cubemap)
 
 type Material =
     name: string
     shader: shader.Shader
     params: []Param
-
-def Material.bind(&self, entity: &ecs.Entity) =
-    params := &self.params
-
-    self.shader.bind!
-
-    runner.set_shader_scene_params self.shader
-
-    for i := 0..params.length do
-        match params[i] with
-            Param_Vec3 field, vector ->
-                self.shader.set_vec3 field, &vector
-
-            Param_Mat4x4 field, matrix ->
-                self.shader.set_mat4x4 field, &matrix
-
-            Param_Image field, tex ->
-                tex.bind_to i+3
-                self.shader.set_int field, i + 3
-
-    //set model matrix
-    transformation_matrix := entity.compute_model_matrix!
-
-    self.shader.set_mat4x4 "model", &transformation_matrix
+    state: &draw.State
 
 def material_by_name(materials: []Material, name: string) Maybe[&Material] =
     for i := 0..materials.length do

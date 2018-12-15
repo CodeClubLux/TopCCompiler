@@ -1352,7 +1352,7 @@ class Pointer(Type):
 
     def duckType(self, parser, other, node, mynode, iter=0):
         if not other.isType(Pointer):
-            node.error("Expecting pointer, not type "+other.name)
+            node.error("Expecting " + str(self) + ", not type "+other.name)
 
         if self.name == "&none":
             return

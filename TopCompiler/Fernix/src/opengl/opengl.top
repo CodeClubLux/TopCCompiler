@@ -119,5 +119,6 @@ ext enable: |uint| -> none = "glEnable"
 ext depthFunc: |uint| -> none = "glDepthFunc"
 ext lequal: uint = "GL_LEQUAL"
 ext less: uint = "GL_LESS"
+ext always: uint = "GL_ALWAYS"
 
 ext debugMessageCallback: | |uint, uint, uint, uint, SizeT, &char| -> none, &Context| -> none = "glDebugMessageCallback"

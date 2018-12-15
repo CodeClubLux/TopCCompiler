@@ -8,6 +8,8 @@ import "buffer"
 import "camera"
 import "runner"
 import "ecs"
+import "draw"
+from "materialSystem" import all
 
 skybox_shader := shader.make "shaders/skybox.vert", "shaders/skybox.frag"
 
@@ -24,7 +26,24 @@ def Skybox.get_entity(&self) &ecs.Entity =
 
 def Skybox.update(&self) =
 
+skybox_state := draw.default_state{
+    order = draw.draw_skybox
+}
+
 def Skybox.render(&self) =
+    mat := box Material{
+        name = "skybox_shader"
+        shader = skybox_shader
+        params = box [
+            Param_Cubemap "environmentMap", self.env_cubemap
+        ]
+        state = &skybox_state
+    }
+
+    cmd := draw.make_DrawCommand self.entity, primitives.cube.meshes[0].buffer, mat
+    cmd.submit!
+
+    /*
     skybox_shader.bind!
 
     self.env_cubemap.bind_to 0
@@ -35,6 +54,7 @@ def Skybox.render(&self) =
     skybox_shader.set_mat4x4 "view", &cam.view_matrix
 
     primitives.render_cube!
+    */
 
 brdf_LUT_texture2 := texture.load "ibl_brdf_lut.png"
 

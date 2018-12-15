@@ -1,0 +1,171 @@
+from "math" import Vec4
+from "materialSystem" import Material
+import "buffer"
+import "ecs"
+import "shader"
+import "texture"
+import "runner"
+import "opengl"
+
+type DepthFunc either
+    DepthFunc_Less
+    DepthFunc_Lequal
+
+type SortKey is u64
+
+type State =
+    depth_func: DepthFunc
+    clear_depth_buffer: bool
+    order: uint
+
+draw_first := 0
+draw_skybox := 1
+draw_transparency := 2
+draw_last := 3
+
+type DrawCommand =
+    key: u64
+    buffer: &buffer.VertexBuffer
+
+    material: &Material
+    entity: &ecs.Entity
+
+def DrawCommand.toString(&self) string =
+    "DrawCommand"
+
+def DrawCommand.calc_sort_key(&self) = //pack all state into 64 bit key
+    self.key = (self.material.state.order * 68719476736) + (self.material.state.depth_func.tag * 4294967296) + (self.buffer.vao * 65536) + (self.material.shader.id)
+
+type CommandBuffer =
+    commands: [..]DrawCommand
+
+def make_CommandBuffer() &CommandBuffer =
+    box CommandBuffer{
+        commands = [..]DrawCommand
+    }
+
+#addToContext command_buffer := make_CommandBuffer!
+
+def clear() =
+    command_buffer := context.command_buffer
+    command_buffer.commands = []
+
+default_state := State{
+    depth_func = DepthFunc_Lequal
+    order = 0
+    clear_depth_buffer = false
+}
+
+def make_DrawCommand(entity: &ecs.Entity, buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
+    cmd := DrawCommand{
+        entity = entity
+        buffer = buff
+        material = material
+        key = 0
+    }
+    cmd.calc_sort_key!
+    cmd
+
+def DrawCommand.submit(&draw_command) =
+    cmd_buffer := &context.command_buffer.commands
+    cmd_buffer.append *draw_command
+
+def quick_sort(cmds: []DrawCommand) []DrawCommand =
+    less := [..]DrawCommand
+    equal := [..]DrawCommand
+    greater := [..]DrawCommand
+
+    if cmds.length > 1 then
+        pivot := cmds[0].key
+        for x := cmds do
+            if x.key < pivot then
+                less.append x
+            if x.key == pivot then
+                equal.append x
+            if x.key > pivot then
+                greater.append x
+
+        new_less := quick_sort less
+        new_greater := quick_sort greater
+
+        //less + equal +
+        sorted_cmds := [..]DrawCommand
+        for x := new_less do
+            sorted_cmds.append x
+        for x := equal do
+            sorted_cmds.append x
+        for x := new_greater do
+            sorted_cmds.append x
+
+        sorted_cmds
+    else
+        cmds
+
+def set_params(self: &Material, entity: &ecs.Entity) =
+    params := &self.params
+
+    for i := 0..params.length do
+        match params[i] with
+            Param_Vec3 field, vector ->
+                self.shader.set_vec3 field, &vector
+
+            Param_Mat4x4 field, matrix ->
+                self.shader.set_mat4x4 field, &matrix
+
+            Param_Image field, tex ->
+                tex.bind_to i+3
+                self.shader.set_int field, i + 3
+
+            Param_Cubemap field, tex ->
+                tex.bind_to i+3
+                self.shader.set_int field, i+3
+
+    //set model matrix
+    transformation_matrix := entity.compute_model_matrix!
+
+    self.shader.set_mat4x4 "model", &transformation_matrix
+
+def switch_shader(shad: shader.Shader) =
+    shad.bind!
+    runner.set_shader_scene_params shad
+
+def DepthFunc.bind(self) =
+    match self with
+        DepthFunc_Lequal -> opengl.depthFunc opengl.lequal
+        DepthFunc_Less -> opengl.depthFunc opengl.less
+
+def submit_to_gpu() =
+    commands := context.command_buffer.commands
+
+    cmds := quick_sort commands
+
+    log "===="
+    for cmd := cmds do
+        mat := cmd.material
+
+        if i == 0 then
+            switch_shader mat.shader
+            cmd.buffer.bind!
+            mat.state.depth_func.bind!
+            if mat.state.clear_depth_buffer then
+                opengl.clear opengl.depth_buffer_bit
+        else
+            last_cmd := cmds[i - 1]
+            last_mat := last_cmd.material
+
+            if last_cmd.material.shader.id != cmd.material.shader.id then
+                switch_shader cmd.material.shader
+            if last_cmd.buffer.vao != cmd.buffer.vao then
+                cmd.buffer.bind!
+            if last_mat.state.depth_func.tag != last_mat.state.depth_func.tag then
+                last_mat.state.depth_func.bind!
+
+            if mat.state.clear_depth_buffer and not last_mat.state.clear_depth_buffer then
+                opengl.clear opengl.depth_buffer_bit
+
+        set_params mat, cmd.entity
+        opengl.drawElements opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0
+
+
+
+

@@ -4,6 +4,7 @@ import "layermask"
 import "model"
 import "shader"
 import "texture"
+import "draw"
 
 type ModelSettings =
     entity: &ecs.Entity
@@ -46,6 +47,7 @@ def ModelSettings.load(&self) =
             name = mat_name
             shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
             params = params
+            state = &draw.default_state
         }
 
     self.materials = materials

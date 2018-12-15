@@ -8,8 +8,14 @@ from "materialSystem" import (Material, Param_Vec3)
 from "math" import all
 import "key"
 import "editor"
+import "draw"
 
 gizmo_shader := shader.make "shaders/gizmo.vert", "shaders/gizmo.frag"
+
+draw_over := draw.default_state{
+    clear_depth_buffer = true
+    order = draw.draw_last
+}
 
 translation_model_materials := [
     materialSystem.Material{
@@ -18,6 +24,7 @@ translation_model_materials := [
         params = box [
             Param_Vec3 "color", Vec3{ 1, 0, 0}
         ]
+        state = &draw_over
     }
     materialSystem.Material{
         name = "Right"
@@ -25,6 +32,7 @@ translation_model_materials := [
         params = box [
             Param_Vec3 "color", Vec3{ 0, 1, 0}
         ]
+        state = &draw_over
     }
     materialSystem.Material{
         name = "Forward"
@@ -32,6 +40,7 @@ translation_model_materials := [
         params = box [
             Param_Vec3 "color", Vec3{ 0, 0, 1}
         ]
+        state = &draw_over
     }
 ]
 
@@ -114,6 +123,7 @@ def closest_point(r1: &Ray, r2: &Ray) Maybe[Closest_Point_Result] =
         }
     else
         None
+
 
 def handle_gizmo_intersection(position: Vec3, axis: Axis, gizmo_scale: Vec3, vector: &Vec3, reverse_z: bool) Axis =
     greatest_distance := 0.15 * gizmo_scale.x
