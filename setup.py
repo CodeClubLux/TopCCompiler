@@ -3,7 +3,11 @@ import os
 dir = os.getcwd()
 
 os.chdir(dir + "/TopCompiler/TopRuntime")
-from bin import runtimebuild
+import importlib.util
+spec = importlib.util.spec_from_file_location("runtimebuild.py", dir + "/bin/runtimebuild.py")
+foo = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(foo)
+
 os.chdir(dir)
 
 from setuptools import setup
