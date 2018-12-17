@@ -7,11 +7,20 @@ model_system := ecs.make_Store::[Model] make_Model, 10
 
 from "materialSystem" import Material
 
+type BoundingBox =
+    right: float
+    left: float
+    up: float
+    down: float
+    forward: float
+    backwards: float
+
 type Model =
     entity: &ecs.Entity
     path: string
     meshes: []Mesh
     materials: []string
+    bounding_box: BoundingBox
 
 def make_Model(id: ecs.ID) &Model =
     entity := ecs.make_Entity id
@@ -27,6 +36,7 @@ def make_Model(id: ecs.ID) &Model =
         path = ""
         meshes = []
         materials = []
+        bounding_box = BoundingBox{ 0, 0, 0, 0, 0, 0}
     }
 
 def get_model_system() &ecs.Store[Model] =

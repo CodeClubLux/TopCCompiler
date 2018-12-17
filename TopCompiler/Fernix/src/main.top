@@ -1,7 +1,6 @@
 import "window"
 from "math" import all
 import "buffer"
-import "gi"
 import "shader"
 import "opengl"
 import "texture"
@@ -15,6 +14,7 @@ import "fpsController"
 import "camera"
 import "gizmo"
 import "editor"
+import "draw"
 
 def substance_params(folder: string, name: string) [4]Param =
     [
@@ -26,18 +26,12 @@ def substance_params(folder: string, name: string) [4]Param =
 
 wet_street_params := substance_params "wood_2", "Stylized_Wood"
 
-/*[
-    Param_Image "material.diffuse", texture.load "assets/wood/Stylized_basecolor.jpg"
-    Param_Image "material.metallic", texture.load "assets/wet_street/Pebble_Wet_street_metallic.jpg"
-    Param_Image "material.roughness", texture.load "assets/wet_street/Pebble_Wet_street_roughness.jpg"
-    Param_Image "material.normal", texture.load "assets/wet_street/Pebble_Wet_street_Normal_Map.jpg"
-]*/
-
 cube_materials := [
     Material{
         name = "DefaultMaterial"
         shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
         params = &wet_street_params
+        state = &draw.default_state
     }
 ]
 
@@ -74,7 +68,7 @@ editor.editor.select cube_entity.id
 
 log "running"
 
-skybox := ibl.make_Skybox ecs.make_ID!, "LA_Downtown_Helipad_GoldenHour_3k.hdr"
+skybox := ibl.make_Skybox ecs.make_ID!, "Tropical_Beach_3k.hdr"
 
 runner.init!
 

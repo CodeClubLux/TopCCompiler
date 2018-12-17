@@ -1,0 +1,21 @@
+from "math" import Vec4
+import "opengl"
+
+type Device =
+    width: uint
+    height: uint
+    multisampling: uint
+    clear_colour: Vec4
+
+def Device.bind(&self) =
+    opengl.enable opengl.depth_test
+
+    opengl.enable opengl.multisample
+    opengl.enable opengl.texture_cube_map_seamless
+    //opengl.depthFunc opengl.lequal
+
+    opengl.clearColor self.clear_colour.x, self.clear_colour.y, self.clear_colour.z, self.clear_colour.w
+    opengl.clear opengl.color_buffer_bit
+    opengl.clear opengl.depth_buffer_bit
+
+    opengl.viewport 0, 0, self.width, self.height

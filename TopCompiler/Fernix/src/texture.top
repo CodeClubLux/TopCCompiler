@@ -72,7 +72,11 @@ def load(filename: string) &Texture =
 
     internal_color_format :=
         if nr_channels == 1 then red
+        elif nr_channels == 2 then rg
         else rgb
+
+    if nr_channels != 3 then
+        log nr_channels
 
     texImage2D texture_2D, 0, rgb, width, height, 0, internal_color_format, unsigned_byte, Some data
     generateMipmap texture_2D

@@ -487,6 +487,7 @@ class String(Type):
         self.methods = {
             "slice": FuncPointer([self, I32(), I32()], self),
             "starts_with": FuncPointer([self, self], Bool()),
+            "ends_with": FuncPointer([self, self], Bool()),
             "indexOf": FuncPointer([self, self], I32()),
             "replace": FuncPointer([self, self, self], self),
             "toLowerCase": FuncPointer([self], self),
@@ -1351,7 +1352,7 @@ class Pointer(Type):
 
     def duckType(self, parser, other, node, mynode, iter=0):
         if not other.isType(Pointer):
-            node.error("Expecting pointer, not type "+other.name)
+            node.error("Expecting " + str(self) + ", not type "+other.name)
 
         if self.name == "&none":
             return

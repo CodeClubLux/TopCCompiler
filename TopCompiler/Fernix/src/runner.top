@@ -1,7 +1,6 @@
 import "window"
 import "shader"
 import "math"
-import "gi"
 import "opengl"
 import "texture"
 import "ecs"
@@ -12,6 +11,8 @@ import "input"
 import "time"
 import "layermask"
 import "editor"
+import "renderPass"
+import "ui"
 
 def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
@@ -29,6 +30,12 @@ def set_shader_scene_params(_shader: shader.Shader) =
 
 import "ui"
 
+def game_mask() layermask.Layermask =
+    edit := editor.get_editor!
+
+    if edit.in_editor then layermask.editor
+    else layermask.game
+
 def init() =
     log "initializing"
     w := window.get_window!
@@ -38,27 +45,16 @@ def init() =
     defer ui_ctx.free!
     defer context.allocator.free_allocator!
 
-    opengl.viewport 0, 0, w.width, w.height
-
     while not w.should_close! do
-        //set opengl settins as nuklear resets them
-        opengl.enable opengl.depth_test
-        opengl.enable opengl.multisample
-        opengl.enable opengl.texture_cube_map_seamless
-        opengl.depthFunc opengl.lequal
-
         defer context.allocator.reset_to context.allocator.get_occupied!
         //update all systems
         //@todo move these systems into the entity component system
-        mask :=
-            if editor.in_editor! then layermask.editor
-            else layermask.game
+
+        mask := game_mask!
 
         inp := input.get_input!
         inp.clear!
         inp.update_inputs!
-
-
 
         time.update_delta_time!
         editor.editor.update!
@@ -69,21 +65,7 @@ def init() =
             .update_matrices!
 
         //render scene
-        //@todo move all rendering to gi from opengl
-        gi.clear_to_color gi.ColorBuffer, math.Vec4{ 0.0, 0.0, 0.0 , 1.0 }
-        gi.clear gi.DepthBuffer
-
-        render_mask := layermask.make_Layermask!
-        render_mask = layermask.enable render_mask, mask
-        render_mask = layermask.enable render_mask, layermask.game
-
-        ui_ctx.new_frame!
-
-        editor.editor.render!
-        ecs.render render_mask
-
-        ui_ctx.render!
-        w.swap_buffers!
+        renderPass.render_all!
 
 def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
     log char_buffer_toString message

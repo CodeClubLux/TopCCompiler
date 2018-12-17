@@ -324,6 +324,10 @@ _Bool _global_String_starts_withByValue(struct _global_String str, struct _globa
     return strncmp(pre.data, str.data, pre.length) == 0;
 }
 
+_Bool _global_String_ends_withByValue(struct _global_String str, struct _global_String pre, __Context) {
+    if (str.length < pre.length) { return 0; }
+    return strncmp(pre.data, str.data + (str.length - pre.length), pre.length) == 0;
+}
 
 
 #define _global_indexPtr(value, by, c) value + by
