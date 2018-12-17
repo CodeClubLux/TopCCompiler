@@ -3,9 +3,9 @@ import os
 dir = os.getcwd()
 
 os.chdir(dir + "/TopCompiler/TopRuntime")
-import importlib.util
-spec = importlib.util.spec_from_file_location("runtimebuild.py", dir + "/bin/runtimebuild.py")
-foo = importlib.util.module_from_spec(spec)
+from importlib import util
+spec = util.spec_from_file_location("runtimebuild.py", dir + "/bin/runtimebuild.py")
+foo = util.module_from_spec(spec)
 spec.loader.exec_module(foo)
 
 os.chdir(dir)
