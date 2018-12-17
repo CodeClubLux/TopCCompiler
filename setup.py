@@ -1,21 +1,23 @@
+import os
+
+dir = os.getcwd()
+
+os.chdir(dir + "/TopCompiler/TopRuntime")
+from bin import runtimebuild
+os.chdir(dir)
+
 from setuptools import setup
 
-setup(name='TopCompiler',
+setup(name='TopCCompiler',
       version='0.1',
       description='Compiler for Top programming language',
-      url='https://github.com/CodeClubLux/TopCompiler',
+      url='https://github.com/CodeClubLux/TopCCompiler',
       author='CompilerLuke',
       author_email="lgoetz@islux.lu",
       scripts= ["bin/topc", "bin/topdev", "bin/port.py", "bin/port", "bin/topr", "bin/topc.py", "bin/topr.py", "bin/topdev.py"],
       license='MIT',
       zip_safe=False,
-      packages= ["TopCompiler","AST", "optimization"],
-      install_requires=[
-            "Flask",
-            "Flask-SocketIO"
-            "requests",
-            "jsbeautifier",
-            "pypandoc"
-      ],
+      packages= ["TopCompiler","AST", "optimization","PostProcessing"],
+      install_requires=[],
       include_package_data=True
 )
