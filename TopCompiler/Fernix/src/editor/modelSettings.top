@@ -23,7 +23,7 @@ checker_board_texture : Maybe[&texture.Texture] = None
 def ModelSettings.load(&self) =
     checker_board := match checker_board_texture with
         Some tex -> tex
-        None -> texture.load "Checkerboard.png"
+        None -> texture.load "wet_street/Pebble_Wet_street_Normal_Map.jpg"
 
     m := model.load_model self.filename
     self.model_id = Some ecs.get_id_for m

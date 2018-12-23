@@ -1,10 +1,10 @@
 import "glfwWrapper"
 
 type Time =
-    last_frame: float
-    delta_time: float
+    last_frame: f64
+    delta_time: f64
 
-def get_time() float =
+def get_time() f64 =
     glfwWrapper.getTime!
 
 
@@ -19,5 +19,5 @@ def update_delta_time() =
     context.time.delta_time = current_frame - context.time.last_frame
     context.time.last_frame = current_frame
 
-def get_delta_time() float =
+def get_delta_time() f64 =
     context.time.delta_time

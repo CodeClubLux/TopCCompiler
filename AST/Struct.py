@@ -274,6 +274,9 @@ class Type(Node):
         codegen.append(f"{nameOfI}.name = " + as_string(self.normalName) + ";")
 
         if not self.externalStruct:
+            codegen.append(f"{nameOfI}.size = sizeof({cType});")
+
+        if not self.externalStruct:
             for (i, field) in enumerate(self.fields):
                 typ = self.structT.types[field]
 

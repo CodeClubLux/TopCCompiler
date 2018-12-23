@@ -20,7 +20,7 @@ def set_shader_scene_params(_shader: shader.Shader) =
 
     _shader.set_mat4x4 "projection", &cam.projection_matrix
     _shader.set_mat4x4 "view", &cam.view_matrix
-    _shader.set_vec3 "viewPos", &(cam.get_entity!.position)
+    _shader.set_vec3 "viewPos", &cam.transform.position
 
     _shader.set_vec3 "dirLight.direction", &dir_light.direction
     _shader.set_vec3 "dirLight.color", &dir_light.color
@@ -33,8 +33,8 @@ import "ui"
 def game_mask() layermask.Layermask =
     edit := editor.get_editor!
 
-    if edit.in_editor then layermask.editor
-    else layermask.game
+    if edit.in_editor then layermask.editor_layer
+    else layermask.game_layer
 
 def init() =
     log "initializing"
@@ -68,7 +68,7 @@ def init() =
         renderPass.render_all!
 
 def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
-    log char_buffer_toString message
+    //log char_buffer_toString message
 
 opengl.enable opengl.debug_output
 opengl.debugMessageCallback error_callback, context

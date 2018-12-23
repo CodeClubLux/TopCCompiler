@@ -129,8 +129,7 @@ class Typeof(Node):
             self.type = Types.Pointer(Parser.CharType)
         elif type(self.typ) is Types.Null:
             self.type = Types.Pointer(Parser.NoneType)
-        else:
-            print("hey")
+
 
     def compileToC(self, codegen):
         self.typ.toCType()
@@ -185,7 +184,7 @@ class AliasType(Node):
         codegen.append(f"{iName}.package = {as_string(self.package)};")
         codegen.append(f"{iName}.real_type = ")
 
-        tmp = Typeof(self, self.typ)
+        tmp = Typeof(self, self.typ.typ)
         Cast.castFrom(tmp.type, Parser.IType, tmp, "", codegen)
         codegen.append(";")
 

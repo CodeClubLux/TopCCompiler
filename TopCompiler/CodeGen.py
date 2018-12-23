@@ -43,6 +43,7 @@ class CodeGen:
         self.main_parts = []
         self.func_parts = []
         self.func_count = 0
+        self.init_types = []
 
         self.header_parts = []
 
@@ -221,9 +222,11 @@ class CodeGen:
         Types.compiledTypes = coll.OrderedDict()
         Types.dataTypes = []
 
+        mainC = "".join(self.init_types) + "\n" + mainC
+
         headerCode = f"{generatedTypes}\n{forward_ref}"
         print_code = "printf(" + '"' + self.filename + '\\n");'
-        cCode = f"{outerCode}\nvoid {self.filename}Init() {{ \n{mainC}\n{mainCode};\n}};"
+        cCode = f"{outerCode}\nvoid {self.filename}InitTypes() {{ \n {mainC} }}\nvoid {self.filename}Init() {{ \n{mainCode};\n}};"
 
         #print("To C took :", time() - t)
 
@@ -314,7 +317,7 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
         f.close()
 
     print_size = 'printf("offset of cases %llu, %llu", sizeof(struct ecs_Slot_model_ModelRenderer), sizeof(struct model_ModelRenderer)); return 0;'
-    linkedCode.append(f"int main() {{ \n_globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInit(); return 0;  }};")
+    linkedCode.append(f"int main() {{ \n_global_InitTypes(); _globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInitTypes(); mainInit(); return 0;  }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))

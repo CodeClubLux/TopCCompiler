@@ -7,28 +7,12 @@ type ID is uint
 type Entity =
     id: ID
     enabled: bool
-
-    position: math.Vec3
-    rotation: math.Quat
-    scale: math.Vec3
-
     layermask: Layermask
-
-    //children: [..]&Entity
-    //parent: Maybe[&Entity]
 
 def Entity.get_entity(&self) &Entity =
     self
 
 def Entity.update(&self) =
-
-def Entity.compute_model_matrix(&self) Mat4x4 =
-    trans := translate self.position
-    scal := scale self.scale
-    rotation := rotate self.rotation
-
-    trans * scal * rotation
-
 def Entity.render(&self) =
 
 

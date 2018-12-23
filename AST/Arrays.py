@@ -32,6 +32,7 @@ def simplifyArray(parser, self, iter):
             var.type = parser.scope["_global"][0]["fill_array"].type
             func.replaced = {i: self.type.elemT for i in var.type.generic}
         func.addNode(var)
+        func.addNode(self.nodes[0])
         func.addNode(self.nodes[1])
 
         self.owner.nodes[iter] = func

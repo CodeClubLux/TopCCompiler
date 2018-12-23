@@ -9,7 +9,6 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
 
     indices := [..]uint
     indices.allocator = Some context.longterm_storage
-    indices.reserve mesh.mNumVertices
 
     for i := 0..mesh.mNumVertices do
         position := indexPtr mesh.mVertices, i
@@ -43,6 +42,12 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
             bitangent = Vec3{ bitangent.x, bitangent.y, bitangent.z }
         }
 
+
+    indices_count := 0
+    for i := 0..mesh.mNumFaces do
+        indices_count += (indexPtr mesh.mFaces, i).mNumIndices
+
+    indices.reserve indices_count
     for i := 0..mesh.mNumFaces do
         face := *indexPtr mesh.mFaces, i
         for j := 0..face.mNumIndices do
@@ -61,10 +66,14 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
             for mat_name := *materials do
                 if mat_name == name then
                     id = Some i
+                    log "assigned id"
 
             match id with
-                Some x -> x
+                Some x ->
+                    log "material exists"
+                    x
                 None ->
+                    log "adding material"
                     materials.append name
                     materials.length - 1
         else
@@ -108,6 +117,8 @@ def load_model(path: string) &Model =
     match assetManager.in_cache model_system, path with
         Some m -> return m
         None ->
+
+    log path
 
     model := make_Model ecs.make_ID!
     model.path = path

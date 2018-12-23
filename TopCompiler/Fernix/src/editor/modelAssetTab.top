@@ -54,22 +54,22 @@ def ModelAssetTab.update(&self) =
                     log "file {file} not in assets folder"
                     continue
 
-        if file.ends_with ".fbx" then
-            id := ecs.make_ID!
+            if (file.ends_with ".fbx") or file.ends_with ".obj" then
+                id := ecs.make_ID!
 
-            model_setting := make_ModelSetting id
-            model_setting.filename = file
+                model_setting := make_ModelSetting id
+                model_setting.filename = file
 
-            model_setting.load!
+                model_setting.load!
 
-            edit.select id
-            self.selected_id = id
+                edit.select id
+                self.selected_id = id
 
-            log "dropped file {file}"
-        elif (file.ends_with ".png") or file.ends_with ".jpg" then
-            editor.handle_dropped_image file
-        else
-            log "Unknown file format {file}"
+                log "dropped file {file}"
+            elif (file.ends_with ".png") or (file.ends_with ".JPG") or file.ends_with ".jpg" then
+                editor.handle_dropped_image file
+            else
+                log "Unknown file format {file}"
 
         break
 

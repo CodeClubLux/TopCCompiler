@@ -10,6 +10,7 @@ type System with
     def update(Layermask)
     def free_component_by_id(ID)
     def get_component_by_id(ID) Maybe[Component]
+    def serialize()
 
 component_types := [..]System
 

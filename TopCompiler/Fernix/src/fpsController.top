@@ -29,7 +29,7 @@ import "editor"
 
 def FPSController.update(using &self) =
     inp := input.get_input!
-    entity := self.camera.get_entity!
+    entity := self.camera.transform
 
     //movement
     facing_rotation := -entity.rotation

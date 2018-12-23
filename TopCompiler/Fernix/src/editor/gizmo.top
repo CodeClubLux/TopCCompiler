@@ -9,6 +9,7 @@ from "math" import all
 import "key"
 import "editor"
 import "draw"
+from "transform" import all
 
 gizmo_shader := shader.make "shaders/gizmo.vert", "shaders/gizmo.frag"
 
@@ -243,12 +244,12 @@ def Gizmo.update(&self) =
     guard Some target_id := editor.editor.selected
     else return
 
-    guard Some target := ecs.entity_system.component_by_id target_id
+    guard Some target := transform_system.component_by_id target_id
     else return
 
-    if not target.enabled then return
+    if not target.get_entity!.enabled then return
 
-    model_renderer_entity := model_renderer.get_entity!
+    model_renderer_entity := model_renderer.transform
     model_renderer_entity.position = target.position
     model_renderer.visible = true
 
@@ -270,43 +271,8 @@ def Gizmo.update(&self) =
         Disabled ->
             model_renderer.model_id = None
 
-    model_renderer_entity.scale = s_multiplier.scale scale_of_gizmo (cam.get_entity!.position - model_renderer_entity.position)
+    model_renderer_entity.scale = s_multiplier.scale scale_of_gizmo (cam.transform.position - model_renderer_entity.position)
 
-    /*
-    match editor.editor.selected with
-        Some target_id ->
-            match ecs.entity_system.component_by_id target_id with
-                Some target ->
-                    if not target.enabled then return
-
-                    model_renderer_entity := model_renderer.get_entity!
-                    model_renderer_entity.position = target.position
-                    model_renderer.visible = true
-
-                    s := model_renderer_entity.scale
-                    s_multiplier := Vec3{1,1,1}
-
-                    match self.kind with
-                        Translate axis ->
-                            self.kind = Translate handle_gizmo_intersection target.position, axis, s, &target.position, false
-                            model_renderer.model_id = Some ecs.get_id_for translation_model
-                            model_renderer.set_materials &translation_model_materials
-                            model_renderer_entity.position = target.position
-
-                        Scale axis ->
-                            self.kind = Scale handle_gizmo_intersection target.position, axis, s, &target.scale, true
-                            model_renderer.model_id = Some ecs.get_id_for scale_model
-                            model_renderer.set_materials &translation_model_materials
-
-                        Disabled ->
-                            model_renderer.model_id = None
-
-                    model_renderer_entity.scale = s_multiplier.scale scale_of_gizmo (cam.get_entity!.position - model_renderer_entity.position)
-
-                _ ->
-
-        _ ->
-    */
 import "layermask"
 
 gizmo_system := ecs.make_Store make_Gizmo, 1
@@ -317,7 +283,7 @@ def make_Gizmo(id: ecs.ID) &Gizmo =
         Some e -> e
         None ->
             entity := ecs.make_Entity id
-            entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor
+            entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor_layer
             entity
 
     model_renderer := match model.model_renderer_system.component_by_id id with

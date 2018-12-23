@@ -2,12 +2,18 @@ type ext IntType =
     sign: bool
     size: uint
 
+def IntType.get_size(&self) u64 =
+    self.size
+
 def IntType.toString(&self) string =
     if self.sign then "i{self.size * 8}"
     else "u{self.size * 8}"
 
 type ext FloatType =
     size: uint
+
+def FloatType.get_size(&self) u64 =
+    self.size
 
 def FloatType.toString(&self) string =
     "f{self.size*8}"
@@ -17,10 +23,16 @@ type ext BoolType =
 def BoolType.toString(&self) string =
     "bool"
 
+def BoolType.get_size(&self) u64 =
+    sizeof bool
+
 type ext StringType =
 
 def StringType.toString(&self) string =
     "string"
+
+def StringType.get_size(&self) u64 =
+    sizeof string
 
 type AliasType =
     name: string
@@ -30,18 +42,27 @@ type AliasType =
 def AliasType.toString(&self) string =
     "{self.package}.{self.name}"
 
+def AliasType.get_size(&self) u64 =
+    self.real_type.get_size!
+
 type PointerType =
     p_type: Type
 
 def PointerType.toString(&self) string =
     "&{self.p_type}"
 
+def PointerType.get_size(&self) u64 =
+    sizeof &none
+
 type StructType =
     name: string
     package: string
     real_type: Type
     fields: []Field
-    size: SizeT
+    size: u64
+
+def StructType.get_size(&self) u64 =
+    self.size
 
 def StructType.toString(&self) string =
     if self.package == "_global" then self.name
@@ -65,13 +86,20 @@ type EnumType =
     package: string
     cases: []Cases
     methods: []Method
+    size: u64
 
 def EnumType.toString(&self) string =
     "{self.package}.{self.name}"
 
+def EnumType.get_size(&self) u64 =
+    self.size
+
 type FuncType =
     args: []Type
     return_type: Type
+
+def FuncType.get_size(&self) u64 =
+    sizeof || -> none
 
 type InterfaceType =
     name: string
@@ -82,6 +110,9 @@ type InterfaceType =
 def InterfaceType.toString(&self) string =
     "{self.package}.{self.name}"
 
+def InterfaceType.get_size(&self) u64 =
+    sizeof {}
+
 type ArraySize either
     Static(uint)
     Dynamic
@@ -91,6 +122,12 @@ type ArrayType =
     size: ArraySize
     array_type: Type
 
+def ArrayType.get_size(&self) u64 =
+    match self.size with
+        Static length -> length * self.array_type.get_size!
+        Dynamic -> sizeof [..]none
+        Both -> sizeof []none
+
 def ArrayType.toString(&self) string =
     match self.size with
         Static length -> "[{length}]{self.array_type}"
@@ -99,11 +136,18 @@ def ArrayType.toString(&self) string =
 
 type CharType =
 
+def CharType.get_size(&self) u64 =
+    sizeof char
+
 type ext NoneType =
 def NoneType.toString(&self) string =
     "none"
 
+def NoneType.get_size(&self) u64 =
+    sizeof char
+
 type Type with
     def toString() string
+    def get_size() u64
     //def get_method(string) Maybe[&Method]
     //def get_field(string) Maybe[&Field]

@@ -2,6 +2,7 @@ from "math" import Vec4
 from "materialSystem" import Material
 import "buffer"
 import "ecs"
+import "transform"
 import "shader"
 import "texture"
 import "runner"
@@ -28,7 +29,7 @@ type DrawCommand =
     buffer: &buffer.VertexBuffer
 
     material: &Material
-    entity: &ecs.Entity
+    transform: Maybe[&transform.Transform]
 
 def DrawCommand.toString(&self) string =
     "DrawCommand"
@@ -48,7 +49,7 @@ def make_CommandBuffer() &CommandBuffer =
 
 def clear() =
     command_buffer := context.command_buffer
-    command_buffer.commands = []
+    command_buffer.commands = [..]DrawCommand
 
 default_state := State{
     depth_func = DepthFunc_Lequal
@@ -56,9 +57,9 @@ default_state := State{
     clear_depth_buffer = false
 }
 
-def make_DrawCommand(entity: &ecs.Entity, buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
+def make_DrawCommand(trans: Maybe[&transform.Transform], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
     cmd := DrawCommand{
-        entity = entity
+        transform = trans
         buffer = buff
         material = material
         key = 0
@@ -101,7 +102,7 @@ def quick_sort(cmds: []DrawCommand) []DrawCommand =
     else
         cmds
 
-def set_params(self: &Material, entity: &ecs.Entity) =
+def set_params(self: &Material) =
     params := &self.params
 
     for i := 0..params.length do
@@ -120,11 +121,6 @@ def set_params(self: &Material, entity: &ecs.Entity) =
                 tex.bind_to i+3
                 self.shader.set_int field, i+3
 
-    //set model matrix
-    transformation_matrix := entity.compute_model_matrix!
-
-    self.shader.set_mat4x4 "model", &transformation_matrix
-
 def switch_shader(shad: shader.Shader) =
     shad.bind!
     runner.set_shader_scene_params shad
@@ -139,7 +135,6 @@ def submit_to_gpu() =
 
     cmds := quick_sort commands
 
-    log "===="
     for cmd := cmds do
         mat := cmd.material
 
@@ -163,7 +158,13 @@ def submit_to_gpu() =
             if mat.state.clear_depth_buffer and not last_mat.state.clear_depth_buffer then
                 opengl.clear opengl.depth_buffer_bit
 
-        set_params mat, cmd.entity
+        set_params mat
+        match cmd.transform with
+            Some trans ->
+                transformation_matrix := trans.compute_model_matrix!
+                mat.shader.set_mat4x4 "model", &transformation_matrix
+            None ->
+
         opengl.drawElements opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0
 
 

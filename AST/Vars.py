@@ -108,6 +108,9 @@ def canMutate(self, isMutating= True):
         for i in node.nodes:
             return getReadVar(i)
 
+    if type(self) is Tree.Operator and self.kind == "*" and self.unary:
+        return
+
     readVar = getReadVar(self)
     def checkIfImutable(readVar, createTyp):
         isMutable = not readVar.imutable

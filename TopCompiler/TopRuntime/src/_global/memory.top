@@ -1,4 +1,4 @@
-type SizeT is uint
+type SizeT is u64
 
 ext _ = '#include <string.h>'
 ext memcpy: |&none, &none, SizeT| -> none = 'memcpy'
@@ -6,13 +6,13 @@ ext c_alloc: |SizeT| -> &none = 'malloc'
 ext c_free: |&none| -> none = 'free'
 
 type Allocator with
-    def get_occupied() uint
+    def get_occupied() SizeT
     def alloc(SizeT) &none
     def dealloc(&none)
-    def reset_to(uint)
+    def reset_to(SizeT)
     def free_allocator()
 
-temporary_storage := new_TemporaryStorage 100_000
+temporary_storage := new_TemporaryStorage 10_000_000
 longterm_storage_allocator := new_TemporaryStorage 100_000_000
 malloc := Malloc{}
 
@@ -37,7 +37,7 @@ def new_TemporaryStorage(maxSize: SizeT) TemporaryStorage =
         maxSize = maxSize
     }
 
-def TemporaryStorage.get_occupied(&self) uint =
+def TemporaryStorage.get_occupied(&self) SizeT =
     self.occupied
 
 def TemporaryStorage.alloc(&self, size: SizeT) &none =
@@ -50,7 +50,7 @@ def TemporaryStorage.alloc(&self, size: SizeT) &none =
     if self.occupied >= self.maxSize then
         context.allocator = context.longterm_storage
 
-        log "ERROR: used more tempory memory than available: {self.maxSize}"
+        panic "ERROR: used more tempory memory than available: {self.maxSize}"
 
     offsetPtr self.data, occupied
 
@@ -61,7 +61,7 @@ def TemporaryStorage.reset_to(&self, occupied: SizeT) =
 
     if self.occupied >= self.maxSize then
         context.allocator = context.longterm_storage
-        log "ERROR: used more tempory memory than available: {self.occupied}"
+        panic "ERROR: used more tempory memory than available: {self.occupied}"
 
 type Malloc =
 
@@ -76,15 +76,15 @@ def Malloc.get_occupied(&self) uint =
 
 def Malloc.free_allocator(&self) =
 
-def Malloc.reset_to(&self, to: uint) =
+def Malloc.reset_to(&self, to: SizeT) =
 
 
 
 //helper functions
-def alloc(size: SizeT) &none =
-    context.allocator.alloc size
+def alloc[T](num: SizeT) &T =
+    (context.allocator.alloc num * sizeof T) cast &T
 
-def indexPtr[T](pType: &T, offset: int) &T =
+def indexPtr[T](pType: &T, offset: i64) &T =
     (offsetPtr pType, offset * sizeof T) cast &T
 
 def box[T](value: T) &T =

@@ -11,6 +11,7 @@ class InitPack(Node):
         self.thisPackage = parser.package
 
     def compileToC(self, codegen):
+        codegen.init_types.append(self.package+"InitTypes();")
         codegen.append(self.package+"Init();")
 
         if not self.package in codegen.order_of_modules:

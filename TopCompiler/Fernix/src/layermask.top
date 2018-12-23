@@ -16,5 +16,6 @@ def layer_in_mask(layermask: Layermask, layer: Layer) bool =
 def mask(layermask_to_be_masked: Layermask, use_mask: Layermask) bool =
     not bit_and layermask_to_be_masked, use_mask
 
-game := 1
-editor := 2
+game_layer := 1
+editor_layer := 2
+serialize_layer := 3

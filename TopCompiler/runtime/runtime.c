@@ -5,6 +5,9 @@ struct _global_String _global_StringInit(unsigned int length, char* data) {
     struct _global_String s;
     s.data = data;
     s.length = length;
+    if (s.length > 10000) {
+        printf("Wtf!");
+    }
     return s;
 };
 struct _global_String _global_String_toStringByValue(struct _global_String s,__Context) {
@@ -96,6 +99,9 @@ struct _global_String _global_String_op_addByValue(struct _global_String a, stru
 };
 
 struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b,__Context) {
+    if (b.length > 10000) {
+        printf("Wtf!");
+    }
     return _global_String_op_addByValue(*a, b, context);
 }
 
@@ -272,7 +278,12 @@ FILE* _runtime_c_open_file(struct _global_String filename, struct _global_String
     #else
         errno_t errors = fopen_s(&f, filename.data, acess.data);
 
-        if (errors) { return NULL; }
+        if (f == NULL && errors) {
+            printf("%s\n", filename.data);
+            printf("%i\n", (int)f);
+            printf("error %i\n", errors);
+            return NULL;
+        }
     #endif
 
     return f;
@@ -284,10 +295,14 @@ struct _global_String _runtime_read_file(FILE* f, __Context) {
     fseek (f, 0, SEEK_SET);
     char* buffer = alloc(context->allocator, length + 1, context);
 
-    length = fread(buffer, sizeof(char), length, f);
+    length = fread(buffer, sizeof(char), sizeof(char) * length, f);
     buffer[length] = '\0';
 
     return _global_StringInit(length, buffer);
+}
+
+void _runtime_write_file(FILE* f, struct _global_String s, __Context) {
+    fwrite(s.data, sizeof(char), sizeof(char) * s.length, f);
 }
 
 void _runtime_c_close_file(FILE* file) {

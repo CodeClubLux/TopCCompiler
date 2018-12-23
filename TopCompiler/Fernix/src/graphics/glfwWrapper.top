@@ -46,7 +46,7 @@ ext glfw_mouse_button_left: uint = "GLFW_MOUSE_BUTTON_LEFT"
 ext glfw_press: int = "GLFW_PRESS"
 ext glfw_release: int = "GLFW_RELEASE"
 
-ext getTime: || -> float = "glfwGetTime"
+ext getTime: || -> f64 = "glfwGetTime"
 
 
 

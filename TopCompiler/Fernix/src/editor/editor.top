@@ -54,6 +54,9 @@ def Editor.update(&self) =
 
             None -> None
 
+    if inp.key_pressed key.from_char `L` then //change to use contro
+        ecs.serialize!
+
     self.asset_tab.update!
     update_properties!
     self.ui_mesg_queue.clear!

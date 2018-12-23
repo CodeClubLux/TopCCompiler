@@ -1,9 +1,10 @@
 import "ecs"
 import "math"
 import "window"
+import "transform"
 
 type Camera =
-    entity: &ecs.Entity
+    transform: &transform.Transform
 
     projection_matrix: math.Mat4x4
     view_matrix: math.Mat4x4
@@ -11,14 +12,14 @@ type Camera =
     fov: uint
 
 def Camera.get_entity(&self) &ecs.Entity =
-    self.entity
+    self.transform.get_entity!
 
 def Camera.render(&self) =
 def Camera.update(&self) =
 
 def Camera.update_matrices(&self) =
     w := window.get_window!
-    entity := self.get_entity!
+    entity := self.transform
 
     self.projection_matrix = math.perspective
         math.radians self.fov
@@ -38,16 +39,19 @@ import "layermask"
 camera_system := ecs.make_Store make_Camera, 10
 
 def make_Camera(id: ecs.ID) &Camera =
-    entity := match ecs.entity_system.component_by_id id with
+    trans := match transform.transform_system.component_by_id id with
         Some e -> e
         None ->
-            entity := ecs.make_Entity id
-            entity.position = math.Vec3{ 0, 0, 1.8 }
-            entity.layermask = layermask.enable entity.layermask, layermask.editor
-            entity
+            trans := transform.make_Transform id
+            trans.position = math.Vec3{ 0, 0, 1.8 }
+
+            entity := trans.get_entity!
+            entity.layermask = layermask.enable entity.layermask, layermask.editor_layer
+
+            trans
 
     camera_system.add_component Camera{
-        entity = entity
+        transform = trans
 
         projection_matrix = math.identity_mat!
         view_matrix = math.identity_mat!
@@ -56,6 +60,7 @@ def make_Camera(id: ecs.ID) &Camera =
     }
 
 #addToContext camera := make_Camera ecs.make_ID!
+context.camera.get_entity!.layermask = layermask.disable context.camera.get_entity!.layermask, layermask.serialize_layer
 
 def get_camera() &Camera =
     context.camera

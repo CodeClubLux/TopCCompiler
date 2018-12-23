@@ -62,7 +62,7 @@ class Struct:
     def hasMethod(self, parser, name, isP=False):
         packages = []
         b = None
-        for i in ["_global"]+parser.imports+[parser.package]:
+        for i in [parser.package,self.package, "_global"]+parser.imports:
             if not i in self.methods: continue
             if name in self.methods[i]:
                 b = self.methods[i][name]

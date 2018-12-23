@@ -2,6 +2,7 @@ import "ecs"
 import "layermask"
 import "assetManager"
 import "vfs"
+import "transform"
 
 model_system := ecs.make_Store::[Model] make_Model, 10
 
@@ -50,9 +51,9 @@ def Model.get_entity(&self) &ecs.Entity =
 def Model.get_filename(&self) string =
     self.path
 
-def Model.render_model_for(&self, entity: &ecs.Entity, materials: []Material) =
+def Model.render_model_for(&self, trans: &transform.Transform, materials: []Material) =
     meshes := self.meshes
 
     for i := 0..meshes.length do
-        mesh := meshes[i]
-        mesh.render entity, materials
+        mesh := &meshes[i]
+        mesh.render trans, materials

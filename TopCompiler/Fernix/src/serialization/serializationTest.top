@@ -1,0 +1,52 @@
+from "sBuffer" import all
+
+type Test =
+    arr_static: [3]uint
+    arr_both: []uint
+    arr_dyn: [..]uint
+    f: float
+    b: bool
+    i: int
+
+arr := [..]uint
+arr.append 30
+
+arr_both := [10]
+
+test := Test{ [10, 20, 30], &arr_both, arr, 6.4, true, 2 }
+
+def serialize[T]() =
+    log "serialize"
+
+    write_buffer := make_write_Buffer 100
+    defer write_buffer.free!
+    write_buffer.write_object (get_type Test), &test
+
+    guard Some f := open "assets\\save_files\\data.tsf", WriteFile
+    else panic "Could not write to save_files"
+
+    f.write write_buffer.string_buffer!
+    f.free!
+
+def deserialize[T]() =
+    log "deserialize"
+    guard Some f2 := open "assets\\save_files\\data.tsf", ReadFile
+    else panic "Could not read save_files"
+
+    read_buffer := make_read_Buffer f2.read!
+    defer read_buffer.free!
+
+    f2.free!
+
+    test_r : Test = _
+    read_buffer.read_object (get_type Test), &test_r
+
+    log test_r.f
+    log test_r.b
+    log test_r.i
+    log test_r.arr_static
+    log test_r.arr_both
+    log test_r.arr_dyn
+
+serialize!
+deserialize!

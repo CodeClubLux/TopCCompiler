@@ -574,8 +574,8 @@ def infer(parser, tree):
                 if len(i.nodes) > 0:
                     static = False
                     if arr.init:
-                        if arr.nodes[0].type != Types.I32(unsigned=True):
-                            arr.nodes[0].error("expecting unsigned integer for range start, not "+str(arr.nodes[1].type))
+                        if arr.nodes[0].type != Types.I32(unsigned=True) and arr.nodes[0].type != Types.I32(unsigned=True, size=32):
+                            arr.nodes[0].error("expecting unsigned integer for range start, not "+str(arr.nodes[0].type))
                         if len(arr.nodes) > 1:
                             typ = arr.nodes[1].type
                             static = type(arr.nodes[0]) is Tree.Int
@@ -615,7 +615,7 @@ def infer(parser, tree):
 
                     arr.type = Types.Array(typ, static= static, numElements=lengthOfArray, both=False)
                 else:
-                    arr.type = Types.Array(Types.Null(), empty=True, static=False,both=False)
+                    arr.type = Types.Array(Types.Null(), empty=True, static=False,both=True)
             elif type(i) is Tree.InitPack:
                 parser.imports.append(i.package)
             elif type(i) is Tree.InitStruct:

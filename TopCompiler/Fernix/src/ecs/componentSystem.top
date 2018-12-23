@@ -34,6 +34,8 @@ def make_Store[T: Component](make_component: |ID| -> &T, max_number: uint) &Stor
         added = 0
     }
 
+    self.deserialize!
+
     component_types.append self
 
     self
@@ -144,6 +146,64 @@ def Store[T].update(&self, layer_mask: Layermask) =
         if not mask comp.get_entity!.layermask, layer_mask then
             comp.update!
 
+import "sBuffer"
+
+def Store[T].serialize(&self) =
+    new_context := *context
+    new_context.allocator = new_context.longterm_storage
+
+    #pushContext new_context do
+        defer context.longterm_storage.reset_to context.longterm_storage.get_occupied!
+
+        comps := [..]&T
+        serialize_layermask := make_Layermask!
+        serialize_layermask = enable serialize_layer, layermask.serialize_layer
+
+        for slot := self.components do
+            guard Active _ := self.components[i]
+            else continue
+
+            comp := (&self.components[i]) cast &T
+            if not mask comp.get_entity!.layermask, serialize_layermask then
+                comps.append (&self.components[i]) cast &T
+
+        write_buffer := (sBuffer.make_write_Buffer 10_000_000)
+        write_buffer.write_integer comps.length
+
+        if comps.length > 0 then
+            log get_type T
+
+        for comp := comps do
+            write_buffer.write_object get_type T, comp
+
+        guard Some f := open "assets\\save_files\\{get_type T}.tsf", WriteFile
+        else panic "Could not write to save_files"
+
+        f.write write_buffer.string_buffer!
+        f.free!
+
+def Store[T].deserialize(&self) =
+    log get_type T
+    return
+
+    new_context := *context
+    new_context.allocator = new_context.longterm_storage
+
+    #pushContext new_context do
+
+        guard Some f := open "assets\\save_files\\{get_type T}.tsf", ReadFile
+        else panic "Could not read save_files\\{get_type T}"
+
+        read_buffer := sBuffer.make_read_Buffer f.read!
+        num := read_buffer.read_integer!
+
+        for i := 0..num do
+            comp : T = _
+            read_buffer.read_object get_type T, &comp
+            self.add_component comp
+
+        f.free!
+
 def render(layer_mask: Layermask) =
     for i := 0..component_types.length do
         component_types[i].render layer_mask
@@ -151,6 +211,10 @@ def render(layer_mask: Layermask) =
 def update(layer_mask: Layermask) =
     for i := 0..component_types.length do
         component_types[i].update layer_mask
+
+def serialize() =
+    for i := 0..component_types.length do
+        component_types[i].serialize!
 
 def components_by_id(id: ID) [..]Component =
     components := [..]Component

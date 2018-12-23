@@ -1,0 +1,256 @@
+//inspired by https://gafferongames.com/categories/building-a-game-network-protocol
+
+type Buffer = //buffer cant be bigger than 4 gigs
+    data: &char
+    size: uint
+    index: uint
+    ptrs: [..]Maybe[&none]
+
+ext _ = '#include <winsock2.h>'
+ext u32_to_network: |u32| -> u32 = "htonl" //local order to network order
+ext u32_to_local: |u32| -> u32 = "ntohl" //network order to local order
+ext u64_to_network: |u64| -> u64 = "htonll" //local order to network order
+ext u64_to_local: |u64| -> u64 = "ntohll" //network order to local order
+
+//basic buffer operations
+def Buffer.pointer_to_n_bytes(&buffer, bytes: uint) &none =
+    assert buffer.index + bytes <= buffer.size, "Buffer is overflowed"
+    ptr := indexPtr buffer.data, buffer.index
+    buffer.index += bytes
+    ptr
+
+def Buffer.write_byte(&buffer, value: u8) =
+    ptr := (buffer.pointer_to_n_bytes 1) cast &u8
+    *ptr = value //single byte doesnt need to switch because of endianess
+
+def Buffer.read_byte(&buffer) u8 =
+    ptr := (buffer.pointer_to_n_bytes 1) cast &u8
+    *ptr
+
+def Buffer.write_integer(&buffer, value: u32) =
+    ptr := (buffer.pointer_to_n_bytes 4) cast &u32
+    *ptr = u32_to_network value //single byte doesnt need to switch because of endianess
+
+def Buffer.read_integer(&buffer) u32 =
+    ptr := (buffer.pointer_to_n_bytes 4) cast &u32
+    u32_to_local *ptr
+
+def Buffer.write_long(&buffer, value: u64) =
+    ptr := (buffer.pointer_to_n_bytes 8) cast &u64
+    *ptr = u64_to_network value
+
+def Buffer.read_long(&buffer) u64 =
+    ptr := (buffer.pointer_to_n_bytes 8) cast &u64
+    u64_to_local *ptr
+
+let float_precision = 100
+let double_precision = 10000
+
+//Complex Types
+def Buffer.write_object(&buffer, typ: Type, ptr: &none) =
+    match typ with
+        struct_type as &StructType ->
+            for field := struct_type.fields do
+                buffer.write_object field.field_type, (offsetPtr ptr, field.offset)
+
+        int_type as &IntType ->
+            if int_type.size == 8 then
+                buffer.write_long *(ptr cast &u64)
+            else
+                buffer.write_integer *(ptr cast &u32)
+
+        pointer_type as &PointerType ->
+            ptr_ptr := *(ptr cast &&none)
+            for p := buffer.ptrs do
+                if (p cast u64) == (ptr_ptr cast u64) then //Pointer was already serialized
+                    buffer.write_integer i + 1
+                    return
+
+            buffer.ptrs.append Some ptr_ptr
+            buffer.write_integer buffer.ptrs.length
+            buffer.write_object pointer_type.p_type, ptr_ptr
+
+        alias_type as &AliasType ->
+            buffer.write_object alias_type.real_type, ptr
+
+        float_type as &FloatType ->
+            if float_type.size == 4 then
+                i := (*(ptr cast &float) * float_precision) cast i32
+                buffer.write_integer *((&i) cast &u32)
+            else
+                i := (*(ptr cast &f64) * double_precision) cast i64
+                buffer.write_long *((&i) cast &u64)
+
+        bool_type as &BoolType ->
+            buffer.write_byte *(ptr cast &u8)
+
+        array_type as &ArrayType ->
+            elem_size := array_type.array_type.get_size!
+            elem_type := array_type.array_type
+
+            match array_type.size with
+                Static length ->
+                    for i := 0..length do
+                        buffer.write_object elem_type, offsetPtr ptr, i * elem_size
+
+                Both ->
+                    arr := ptr cast &[]none
+
+                    buffer.write_integer arr.length
+
+                    for i := 0..arr.length do
+                        buffer.write_object elem_type, (offsetPtr arr.data, i * elem_size)
+
+                Dynamic ->
+                    arr := ptr cast &[..]none
+
+                    buffer.write_integer arr.length
+
+                    guard Some data := arr.data
+                    else return
+
+                    for i := 0..arr.length do
+                        buffer.write_object elem_type, (offsetPtr data, i * elem_size)
+
+        string_type as &StringType ->
+            ptr_s := ptr cast &string
+            c_string := ptr_s.to_c_string!
+            buffer.write_integer ptr_s.length
+
+            for i := 0..ptr_s.length do
+                buffer.write_byte (*(indexPtr c_string, i)) cast u8
+
+        _ -> //panic "unsupported type {typ}"
+
+def Buffer.read_object(&buffer, typ: Type, ptr: &none) =
+    match typ with
+        struct_type as &StructType ->
+            for field := struct_type.fields do
+                buffer.read_object field.field_type, (offsetPtr ptr, field.offset)
+
+        int_type as &IntType ->
+            if int_type.size == 8 then
+                *(ptr cast &u64) = buffer.read_long!
+            else
+                *(ptr cast &u32) = buffer.read_integer!
+
+        alias_type as &AliasType ->
+            buffer.read_object alias_type.real_type, ptr
+
+        bool_type as &BoolType ->
+            *(ptr cast &bool) = buffer.read_byte! cast bool
+
+        float_type as &FloatType ->
+            if float_type.size == 4 then
+                u_int := buffer.read_integer!
+                as_int := *((&u_int) cast &i32)
+                f_ptr := ptr cast &float
+                *f_ptr = ((as_int cast float) / float_precision)
+                //first cast to i32, then cast to float and multiply
+            else
+                u_int := buffer.read_long!
+                as_int := *((&u_int) cast &i64)
+                f_ptr := ptr cast &float
+                *f_ptr = ((as_int cast f64) / float_precision)
+
+        pointer_type as &PointerType ->
+            ptr_to_ptr := ptr cast &&none
+            p_type := pointer_type.p_type
+
+            id := buffer.read_integer!
+
+            if id == 0 then
+                *(ptr_to_ptr cast &Maybe[&none]) = None
+            else
+                id = id - 1
+                match buffer.ptrs[id] with
+                    Some created_ptr ->
+                        *ptr_to_ptr = created_ptr
+                    None -> //pointer has not been created
+                        alloc_ptr := alloc::[none] p_type.get_size!
+                        buffer.ptrs[id] = Some alloc_ptr
+                        buffer.read_object p_type, alloc_ptr
+                        *ptr_to_ptr = alloc_ptr
+
+        array_type as &ArrayType ->
+            elem_size := array_type.array_type.get_size!
+            elem_type := array_type.array_type
+
+            match array_type.size with
+                Static length ->
+                    for i := 0..length do
+                        buffer.read_object array_type.array_type, offsetPtr ptr, i * elem_size
+
+                Both ->
+                    arr := ptr cast &[]none
+                    arr.length = buffer.read_integer!
+                    arr.data = alloc::[none] arr.length * elem_size
+
+                    for i := 0..arr.length do
+                        buffer.read_object elem_type, offsetPtr arr.data, i * elem_size
+
+                Dynamic ->
+                    arr := ptr cast &[..]none
+                    *arr = [..]none
+
+                    length := buffer.read_integer!
+                    arr.reserve (length * elem_size) cast uint
+                    arr.length = length
+
+                    guard Some data := arr.data
+                    else return
+
+                    for i := 0..length do
+                        buffer.read_object elem_type, offsetPtr data, i * elem_size
+
+                    arr.capacity = length
+
+        string_type as &StringType ->
+            length := buffer.read_integer!
+
+            c_string := alloc::[char] length + 1
+            *(indexPtr c_string, length) = null_char
+            for i := 0..length do
+                *(indexPtr c_string, i) = buffer.read_byte! cast char
+
+            *(ptr cast &string) = make_String length, c_string
+
+        _ -> //panic "unsupported type {typ}"
+
+//initializing
+def make_read_Buffer(data: string) Buffer =
+    b := Buffer{
+        data = data.to_c_string!
+        size = data.length
+        index = 0
+        ptrs = [..]Maybe[&none]
+    }
+
+    length := b.read_integer!
+    b.ptrs = [length: None as Maybe[&none]]
+
+    //.reserve length
+    //for i := 0..length do
+    //    ptrs.append None
+
+    b
+
+def make_write_Buffer(max_size: uint) Buffer =
+    //going to convert the buffer to a string, strings must have a null char ending for c compatibility
+    Buffer{
+        data = alloc::[char] max_size + 1
+        size = max_size
+        index = 4 //save space for number of pointers
+        ptrs = [..]Maybe[&none]
+    }
+
+//output
+def Buffer.string_buffer(&buffer) string =
+    size := buffer.index
+    *(indexPtr buffer.data, buffer.index) = null_char
+    buffer.index = 0
+    buffer.write_integer buffer.ptrs.length
+    make_String size, buffer.data
+
+def Buffer.free(&buffer) =
+    free buffer.data

@@ -3,6 +3,7 @@ from "math" import all
 import "ecs"
 import "opengl"
 import "draw"
+import "transform"
 
 type Vertex =
     position: Vec3
@@ -33,12 +34,7 @@ def make_Mesh(vertices: []Vertex, indices: []uint, material_id: uint) Mesh =
         material_id = material_id
     }
 
-def Mesh.render(&self, entity: &ecs.Entity, materials: []Material) =
+def Mesh.render(&self, trans: &transform.Transform, materials: []Material) =
     material := &materials[self.material_id]
-    cmd := draw.make_DrawCommand entity, self.buffer, material
+    cmd := draw.make_DrawCommand (Some trans), self.buffer, material
     cmd.submit!
-
-    //material.bind entity
-    //self.buffer.bind!
-
-    //opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0

@@ -536,7 +536,7 @@ class FuncPointer(Type):
         contextTyp = "struct _global_Context*"
 
         name = SimplifyAst.sanitize(self.name)
-        funcP = f"typedef {self.returnType.toCType()}(*{name})(" + ",".join(i.toCType() for i in self.args) + "," + contextTyp + ")"
+        funcP = f"typedef {self.returnType.toCType()}(*{name})(" + "".join(i.toCType()+"," for i in self.args) + contextTyp + ")"
         genCType(funcP, genContents)
         return name
 
@@ -766,7 +766,9 @@ class Array(Type):
         self.numElements = numElements
         self.both = both
 
-        if not static and not both:
+        if self.empty:
+            self.name = "[]"
+        elif not static and not both:
             self.arrT = replaceT(Parser.DynamicArray, {"Array.T": elemT})
             self.types = self.arrT.types
             self.remainingGen = self.arrT.remainingGen
@@ -811,7 +813,7 @@ class Array(Type):
         dynamic = self.isDynamic()
         otherDynamic = other.isDynamic()
 
-        if (dynamic and otherDynamic) or (self.both) or (self.static and other.static):
+        if (dynamic and otherDynamic) or (self.both) or (self.static and other.static) or other.empty:
             if not other.empty:
                 if self.elemT != other.elemT:
                     node.error(f"Element type in array: Expecting {self.elemT} not {other.elemT}")

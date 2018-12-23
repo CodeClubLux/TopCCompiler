@@ -147,8 +147,10 @@ def checkOperator(self, parser):
             "uint": int_operators,
             "u64": int_operators,
             "u8": int_operators,
+            "i64": int_operators,
             "u16": int_operators,
             "float": ["+", "-", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
+            "f64": ["+", "-", "*", "/", "^", "==", "<", ">", "!=", "<=", ">="],
             "string": ["+", "==", "!=", "<", ">"],
             "bool": ["==", "not", "and", "or", "!="],
             "char": ["<", ">", "=="]

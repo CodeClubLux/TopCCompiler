@@ -40,7 +40,7 @@ def Skybox.render(&self) =
         state = &skybox_state
     }
 
-    cmd := draw.make_DrawCommand self.entity, primitives.cube.meshes[0].buffer, mat
+    cmd := draw.make_DrawCommand None, primitives.cube.meshes[0].buffer, mat
     cmd.submit!
 
     /*
