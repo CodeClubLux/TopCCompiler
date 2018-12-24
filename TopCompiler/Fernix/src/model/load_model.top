@@ -66,14 +66,10 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
             for mat_name := *materials do
                 if mat_name == name then
                     id = Some i
-                    log "assigned id"
 
             match id with
-                Some x ->
-                    log "material exists"
-                    x
+                Some x -> x
                 None ->
-                    log "adding material"
                     materials.append name
                     materials.length - 1
         else

@@ -25,6 +25,7 @@ def substance_params(folder: string, name: string) [4]Param =
         Param_Image "material.normal", texture.load "{folder}/{name}_normal.jpg"
     ]
 
+// /*
 wet_street_params := substance_params "wood_2", "Stylized_Wood"
 
 
@@ -49,14 +50,12 @@ mesh_renderer := model.make_ModelRenderer cube_entity.id
 mesh_renderer.model_id = Some ecs.get_id_for cube
 mesh_renderer.set_materials &cube_materials
 
+
 floating_camera := fpsController.make_FPSController camera.get_camera!.get_entity!.id
 
-gizmo_component := gizmo.gizmo_system
-    .get_active!
-    .unwrap!
+//editor.editor.select cube_entity.id
 
-editor.editor.select cube_entity.id
-
+// */
 
 log "running"
 

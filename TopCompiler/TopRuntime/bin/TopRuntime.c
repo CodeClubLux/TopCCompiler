@@ -981,7 +981,7 @@ if((_global_self)->occupied>(_global_self)->highest){;
 (_global_self)->highest=(_global_self)->occupied;;
 ;};
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-(bv)->allocator=(bv)->longterm_storage;;
+(bv)->allocator=&(_global_malloc_as_allocator);;
 _global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->maxSize),bv),bv),_global_StringInit(0,""),bv),bv);
 ;};
 ;return _global_offsetPtr((_global_self)->data,_global_occupied,bv);
@@ -993,7 +993,7 @@ void _global_TemporaryStorage_reset_to(struct _global_TemporaryStorage* _global_
 ;
 (_global_self)->occupied=_global_occupied;;
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-(bv)->allocator=(bv)->longterm_storage;;
+(bv)->allocator=&(_global_malloc_as_allocator);;
 _global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->occupied),bv),bv),_global_StringInit(0,""),bv),bv);
 ;};
 ;}
@@ -1543,7 +1543,7 @@ _globalInit();;
 ;
 };
 int main() { 
-_global_InitTypes(); _globalInit(); _global_init_c_runtime(); 
+_globalInitTypes(); _globalInit(); _global_init_c_runtime(); 
  _global_Type_Type.name = _global_StringInit(4, "Type")
 ;_global_Type_Type.package = _global_StringInit(7, "_global");_global_StaticArray_StaticArray_S_FieldType.size.tag = 2;
 _global_StaticArray_StaticArray_S_FieldType.array_type = 

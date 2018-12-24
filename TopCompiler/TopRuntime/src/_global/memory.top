@@ -48,8 +48,7 @@ def TemporaryStorage.alloc(&self, size: SizeT) &none =
         self.highest = self.occupied
 
     if self.occupied >= self.maxSize then
-        context.allocator = context.longterm_storage
-
+        context.allocator = &malloc_as_allocator
         panic "ERROR: used more tempory memory than available: {self.maxSize}"
 
     offsetPtr self.data, occupied
@@ -60,7 +59,7 @@ def TemporaryStorage.reset_to(&self, occupied: SizeT) =
     self.occupied = occupied
 
     if self.occupied >= self.maxSize then
-        context.allocator = context.longterm_storage
+        context.allocator = &malloc_as_allocator
         panic "ERROR: used more tempory memory than available: {self.occupied}"
 
 type Malloc =

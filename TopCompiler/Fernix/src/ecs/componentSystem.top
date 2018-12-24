@@ -152,12 +152,12 @@ def Store[T].serialize(&self) =
     new_context := *context
     new_context.allocator = new_context.longterm_storage
 
-    #pushContext new_context do
-        defer context.longterm_storage.reset_to context.longterm_storage.get_occupied!
+    defer new_context.allocator.reset_to new_context.allocator.get_occupied!
 
+    #pushContext new_context do
         comps := [..]&T
         serialize_layermask := make_Layermask!
-        serialize_layermask = enable serialize_layer, layermask.serialize_layer
+        serialize_layermask = enable serialize_layermask, layermask.serialize_layer
 
         for slot := self.components do
             guard Active _ := self.components[i]
@@ -171,9 +171,11 @@ def Store[T].serialize(&self) =
         write_buffer.write_integer comps.length
 
         if comps.length > 0 then
-            log get_type T
-
+            log "serialized: {get_type T}"
+        else
+            log "did not serialize: {get_type T}"
         for comp := comps do
+            log "====="
             write_buffer.write_object get_type T, comp
 
         guard Some f := open "assets\\save_files\\{get_type T}.tsf", WriteFile
@@ -183,7 +185,6 @@ def Store[T].serialize(&self) =
         f.free!
 
 def Store[T].deserialize(&self) =
-    log get_type T
     return
 
     new_context := *context

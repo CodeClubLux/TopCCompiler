@@ -31,6 +31,7 @@ def make_Model(id: ecs.ID) &Model =
         None -> ecs.make_Entity id
 
     entity.layermask = layermask.make_Layermask!
+    entity.layermask = layermask.enable entity.layermask, layermask.serialize_layer
 
     model_system.add_component Model{
         entity = entity

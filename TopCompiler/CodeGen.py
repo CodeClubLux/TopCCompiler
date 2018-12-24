@@ -317,7 +317,7 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
         f.close()
 
     print_size = 'printf("offset of cases %llu, %llu", sizeof(struct ecs_Slot_model_ModelRenderer), sizeof(struct model_ModelRenderer)); return 0;'
-    linkedCode.append(f"int main() {{ \n_global_InitTypes(); _globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInitTypes(); mainInit(); return 0;  }};")
+    linkedCode.append(f"int main() {{ \n_globalInitTypes(); _globalInit(); _global_init_c_runtime(); \n {mainC}; \n mainInitTypes(); mainInit(); return 0;  }};")
 
     f = open("bin/" + outputFile + ".c", mode="w")
     f.write("\n".join(linkedCode))

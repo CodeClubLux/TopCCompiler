@@ -13,7 +13,12 @@ def DirLight.render(&self) =
 def DirLight.update(&self) =
 
 dir_light_system := ecs.make_Store make_DirLight, 1
-_ := make_DirLight ecs.make_ID!
+
+defer context.allocator.reset_to context.allocator.get_occupied!
+match dir_light_system.get_active! with
+    Some x ->
+    None ->
+        _ := make_DirLight ecs.make_ID!
 
 def make_DirLight(id: ecs.ID) &DirLight =
     entity := match ecs.entity_system.component_by_id id with

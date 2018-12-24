@@ -90,11 +90,13 @@ def Buffer.write_object(&buffer, typ: Type, ptr: &none) =
 
             match array_type.size with
                 Static length ->
+                    log "static array: {length}"
                     for i := 0..length do
                         buffer.write_object elem_type, offsetPtr ptr, i * elem_size
 
                 Both ->
                     arr := ptr cast &[]none
+                    log "both array: {arr.length}"
 
                     buffer.write_integer arr.length
 

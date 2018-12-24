@@ -10,6 +10,7 @@ import "runner"
 import "ecs"
 import "draw"
 from "materialSystem" import all
+import "layermask"
 
 skybox_shader := shader.make "shaders/skybox.vert", "shaders/skybox.frag"
 
@@ -42,19 +43,6 @@ def Skybox.render(&self) =
 
     cmd := draw.make_DrawCommand None, primitives.cube.meshes[0].buffer, mat
     cmd.submit!
-
-    /*
-    skybox_shader.bind!
-
-    self.env_cubemap.bind_to 0
-
-    cam := camera.get_camera!
-
-    skybox_shader.set_mat4x4 "projection", &cam.projection_matrix
-    skybox_shader.set_mat4x4 "view", &cam.view_matrix
-
-    primitives.render_cube!
-    */
 
 brdf_LUT_texture2 := texture.load "ibl_brdf_lut.png"
 
@@ -305,6 +293,10 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
     entity := match ecs.entity_system.component_by_id id with
         Some e -> e
         None -> ecs.make_Entity id
+
+    entity.layermask = layermask.disable entity.layermask, layermask.serialize_layer
+
+    log "set serialize layer {layermask.layer_in_mask entity.layermask, layermask.serialize_layer}"
 
     brdf_LUT_as_texture := texture.make_Texture ecs.make_ID!
     brdf_LUT_as_texture.filename = "brdf_LUT"
