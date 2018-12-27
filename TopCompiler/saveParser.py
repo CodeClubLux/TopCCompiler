@@ -25,6 +25,7 @@ def save(parser, runtimeBuild):
         parser.structs["_global"] = {}
         parser.interfaces["_global"] = {}
         parser.scope["_global"] = []
+
     parser._filename = None
     parser.bracketBookmark = None
     parser.cssFiles = None
@@ -46,17 +47,6 @@ def save(parser, runtimeBuild):
     for package in parser.structs:
         for s in parser.structs[package]:
             parser.structs[package][s].node = 0
-
-    sizes = {}
-    for k, v in parser.__dict__.items():
-        l = len(pickle.dumps(v))
-        if l > 50:
-            sizes[k] = l
-
-    s = reversed(sorted([b for (a,b) in sizes.items()]))
-    pprint.pprint(sizes)
-    pprint.pprint(list(s))
-    print("sizes")
     """
 
     def removeRedundantProperties(ast):

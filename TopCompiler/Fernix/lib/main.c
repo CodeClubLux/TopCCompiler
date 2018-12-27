@@ -1,8 +1,10 @@
 
 void mainInitTypes() { 
- game_engine_initInitTypes();
+ runnerInitTypes();
  }
 void mainInit() { 
-game_engine_initInit();;
+runnerInit();;
+_global_log_string(_global_StringInit(14,"server initedk"),(&_global_context));
+runner_init((&_global_context));
 ;
 };

@@ -120,7 +120,9 @@ def getCompilationFiles(target, tags):
         linkWith = []
         headerIncludePath = []
 
-        for root, dirs, files in os.walk(dir, topdown=False, followlinks=True):
+        not_prefix = []
+
+        for root, dirs, files in os.walk(dir, topdown=True, followlinks=True):
             hasPort = False
             should_continue = False
 
@@ -130,10 +132,21 @@ def getCompilationFiles(target, tags):
                         hasPort = True
                     if i == "condition.json":
                         if condition_not_met(root + "/" + i, tags):
-                            should_continue = True
+                            should_continue = root
                             break
 
-            if should_continue: continue
+            if should_continue:
+                not_prefix.append(should_continue)
+                continue
+
+            c = False
+            for i in not_prefix:
+                if root == i:
+                    not_prefix.remove(i)
+                if root.startswith(i):
+                    c = True
+
+            if c: continue
 
             for i in files:
                 if not hasPort and i != "port.json" and i.endswith(".top"):
@@ -265,8 +278,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             else:
                 Error.error("unknown argument '" + i + "'.")
 
-        if not _hotswap and opt == 0:
-            #cache = saveParser.load(compileRuntime)
+        if not _hotswap and opt == 0 and not compileRuntime:
+            cache = saveParser.load(compileRuntime)
             pass
         beforeLoad = time()
 
@@ -301,6 +314,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
         linkWith += _linkWith
         headerIncludePath += _headerIncludePath
+
 
 
         global filenames_sources
@@ -391,6 +405,18 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 declarations.atomTyp = cache.atomTyp
                 declarations.hotswap = True
                 declarations.usedModules = cache.usedModules
+                declarations.specifications = cache.specifications
+                declarations.includes = cache.includes
+
+                Types.genericTypes = cache.generatedGenericTypes
+                Types.inProjectTypes = {name: None for name in Types.genericTypes}
+                from TopCompiler import Tree
+                Tree.casted = cache.casted
+
+                declarations.contextFields = cache.contextFields
+                declarations.contextType = {}
+                for package in declarations.contextFields:
+                    declarations.contextType.update(declarations.contextFields[package])
 
             if former:
                 #print("inserting", target)
@@ -407,19 +433,22 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.global_target = target
             declarations.output_target = target
             declarations.didCompile = False
-
-            declarations.setGlobalData(compileRuntime)
+            declarations.linkWith = linkWith
 
             if (dev and run):
                 clearMain(declarations)
-
-            ResolveSymbols.resolve(declarations)
 
             #print("declarations")
 
             #print(declarations.shouldCompile)
 
             if opt == 3 or doc or ImportParser.shouldCompile(False, "main", declarations):
+                print("Recompiling")
+
+                declarations.setGlobalData(compileRuntime)
+
+                ResolveSymbols.resolve(declarations)
+
                 parser = Parser.Parser(lexed["main"], filenames["main"])
                 parser.package = "main"
                 ResolveSymbols.insert(declarations, parser, only= True)
@@ -461,7 +490,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 order_of_modules = []
 
                 compiled = parser.order_of_modules  # order_of_modules #parser.compiled
-                print(parser.order_of_modules)
 
                 typesInContext = []
 
@@ -489,15 +517,20 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     if parser.compiled[i][0]:
                         SimplifyAst.resolveGeneric(parser, parser.compiled[i][1][0])
 
-                #if compileRuntime:
-                #    contextCCode = CodeGen.buildContext(parser.contextType)
-                #else:
-                #    removedTypes = removeTypes(["_global_Allocator"], [
-                #        "typedef void*(*prnonec_SizeTp___rnone)(void*,unsigned int,struct _global_Context*)",
-                #        "typedef unsigned int(*prnonep___uint)(void*,struct _global_Context*)"
-                #    ])
-
+                #generatedTypes = Types.genericTypes
+                #Types.genericTypes = {}
                 contextCCode = CodeGen.buildContext(parser)
+
+                for i in parser.compiled:
+                    parser.package = i
+                    if not parser.compiled[i][0]:
+                        if cache and i in cache.generatedTypesPerPackage:
+                            for typ in cache.generatedTypesPerPackage[i]:
+                                Types.genericTypes[typ] = None
+
+                #print(Types.genericTypes)
+                #generatedTypes.update(Types.genericTypes)
+                #Types.genericTypes = generatedTypes
 
                 #if not compileRuntime:
                 #    addTypes(removedTypes)
@@ -512,8 +545,11 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     canStartWith.append(dir)
 
                     if parser.compiled[i][0]:
-                        includes.extend(CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt))
-
+                        inc = CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt)
+                        includes.extend(inc)
+                        parser.includes[i] = inc
+                    else:
+                        includes.extend(cache.includes[i])
                 order_of_modules.append("main")
 
                 for i in parser.lexed:
@@ -523,8 +559,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 _headerIncludePath = [i for (d, i) in headerIncludePath if d in canStartWith]
 
                 timeForCodeAnalysis = time() - beforeLoad
+
+                parser.generatedGenericTypes = Types.genericTypes
                 if compileRuntime:   #not dev and not _raise:
-                    parser.generatedGenericTypes = Types.genericTypes
                     deleteQue = []
                     for c in parser.generatedGenericTypes:
                         parser.generatedGenericTypes[c] = None
@@ -534,7 +571,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     for c in deleteQue:
                         del parser.generatedGenericTypes[c]
 
-                    saveParser.save(parser, compileRuntime)
+                saveParser.save(parser, compileRuntime)
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
 
@@ -576,7 +613,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 import datetime
 modified_ = {}
 def modified(_target, files, outputfile, jsFiles=[]):
-    return True #while developing incremental compilation sucks
+    #return True #while developing incremental compilation sucks
 
     def inner():
         target = _target
@@ -589,7 +626,7 @@ def modified(_target, files, outputfile, jsFiles=[]):
             t = global_parser.usedModules[outputfile]
 
         if outputfile == "main": #linking is done globally not module specific
-            for i in global_parser.jsFiles:
+            for i in global_parser.linkWith:
                 file = os.path.getmtime(i)
                 file = datetime.datetime.fromtimestamp(int(file))
 

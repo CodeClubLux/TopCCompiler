@@ -218,7 +218,7 @@ class CodeGen:
         outerCode = "".join(self.out_parts)
         forward_ref = "".join(self.header_parts)
 
-        (generatedTypes, mainC) = Types.getGeneratedDataTypes()
+        (generatedTypes, mainC) = Types.getGeneratedDataTypes(self.filename)
         Types.compiledTypes = coll.OrderedDict()
         Types.dataTypes = []
 
@@ -249,8 +249,6 @@ class Info:
         self.array = lastArr
         self.pointer = pointer
 
-
-
 def buildContext(parser):
     from TopCompiler import Parser
 
@@ -272,7 +270,7 @@ def buildContext(parser):
         types[field] = contextType[field].toCType()
 
     string = []
-    (typesGen, mainC) = Types.getGeneratedDataTypes()
+    (typesGen, mainC) = Types.getGeneratedDataTypes("_context")
 
     parser.typesInContext = list(Types.genericTypes.keys())
 
@@ -295,6 +293,7 @@ import os
 
 
 def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
+    print(compiled)
     topRuntime = ""
     (context, mainC) = context
     if not runtimeBuild:

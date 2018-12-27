@@ -26,8 +26,12 @@ def resolve(self):
 
     for c in filenames:
         self._filename = self.filenames[c]
-        PackageParser.packDec(self, c, pack=True)
-        if self.hotswap and ImportParser.shouldCompile(False, self.package, self):
+        if not self.hotswap or ImportParser.shouldCompile(False, c, self):
+            if c in self.contextFields:
+                for i in self.contextFields[c]:
+                    del self.contextType[i]
+
+            PackageParser.packDec(self, c, pack=True)
             if self.package != "_global":
                 self.scope[self.package] = [{}]
                 self.structs[self.package] = {}
@@ -201,6 +205,11 @@ def insert(parser, p, only= False, copy= False):
     p.specifications  = parser.specifications
     p.path = parser.path
     p.order_of_modules = parser.order_of_modules
+    p.linkWith = parser.linkWith
+    p.contextFields = parser.contextFields
+    p.contextType = parser.contextType
+    p.compiledTypes = parser.compiledTypes
+    p.includes = parser.includes
 
     return p
 

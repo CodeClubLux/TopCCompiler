@@ -19,10 +19,11 @@ import os
 
 def lex(target, stream, filename, modifiers, hotswap, lexed):
     for c in stream: #@cleanup might not need to reparse if isn't modified
-        if not hotswap or (hotswap and topc.modified(target, modifiers[c], c)):
+        if True: #not hotswap or (hotswap and (topc.modified(target, modifiers[c], c) or not c in hotswap.tokens[c])):
             lexed[c] = []
             for i in range(len(stream[c])):
                 lexed[c].append(tokenize(c, filename[c][i][1], stream[c][i]))
+
     return lexed
 
 import re

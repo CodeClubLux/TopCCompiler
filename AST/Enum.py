@@ -61,9 +61,6 @@ class Enum(Node):
                     names = ["field" + str(iter) for iter in range(len(args))]
 
                     for i in range(len(args)):
-                        if args[i].name == "ui.InputOptions":
-                            print("hwat")
-
                         codegen.append(f"{args[i].toCType()} field{i};\n")
                     codegen.append("\n};")
 

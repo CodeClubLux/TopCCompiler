@@ -103,8 +103,26 @@ def importParser(parser, decl= False):
 
         else:
             if not name in parser.compiled:
-                parser.compiled[name] = (False,)
-                parser.currentNode.addNode(Tree.InitPack(name, parser))
+                def loop(name):
+                    parser.compiled[name] = (False,)
+                    parser.currentNode.addNode(Tree.InitPack(name, parser))
+
+                    #print("not recompiling", name)
+                    #print(parser.allImports[name])
+
+                    for imports in parser.allImports[name]:
+                        if not imports in parser.compiled:
+                            parser.compiled[imports] = (False,) #Assumption is correct as package has to be recompiled when it's dependencies change
+                            parser.currentNode.addNode(Tree.InitPack(imports, parser))
+
+                            loop(imports)
+                            if not imports in parser.order_of_modules:
+                                parser.order_of_modules.append(imports)
+
+                    if not name in parser.order_of_modules:
+                        parser.order_of_modules.append(name)
+
+                loop(name)
 
     parser.imports.append(oname)
 

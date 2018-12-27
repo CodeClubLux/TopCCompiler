@@ -195,9 +195,10 @@ def infer(parser, tree):
                             i.nodes[0].varType = typ
                         else:
                             i.error("for loop only operators either on Range or array")
-                            
+
                     Scope.addVar(i, parser, i.nodes[0].name, Scope.Type(i.nodes[0].imutable, typ, i.global_target))
                     i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
+
             elif type(i) is Tree.FuncBody:
                 Scope.decrScope(parser)
             elif type(i) is Tree.Create:
@@ -209,8 +210,11 @@ def infer(parser, tree):
                             i.varType = Types.I32(unsigned= True)
                         else:
                             i.error("for loop only operators either on Range or array")
+
                     Scope.addVar(i, parser, i.name, Scope.Type(i.imutable, i.varType, i.owner.global_target))
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
+                    if i.isGlobal and not i.imutable:
+                        i.error("Global variables are bad")
 
             elif type(i) is Tree.ReadVar:
                 if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct and i.owner.nodes[0] == i):
@@ -615,7 +619,7 @@ def infer(parser, tree):
 
                     arr.type = Types.Array(typ, static= static, numElements=lengthOfArray, both=False)
                 else:
-                    arr.type = Types.Array(Types.Null(), empty=True, static=False,both=True)
+                    arr.type = Types.Array(Types.Null(), empty=True, static=False,both=False)
             elif type(i) is Tree.InitPack:
                 parser.imports.append(i.package)
             elif type(i) is Tree.InitStruct:

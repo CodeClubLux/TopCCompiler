@@ -407,7 +407,11 @@ class Parser:  # all mutable state
         self.specifications = {}
 
         self.order_of_modules = []
-
+        self.contextFields = {}
+        self.contextType = {}
+        self.compiledTypes = {}
+        self.generatedTypesPerPackage = {}
+        self.includes = {}
 
     def setArrayTypes(self):
         global StaticArray
@@ -467,12 +471,9 @@ class Parser:  # all mutable state
         ArrayType = Types.Struct(False, tmp14.normalName, tmp14._types, tmp14.package)
         NoneType = Types.Struct(False, tmp15.normalName, tmp15._types, tmp15.package)
 
-
     def setGlobalData(self, compileRuntime):
         global Stringable
         global runtimeParser
-        self.contextType ={}
-        self.contextFields = {}
 
         Stringable = Types.Interface(False, {}, methods={"toString": Types.FuncPointer([], Types.String(0))},
                                      name="Stringer")
@@ -488,9 +489,11 @@ class Parser:  # all mutable state
             self.structs["_global"] = runtimeParser.structs["_global"]
             self.scope["_global"] = runtimeParser.scope["_global"]
             self.contextFields["_global"] = runtimeParser.contextFields["_global"]
-            self.contextType = runtimeParser.contextType
+
+            self.contextType.update(runtimeParser.contextType)
             self.specifications["_global"] = runtimeParser.specifications["_global"]
             self.scope["_global"][0]["console_input"] = Scope.Type(True, Types.FuncPointer([Types.String(0)], Types.String(0)))
+            self.scope["_global"][0]["context"] = Scope.Type(False, Types.Pointer(Types.Struct(True, "Context", self.contextType,"_global"), True))
 
             tmp = self.tokens
             self.tokens = [0]
@@ -504,9 +507,11 @@ class Parser:  # all mutable state
 
             Types.genericTypes = runtimeParser.generatedGenericTypes
             Types.inProjectTypes = {name: None for name in Types.genericTypes}
+
             Tree.casted = runtimeParser.casted
             self.setTypeIntrospection()
             return
+
         tmp = self.tokens
         self.tokens = [0]
         self._filename = ""
@@ -522,7 +527,7 @@ class Parser:  # all mutable state
             self.scope["_global"] = [{}]
 
         self.interfaces["_global"] = {"Stringer": Stringable, "Any": All}
-        self.contextFields["_global"] = {}
+        #self.contextFields["_global"] = {}
         self.scope["_global"][0]["offsetPtr"] = Scope.Type(True,Types.FuncPointer([Types.Pointer(Types.Null(), True), Types.I32(size=64)],
                                                       Types.Pointer(Types.Null(), True)))
         self.scope["_global"][0]["context"] = Scope.Type(False,
@@ -552,29 +557,6 @@ class Parser:  # all mutable state
 
         if self.sc:
             validate(self, self.currentNode)
-
-        if self.package == "main" and self.dev and self.atomTyp:
-            typ = self.atomTyp
-            d = Tree.Decoder(self)
-            d.shouldBeTyp = typ
-
-            c = Tree.CreateAssign(self)
-
-            cr = Tree.Create("decoderForAtom", typ, self)
-            cr.package = ""
-            cr.isGlobal = True
-
-            c.addNode(cr)
-
-            a = Tree.Assign("decoderForAtom", self)
-            a.isGlobal = True
-            a.init = True
-            a.package = ""
-
-            a.addNode(d)
-            c.addNode(a)
-
-            self.currentNode.addNode(c)
 
         return self.currentNode
 

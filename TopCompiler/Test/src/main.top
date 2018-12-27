@@ -1,35 +1,10 @@
-import "test"
+from "dict" import all
 
-test.hello!
+hash_map := make_HashMap::[int]!
+defer hash_map.free!
 
-/*
-let table_size = 1000003
+hash_map.insert "hello", 10
+hash_map.insert "bye", 20
 
-type Hash is uint
-
-def hash_string(s_key: string, table_size: uint) Hash =
-    h := 0
-    o := 31415
-    t := 27183
-
-    key := s_key.to_c_string!
-
-    for i := 0..s_key.length do
-        h = (o * h + (indexPtr key, i)) % table_size
-        o = o * t % (table_size - 1)
-
-    h
-
-type HashItem[K, V] =
-    next: Maybe[&HashItem[K, V]]
-    key: K
-    value: V
-
-def HashItem[K, V].destroy(&self) =
-    guard Some next := self.next
-    else return
-
-    next.destroy!
-    free next
-*/
-
+for key := hash_map.keys! do
+    log "hash_map[{key}] = {hash_map[key]}"

@@ -64,9 +64,8 @@ def make_KeyActionMap() KeyActionMap =
         actions = actions
     }
 
-from "glfwWrapper" import (glfw_key_left_shift, glfw_key_right_shift, glfw_key_escape, glfw_mod_control)
 
-lshift := glfw_key_left_shift cast Key
-rshift := glfw_key_right_shift cast Key
+let lshift = 340 cast Key
+let rshift = 344 cast Key
 
-esc := glfw_key_escape cast Key
+let esc = 256 cast Key

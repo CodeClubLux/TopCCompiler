@@ -1,0 +1,31 @@
+import "window"
+import "shader"
+import "math"
+import "texture"
+import "ecs"
+import "camera"
+import "lights"
+import "input"
+import "time"
+import "layermask"
+
+def set_shader_scene_params(_shader: shader.Shader) =
+
+def init() =
+    defer context.allocator.free_allocator!
+
+    ecs.serialize!
+
+    while true do
+        defer context.allocator.reset_to context.allocator.get_occupied!
+        //update all systems
+        //@todo move these systems into the entity component system
+
+        mask := layermask.game_layer
+
+        inp := input.get_input!
+        inp.clear!
+        inp.update_inputs!
+
+        time.update_delta_time!
+        ecs.update layermask.enable layermask.make_Layermask!, mask

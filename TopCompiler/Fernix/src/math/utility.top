@@ -6,7 +6,7 @@ ext abs: |float| -> float = "fabs"
 ext atan2: |float, float| -> float = "atan2f"
 ext asin: |float| -> float = "asinf"
 
-pi := 3.14159265
+let pi = 3.14159265
 
 def radians(degrees: float) float =
     degrees * (pi / 180)

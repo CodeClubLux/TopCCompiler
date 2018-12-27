@@ -1,0 +1,6 @@
+import "runner"
+
+
+log "server initedk"
+
+runner.init!

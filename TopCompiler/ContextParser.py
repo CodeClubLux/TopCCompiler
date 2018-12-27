@@ -40,6 +40,8 @@ def typecheckAddToContext(parser, i):
     if name in parser.contextType:
         i.error("Context already has field "+name)
     parser.contextType[name] = typ
+    if not parser.package in parser.contextFields:
+        parser.contextFields[parser.package] = {}
     parser.contextFields[parser.package][name] = typ
 
 def pushContext(parser):

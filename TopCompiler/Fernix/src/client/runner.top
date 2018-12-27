@@ -1,7 +1,6 @@
 import "window"
 import "shader"
 import "math"
-import "opengl"
 import "texture"
 import "ecs"
 import "ibl"

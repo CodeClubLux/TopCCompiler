@@ -4,7 +4,7 @@
         "target": "windows",
         "version": 0,
         "headerIncludePath": ["C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Include"],
-        "linkWith": [
+        "_linkWith": [
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glfw3.lib",
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glad.o",
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\nuklear.o",
@@ -15,6 +15,7 @@
             "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.17134.0\\um\\x64\\Ws2_32.lib"
         ],
         "tags": {
-            "render_backend": "OpenGL"
+            "render_backend": "OpenGL",
+            "headless": true
         }
     }
