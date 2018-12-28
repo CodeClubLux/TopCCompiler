@@ -9,7 +9,7 @@ Features that are coming soon, are the ability to switch between AOS and SOA, li
 ## Installing Top-Lang
 1. If not already downloaded, download python3 and clang.
 2. Then download this repo and cd into it from the command line
-5. Run the command python3 setup.py with the arguments install, to install the compiler in the path
+5. Run the command python3 setup.py install, to install the compiler in the path
 
 ## Setting Up a New Project
 1. Open up terminal or command prompt`
