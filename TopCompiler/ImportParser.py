@@ -65,13 +65,14 @@ def importParser(parser, decl= False):
             sp = shouldParse(decl, oname, parser)
         else:
             sp = shouldCompile(decl, oname, parser)
+
             outputfile = oname
             try:
                 t = os.path.getmtime("lib/" + outputfile.replace("/", ".") + ".c")
                 t = datetime.datetime.fromtimestamp(int(t))
             except FileNotFoundError:
                 sp = True
-                print("Error ", outputfile)
+                #print("Error ", outputfile)
 
         if sp:
             p = Parser.Parser(parser.lexed[oname], parser.filenames[oname])

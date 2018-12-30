@@ -135,7 +135,7 @@ def simplifyOperator(operator, iter, parser):
             return overloaded(callMethodCode(operator.nodes[0], "op_add", typ, parser, operator.unary))
         elif operator.kind == "==":
             return overloaded(callMethodCode(operator.nodes[0], "op_eq", typ, parser, operator.unary))
-    elif operator.overload and not typ.isType(Types.I32) and not typ.isType(Types.Float) and not typ.isType(Types.Bool):
+    elif operator.overload and not typ.isType(Types.I32) and not typ.isType(Types.Float) and not typ.isType(Types.Bool) and not typ.isType(Types.Char):
         return overloaded(
             callMethodCode(operator.nodes[0], operator.name[operator.name.find("_") + 1:], operator.opT, parser,
                            operator.unary))
@@ -285,6 +285,7 @@ class Specifications:
         self.genericFuncs = genericFuncsFromDifferentPackage
         self.delayed = {}
         self.funcsToBeProcessed = {}
+        self.packageGenericFuncs = {}
 
     def addSpecification(self, package, funcName, replaced, forceFound=False):
         if package == "":
@@ -409,9 +410,11 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         genericFuncs = {}
         specifications = parser.specifications[parser.package]
 
+        specifications.packageGenericFuncs = specifications.genericFuncs
+
         for name in ["_global"] + list(parser.compiled):
             spec = parser.specifications[name]
-            for i in spec.genericFuncs:
+            for i in spec.packageGenericFuncs:
                 genericFuncs[i] = spec.genericFuncs[i]
             for i in spec.funcs:
                 inImports[i] = spec.funcs[i]
@@ -593,6 +596,19 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
 
                     if type(typ) in [Types.Struct, Types.Alias, Types.Enum, Types.Array]:
                         r.replaced = typ.remainingGen
+            #else:
+            #    if self.using:
+            #        field = None
+            #        for using_field in typ.using:
+            #            if self.field in typ.types[using_field].types:
+            #                f = Tree.Field(0, typ.types[using_field], self)
+            #                f.field = using_field
+            #                f.type = typ.types[using_field]
+            #                f.addNode(self.nodes[0])
+            #
+            #                self.nodes[0] = f
+            #                f.owner = self
+
 
         if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
             replacer.decrScope()

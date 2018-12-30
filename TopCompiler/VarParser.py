@@ -91,7 +91,8 @@ def createParser(parser, name= "", typ= None, check= True, imutable= False, atta
         node.varType = typ
 
     if noName and parser.lookInfront().token != "=":
-        if not type(node.owner) in [Tree.FuncBraceOpen, Tree.Type, Tree.PlaceHolder]:
+        accept = [Tree.FuncBraceOpen, Tree.Type, Tree.PlaceHolder]
+        if not type(node.owner) in accept and not (type(node.owner) is Tree.Using and type(node.owner.owner) in accept):
             parser.nextToken()
             Error.parseError(parser, "Uninitialized variable")
     if parser.lookInfront().token == "=":

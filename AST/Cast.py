@@ -130,7 +130,8 @@ def castFrom(originalType, newType, node, realName, codegen):
             if field in realName:
                 name = realName[field]
             else:
-                name = f"{originalType.package}_{originalType.normalName}_{field}"
+                pack = "_global" if originalType.package == "" else originalType.package
+                name = f"{pack}_{originalType.normalName}_{field}"
 
             codegen.append(f", &{name}")
         codegen.append(")")
@@ -169,7 +170,7 @@ def castFrom(originalType, newType, node, realName, codegen):
             codegen.append(initCall + "(NULL, 0)")
             return
         elif newType.both and not originalType.both and not originalType.static:
-            if not type(node) is Tree.ReadVar:
+            if not type(node) in [Tree.ReadVar, Tree.Field]:
                 node.error("not handled yet")
 
             typNewC = newType.toCType()

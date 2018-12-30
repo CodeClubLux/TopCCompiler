@@ -283,7 +283,11 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
             state.pushTok()
             state.iter += 2
             state.column += 2
-            state.append(Token(state.s[state.iter-1], "char", state.line, state.column))
+            s = state.s[state.iter-1]
+            if s == "\\":
+                state.iter += 1
+                s += state.s[state.iter-1]
+            state.append(Token(s, "char", state.line, state.column))
             if not (state.iter < lenOfS and state.s[state.iter] == "`"):
                 Error.errorAst("Expecting `" + state.tok, state.package, state.filename,
                                Token(state.tok, "", state.line, state.column))

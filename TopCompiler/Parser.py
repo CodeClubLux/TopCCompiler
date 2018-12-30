@@ -291,7 +291,7 @@ def callToken(self, lam= False):
                     isIndentationCall = True
 
 
-        if not lam and (b.token in ["_", "(", "\\", "|", "<-", "!"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
+        if not lam and (b.token in ["_", "(", "\\", "|", "!"] or not b.type in ["symbol", "operator", "indent"]) and not b.token in ["as", "in", "not", "and", "or", "then", "with", "do", "else", "either", "cast", "->"] and (isIndentationCall or not ExprParser.isUnary(self, self.lookBehind(), onlyFact=True)):
             if b.token == "$": #what does this do
                 ExprParser.endExpr(self, -2)
             addBookmark(self)

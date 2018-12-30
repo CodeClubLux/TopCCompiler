@@ -91,7 +91,7 @@ def isUseless(i):
         i.error("useless read")
     elif type(i) in [Tree.Int, Tree.Array, Tree.ArrRead, Tree.String, Tree.Bool, Tree.Float]:
         i.error("useless literal")
-    elif type(i) is Tree.Operator:
+    elif type(i) is Tree.Operator and not i.kind == "<-":
         i.error("useless operator")
     elif type(i) is Tree.FuncCall and not i.nodes[0].type.do:
         if i.type != Types.Null():

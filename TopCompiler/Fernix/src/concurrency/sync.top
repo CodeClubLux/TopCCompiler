@@ -1,0 +1,7 @@
+type Lock =
+
+def Lock.lock(&self) =
+def Lock.unlock(&self) =
+
+def make_Lock() Lock =
+    Lock{}

@@ -303,7 +303,7 @@ class Field(Node):
         self.number = False
         self.unary = False
         self.replaced = {}
-
+        self.using = False
 
     def __str__(self):
         return "."+self.field

@@ -20,3 +20,6 @@ type Number[T] with
     def toString() string
 
 type Byte is u8
+
+type Equaliser[T] with
+    def op_eq(T) bool

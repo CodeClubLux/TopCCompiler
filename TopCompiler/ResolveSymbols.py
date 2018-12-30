@@ -26,6 +26,9 @@ def resolve(self):
 
     for c in filenames:
         self._filename = self.filenames[c]
+        self.package = c
+        self.opackage = c
+
         if not self.hotswap or ImportParser.shouldCompile(False, c, self):
             if c in self.contextFields:
                 for i in self.contextFields[c]:

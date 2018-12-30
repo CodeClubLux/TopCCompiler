@@ -40,6 +40,8 @@ class Struct:
         self.methods = {}
         self.actualfields = actualfields
 
+        self.using = []
+
     def toCType(self):
         Error.error("no type introspection yet")
 
@@ -147,6 +149,12 @@ def typeParser(parser, decl= False):
     args = [i.varType for i in parser.currentNode]
     fields = parser.currentNode.nodes
 
+    if not decl:
+        using = parser.structs[parser.package][name].using
+        for i in parser.currentNode:
+            if type(i) is Tree.Using:
+                using.append(i.name)
+
     typ.fields = [i.name for i in typ]
     typ.args = args
     typ.generics = gen
@@ -222,7 +230,6 @@ def initStruct(parser, package= "", shouldRead=True):
     parser.nodeBookmark.append(0)
 
     while parser.thisToken().token != "}":
-
         if parser.thisToken().token in [",", "\n"]:
             ExprParser.endExpr(parser)
             parser.nodeBookmark[-1] = len(parser.currentNode.nodes)

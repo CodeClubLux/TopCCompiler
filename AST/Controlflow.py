@@ -137,6 +137,7 @@ class Break(Node):
         return " break"
 
     def compileToC(self, codegen):
+        codegen.outputDeferred()
         codegen.append("break;")
 
     def validate(self, parser): pass
@@ -149,6 +150,7 @@ class Continue(Node):
         return "continue"
 
     def compileToC(self, codegen):
+        codegen.outputDeferred()
         codegen.append(" continue;")
 
     def validate(self, parser): pass

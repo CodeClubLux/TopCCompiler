@@ -352,7 +352,7 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
     if debug:
         debug = ["-g", "-O0", "-gcodeview"]
     else:
-        debug = ["-O0"] #["-g",  "-gcodeview"]
+        debug = ["-O" + str(opt)] #["-g",  "-gcodeview"]
 
     clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
 

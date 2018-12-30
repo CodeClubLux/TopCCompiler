@@ -1,10 +1,7 @@
-from "dict" import all
+i := 0
+while i < 10 do
+    i += 1
+    defer log i
 
-hash_map := make_HashMap::[int]!
-defer hash_map.free!
 
-hash_map.insert "hello", 10
-hash_map.insert "bye", 20
-
-for key := hash_map.keys! do
-    log "hash_map[{key}] = {hash_map[key]}"
+    log "hi!"

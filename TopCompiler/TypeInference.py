@@ -213,8 +213,6 @@ def infer(parser, tree):
 
                     Scope.addVar(i, parser, i.name, Scope.Type(i.imutable, i.varType, i.owner.global_target))
                     i.isGlobal = Scope.isGlobal(parser, i.package, i.name)
-                    if i.isGlobal and not i.imutable:
-                        i.error("Global variables are bad")
 
             elif type(i) is Tree.ReadVar:
                 if not (type(i.owner) is Tree.Assign and type(i.owner.owner) is Tree.InitStruct and i.owner.nodes[0] == i):
@@ -277,6 +275,9 @@ def infer(parser, tree):
 
                     try:
                         i.type = struct.types[self.field]
+                        #else:
+                        #    i.type = struct.using_types()[self.field]
+                        #    i.using = True
                     except KeyError:
                         try:
                             if type(struct) is Types.Alias:
@@ -360,11 +361,10 @@ def infer(parser, tree):
 
                     i.type = Parser.Range
                 elif i.kind == "<-":
+                    insertTakeRef = Tree.canTakeRef(i.nodes[0], i.nodes[0].type)
+
                     if i.unary:
-                        try:
-                            meth = i.nodes[0].type.types["unary_read"]
-                        except KeyError:
-                            meth = i.nodes[0].type.hasMethod(parser, "unary_read")
+                        meth = i.nodes[0].type.hasMethod(parser, "unary_read", isP= insertTakeRef)
 
                         if meth:
                             i.type = meth.returnType
@@ -372,18 +372,18 @@ def infer(parser, tree):
                         else:
                             i.error("type "+str(i.nodes[0].type)+", missing method unary_read")
                     else:
-                        try:
-                            meth = i.nodes[0].type.types["op_set"]
-                        except KeyError:
-                            meth = i.nodes[0].type.hasMethod(parser, "op_set")
+                        meth = i.nodes[0].type.hasMethod(parser, "op_set", isP= insertTakeRef)
 
                         if meth:
-                            meth.args[0].duckType(parser, i.nodes[1].type, i.nodes[1], i, 1)
-                            Tree.insertCast(i.nodes[1], fromT= i.nodes[1].type, toT=meth.args[0])
+                            meth.args[1].duckType(parser, i.nodes[1].type, i.nodes[1], i, 1)
+                            Tree.insertCast(i.nodes[1], fromT= i.nodes[1].type, toT=meth.args[1], iter= 1)
 
                             i.opT = i.nodes[0].type
                         else:
                             i.error("type " + str(i.nodes[0].type) + ", missing method op_set")
+
+                    if insertTakeRef:
+                        Tree.insertCast(i.nodes[0], i.nodes[0].type, meth.args[0], 0)
 
                         #else:
                         #    i.nodes[0].error("Type " + str(i.nodes[0].type) + ", missing method op_set")
@@ -733,7 +733,7 @@ def infer(parser, tree):
                         else:
                             newGen[_name] = gen[_name]
 
-                    i.type = Types.Struct(i.mutable, name, s._types, package, newGen)
+                    i.type = Types.Struct(i.mutable, name, s._types, package, newGen, using= parser.structs[i.package][name].using)
                 i.replaced = i.type.remainingGen
             elif type(i) is Tree.ArrRead:
                 if len(i.nodes) == 2:

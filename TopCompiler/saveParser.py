@@ -43,11 +43,10 @@ def save(parser, runtimeBuild):
         if typ in parser.generatedGenericTypes:
             del parser.generatedGenericTypes[typ]
 
-    """
+
     for package in parser.structs:
         for s in parser.structs[package]:
             parser.structs[package][s].node = 0
-    """
 
     def removeRedundantProperties(ast):
         #ast._filename = None
@@ -59,6 +58,7 @@ def save(parser, runtimeBuild):
             removeRedundantProperties(node)
 
     for package in parser.specifications:
+        parser.specifications[package].root = None
         for funcName in parser.specifications[package].genericFuncs:
             (funcStart, funcBrace, funcBody) = parser.specifications[package].genericFuncs[funcName]
             removeRedundantProperties(funcStart)

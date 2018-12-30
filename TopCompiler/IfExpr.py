@@ -79,14 +79,16 @@ def ifExpr(parser):
 
     ifBody(parser)
 
-def elifExpr(parser):
-    try:
-        inside = parser.currentNode.nodes[-1].nodes[-2]
-    except IndexError:
-        Error.parseError(parser, "unexpected elif")
+def elifExpr(parser, canHaveElse=False):
+    if not canHaveElse:
+        try:
+            inside = parser.currentNode.nodes[-1].nodes[-2]
+        except IndexError:
+            Error.parseError(parser, "unexpected elif")
 
-    if not type(inside) is Tree.IfCondition:
-        Error.parseError(parser, "unexpected elif")
+        if not type(inside) is Tree.IfCondition:
+            Error.parseError(parser, "unexpected elif")
+
     parser.currentNode = parser.currentNode.nodes[-1]
 
     ifBody(parser)

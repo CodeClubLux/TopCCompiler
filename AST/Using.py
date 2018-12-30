@@ -4,6 +4,7 @@ class Using(Node):
     def __init__(self, create):
         Node.__init__(self, create)
         self.addNode(create)
+        self.name = create.name
 
     @property
     def varType(self):

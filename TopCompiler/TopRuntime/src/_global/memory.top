@@ -1,9 +1,12 @@
 type SizeT is u64
 
 ext _ = '#include <string.h>'
-ext memcpy: |&none, &none, SizeT| -> none = 'memcpy'
+ext c_memcpy: |&none, &none, SizeT| -> none = 'memcpy'
 ext c_alloc: |SizeT| -> &none = 'malloc'
 ext c_free: |&none| -> none = 'free'
+
+def memcpy[T](target: &T, destination: &T, length: uint) =
+    c_memcpy target, destination, length * sizeof T
 
 type Allocator with
     def get_occupied() SizeT
@@ -83,6 +86,9 @@ def Malloc.reset_to(&self, to: SizeT) =
 def alloc[T](num: SizeT) &T =
     (context.allocator.alloc num * sizeof T) cast &T
 
+def longterm_alloc[T](num: SizeT) &T =
+    (context.longterm_storage.alloc num * sizeof T) cast &T
+
 def indexPtr[T](pType: &T, offset: i64) &T =
     (offsetPtr pType, offset * sizeof T) cast &T
 
@@ -92,8 +98,17 @@ def box[T](value: T) &T =
 
     pointer
 
+def box_longterm[T](value: T) &T =
+    pointer := (context.longterm_storage.alloc sizeof T) cast &T
+    *pointer = value
+
+    pointer
+
 def free(p: &none) =
     context.allocator.dealloc p
 
+def free_longterm(p: &none) =
+    context.longterm_storage.dealloc p
+
 def TemporaryStorage.free_allocator(&self) =
-    context.longterm_storage.dealloc self.data
+    c_free self.data

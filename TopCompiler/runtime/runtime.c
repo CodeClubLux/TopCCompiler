@@ -63,6 +63,14 @@ struct _global_String _global_String_sliceByValue(struct _global_String s, unsig
     return _global_StringInit(length, buffer);
 }
 
+char* _global_String_op_getByValue(struct _global_String s, unsigned int i, __Context) {
+    if (i >= s.length) {
+        printf("String acess out of bounds: %i", i);
+        exit(1);
+    }
+    return &s.data[i];
+}
+
 _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_String other, __Context) {
     if (self.length != other.length) {
         return 0;

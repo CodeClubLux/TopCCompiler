@@ -19,6 +19,13 @@ def StaticArray[T: Stringer, S].join(&self, delimiter: string) string =
 
             s + toString self[self.length - 1]
 
+def StaticArray[T: Equaliser[T], S].contains(&self, elem: T) bool =
+    i := 0
+    while i < self.length do
+        if &self[i] == &elem then return true
+        i += 1
+    false
+
 def StaticArray[T: Stringer, S].toString(&self) string =
     "[ {self.join ", "} ]"
 

@@ -1,0 +1,59 @@
+import "sync"
+
+log "hello world!"
+
+type Slot[T] =
+    value: T
+    next: Maybe[&Slot[T]]
+
+type Queue[T] =
+    lock: sync.Lock
+    front: Maybe[&Slot[T]]
+    back: Maybe[&Slot[T]]
+    free: Maybe[&Slot[T]]
+
+def make_Queue[T]() Queue[T] =
+    Queue{
+        lock = sync.make_Lock!
+        front = None
+        back = None
+        free = None
+    }
+
+def Queue[T].enqueue(&self, value: T) =
+    self.lock.lock!
+    defer self.lock.unlock!
+
+    slot := match self.free with
+        Some slot ->
+            self.free = slot.next
+            slot
+        None ->  longterm_alloc::[Slot[T]] 1
+
+    slot.value = value
+    slot.next = None
+
+    match self.back with
+        Some back -> back.next = Some slot
+        None ->
+
+    self.back = Some slot
+
+    self.front = match self.front with
+        Some front -> Some front
+        None -> self.back
+
+def Queue[T].dequeue(&self) Maybe[T] =
+    self.lock.lock!
+    defer self.lock.unlock!
+
+    guard Some front := self.front
+    else return None
+
+    self.front = front.next
+
+    front.next = self.free
+    self.free = Some front
+
+    Some front.value
+

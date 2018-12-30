@@ -1,0 +1,133 @@
+import "sync"
+from "queue" import all
+
+ext _ = '#include "c_deps/fiber.h"'
+
+type ext fiber_t =
+    userdata: &none
+
+ext fiber_is_current: |&fiber_t| -> bool = "fiber_is_current"
+ext fiber_create: |Maybe[&fiber_t], SizeT, |&fiber_t| -> none, &none| -> &fiber_t = "fiber_create"
+ext fiber_delete: |&fiber_t| -> bool = "fiber_delete"
+ext fiber_switch: |&fiber_t| -> bool = "fiber_switch"
+
+type Task with
+    def run()
+
+type Fiber =
+    fiber_t: &fiber_t
+    next: &Fiber
+
+type ThreadInfo =
+    id: uint
+    running: &Fiber
+
+#addToContext thread_info := make_ThreadInfo!
+
+type Scheduler =
+    high_priority_queue: Queue[Task]
+    medium_priority_queue: Queue[Task]
+    low_priority_queue: Queue[Task]
+    big_fiber_queue: Queue[Task]
+    exit: bool
+
+scheduler := Scheduler{
+    high_priority_queue = make_Queue::[Task]!
+    medium_priority_queue = make_Queue::[Task]!
+    low_priority_queue = make_Queue::[Task]!
+    big_fiber_queue = make_Queue::[Task]!
+    exit = false
+}
+
+def fiber_exec(fiber: &fiber_t) =
+    context = fiber.userdata cast &Context
+
+    while not scheduler.exit do
+        match scheduler.high_priority_queue.dequeue! with
+            Some task ->
+                task.run!
+                continue
+            None ->
+
+        match scheduler.medium_priority_queue.dequeue! with
+            Some task ->
+                task.run!
+                continue
+            None ->
+
+        match scheduler.low_priority_queue.dequeue! with
+            Some task ->
+                task.run!
+                continue
+            None ->
+
+def fat_fiber_exec(fiber: &fiber_t) =
+    context = fiber.userdata cast &Context
+
+    while not scheduler.exit do
+        match scheduler.big_fiber_queue.dequeue! with
+            Some task -> task.run!
+            None ->
+
+def yield() =
+    current_fiber := context.thread_info.running
+    next := current_fiber.next
+
+    context.thread_info.running = next
+    _ := fiber_switch next.fiber_t
+
+type TaskKind either
+    HighPriority
+    MediumPriority
+    LowPriority
+    LargeStack
+
+let num_fibers = 10
+let num_fat_fibers = 1
+let small_stack_size = 10_000
+let big_stack_size = 50_000
+
+def make_ThreadInfo() &ThreadInfo = //should only create worker threads on main thread
+    last_fiber := box_longterm Fiber{
+        fiber_t = fiber_create None, small_stack_size, fiber_exec, context
+        next = 0 cast &Fiber //set this field later, although once initialized it will never be null
+    }
+
+    first_fiber := last_fiber
+
+    for i := 1..num_fibers do
+        last_fiber.next = box_longterm Fiber{
+            fiber_t = fiber_create None, small_stack_size, fiber_exec, context
+            next = 0 cast &Fiber
+        }
+
+        last_fiber = last_fiber.next
+
+    for i := 0..num_fat_fibers do
+        last_fiber.next = box_longterm Fiber{
+            fiber_t = fiber_create None, big_stack_size, fat_fiber_exec, context
+            next = 0 cast &Fiber
+        }
+        last_fiber = last_fiber.next
+
+    last_fiber.next = first_fiber //create repeating execution loop
+
+    box ThreadInfo{
+        id = 0
+        running = last_fiber
+    }
+
+def ThreadInfo.exec(&self) =
+    yield!
+
+def create(kind: TaskKind, task: Task) =
+    match kind with
+        HighPriority ->
+            scheduler.high_priority_queue.enqueue task
+        MediumPriority ->
+            scheduler.medium_priority_queue.enqueue task
+        LowPriority ->
+            scheduler.low_priority_queue.enqueue task
+        LargeStack ->
+            scheduler.big_fiber_queue.enqueue task
+

@@ -16,15 +16,6 @@ def Maybe[T].unwrap(self) T =
 
     x
 
-    /*
-    match self with
-        Some x -> x
-        None ->
-            panic "Trying to unwrap maybe, which was None"
-
-            *((alloc 0) cast &T)
-    */
-
 def Maybe[T].default(self, value: T) T =
     match self with
         Some x -> x
@@ -35,16 +26,12 @@ def Maybe[T].map[R](self, f: |T| -> R) Maybe[R] =
         Some x -> Some (f x)
         None -> None
 
-/*
-def Maybe[T: {op_gt: |T| -> bool}].op_gt(self, other: Maybe[T]) bool =
-    match self with
-        Some x ->
-            match other with
-                Some y -> x > y
-                None -> false
+type Result[T, E] either
+    Ok(T)
+    Error(E)
 
-        None -> false
+def Result[T, E: Stringer].unwrap(self) T =
+    guard Ok x := self
+    elif Error e then panic "Trying to unwrap result, which is error {e}"
 
-def Maybe[T: {op_gt: |T| -> bool}].op_lt(self, other: Maybe[T]) bool =
-    other > self
-*/
+    x

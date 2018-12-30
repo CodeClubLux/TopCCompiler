@@ -2,6 +2,8 @@ from TopCompiler import Parser
 from TopCompiler import ExprParser
 from TopCompiler import Error
 from TopCompiler import ElseExpr
+from TopCompiler import IfExpr
+
 import AST as Tree
 
 def guardExpr(parser):
@@ -28,7 +30,7 @@ def guardExpr(parser):
         isEnd = Parser.maybeEnd(parser)
 
         next = parser.lookInfront()
-        if (next.token == "else") and isEnd:
+        if (next.token in ["else", "elif"]) and isEnd:
             break
 
     if len(m.nodes) != 2:
@@ -56,17 +58,27 @@ def guardExpr(parser):
 
     case2 = Tree.MatchCase(parser)
     m.addNode(case2)
-    case2.addNode(Tree.Under(parser))
-    m.addNode(Tree.Block(parser))
 
-    if parser.nextToken().token != "else":
+    if not parser.nextToken().token in ["else", "elif"]:
         Error.parseError(parser, "Expecting else")
+    if parser.thisToken().token == "else":
+        case2.addNode(Tree.Under(parser))
+        m.addNode(Tree.Block(parser))
 
-    ElseExpr.elseExpr(parser, canHaveElse= True)
+        ElseExpr.elseExpr(parser, canHaveElse= True)
 
-    m.nodes[4].nodes = m.nodes[4].nodes[1].nodes
+        m.nodes[4].nodes = m.nodes[4].nodes[1].nodes
+        else_block = m.nodes[4]
+    else:
+        IfExpr.elifExpr(parser, canHaveElse= True)
+        conditions = case2.nodes[0].nodes
+        block = case2.nodes[1]
 
-    else_block = m.nodes[4]
+        case2.nodes = conditions
+        m.addNode(block)
+
+        else_block = block
+
     if len(else_block) == 0:
         Error.parseError(parser, "Guard block requires exit statement")
 

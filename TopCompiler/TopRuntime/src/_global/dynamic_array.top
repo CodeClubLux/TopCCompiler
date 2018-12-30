@@ -56,7 +56,7 @@ def Array[T].reserve(&self, newSize: uint) =
             assert newSize >= self.length, "Truncating array"
 
             newData := (allocator.alloc self.capacity * sizeof T) cast &T
-            memcpy newData, data, self.length * sizeof T
+            memcpy::[T] newData, data, self.length
 
             allocator.dealloc data
 

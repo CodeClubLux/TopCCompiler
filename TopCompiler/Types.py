@@ -199,7 +199,7 @@ def parseType(parser, _package="", _mutable=False, _attachTyp=False, _gen={}):
                 parseError(parser, "Not a generic type")
 
             return Struct(mutable, token, parser.structs[package][token]._types, parser.structs[package][token].package,
-                          gen)
+                          gen, using=parser.structs[package][token].using)
 
         elif varExists(parser, package, token):
             t = typeOfVar(Tree.PlaceHolder(parser), parser, package, token)
@@ -419,6 +419,9 @@ class Type:
         except:
             return
 
+    def using_types(self):
+        return {}
+
     def __eq__(self, other):
         if type(self) is Alias:
             self = self.typ
@@ -518,6 +521,7 @@ class String(Type):
             "toLowerCase": FuncPointer([self], self),
             "op_eq": FuncPointer([self, self], Bool()),
             "op_add": FuncPointer([self, self], self),
+            "op_get": FuncPointer([self, I32(unsigned=True)], Char()),
             "toString": FuncPointer([self], self),
             "toInt": FuncPointer([self], I32()),
             "toFloat": FuncPointer([self], Float()),
@@ -610,7 +614,7 @@ def strGen(g):
 
 def compareFirstArg(self, firstArg, isP, parser):
     if type(firstArg) is Pointer and not isP:
-        Error.parseError(parser, "Expecting pointer")
+        parser.error("Expecting pointer")
 
     if type(firstArg) is Types.Pointer:
         firstArg = firstArg.pType
@@ -618,7 +622,7 @@ def compareFirstArg(self, firstArg, isP, parser):
     generic = firstArg.remainingGen
 
     for name in generic:
-        a = generic[name]
+        a = replaceT(generic[name], self.remainingGen)
         b = self.remainingGen[name]
 
         if type(a) is T:
@@ -630,9 +634,8 @@ def compareFirstArg(self, firstArg, isP, parser):
 
         a.duckType(parser, b, parser, parser, 0)
 
-
 class Struct(Type):
-    def __init__(self, mutable, name, types, package, gen=coll.OrderedDict(), replaced=False):
+    def __init__(self, mutable, name, types, package, gen=coll.OrderedDict(), replaced=False, using=None):
         self._types = types
         self.lastReplace = 0
 
@@ -642,6 +645,8 @@ class Struct(Type):
         #    self.types = types
 
         self.package = package
+        #if using is None: self.using = []
+        #else: self.using = using
 
         self.normalName = name
         self.mutable = mutable
@@ -663,6 +668,14 @@ class Struct(Type):
         self.name = fullName + genericS
         # print(self.name)
 
+    def using_types(self):
+        typ = {}
+        for u in self.using:
+            for i in self.types[u].types:
+                if not i in self.types:
+                    typ[i] = self.types[u].types[i]
+        return typ
+
     @property
     def types(self):
         if self.remainingGen:
@@ -671,9 +684,8 @@ class Struct(Type):
                 self.lastReplace = len(self.remainingGen)
 
                 self._types = {i: replaceT(types[i], self.remainingGen) for i in types}
-            return self._types
-        else:
-            return self._types
+
+        return self._types
 
     @types.getter
     def set_types(self, typ):
@@ -691,10 +703,10 @@ class Struct(Type):
             # m = parser.interfaces[self.package][self.normalName].types[field]
 
         if m:
-            func = replaceT(m, self.gen)
+            func = replaceT(m, self.remainingGen)
             tmp = m.args[0]
 
-            compareFirstArg(self, m.args[0], isP, parser)
+            compareFirstArg(self, tmp, isP, parser)
 
             return func
 
@@ -851,8 +863,9 @@ class Array(Type):
 
     def duckType(self, parser, other, node, mynode, iter):
         other = other.toRealType()
+
         if self.both and not (type(other) is Array and (other.both or not other.static)) and not (
-                type(other) is Pointer and other.pType.isType(Array)):
+                type(other) is Pointer and other.pType.isType(Array) and other.pType.static):
             mynode.error("expecting array type " + str(self) + " not " + str(other))
         elif not self.both and not other.isType(Array):
             mynode.error("expecting array type " + str(self) + " not " + str(other))
@@ -938,9 +951,6 @@ class Interface(Type):
         return self
 
     def toCType(self):
-        if self.normalName == "Stringer":
-            print("what!")
-
         return genInterface(self)
 
     def duckType(self, parser, other, node, mynode, iter):
@@ -1583,7 +1593,7 @@ def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
 
         types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
 
-        return Struct(False, typ.normalName, types, typ.package, rem, replaced=True)
+        return Struct(False, typ.normalName, types, typ.package, rem)
     elif type(typ) is Alias:
         rem = {}
         for i in typ.generic:

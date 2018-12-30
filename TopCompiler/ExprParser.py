@@ -169,14 +169,18 @@ def asterix(parser):
     else:
         Parser.Opcode(parser, "*", lambda: operatorPop(parser, op, 2))
 
-def read(parser):
-    op = Tree.Operator("<-", parser)
-    op.unary = True
-    Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 1, unary=True))
+def send(parser):
+    lastToken = parser.lookBehind()
 
-def set(parser):
     op = Tree.Operator("<-", parser)
-    Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 2, unary=False))
+    if not isUnary(parser, lastToken):
+        Parser.precidences["<-"] = (2, True)
+        Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 2))
+        Parser.precidences["<-"] = (100, True)
+    else:
+    # newOperator("set", (2, True), 2, func=set, token=False)
+        op.unary = True
+        Parser.Opcode(parser, "<-", lambda: operatorPop(parser, op, 1, unary=True))
 
 def asOperator(parser):
     lastToken = parser.lookBehind()
@@ -189,14 +193,14 @@ def asOperator(parser):
     else:
         Error.parseError(parser, "unexpected as operator ")
 
-newOperator("set", (2, True), 2, func=set, token=False)
+#newOperator("set", (2, True), 2, func=set, token=False)
 newOperator("|>", (2, True), 2)
 newOperator(">>", (2, True), 2)
 newOperator("<<", (2, True), 2)
 newOperator("and", (3, True), 2)
 newOperator("or", (3, True), 2)
 newOperator("not", (6, False), 1, unary= True)
-newOperator("<-", (100, False), 1, func = read)
+newOperator("<-", (100, True), 2, func = send)
 newOperator("==", (8, True), 2)
 newOperator("!=", (8, True), 2)
 newOperator("<", (10, True), 2)

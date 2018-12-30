@@ -493,25 +493,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 typesInContext = []
 
-                def removeTypes(typesInContext, tmpTypesInContext):
-                    tmp = []
-                    for name in typesInContext:
-                        Types.genericTypes[name] = None
-                        tmp.append((True, name))
-
-                    for name in tmpTypesInContext:
-                        Types.tmpTypes[name] = None
-                        tmp.append((False, name))
-
-                    return tmp
-
-                def addTypes(tmp):
-                    for (inGeneric, name) in tmp:
-                        if inGeneric:
-                            del Types.genericTypes[name]
-                        else:
-                            del Types.tmpTypes[name]
-
                 for i in parser.compiled:
                     parser.package = i
                     if parser.compiled[i][0]:
@@ -525,8 +506,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     parser.package = i
                     if not parser.compiled[i][0]:
                         if cache and i in cache.generatedTypesPerPackage:
+                            parser.generatedTypesPerPackage[i] = cache.generatedTypesPerPackage[i]
                             for typ in cache.generatedTypesPerPackage[i]:
                                 Types.genericTypes[typ] = None
+                                Types.inProjectTypes[typ] = None
 
                 #print(Types.genericTypes)
                 #generatedTypes.update(Types.genericTypes)
@@ -549,7 +532,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                         includes.extend(inc)
                         parser.includes[i] = inc
                     else:
-                        includes.extend(cache.includes[i])
+                        includes.extend(parser.includes[i])
+
                 order_of_modules.append("main")
 
                 for i in parser.lexed:
@@ -571,9 +555,9 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     for c in deleteQue:
                         del parser.generatedGenericTypes[c]
 
-                saveParser.save(parser, compileRuntime)
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
+                saveParser.save(parser, compileRuntime)
 
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
@@ -620,7 +604,7 @@ def modified(_target, files, outputfile, jsFiles=[]):
         if target == "full":
             target = "node"
 
-        if not outputfile in global_parser.usedModules:
+        if not outputfile in global_parser.usedModules or not outputfile in global_parser.includes:
             return True
         else:
             t = global_parser.usedModules[outputfile]

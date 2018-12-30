@@ -215,8 +215,10 @@ def checkOperator(self, parser):
             elif type(i.opT) is Types.Pointer and i.kind == "*" and i.unary:
                 i.type = i.opT.pType
             elif type(i.opT) in [Types.Struct, Types.Interface, Types.Enum, Types.T, Types.Array, Types.Pointer, Types.Alias]:
+                isP = i.nodes[0].type.isType(Types.Pointer)
+
                 try:
-                    func = i.opT.hasMethod(parser, overloads[i.kind])
+                    func = i.opT.hasMethod(parser, overloads[i.kind], isP = isP)
                 except EOFError as e:
                     Error.beforeError(e, str(i.opT) + "." + overloads[i.kind] + " only operates: ")
                 if not func:
