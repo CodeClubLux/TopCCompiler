@@ -611,6 +611,7 @@ def modified(_target, files, outputfile, jsFiles=[]):
 
         if outputfile == "main": #linking is done globally not module specific
             for i in global_parser.linkWith:
+                i = os.path.join(i[0], i[1])
                 file = os.path.getmtime(i)
                 file = datetime.datetime.fromtimestamp(int(file))
 

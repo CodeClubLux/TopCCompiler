@@ -719,6 +719,8 @@ class Struct(Type):
         structType = topc.global_parser.structs[self.package][self.normalName]
         if structType.externalStruct:
             genGenericCType(self, externalStruct=True)
+            if self.normalName.startswith("atomic") or self.normalName.startswith("pthread"):
+                return self.normalName
             return "struct " + self.normalName
 
         return genGenericCType(self)

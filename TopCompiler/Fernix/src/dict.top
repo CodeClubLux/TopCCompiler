@@ -1,0 +1,69 @@
+let default_table_size = 1003
+
+type Hash is uint
+
+def hash_string(s_key: string, table_size: uint) Hash =
+    h := 0
+    o := 31415
+    t := 27183
+
+    key := s_key.to_c_string!
+
+    for i := 0..s_key.length do
+        h = (o * h + (indexPtr key, i) cast uint) % table_size
+        o = o * t % (table_size - 1)
+
+    h
+
+type HashBucket[V] =
+    keys: [..]string
+    values: [..]V
+
+def HashBucket[V].free(&self) =
+    self.keys.free!
+    self.values.free!
+
+def make_HashBucket[V]() HashBucket[V] =
+    HashBucket{
+        keys = [..]string
+        values = [..]V
+    }
+
+type HashMap[V] =
+    buckets: []HashBucket[V]
+
+def HashMap[V].insert(&self, key: string, value: V) =
+    hash := hash_string key, default_table_size
+    bucket := &self.buckets[hash]
+    bucket.keys.append key
+    bucket.values.append value
+
+def HashMap[V].op_get(&self, key: string) &V =
+    hash := hash_string key, default_table_size
+    bucket := &self.buckets[hash]
+    for b_key := bucket.keys do
+        if b_key == key then
+            return &bucket.values[i]
+
+    panic "No {key} in hash map"
+    0 cast &V
+
+def HashMap[V].free(&self) =
+    for bucket := self.buckets do
+        bucket.free!
+
+def HashMap[V].keys(&self) []string =
+    arr := [..]string
+    for bucket := self.buckets do
+        for key := bucket.keys do
+            arr.append key
+    arr
+
+def make_HashMap[V]() HashMap[V] =
+    buckets := [..]HashBucket[V]
+    for i := 0..default_table_size do
+        buckets.append make_HashBucket::[V]!
+
+    HashMap{
+        buckets = buckets
+    }

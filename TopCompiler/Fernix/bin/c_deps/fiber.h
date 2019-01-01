@@ -25,6 +25,8 @@
 ** CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <stdio.h>
+
 #ifndef __FIBER_H__
 #define __FIBER_H__
 
@@ -435,7 +437,9 @@ FBAPI static bool_t fiber_switch(fiber_t* fb) {
 	if (!fb) return false;
 	curr = *fb->current;
 	*fb->current = fb;
-	swapcontext((ucontext_t*)curr->context, (ucontext_t*)fb->context);
+	fflush(stdout);
+
+	swapcontext((ucontext_t*)(curr->context), (ucontext_t*)(fb->context));
 
 	return true;
 }

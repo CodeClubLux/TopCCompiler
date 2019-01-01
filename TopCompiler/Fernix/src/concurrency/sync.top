@@ -1,7 +1,44 @@
+import "task"
+import "atomic"
+
 type Lock =
+    locked: atomic.atomic_flag
 
 def Lock.lock(&self) =
+    while self.locked.test_and_set! do
+        task.yield!
+
 def Lock.unlock(&self) =
+    self.locked.clear!
 
 def make_Lock() Lock =
-    Lock{}
+    Lock{ atomic.make_atomic_flag! }
+
+type WaitGroup =
+    waiting_on: atomic.atomic_uint
+
+def make_WaitGroup() WaitGroup =
+    WaitGroup{ atomic.make_atomic_uint 0 }
+
+def WaitGroup.add(&self, num: uint) =
+    self.waiting_on.incr num
+
+def WaitGroup.done(&self) =
+    self.waiting_on.incr -1
+
+def WaitGroup.wait(&self) =
+    while self.waiting_on.load! > 0 do
+        task.yield!
+
+type WaiterTask =
+    task: task.Task
+    wg: &WaitGroup
+
+def WaiterTask.run(&self) =
+    self.task.run!
+    self.wg.done!
+
+def WaitGroup.wait_on(&wg, kind: task.TaskKind, t: task.Task) = //think more about memory management
+    wg.add 1
+    waiter_task := box WaiterTask{ task = t, wg = wg }
+    task.create kind, waiter_task

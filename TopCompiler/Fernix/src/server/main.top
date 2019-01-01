@@ -1,6 +1,54 @@
 import "runner"
 import "task"
+import "sync"
+import "queue"
+import "time"
+import "atomic"
 
-log "server initedk"
+/*
+task.create_blocking_threads 4
 
-runner.init!
+type ReadFileTask =
+    filename: string
+    result: &string
+
+def ReadFileTask.run(&self) =
+    log "running"
+    guard Some f := open self.filename, ReadFile
+    else panic "could not read file"
+    *self.result = f.read!
+
+wg := sync.make_WaitGroup!
+result := ""
+read_file_task := ReadFileTask{
+    filename = "src/server/main.top"
+    result = &result
+}
+wg.wait_on task.LargeStack, &read_file_task
+wg.wait!
+
+log result
+*/
+
+task.create_worker_threads 7
+
+counter := atomic.make_atomic_uint 0
+
+//49500
+
+type Task1 =
+def Task1.run(&self) =
+    log "got assigned id: {context.thread_info.id}"
+    for i := 0..10000 do
+        counter.incr 1
+
+wg := sync.make_WaitGroup!
+
+task1 := Task1{}
+
+for i := 0..100 do
+    wg.wait_on task.HighPriority, &task1
+
+wg.wait!
+
+log "counter: {counter.load!}"

@@ -124,7 +124,7 @@ def checkOther(self, parser, function, block, iter=0):
             if len(self.nodes) > 0:
                 actReturnType = self.nodes[0].type
                 function.returnType.duckType(parser,actReturnType, self, self ,0)
-                Tree.insertCast(self.nodes[0], actReturnType, function.returnType, iter)
+                Tree.insertCast(self.nodes[0], actReturnType, function.returnType, 0)
             else:
                 if not function.returnType.isType(Types.Null):
                     self.error("Expecting return value, as function returns " + str(function.returnType))

@@ -204,12 +204,14 @@ class Block(Node):
         self.noBrackets = False
         self.yielding = False
         self.first = True
+        self.ifexpr = False
 
     def __str__(self):
         return "block"
 
     def compileToC(self, codegen):
         codegen.incrDeferred()
+
         if not self.noBrackets and self.owner.ternary:
             self.nodes[0].compileToC(codegen)
             if self == self.owner.nodes[-1]:

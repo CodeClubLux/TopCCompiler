@@ -262,7 +262,10 @@ class Return(Node):
                 self.nodes[0].compileToC(codegen)
                 return
 
-        codegen.outputDeferred()
+        for scope in codegen.deferred:
+            for defer in scope:
+                defer()
+
         codegen.append("return ")
         if len(self.nodes) > 0:
             self.nodes[0].compileToC(codegen)

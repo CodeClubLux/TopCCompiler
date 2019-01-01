@@ -354,7 +354,7 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
     else:
         debug = ["-O" + str(opt)] #["-g",  "-gcodeview"]
 
-    clang_commands += [ "-o", "bin/" + outputFile+".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
+    clang_commands += [ "-o", "bin/" + outputFile] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
 
     print(" ".join(clang_commands),"\n")
     try:
@@ -364,7 +364,7 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
 
 def exec(outputFile):
     try:
-        subprocess.check_call(["./bin/"+outputFile+".exe"])
+        subprocess.check_call(["./bin/"+outputFile])
     except subprocess.CalledProcessError as e:
         Error.error(e)
 

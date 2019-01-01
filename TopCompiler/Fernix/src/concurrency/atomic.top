@@ -1,0 +1,32 @@
+ext _ = "#include <stdatomic.h>"
+
+type ext atomic_flag =
+
+ext c_atomic_flag_test_and_set: |&atomic_flag| -> bool = "atomic_flag_test_and_set"
+ext c_atomic_flag_clear: |&atomic_flag| -> none = "atomic_flag_clear"
+ext c_atomic_flag_init: atomic_flag = "c_runtime_ATOMIC_FLAG_INIT"
+
+def atomic_flag.test_and_set(&self) bool =
+    c_atomic_flag_test_and_set self
+
+def atomic_flag.clear(&self) =
+    c_atomic_flag_clear self
+
+def make_atomic_flag() atomic_flag =
+    c_atomic_flag_init
+
+type ext atomic_uint =
+
+ext c_incr_atomic_uint: |&atomic_uint, int| -> none = "c_runtime_incr_atomic_uint"
+ext c_atomic_init: |&atomic_uint, uint| -> none = "atomic_init"
+
+def atomic_uint.incr(&self, value: int) =
+    c_incr_atomic_uint self, value
+
+def atomic_uint.load(&self) uint =
+    (*self) cast uint
+
+def make_atomic_uint(value: uint) atomic_uint =
+    counter : atomic_uint = _
+    c_atomic_init &counter, value
+    counter

@@ -5,6 +5,7 @@ import AST as Tree
 from TopCompiler import ExprParser
 from TopCompiler import Error
 from TopCompiler import Scope
+from TopCompiler import IfExpr
 
 def iterForIf(ifNode):
     i = 0
@@ -40,6 +41,7 @@ def checkIf(parser, i):
 
 def elseExpr(parser, canHaveElse=False):
     toplevel = Tree.Else(parser)
+    ifexpr = False
 
     if not canHaveElse:
         try:
@@ -48,14 +50,33 @@ def elseExpr(parser, canHaveElse=False):
             Error.parseError(parser, "unexpected else")
 
         if not type(inside) is Tree.IfCondition:
-            Error.parseError(parser, "unexpected else")
+            ifexpr = IfExpr.ifPatternMatch(parser)
 
-    parser.currentNode.nodes[-1].addNode(toplevel)
-    parser.currentNode = toplevel
+            if not ifexpr:
+                Error.parseError(parser, "unexpected else")
 
-    block = Tree.Block(parser)
-    parser.currentNode.owner.addNode(block)
-    parser.currentNode = block
+
+    if not ifexpr:
+        parser.currentNode.nodes[-1].addNode(toplevel)
+        parser.currentNode = toplevel
+
+        block = Tree.Block(parser)
+        parser.currentNode.owner.addNode(block)
+        parser.currentNode = block
+    else:
+        parser.currentNode = parser.currentNode.nodes[-1].nodes[-1]
+        while len(parser.currentNode.nodes) > 0:
+            parser.currentNode = parser.currentNode.nodes[-1]
+
+        add_block = len(parser.currentNode.nodes) > 0
+        if add_block:
+            block = Tree.Block(parser)
+
+            parser.currentNode.nodes[-1].addNode(toplevel)
+            parser.currentNode.nodes[-1].addNode(block)
+            parser.currentNode = parser.currentNode.nodes[-1]
+
+            parser.currentNode = block
 
     opening = None
     single = 0
@@ -66,6 +87,10 @@ def elseExpr(parser, canHaveElse=False):
         Parser.callToken(parser)
 
     ExprParser.endExpr(parser)
-    parser.currentNode = toplevel.owner.owner
+
+    if ifexpr:
+        parser.currentNode = ifexpr
+    else:
+        parser.currentNode = toplevel.owner.owner
 
 Parser.exprToken["else"] = elseExpr

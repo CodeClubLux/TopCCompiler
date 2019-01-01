@@ -56,6 +56,7 @@ def insertCast(ast, fromT, toT, iter, onlyToP=False):
 
         c = Cast(fromT, toT, ast)
         c.type = toT
+
         ast.owner.nodes[iter] = c
         c.owner = ast.owner
         c.addNode(ast)

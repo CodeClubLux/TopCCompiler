@@ -1,7 +1,5 @@
 import "sync"
 
-log "hello world!"
-
 type Slot[T] =
     value: T
     next: Maybe[&Slot[T]]
@@ -28,7 +26,7 @@ def Queue[T].enqueue(&self, value: T) =
         Some slot ->
             self.free = slot.next
             slot
-        None ->  longterm_alloc::[Slot[T]] 1
+        None -> longterm_alloc::[Slot[T]] 1
 
     slot.value = value
     slot.next = None
@@ -52,8 +50,12 @@ def Queue[T].dequeue(&self) Maybe[T] =
 
     self.front = front.next
 
+    match self.front with
+        Some _ ->
+        None -> self.back = None //queue is empty, so both back and front should be None
+
     front.next = self.free
     self.free = Some front
 
-    Some front.value
-
+    value := front.value
+    Some value

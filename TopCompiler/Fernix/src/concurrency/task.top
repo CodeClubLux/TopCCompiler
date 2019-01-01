@@ -18,11 +18,17 @@ type Fiber =
     fiber_t: &fiber_t
     next: &Fiber
 
-type ThreadInfo =
+type ThreadInfo = //todo handle cleanup
     id: uint
     running: &Fiber
+    primary_t: &fiber_t
 
-#addToContext thread_info := make_ThreadInfo!
+
+let small_stack_size = 10_000
+let big_stack_size = 50_000
+
+#addToContext thread_info := make_ThreadInfo 10, 0, true
+context.thread_info.exec!
 
 type Scheduler =
     high_priority_queue: Queue[Task]
@@ -39,27 +45,23 @@ scheduler := Scheduler{
     exit = false
 }
 
+def end_all() =
+    scheduler.exit = true
+
 def fiber_exec(fiber: &fiber_t) =
     context = fiber.userdata cast &Context
 
     while not scheduler.exit do
-        match scheduler.high_priority_queue.dequeue! with
-            Some task ->
-                task.run!
-                continue
-            None ->
+        defer yield!
 
-        match scheduler.medium_priority_queue.dequeue! with
-            Some task ->
-                task.run!
-                continue
-            None ->
+        if Some task := scheduler.high_priority_queue.dequeue! then
+            task.run!
+        elif Some task := scheduler.medium_priority_queue.dequeue! then
+            task.run!
+        elif Some task := scheduler.low_priority_queue.dequeue! then
+            task.run!
 
-        match scheduler.low_priority_queue.dequeue! with
-            Some task ->
-                task.run!
-                continue
-            None ->
+    _ := fiber_switch context.thread_info.primary_t
 
 def fat_fiber_exec(fiber: &fiber_t) =
     context = fiber.userdata cast &Context
@@ -68,12 +70,14 @@ def fat_fiber_exec(fiber: &fiber_t) =
         match scheduler.big_fiber_queue.dequeue! with
             Some task -> task.run!
             None ->
+        yield!
 
 def yield() =
     current_fiber := context.thread_info.running
     next := current_fiber.next
 
     context.thread_info.running = next
+
     _ := fiber_switch next.fiber_t
 
 type TaskKind either
@@ -82,39 +86,43 @@ type TaskKind either
     LowPriority
     LargeStack
 
-let num_fibers = 10
-let num_fat_fibers = 1
-let small_stack_size = 10_000
-let big_stack_size = 50_000
-
-def make_ThreadInfo() &ThreadInfo = //should only create worker threads on main thread
+def make_ThreadInfo(num_fibers: uint, num_fat_fibers: uint, main: bool) &ThreadInfo = //should only create worker threads on main thread
     last_fiber := box_longterm Fiber{
-        fiber_t = fiber_create None, small_stack_size, fiber_exec, context
+        fiber_t = fiber_create None, 0, (0 cast |&fiber_t| -> none), context
         next = 0 cast &Fiber //set this field later, although once initialized it will never be null
     }
 
+    primary_fiber := last_fiber.fiber_t
     first_fiber := last_fiber
 
-    for i := 1..num_fibers do
+    for i := 0..num_fibers do
         last_fiber.next = box_longterm Fiber{
-            fiber_t = fiber_create None, small_stack_size, fiber_exec, context
+            fiber_t = fiber_create (Some primary_fiber), small_stack_size, fiber_exec, context
             next = 0 cast &Fiber
         }
+
+        if not main then
+            first_fiber = last_fiber.next
 
         last_fiber = last_fiber.next
 
     for i := 0..num_fat_fibers do
         last_fiber.next = box_longterm Fiber{
-            fiber_t = fiber_create None, big_stack_size, fat_fiber_exec, context
+            fiber_t = fiber_create (Some primary_fiber), big_stack_size, fat_fiber_exec, context
             next = 0 cast &Fiber
         }
+
+        if not main and num_fibers == 0 then
+            first_fiber = last_fiber.next
+
         last_fiber = last_fiber.next
 
     last_fiber.next = first_fiber //create repeating execution loop
 
-    box ThreadInfo{
+    box_longterm ThreadInfo{
         id = 0
         running = last_fiber
+        primary_t = primary_fiber
     }
 
 def ThreadInfo.exec(&self) =
@@ -130,4 +138,59 @@ def create(kind: TaskKind, task: Task) =
             scheduler.low_priority_queue.enqueue task
         LargeStack ->
             scheduler.big_fiber_queue.enqueue task
+    yield!
 
+ext _ = "#include <pthread.h>"
+
+type ext pthread_t =
+
+ext pthread_create: |&pthread_t, Maybe[&none], |&none| -> none, &none| -> none = "pthread_create"
+
+type ThreadInfoArgs =
+    num_fibers: uint
+    num_fat_fibers: uint
+    context: &none
+    id: uint
+
+def init_thread(c_arg: &none) =
+    arg := c_arg cast &ThreadInfoArgs
+
+    temp := new_TemporaryStorage 10_000
+    long := new_TemporaryStorage 10_000
+
+    temp_as_alloc : Allocator = &temp
+    long_as_alloc : Allocator = &long
+
+    new_context := *(arg.context cast &Context)
+    new_context.allocator = &temp_as_alloc
+    new_context.longterm_storage = &long_as_alloc
+
+    context = &new_context
+
+    new_context.thread_info = make_ThreadInfo arg.num_fibers, arg.num_fat_fibers, false
+    new_context.thread_info.id = arg.id
+    new_context.thread_info.exec!
+
+def create_worker_threads(num: uint) =
+    for i := 0..num do
+        thread_id : pthread_t = _
+        args := box ThreadInfoArgs{
+            num_fibers = 10
+            num_fat_fibers = 0
+            context = context
+            id = thread_id cast uint
+        }
+
+        pthread_create &thread_id, None, init_thread, args
+
+def create_blocking_threads(num: uint) =
+    for i := 0..num do
+        thread_id : pthread_t = _
+        args := box ThreadInfoArgs{
+            num_fibers = 0
+            num_fat_fibers = 1
+            context = context
+            id = thread_id cast uint
+        }
+
+        pthread_create &thread_id, None, init_thread, args
