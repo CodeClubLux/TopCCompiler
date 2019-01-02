@@ -23,9 +23,8 @@ def init() =
 
         mask := layermask.game_layer
 
-        inp := input.get_input!
-        inp.clear!
-        inp.update_inputs!
+        input.clear!
+        input.update_inputs!
 
         time.update_delta_time!
         ecs.update layermask.enable layermask.make_Layermask!, mask

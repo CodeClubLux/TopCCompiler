@@ -18,7 +18,9 @@ type Input =
 
     window: &window.Window
 
-def Input.cursor_pos_callback(&self, mouse_position: Vec2) =
+def window_cursor_pos_callback(mouse_position: Vec2) =
+    self := get_input!
+
     if self.first_mouse then
         self.mouse_position = mouse_position
         self.first_mouse = false
@@ -33,7 +35,7 @@ def Input.cursor_pos_callback(&self, mouse_position: Vec2) =
 
     self.mouse_position = mouse_position
 
-def Input.to_device_coord(&self, position: Vec2) Vec2 = //Takes mouse postion and transforms into device coordinates
+def to_device_coord(position: Vec2) Vec2 = //Takes mouse postion and transforms into device coordinates
     w := window.get_window!
 
     Vec2{
@@ -41,49 +43,54 @@ def Input.to_device_coord(&self, position: Vec2) Vec2 = //Takes mouse postion an
         -(position.y / w.height * 2 - 1)
     }
 
-def Input.capture_mouse(&self, captured: bool) =
+def capture_mouse(captured: bool) =
     window
         .get_window!
         .capture_mouse captured
 
-def Input.key_callback(&self, _key: Key, action: KeyAction) =
+def window_key_callback(_key: Key, action: KeyAction) =
+    self := get_input!
     self.keys.insert _key, action
     //todo delete key from last frame map if the key was released
 
-def Input.key_down(&self, _key: Key) bool =
+def key_down(_key: Key) bool =
     window
         .get_window!
         .key_down _key
 
-def Input.mouse_button_down(&self, button: MouseButton) bool =
+def mouse_button_down(button: MouseButton) bool =
     window
         .get_window!
         .mouse_button_down button
 
-def Input.key_pressed(&self, _key: Key) bool =
+def key_pressed(_key: Key) bool =
+    self := get_input!
     if not self.last_frame_keys.contains _key then
-        return self.key_down _key
+        return key_down _key
 
-    self.last_frame_keys[_key] == Released and self.key_down _key
+    self.last_frame_keys[_key] == Released and key_down _key
 
-def Input.clear(&self) =
+def clear() =
+    self := get_input!
+
     for _key := self.keys.keys do
         value := self.keys.actions[i]
         self.last_frame_keys.insert _key, value
 
     self.keys.clear!
 
-def Input.get_vertical_axis(&self) float =
-    if self.key_down key.from_char `W` then 1
-    elif self.key_down key.from_char `S` then -1
+def get_vertical_axis() float =
+    if key_down key.from_char `W` then 1
+    elif key_down key.from_char `S` then -1
     else 0
 
-def Input.get_horizontal_axis(&self) float =
-    if self.key_down key.from_char `D` then 1
-    elif self.key_down key.from_char `A` then -1
+def get_horizontal_axis() float =
+    if key_down key.from_char `D` then 1
+    elif key_down key.from_char `A` then -1
     else 0
 
-def Input.update_inputs(&s) =
+def update_inputs() =
+    s := get_input!
     s.mouse_offset = Vec2{0,0}
 
     window
@@ -110,17 +117,11 @@ def make_Input() Input =
         window = w
     }
 
-// external api
+
 #addToContext input := box make_Input!
 
 def get_input() &Input =
     context.input
-
-def window_cursor_pos_callback(position: Vec2) =
-    get_input!.cursor_pos_callback position
-
-def window_key_callback(_key: Key, action: KeyAction) =
-    get_input!.key_callback _key, action
 
 
 

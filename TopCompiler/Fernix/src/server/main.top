@@ -1,54 +1,44 @@
-import "runner"
 import "task"
 import "sync"
-import "queue"
-import "time"
-import "atomic"
+from "transform" import all
+import "ecs"
+import "input"
 
-/*
-task.create_blocking_threads 4
+type Ball =
+    speed: float
 
-type ReadFileTask =
-    filename: string
-    result: &string
+balls := ecs.make_component Ball{ speed = 10 }
 
-def ReadFileTask.run(&self) =
-    log "running"
-    guard Some f := open self.filename, ReadFile
-    else panic "could not read file"
-    *self.result = f.read!
+type BallSystem =
 
-wg := sync.make_WaitGroup!
-result := ""
-read_file_task := ReadFileTask{
-    filename = "src/server/main.top"
-    result = &result
-}
-wg.wait_on task.LargeStack, &read_file_task
-wg.wait!
+def BallSystem.render(&self, mask: Layermask) =
 
-log result
-*/
+type BallUpdateJob =
+    trans: &Transform
+    ball: &Ball
+    vertical: float
+    horizontal: float
 
-task.create_worker_threads 7
+def BallUpdateJob.run(using &self) =
+    trans.position.z = vertical * ball.speed * time.get_delta_time!
+    trans.position.x = horizontal * ball.speed * time.get_delta_time!
 
-counter := atomic.make_atomic_uint 0
+def BallSystem.update(&self, mask: Layermask) =
+    defer context.allocator.reset_to context.allocator.get_occupied!
 
-//49500
+    vertical := input.get_vertical_axis!
+    horizontal := input.get_horizontal_axis!
 
-type Task1 =
-def Task1.run(&self) =
-    log "got assigned id: {context.thread_info.id}"
-    for i := 0..10000 do
-        counter.incr 1
+    wg := sync.make_WaitGroup!
 
-wg := sync.make_WaitGroup!
+    for trans, ball := ecs.filter2 balls, transforms do
+        wg.wait_on task.HighPriority, box Job{
+            trans = trans
+            ball = ball
+            vertical = vertical
+            horizontal = horizontal
+        }
 
-task1 := Task1{}
+    wg.wait!
 
-for i := 0..100 do
-    wg.wait_on task.HighPriority, &task1
-
-wg.wait!
-
-log "counter: {counter.load!}"
+ecs.register_system BallSystem{}

@@ -28,5 +28,5 @@ def update_delta_time() =
     context.time.delta_time = current_frame - context.time.last_frame
     context.time.last_frame = current_frame
 
-def get_delta_time() f64 =
-    context.time.delta_time
+def get_delta_time() float =
+    context.time.delta_time cast float
