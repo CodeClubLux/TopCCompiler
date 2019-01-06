@@ -6,9 +6,12 @@ import AST as Tree
 import copy
 
 from AST import Cast
+import time
 
 def save(parser, runtimeBuild):
     #return
+
+    t = time.time()
 
     print("saving")
 
@@ -38,6 +41,7 @@ def save(parser, runtimeBuild):
     parser.__filename = None
     parser.compiledTypes = None
     parser.casted = Cast.casted
+    parser.shouldCompile = {}
 
     for typ in parser.typesInContext:
         if typ in parser.generatedGenericTypes:
@@ -46,6 +50,7 @@ def save(parser, runtimeBuild):
 
     for package in parser.structs:
         for s in parser.structs[package]:
+            parser.structs[package][s].actualfields = None
             parser.structs[package][s].node = 0
 
     def removeRedundantProperties(ast):

@@ -280,7 +280,7 @@ def funcBody(parser, name, names, types, brace, returnType, do):
     parser.currentNode = body
 
     for i in range(len(names)):
-        n = Tree.InitArg(names[i], body)
+        n = Tree.InitArg(names[i], parser)
         n.package = parser.package
         n.varType = types[i]
         n.imutable = not Scope.isMutable(parser, parser.package, names[i])

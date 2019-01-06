@@ -149,12 +149,14 @@ def infer(parser, tree):
                         #i.error("Could not extract field " + field)
 
             elif type(i) is Tree.CreateAssign:
-                if type(i.nodes[0].name) is Tree.PlaceHolder:
-                    p = i.nodes[0].name.nodes[0]
+                if not type(i.nodes[0].name) is str and not i.extern and not i.nodes[0].name is None:
+                    p = i.nodes[0].name
                     node = i.nodes[1].nodes[0]
 
                     def recur(typ, pattern):
                         if type(pattern) is Tree.Tuple:
+                            if not type(typ) is Types.Tuple:
+                                pattern.error("Cannot pattern match on " + str(typ) + ", as if it was a tuple")
                             if len(pattern) > len(typ.list):
                                 diff = len(pattern) - len(typ.list)
                                 node.error(diff+" too few values to unpack")
@@ -177,13 +179,26 @@ def infer(parser, tree):
                                 recur(typ.types[name],p)
                         else:
                             Scope.addVar(node, parser, pattern.name, Scope.Type(True, typ, i.global_target))
-                            pattern.isGlobal = Scope.isGlobal(parser, parser.package, pattern.name)
+                            i.nodes[0].isGlobal = Scope.isGlobal(parser, parser.package, pattern.name)
+                            i.nodes[1].isGlobal = i.nodes[0].isGlobal
 
-                    recur(node.type, p)
+                    typ = node.type
+                    if type(i.owner) is Tree.For and count == 0:
+                        if typ.isType(Types.Array):
+                            typ = typ.elemT
+                        elif typ.name == "Range":
+                            typ = Types.I32(unsigned= True)
+                            i.nodes[0].varType = typ
+                        else:
+                            i.error("for loop only operators either on Range or array")
+
+                    recur(typ, p)
+
+                    i.nodes[0].varType = i.nodes[1].nodes[0].type
+
                 elif i.nodes[0].varType is None and i.nodes[0].name != "_":
                     if i.extern:
                         i.error("expecting type declaration, for external variable declaration")
-                    i.nodes[0].varType = i.nodes[1].nodes[0].type
 
                     typ = i.nodes[1].nodes[0].type
                     
@@ -198,6 +213,8 @@ def infer(parser, tree):
 
                     Scope.addVar(i, parser, i.nodes[0].name, Scope.Type(i.nodes[0].imutable, typ, i.global_target))
                     i.nodes[0].isGlobal = Scope.isGlobal(parser, i.nodes[0].package, i.nodes[0].name)
+
+                    i.nodes[0].varType = i.nodes[1].nodes[0].type
 
             elif type(i) is Tree.FuncBody:
                 Scope.decrScope(parser)

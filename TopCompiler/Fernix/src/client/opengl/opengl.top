@@ -122,3 +122,4 @@ ext less: uint = "GL_LESS"
 ext always: uint = "GL_ALWAYS"
 
 ext debugMessageCallback: | |uint, uint, uint, uint, SizeT, &char| -> none, &Context| -> none = "glDebugMessageCallback"
+ext gl_true: uint = "GL_TRUE"

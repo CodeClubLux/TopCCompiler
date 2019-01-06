@@ -12,7 +12,6 @@ import "ecs"
 import "input"
 import "fpsController"
 import "camera"
-import "gizmo"
 import "editor"
 import "draw"
 from "transform" import all
@@ -25,9 +24,9 @@ def substance_params(folder: string, name: string) [4]Param =
         Param_Image "material.normal", texture.load "{folder}/{name}_normal.jpg"
     ]
 
+
 // /*
 wet_street_params := substance_params "wood_2", "Stylized_Wood"
-
 
 cube_materials := [
     Material{
@@ -38,20 +37,23 @@ cube_materials := [
     }
 ]
 
-cube := model.load_model "HOVERTANK.fbx"
-log cube.materials.length
+def make_cube() =
+    cube := model.load_model "HOVERTANK.fbx"
 
-cube_transform := make_Transform ecs.make_ID!
-cube_transform.scale = Vec3{ 0.5, 0.5, 0.5 }
+    id := ecs.make_ID!
+    _ := ecs.make_Entity id
 
-cube_entity := cube_transform.entity
+    cube_transform := make_Transform ecs.make_ID!
+    cube_transform.scale = Vec3{ 0.5, 0.5, 0.5 }
 
-mesh_renderer := model.make_ModelRenderer cube_entity.id
-mesh_renderer.model_id = Some ecs.get_id_for cube
-mesh_renderer.set_materials &cube_materials
+    mesh_renderer := model.make_ModelRenderer id
+    mesh_renderer.model_id = Some model.models.id_of cube
+    mesh_renderer.set_materials &cube_materials
 
 
-floating_camera := fpsController.make_FPSController camera.get_camera!.get_entity!.id
+make_cube!
+
+floating_camera := fpsController.make_FPSController camera.cameras.id_of camera.get_camera!
 
 //editor.editor.select cube_entity.id
 

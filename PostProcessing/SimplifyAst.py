@@ -229,6 +229,7 @@ class FuncSpecification:
 
         owner = funcBody.owner
         p = Tree.PlaceHolder(funcBody)
+        p.addNode(funcBrace)
         p.addNode(funcBody)
 
         # if n == "sort_array_int":
@@ -257,7 +258,7 @@ def multiple_replace(rep_dict):
 
 
 sanitize = multiple_replace(
-    {" ": "_", "[": "_", "]": "_", "|": "p", "->": "_", "&": "r", ",": "c", "{": "b", "}": "b", ".": "_", ":": "_"})
+    {" ": "_", "[": "_", "]": "_", "|": "p", "->": "_", "&": "r", ",": "c", "{": "b", "}": "b", ".": "_", ":": "_", "(": "p", ")": "p"})
 
 
 def stringify(typ):
@@ -426,7 +427,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         deleteQueue = []
         originalAST = ast
 
-        if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
+        if type(ast) in [Tree.FuncBraceOpen]:
             replacer.incrScope()
 
         if type(ast) in [Tree.ReadVar]:
@@ -610,7 +611,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             #                f.owner = self
 
 
-        if type(ast) in [Tree.FuncBody, Tree.Block, Tree.WhileBlock]:
+        if type(ast) in [Tree.FuncBody]:
             replacer.decrScope()
 
         for e in deleteQueue:

@@ -1,19 +1,19 @@
 type Layermask is uint
 type Layer is uint
 
-def make_Layermask() uint =
+def make_Layermask() Layermask =
     0
 
-def enable(layermask: Layermask, position: Layer) Layermask =
+def Layermask.enable(layermask, position: Layer) Layermask =
     set_bit_to layermask, position, true
 
-def disable(layermask: Layermask, position: Layer) Layermask =
+def Layermask.disable(layermask, position: Layer) Layermask =
     set_bit_to layermask, position, false
 
-def layer_in_mask(layermask: Layermask, layer: Layer) bool =
+def Layermask.layer_in_mask(layermask, layer: Layer) bool =
     is_bit_set layermask, layer
 
-def mask(layermask_to_be_masked: Layermask, use_mask: Layermask) bool =
+def Layermask.mask(layermask_to_be_masked, use_mask: Layermask) bool =
     not bit_and layermask_to_be_masked, use_mask
 
 let game_layer = 1

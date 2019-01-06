@@ -267,7 +267,9 @@ def buildContext(parser):
 
     types = {}
     for field in contextType:
-        types[field] = contextType[field].toCType()
+        t = contextType[field]
+        if t.package in parser.structs:
+            types[field] = t.toCType()
 
     string = []
     (typesGen, mainC) = Types.getGeneratedDataTypes("_context")

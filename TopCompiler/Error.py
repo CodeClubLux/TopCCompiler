@@ -38,9 +38,10 @@ def errorAst(message, package, filename, token):
         try:
             s = topc.filenames_sources[package][o]
         except:
-            print("cannot find file")
-            print(topc.filenames_sources[package])
-            print(os.path.basename(o))
+            print(package)
+            print(o)
+            print(topc.filenames_sources.keys())
+            print("could not find file")
 
     divided = s.split("\n")
     line = ("\n\t" + divided[token.line])

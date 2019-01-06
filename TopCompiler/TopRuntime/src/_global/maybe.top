@@ -26,6 +26,11 @@ def Maybe[T].map[R](self, f: |T| -> R) Maybe[R] =
         Some x -> Some (f x)
         None -> None
 
+def Maybe[T].is_none(self) bool =
+    match self with
+        Some _ -> false
+        None -> true
+
 type Result[T, E] either
     Ok(T)
     Error(E)

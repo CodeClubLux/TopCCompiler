@@ -2,16 +2,15 @@ import "ecs"
 from "math" import all
 
 type Transform =
-    entity: &ecs.Entity
-
     position: math.Vec3
     rotation: math.Quat
     scale: math.Vec3
 
-def Transform.get_entity(&self) &ecs.Entity =
-    self.entity
-
-def Transform.update(&self) =
+transforms := ecs.make_Store 100, Transform{
+    position = Vec3{ 0, 0, 0}
+    rotation = Quat{ 0, 0, 0, 1}
+    scale = Vec3{ 1, 1, 1}
+}
 
 def Transform.compute_model_matrix(&self) Mat4x4 =
     trans := translate self.position
@@ -20,20 +19,4 @@ def Transform.compute_model_matrix(&self) Mat4x4 =
 
     trans * scal * rotation
 
-def Transform.render(&self) =
-
-transform_system := ecs.make_Store make_Transform, 100
-
-def make_Transform(id: ecs.ID) &Transform =
-    entity := match ecs.entity_system.component_by_id id with
-        Some e -> e
-        None -> ecs.make_Entity id
-
-    transform_system.add_component Transform{
-        entity = entity
-        position = Vec3{ 0, 0, 0}
-        rotation = Quat{ 0, 0, 0, 1}
-        scale = Vec3{ 1, 1, 1}
-    }
-
-
+def make_Transform(id: ecs.ID) &Transform = transforms.make id

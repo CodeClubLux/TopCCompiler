@@ -10,4 +10,4 @@ Parser.exprType["str"] = lambda parser, string: \
     parser.currentNode.addNode(Tree.String(string, parser))
 
 Parser.exprType["char"] = lambda parser, string: \
-    parser.currentNode.addNode(Tree.Char(string, parser))
+    parser.currentNode.addNode(Tree.Char(string[1:-1], parser))

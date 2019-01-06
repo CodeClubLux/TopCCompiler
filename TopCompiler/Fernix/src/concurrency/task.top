@@ -138,7 +138,6 @@ def create(kind: TaskKind, task: Task) =
             scheduler.low_priority_queue.enqueue task
         LargeStack ->
             scheduler.big_fiber_queue.enqueue task
-    yield!
 
 ext _ = "#include <pthread.h>"
 
@@ -153,6 +152,8 @@ type ThreadInfoArgs =
     id: uint
 
 def init_thread(c_arg: &none) =
+    //log "init thread"
+
     arg := c_arg cast &ThreadInfoArgs
 
     temp := new_TemporaryStorage 10_000
@@ -162,13 +163,13 @@ def init_thread(c_arg: &none) =
     long_as_alloc : Allocator = &long
 
     new_context := *(arg.context cast &Context)
+    context = &new_context
     new_context.allocator = &temp_as_alloc
     new_context.longterm_storage = &long_as_alloc
 
-    context = &new_context
-
     new_context.thread_info = make_ThreadInfo arg.num_fibers, arg.num_fat_fibers, false
     new_context.thread_info.id = arg.id
+
     new_context.thread_info.exec!
 
 def create_worker_threads(num: uint) =
@@ -194,3 +195,48 @@ def create_blocking_threads(num: uint) =
         }
 
         pthread_create &thread_id, None, init_thread, args
+
+let worker_thread_count = 7
+
+type TaskGroup[T: Task] =
+    tasks: [..]T
+    wg: sync.WaitGroup
+
+type Chunk[T: Task] =
+    tasks: []T
+    wg: &sync.WaitGroup
+
+def Chunk[T].run(&self) =
+    for i := 0..self.tasks.length do
+        self.tasks[i].run!
+        self.wg.done!
+
+def make_TaskGroup[T: Task]() TaskGroup[T] =
+    TaskGroup{
+        tasks = [..]T
+        wg = sync.make_WaitGroup!
+    }
+
+def TaskGroup[T].add(&self, task: T) =
+    self.tasks.append task
+
+from "math" import (ceil, min)
+
+def TaskGroup[T].submit(using &self, kind: TaskKind) =
+    wg.add tasks.length
+
+    chunk_size := (ceil (tasks.length as float) / (worker_thread_count + 1)) cast uint
+
+    for i := 0..(worker_thread_count + 1) do
+        if i * chunk_size >= tasks.length then continue
+
+        create kind, box_longterm Chunk{
+            tasks = tasks.slice i * chunk_size, min tasks.length, (i+1) * chunk_size
+            wg = &wg
+        }
+
+    tasks.clear!
+
+def TaskGroup[T].wait(&self) =
+    self.wg.wait!
+

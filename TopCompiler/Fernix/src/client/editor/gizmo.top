@@ -244,7 +244,7 @@ def Gizmo.update(&self) =
     guard Some target_id := editor.editor.selected
     else return
 
-    guard Some target := transform_system.component_by_id target_id
+    guard Some target := transform_system.by_id target_id
     else return
 
     if not target.get_entity!.enabled then return
@@ -279,14 +279,14 @@ gizmo_system := ecs.make_Store make_Gizmo, 1
 _ := make_Gizmo ecs.make_ID!
 
 def make_Gizmo(id: ecs.ID) &Gizmo =
-    entity := match ecs.entity_system.component_by_id id with
+    entity := match ecs.entity_system.by_id id with
         Some e -> e
         None ->
             entity := ecs.make_Entity id
             entity.layermask = layermask.enable layermask.make_Layermask!, layermask.editor_layer
             entity
 
-    model_renderer := match model.model_renderer_system.component_by_id id with
+    model_renderer := match model.model_renderer_system.by_id id with
         Some m -> m
         None -> model.make_ModelRenderer id
 

@@ -2,9 +2,6 @@ import "ecs"
 
 type Cacher with
     def get_filename() string
-    def get_entity() &ecs.Entity
-    def render()
-    def update()
 
 def in_cache[T: Cacher](store: &ecs.Store[T], filename: string) Maybe[&T] =
     items := store.get_all_active!

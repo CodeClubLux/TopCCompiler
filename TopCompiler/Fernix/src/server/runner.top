@@ -27,4 +27,4 @@ def init() =
         input.update_inputs!
 
         time.update_delta_time!
-        ecs.update layermask.enable layermask.make_Layermask!, mask
+        ecs.update layermask.make_Layermask!.enable mask

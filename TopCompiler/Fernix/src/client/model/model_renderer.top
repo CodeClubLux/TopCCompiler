@@ -1,48 +1,40 @@
 import "ecs"
 from "materialSystem" import (material_by_name)
 from "transform" import all
+from "layermask" import Layermask
 
 //Model Renderer
 type ModelRenderer =
-    transform: &Transform
     model_id: Maybe[ecs.ID]
     materials: []Material
     visible: bool
 
-def ModelRenderer.get_entity(&self) &ecs.Entity =
-    self.transform.get_entity!
-
-def ModelRenderer.render(&self) =
-    guard Some model_id := self.model_id
-    else return
-
-    guard Some model := model_system.component_by_id model_id
-    else return
-
-    assert model.materials.length == self.materials.length, "Material length is not the same for model and model renderer"
-
-    model.render_model_for self.transform, self.materials
-
-def ModelRenderer.update(&self) =
-
-
 //setup model renderer system
-model_renderer_system := ecs.make_Store make_ModelRenderer, 10
+model_renderers := ecs.make_Store 10, ModelRenderer{
+    model_id = None
+    visible = true
+    materials = []
+}
 
-def make_ModelRenderer(id: ecs.ID) &ModelRenderer =
-    trans := match transform_system.component_by_id id with
-        Some e -> e
-        None -> make_Transform id
+type ModelRendererSystem =
+def ModelRendererSystem.update(&system, m: Layermask) =
+def ModelRendererSystem.render(&system, m: Layermask) =
+    for (self, trans) := ecs.filter2 model_renderers, transforms, m do
+        guard Some model_id := self.model_id
+        else continue
 
-    model_renderer_system.add_component ModelRenderer{
-        transform = trans
-        model_id = None
-        visible = true
-        materials = []
-    }
+        guard Some model := models.by_id model_id
+        else continue
+
+        assert model.materials.length == self.materials.length, "Material length is not the same for model and model renderer"
+
+        model.render_model_for trans, self.materials
+
+model_renderer_system := ModelRendererSystem{}
+ecs.register_system &model_renderer_system
 
 def get_model_renderer_system() &ecs.Store[ModelRenderer] =
-    model_renderer_system
+    model_renderers
 
 def ModelRenderer.set_materials(&self, materials: []Material) =
     materials_in_order := [..]Material
@@ -50,7 +42,7 @@ def ModelRenderer.set_materials(&self, materials: []Material) =
     guard Some model_id := self.model_id
     else return
 
-    guard Some model := model_system.component_by_id model_id
+    guard Some model := models.by_id model_id
     else return
 
     for mat_name := model.materials do
@@ -60,3 +52,5 @@ def ModelRenderer.set_materials(&self, materials: []Material) =
         materials_in_order.append *mat
 
     self.materials = materials_in_order
+
+def make_ModelRenderer(id: ecs.ID) &ModelRenderer = model_renderers.make id

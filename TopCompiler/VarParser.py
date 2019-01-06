@@ -13,21 +13,23 @@ from TopCompiler import Lexer
 
 
 def pattern(name, names, parser, getName):
-    if type(name) in [Tree.Tuple, Tree.PlaceHolder]:
+    if type(name) is Tree.Tuple:
+        for i in name:
+            pattern(i, names, parser, getName)
+        return name
+    elif type(name) is Tree.PlaceHolder:
         node = name.nodes[0]
-        if type(node) is Tree.Tuple:
-            for i in node:
-                pattern(i, names, parser, getName)
-        elif type(node) is Tree.InitStruct:
-            for i in node:
-                if type(i) is Tree.Assign:
-                    if not type(i.nodes[0]) is Tree.ReadVar:
-                        i.error("Expecting variable name")
-                    pattern(i.nodes[1], names, parser, getName)
-                elif type(i) is Tree.ReadVar:
-                    pattern(i, names, parser, getName)
-                else:
+        pattern(node, names, parser, getName)
+    elif type(name) is Tree.InitStruct:
+        for i in name:
+            if type(i) is Tree.Assign:
+                if not type(i.nodes[0]) is Tree.ReadVar:
                     i.error("Expecting variable name")
+                pattern(i.nodes[1], names, parser, getName)
+            elif type(i) is Tree.ReadVar:
+                pattern(i, names, parser, getName)
+            else:
+                i.error("Expecting variable name")
         return name
     elif type(name) is Tree.ReadVar:
         names.append(name.name)

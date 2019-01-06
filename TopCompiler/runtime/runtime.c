@@ -268,7 +268,7 @@ gen_integer(i64, int64_t, 1)
 
 void _global_c_log(struct _global_String s) {
     printf("%s\n", s.data);
-    fflush(stdout);
+    //fflush(stdout);
 };
 
 static inline void* _global_offsetPtr(void* ptr, int offset, __Context) {

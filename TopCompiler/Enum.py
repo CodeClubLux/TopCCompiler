@@ -142,11 +142,17 @@ def checkCase(parser, case, typ, first=False):
             case.error("expecting result of or, to be of type "+str(typ)+" not "+str(typT))
         case.type = Types.Bool()
         case.opT = Types.Bool()
-    elif type(case) in [Tree.String, Tree.Int, Tree.Float, Tree.Bool]:
+    elif type(case) in [Tree.String, Tree.Int, Tree.Float, Tree.Bool, Tree.Char]:
         if case.type != typ:
             case.error("expecting type "+str(case.type)+", not "+str(typ))
     elif type(case) is Tree.Operator and case.kind == ".." and not case.curry and not case.partial:
         checkCase(parser, case.nodes[0], Types.Array(False, typ))
+    #elif type(case) is Tree.Field and case.nodes[0].name in parser.scope:
+    #    r = Tree.ReadVar(case.field, False, case)
+    #    r.package = case.nodes[0].name
+    #    r.opackage = case.nodes[0].name
+    #
+    #    checkCase(parser, r, typ)
     elif not type(case) is Tree.Under:
         case.error("unknown pattern")
 

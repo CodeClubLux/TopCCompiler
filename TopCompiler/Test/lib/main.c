@@ -1,43 +1,39 @@
-struct _global_Maybe_int main_val;static inline struct _global_Maybe_int tmpmainb(struct _global_Maybe_Maybe_T c) {
-struct _global_Maybe_int b;b.tag = c.tag;b.cases = *(union _global_Maybe_int_cases*) &(c.cases);return b;
-}
-struct _global_Maybe_int main_val2;static inline struct _global_Maybe_int tmpmainc(struct _global_Maybe_Maybe_T f) {
-struct _global_Maybe_int d;d.tag = f.tag;d.cases = *(union _global_Maybe_int_cases*) &(f.cases);return d;
-}
-struct _global_Maybe_int main_val3;static inline struct _global_Maybe_int tmpmaind(struct _global_Maybe_Maybe_T h) {
-struct _global_Maybe_int g;g.tag = h.tag;g.cases = *(union _global_Maybe_int_cases*) &(h.cases);return g;
-}
+void _global_log_uint(unsigned int _global_s, struct _global_Context* b);
+struct puintcuintp* _global_StaticArray_op_get_2_puintcuintp(struct _global_StaticArray_2_puintcuintp* _global_self, unsigned int _global_index, struct _global_Context* c);
+struct _global_StaticArray_2_puintcuintp main_arr;unsigned int main_a;unsigned int main_b;unsigned int main_i;void _global_log_uint(unsigned int _global_s, struct _global_Context* g){;
+_global_c_log(_global_uint_toString(&(_global_s),g),g);
+;}
+struct puintcuintp* _global_StaticArray_op_get_2_puintcuintp(struct _global_StaticArray_2_puintcuintp* _global_self, unsigned int _global_index, struct _global_Context* g){;
+;
+_global_assert(_global_index<2,_global_StringInit(13,"Out of bounds"),g);
+;return ((_global_self)->data + _global_index);
+;}
 
 void mainInitTypes() { 
  
-_global_Maybe_intType.fields = _global_StaticArray_StaticArray_S_FieldInit(NULL, 0);
-_global_Maybe_intType.package = _global_StringInit(7, "_global");
-_global_Maybe_intType.name = _global_StringInit(9, "Maybe_int"); }
+_global_StaticArray_2_puintcuintpType.size.tag = 0;
+_global_StaticArray_2_puintcuintpType.size.cases.Static.field0 = 2;
+_global_StaticArray_2_puintcuintpType.array_type = 
+_global_TypeFromStruct(
+&None_Type
+,
+&rNoneType_VTABLE_FOR_Type
+,
+rNoneType_VTABLE_FOR_Type.type
+, &_global_NoneType_toString
+, &_global_NoneType_get_size
+)
+; }
 void mainInit() { 
-main_val = tmpmainb(_global_None);;
-main_val2 = tmpmainc(_global_None);;
-main_val3 = tmpmaind(_global_None);;
-struct _global_Maybe_int j =main_val;if(j.tag==0){int main_i = j.cases.Some.field0;
-
-_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(5,"some "),_global_int_toStringByValue((main_i),(&_global_context)),(&_global_context)),_global_StringInit(0,""),(&_global_context)),(&_global_context));
-;}
-else if(1){
-struct _global_Maybe_int k =main_val2;if(k.tag==0){int main_i = k.cases.Some.field0;
-
-_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"some 2 "),_global_int_toStringByValue((main_i),(&_global_context)),(&_global_context)),_global_StringInit(0,""),(&_global_context)),(&_global_context));
-;}
-else if(1){
-struct _global_Maybe_int l =main_val3;if(l.tag==0){int main_i = l.cases.Some.field0;
-
-_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"some 3 "),_global_int_toStringByValue((main_i),(&_global_context)),(&_global_context)),_global_StringInit(0,""),(&_global_context)),(&_global_context));
-;}
-else if(1){
-_global_log_string(_global_StringInit(4,"hey!"),(&_global_context));
-;}
-;
-;}
-;
-;}
+main_arr = _global_StaticArray_2_puintcuintpInit(puintcuintpInit(10,20),puintcuintpInit(30,50));;
+struct _global_StaticArray_2_puintcuintp c =main_arr;
+for (unsigned int d = 0;d < 2; d++) {
+struct puintcuintp f;f = *_global_StaticArray_op_get_2_puintcuintp(&c, d, (&_global_context));
+;main_a=f.field0;main_b=f.field1;main_i = d;
+_global_log_uint(main_i,(&_global_context));
+_global_log_uint(main_a,(&_global_context));
+_global_log_uint(main_b,(&_global_context));
+}
 ;
 ;
 };

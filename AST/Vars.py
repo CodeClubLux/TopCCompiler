@@ -22,27 +22,43 @@ class Create(Node):
         return self.name + ": "+str(self.varType)
 
     def compileToC(self, codegen):
-        if type(self.name) is Tree.PlaceHolder:
-            for i in self.names:
-                self.name = i
-                self.compileToC(codegen)
-            return
-
         if type(self.owner) is FuncBraceOpen:
             typ = self.varType.toCType()
             codegen.append(typ + " " + codegen.createName(self.package+"_"+self.name, typ))
             return
 
-
         inFunc = codegen.inAFunction
+
+        def recur(name, typ):
+            if type(name) is str:
+                if not self.isGlobal:
+                    name = codegen.createName(self.package + "_" + name, typ.toCType())
+                    codegen.append(typ.toCType() + " " + name + ";")
+                else:
+                    name = self.package + "_" + name
+                    codegen.out_parts.append(typ.toCType() + " " + name + ";")
+            elif type(name) is Tree.ReadVar:
+                if not self.isGlobal:
+                    name = codegen.createName(self.package + "_" + name.name, typ.toCType())
+                    codegen.append(typ.toCType() + " " + name + ";")
+                else:
+                    name = self.package + "_" + name.name
+                    codegen.out_parts.append(typ.toCType() + " " + name + ";")
+            elif type(name) is Tree.Tuple:
+                for i, node in enumerate(name):
+                    recur(node, typ.list[i])
 
         if self.attachTyp:
             codegen.out_parts.append(self.varType.toCType() + " " + self.attachTyp.package + "_" + self.attachTyp.normalName + "_" + self.name + ";")
         elif not self.isGlobal:
-            typ = self.varType.toCType()
-            name = codegen.createName(self.package + "_" + self.name, typ)
-            codegen.append(typ + " " + name + ";")
-            return name
+            if self.varType is None:
+                print("wjay")
+            recur(self.name, self.varType)
+
+            #typ = self.varType.toCType()
+            #name = codegen.createName(self.package + "_" + self.name, typ)
+            #codegen.append(typ + " " + name + ";")
+            #return name
         else:
             if self.extern:
                 if self.varType.isType(Types.FuncPointer):
@@ -54,7 +70,9 @@ class Create(Node):
                 else:
                     codegen.out_parts.append(f"\n#define {self.package}_{self.name} ")
             else:
-                codegen.out_parts.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
+                recur(self.name, self.varType)
+
+                #codegen.out_parts.append(self.varType.toCType() + " " + self.package + "_" + self.name + ";")
 
     def validate(self, parser): pass
 
@@ -133,14 +151,16 @@ class Assign(Node):
 
     def compileToC(self, codegen):
         if self.init and type(self.nodes[0]) is Tree.Under:
+            #self.nodes[1].compileToC(codegen)
             return
 
         if type(self.owner) is Tree.InitStruct:
             self.nodes[1].compileToC(codegen)
             return
         elif self.init:
-            if type(self.name) is Tree.PlaceHolder:
+            if not type(self.name) is str:
                 name = codegen.getName()
+                codegen.append(self.nodes[0].type.toCType() + " " + name + ";")
             else:
                 name = self.package+"_"+self.name if self.isGlobal else codegen.readName(self.package + "_" + self.name)
 
@@ -169,14 +189,13 @@ class Assign(Node):
                 self.nodes[0].compileToC(codegen)
                 codegen.append(";")
 
-            if type(self.name) is Tree.PlaceHolder:
+            if not type(self.name) is str:
                 pattern = self.name
 
-                print("object destructuring isnt supported yet")
                 def gen(tmp, p):
                     if type(p) is Tree.Tuple:
                         for (index, i) in enumerate(p):
-                            gen(tmp + "[" + str(index) + "]", i)
+                            gen(tmp + ".field" + str(index), i)
                     elif type(p) is Tree.InitStruct:
                         for i in p:
                             if type(i) is Tree.Assign:
@@ -184,14 +203,14 @@ class Assign(Node):
                             else:
                                 gen(tmp + "."+i.name, i)
                     elif type(p) is Tree.ReadVar:
-                        if not p.isGlobal:
+                        if not self.isGlobal:
                             name = codegen.readName(self.package + "_" + p.name)
                         else:
                             name = self.package+"_"+p.name
 
                         codegen.append(name + "=" + tmp + ";")
 
-                gen(name, pattern.nodes[0])
+                gen(name, pattern)
                 return
         else:
             self.nodes[0].compileToC(codegen)
@@ -207,7 +226,13 @@ class Assign(Node):
             return
 
         if self.init:
-            self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
+            if type(self.name) is Tree.Tuple:
+                for i in self.name:
+                    if type(i) is Tree.ReadVar:
+                        self.isGlobal = Scope.isGlobal(parser, self.package, i.name)
+                        break
+            else:
+                self.isGlobal = Scope.isGlobal(parser, self.package, self.name)
             createTyp = self.createTyp
         else:
             varNode = self.nodes[0]

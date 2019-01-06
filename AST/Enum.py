@@ -264,7 +264,7 @@ class Fake:
         if self.guard:
             return self.codegen.readName(a)
         else:
-            return self.codegen.createName(a, typ)
+            return self.codegen.createName(a, typ.toCType())
 
         #return self.codegen.createName(a, typ)
 
@@ -354,7 +354,7 @@ class MatchCase(Node):
                 for (index, i) in enumerate(node.nodes[1:]):
                     if type(i) is Tree.ReadVar:
                         typ = node.type.const[nameOfCase][index]
-                        name = codegen.createName(i.package + "_" + i.name, typ.toCType())
+                        name = codegen.createName(i.package + "_" + i.name, typ)
                         if not self.owner.guard:
                             codegen.append(f"{typ.toCType()} ")
 
@@ -457,9 +457,14 @@ class MatchCase(Node):
                 node.nodes[1].compileToC(codegen)
                 codegen.checking = False
             else:
-                if type(node.type) in [Types.I32,Types.Float,Types.String,Types.Bool]:
-                    codegen.append(tmp+"==")
-                    node.compileToC(codegen)
+                if type(node.type) in [Types.I32,Types.Float,Types.String,Types.Bool,Types.Char]:
+                    if type(node.type) is Types.String:
+                        codegen.append(f"_global_String_op_eqByValue({tmp},")
+                        node.compileToC(codegen)
+                        codegen.append(",NULL)")
+                    else:
+                        codegen.append(tmp+"==")
+                        node.compileToC(codegen)
                 else:
                     raise Exception("not handled yet")
 

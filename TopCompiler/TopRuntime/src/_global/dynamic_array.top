@@ -38,6 +38,19 @@ def Array[T].shorten(&self, num: uint) =
     if self.length < 0 then
         panic "shorten out of bounds"
 
+def Array[T].slice(&self, start: uint, end: uint) []T =
+    assert start < self.length, "Start out of bounds"
+    assert end <= self.length, "End out of bounds"
+    assert end > start, "End is shorter than start"
+
+    as_slice : []T = _
+    if Some data := self.data then
+        as_slice.data = indexPtr data, start
+
+    as_slice.length = end - start
+
+    as_slice
+
 def Array[T].pop(&self) T =
     if self.length == 0 then
         panic "trying to pop empty array"

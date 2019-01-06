@@ -5,7 +5,6 @@ from "layermask" import all
 type ID is uint
 
 type Entity =
-    id: ID
     enabled: bool
     layermask: Layermask
 

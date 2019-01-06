@@ -173,13 +173,14 @@ class Node(Root):
         try:
             self.filename = [a + "/" + parser.filename for (a, b) in parser._filename if b == parser.filename][0]
         except IndexError:
-            self.filename = parser.filename
+            self.filename = ""
 
         self.curry = False
         self.repl = parser.repl
         self.first = True
 
         self.global_target = parser.global_target
+
 
     def error(self, message):
         Error.errorAst(message, self.selfpackage, self.filename, self.token)

@@ -51,3 +51,6 @@ ext getTime: || -> f64 = "glfwGetTime"
 
 
 ext getProcAddress: &none = "glfwGetProcAddress"
+ext glfw_opengl_core_profile: uint = "GLFW_OPENGL_CORE_PROFILE"
+ext glfw_opengl_forward_compat: uint = "GLFW_OPENGL_FORWARD_COMPAT"
+ext glfwSetErrorCallback: ||int, &char| -> none| -> none = "glfwSetErrorCallback"

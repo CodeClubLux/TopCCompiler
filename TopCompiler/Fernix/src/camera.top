@@ -2,24 +2,24 @@ import "ecs"
 import "math"
 import "window"
 import "transform"
+import "layermask"
 
 type Camera =
-    transform: &transform.Transform
-
     projection_matrix: math.Mat4x4
     view_matrix: math.Mat4x4
 
     fov: uint
 
-def Camera.get_entity(&self) &ecs.Entity =
-    self.transform.get_entity!
+cameras := ecs.make_Store 10, Camera{
+    projection_matrix = math.identity_mat!
+    view_matrix = math.identity_mat!
 
-def Camera.render(&self) =
-def Camera.update(&self) =
+    fov = 60
+}
 
-def Camera.update_matrices(&self) =
+def Camera.update_matrices(&self) = //@todo move to a system
     w := window.get_window!
-    entity := self.transform
+    entity := (transform.transforms.by_id cameras.id_of self).unwrap!
 
     self.projection_matrix = math.perspective
         math.radians self.fov
@@ -34,33 +34,18 @@ def Camera.update_matrices(&self) =
 
     self.view_matrix = rotate_m * translate_m
 
-import "layermask"
+def make_default_camera() &Camera =
+    id := ecs.make_ID!
 
-camera_system := ecs.make_Store make_Camera, 10
+    entity := ecs.entities.make id
+    entity.layermask = entity.layermask.disable layermask.serialize_layer
 
-def make_Camera(id: ecs.ID) &Camera =
-    trans := match transform.transform_system.component_by_id id with
-        Some e -> e
-        None ->
-            trans := transform.make_Transform id
-            trans.position = math.Vec3{ 0, 0, 1.8 }
+    trans := transform.transforms.make ecs.make_ID!
+    trans.position = math.Vec3{ 0, 0, 1.8 }
 
-            entity := trans.get_entity!
-            entity.layermask = layermask.enable entity.layermask, layermask.editor_layer
+    cameras.make id
 
-            trans
-
-    camera_system.add_component Camera{
-        transform = trans
-
-        projection_matrix = math.identity_mat!
-        view_matrix = math.identity_mat!
-
-        fov = 60
-    }
-
-#addToContext camera := make_Camera ecs.make_ID!
-context.camera.get_entity!.layermask = layermask.disable context.camera.get_entity!.layermask, layermask.serialize_layer
+#addToContext camera := make_default_camera!
 
 def get_camera() &Camera =
     context.camera

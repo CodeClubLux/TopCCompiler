@@ -69,7 +69,7 @@ class String(Node):
 
     def compileToC(self, codegen):
         stringified = self.toString()
-        length = len(stringified) -2 - stringified.count(r"\\")
+        length = len(stringified) -2 - stringified.count("\\")
         codegen.append(f"_global_StringInit({length},{stringified})")
 
     def validate(self, parser): pass
@@ -127,6 +127,9 @@ class Typeof(Node):
             self.type = Types.Pointer(Parser.NoneType) #Types.Pointer(Parser.FuncPointerType)
         elif type(self.typ) is Types.Char:
             self.type = Types.Pointer(Parser.CharType)
+        elif type(self.typ) is Types.Tuple:
+            self.type = Types.Pointer(Parser.NoneType)
+            self.typ = Types.Null()
         elif type(self.typ) is Types.Null:
             self.type = Types.Pointer(Parser.NoneType)
 

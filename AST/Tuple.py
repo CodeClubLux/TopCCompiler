@@ -17,10 +17,11 @@ class Tuple(Node):
             self.nodes[0].compileToC(codegen)
             codegen.append(")")
         else:
-            codegen.append("[")
+            typ = self.type.toCType().replace("struct ", "")
+            codegen.append(f"{typ}Init(")
             for i in self.nodes[:-1]:
-                i.compileToJS(codegen)
+                i.compileToC(codegen)
                 codegen.append(",")
             if len(self.nodes) > 0:
-                self.nodes[-1].compileToJS(codegen)
-            codegen.append("]")
+                self.nodes[-1].compileToC(codegen)
+            codegen.append(")")

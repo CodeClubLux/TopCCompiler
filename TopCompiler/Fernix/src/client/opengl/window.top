@@ -23,12 +23,20 @@ type Window =
     key_callback: Maybe[|Key, KeyAction| -> none]
     dropped_filepaths: []string
 
+def error_callback(error: int, description: &char) =
+    log char_buffer_toString description
+
 def Window.init(&self) =
+    glfwSetErrorCallback error_callback
     glfwInit!
+    glfwWindowHint glfw_opengl_forward_compat, opengl.gl_true
+    //glfwWindowHint glfw_opengl_profile, glfw_opengl_core_profile
     glfwWindowHint glfw_context_version_major, 4
-    glfwWindowHint glfw_context_version_minor, 4
-    glfwWindowHint glfw_opengl_profile, glfw_opengl_profile
+    glfwWindowHint glfw_context_version_minor, 1
+
     glfwWindowHint glfw_samples, 4
+
+    log "trying to init window {self.height}, {self.width}, {self.title}"
 
     c_title := self.title.to_c_string!
 
@@ -43,7 +51,6 @@ def Window.init(&self) =
     else
         glfwTerminate!
         panic "Failed to create window"
-
 
     glfwMakeContextCurrent window_ptr
     glfwSetFramebufferSizeCallback window_ptr, framebuffer_size_callback
@@ -90,22 +97,18 @@ def cursor_pos_callback(glfw_window: &GLFWwindow, x: f64, y: f64) =
     context = (glfwGetWindowUserPointer glfw_window) cast &Context
     w := get_window!
 
-    match w.cursor_pos_callback with
-        Some callback -> callback Vec2{ x, y }
-        None ->
+    if Some callback := w.cursor_pos_callback then
+        callback Vec2{ x cast float, y cast float }
 
 def key_callback(glfwWindow: &GLFWwindow, _key: int, scancode: int, action: int, mods: int) =
     context = (glfwGetWindowUserPointer glfwWindow) cast &Context
     w := get_window!
 
-    match w.key_callback with
-        Some callback ->
-            if action == glfw_press then
-                callback (_key cast Key), Pressed
-            elif action == glfw_release then
-                callback (_key cast Key), Released
-        None ->
-
+    if Some callback := w.key_callback then
+        if action == glfw_press then
+            callback (_key cast Key), Pressed
+        elif action == glfw_release then
+            callback (_key cast Key), Released
 
 def drop_callback(glfwWindow: &GLFWwindow, count: int, c_paths: &&char) =
     arr := [..]string
@@ -148,11 +151,11 @@ def Window.mouse_button_down(&self, button: MouseButton) bool =
 
 def make_Window() &Window =
     w := box Window{
-        title = ""
+        title = "Fernix"
         vSync = true
         full_screen = false
-        width = 3840
-        height = 2160
+        width = 2000
+        height = 1000
         window_ptr = None
         cursor_pos_callback = None
         key_callback = None

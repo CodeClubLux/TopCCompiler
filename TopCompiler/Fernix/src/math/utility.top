@@ -5,6 +5,7 @@ ext tan: |float| -> float = "tanf"
 ext abs: |float| -> float = "fabs"
 ext atan2: |float, float| -> float = "atan2f"
 ext asin: |float| -> float = "asinf"
+ext ceil: |float| -> float = "ceilf"
 
 let pi = 3.14159265
 

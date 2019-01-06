@@ -12,40 +12,28 @@ import "layermask"
 type TextureID is uint
 
 type Texture =
-    entity: &ecs.Entity
     filename: string
     texture_id: TextureID
 
-textures_system := ecs.make_Store make_Texture, 20
+textures := ecs.make_Store 20, Texture{"", 0}
 
 def make_Texture(id: ecs.ID) &Texture =
-    entity := match ecs.entity_system.component_by_id id with
+    entity := match ecs.entities.by_id id with
         Some x -> x
         None -> ecs.make_Entity id
 
     entity.layermask = layermask.make_Layermask!
 
-    textures_system.add_component Texture{
-        entity = entity
-        texture_id = 0
-        filename = ""
-    }
-
-def Texture.render(&self) =
-def Texture.update(&self) =
-def Texture.get_entity(&self) &ecs.Entity =
-    self.entity
+    textures.make id
 
 def Texture.get_filename(&self) string =
     self.filename
 
-
 def load(filename: string) &Texture =
     real_filename := vfs.asset_path filename
 
-    match assetManager.in_cache textures_system, filename with
-        Some texture -> return texture
-        None ->
+    if Some texture := assetManager.in_cache textures, filename then
+        return texture
 
     stbi.set_flip_vertically_on_load true
 
@@ -62,11 +50,8 @@ def load(filename: string) &Texture =
     texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
     texParameteri texture_2D, texture_mag_filter, linear
 
-    data := match stbi.load real_filename.to_c_string!, &width, &height, &nr_channels, 0 with
-        Some d -> d
-        None ->
-            panic "Could not load image {filename}"
-            0 cast &Byte
+    guard Some data := stbi.load real_filename.to_c_string!, &width, &height, &nr_channels, 0
+    else panic "Could not load image {filename}"
 
     defer stbi.image_free data
 

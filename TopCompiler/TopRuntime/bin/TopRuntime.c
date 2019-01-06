@@ -286,6 +286,19 @@ struct _global_String _global_Bool_toStringByValue(_Bool b, __Context) {
     }
 }
 
+
+
+#include <stdatomic.h>
+
+void c_runtime_incr_atomic_uint(volatile atomic_uint* a, unsigned int value) {
+    *a += value;
+}
+
+atomic_flag c_runtime_ATOMIC_FLAG_INIT = ATOMIC_FLAG_INIT;
+
+
+
+
 struct BoolType _global_Bool_typ;
 
 struct BoolType* _global_Bool_get_typeByValue(_Bool b, __Context) {

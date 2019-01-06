@@ -2,35 +2,19 @@ import "ecs"
 import "math"
 
 type DirLight =
-    entity: &ecs.Entity
     direction: math.Vec3
     color: math.Vec3
 
-def DirLight.get_entity(&self) &ecs.Entity =
-    self.entity
+dir_lights := ecs.make_Store 1, DirLight{
+    math.Vec3{ 0, -1, -1 }.norm!
+    math.Vec3{ 1, 1, 1 }
+}
 
-def DirLight.render(&self) =
-def DirLight.update(&self) =
+if dir_lights.get_active!.is_none! then
+    _ := make_DirLight ecs.make_ID!
 
-dir_light_system := ecs.make_Store make_DirLight, 1
-
-defer context.allocator.reset_to context.allocator.get_occupied!
-match dir_light_system.get_active! with
-    Some x ->
-    None ->
-        _ := make_DirLight ecs.make_ID!
-
-def make_DirLight(id: ecs.ID) &DirLight =
-    entity := match ecs.entity_system.component_by_id id with
-        Some e -> e
-        None -> ecs.make_Entity id
-
-    dir_light_system.add_component DirLight{
-        entity = entity
-        direction = math.Vec3{ 0, -1, -1 }.norm!
-        color = math.Vec3{ 1, 1, 1 }
-    }
+def make_DirLight(id: ecs.ID) &DirLight = dir_lights.make id
 
 def get_dir_light() &DirLight =
-    dir_light_system.get_active!.unwrap!
+    dir_lights.get_active!.unwrap!
 

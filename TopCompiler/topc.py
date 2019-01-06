@@ -126,6 +126,7 @@ def getCompilationFiles(target, tags):
             hasPort = False
             should_continue = False
 
+
             if root != "src/":
                 for i in files:
                     if i == "port.json":
@@ -144,9 +145,12 @@ def getCompilationFiles(target, tags):
                 if root == i:
                     not_prefix.remove(i)
                 if root.startswith(i):
+                    print(root)
                     c = True
 
             if c: continue
+
+            package = os.path.basename(root)  # [package.find("src/")+len("src/"):]
 
             for i in files:
                 if not hasPort and i != "port.json" and i.endswith(".top"):
@@ -157,19 +161,18 @@ def getCompilationFiles(target, tags):
                     #file[package].append((root, f + ".top"))
 
             package = root
-            if package == start: continue
-            package = package[package.find("src/")+len("src/"):]
+            if root == start: continue
 
+            package = os.path.basename(root) #package[package.find("src/")+len("src/"):]
 
             try:
-                port = open(start+package+"/port.json", mode= "r")
+                port = open(root+"/port.json", mode= "r")
             except:
                 continue
                 Error.error("missing file port.json in package "+package+"")
 
             if package in file and not package == "main":
                 Error.error("multiple packages named "+package)
-
 
             file[package] = []
             files = []
@@ -278,10 +281,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             else:
                 Error.error("unknown argument '" + i + "'.")
 
+        beforeLoad = time()
         if not _hotswap and opt == 0 and not compileRuntime:
             cache = saveParser.load(compileRuntime)
             pass
-        beforeLoad = time()
 
         try:
             port = open("src/port.json")
@@ -347,7 +350,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             if not hotswap or (hotswap and modified(target, cache.files[package], package)):
                 filenames[package] = []
                 filenames_sources[package] = {}
-
 
                 for i in files[package]:
                     iterate(i)
@@ -542,7 +544,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 _linkWith = [i for (d, i) in linkWith if d in canStartWith]
                 _headerIncludePath = [i for (d, i) in headerIncludePath if d in canStartWith]
 
-                timeForCodeAnalysis = time() - beforeLoad
 
                 parser.generatedGenericTypes = Types.genericTypes
                 if compileRuntime:   #not dev and not _raise:
@@ -555,9 +556,11 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     for c in deleteQue:
                         del parser.generatedGenericTypes[c]
 
+                saveParser.save(parser, compileRuntime)
+                timeForCodeAnalysis = time() - beforeLoad
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
-                saveParser.save(parser, compileRuntime)
+
 
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
@@ -609,7 +612,7 @@ def modified(_target, files, outputfile, jsFiles=[]):
         else:
             t = global_parser.usedModules[outputfile]
 
-        if outputfile == "main": #linking is done globally not module specific
+        if False and outputfile == "main": #linking is done globally not module specific
             for i in global_parser.linkWith:
                 i = os.path.join(i[0], i[1])
                 file = os.path.getmtime(i)

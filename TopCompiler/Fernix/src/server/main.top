@@ -1,17 +1,17 @@
-import "task"
-import "sync"
-from "transform" import all
 import "ecs"
+import "task"
+from "layermask" import all
+from "transform" import all
+import "time"
 import "input"
+
+
+task.create_worker_threads task.worker_thread_count
 
 type Ball =
     speed: float
 
-balls := ecs.make_component Ball{ speed = 10 }
-
-type BallSystem =
-
-def BallSystem.render(&self, mask: Layermask) =
+balls := ecs.make_Store 10, Ball{ speed = 10 }
 
 type BallUpdateJob =
     trans: &Transform
@@ -23,22 +23,34 @@ def BallUpdateJob.run(using &self) =
     trans.position.z = vertical * ball.speed * time.get_delta_time!
     trans.position.x = horizontal * ball.speed * time.get_delta_time!
 
-def BallSystem.update(&self, mask: Layermask) =
+type BallSystem =
+def BallSystem.render(&self, m: Layermask) =
+def BallSystem.update(&self, m: Layermask) =
     defer context.allocator.reset_to context.allocator.get_occupied!
 
     vertical := input.get_vertical_axis!
     horizontal := input.get_horizontal_axis!
 
-    wg := sync.make_WaitGroup!
+    tasks := task.make_TaskGroup::[BallUpdateJob]!
 
-    for trans, ball := ecs.filter2 balls, transforms do
-        wg.wait_on task.HighPriority, box Job{
-            trans = trans
-            ball = ball
-            vertical = vertical
-            horizontal = horizontal
-        }
+    for (trans, ball) := ecs.filter2 transforms, balls, m do
+        tasks.add BallUpdateJob{ trans, ball, vertical, horizontal }
 
-    wg.wait!
+    tasks.submit task.HighPriority
+    tasks.wait!
 
-ecs.register_system BallSystem{}
+ball_system := BallSystem{}
+ecs.register_system &ball_system
+
+def main() =
+    for i := 0..8 do
+        id := ecs.make_ID!
+        _ := ecs.make_Entity id
+        _ := transforms.make id
+        _ := balls.make id
+
+    ball_system.update make_Layermask!
+        .enable game_layer
+
+main!
+

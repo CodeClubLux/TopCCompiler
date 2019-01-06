@@ -53,28 +53,24 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
         for j := 0..face.mNumIndices do
             indices.append (*indexPtr face.mIndices, j)
 
-    material_id :=
-        if mesh.mMaterialIndex >= 0 then
-            aMat := *indexPtr scene.mMaterials, mesh.mMaterialIndex
-            c_name : aiString = _
-            aiGetMaterialString aMat, ai_matkey_name, &c_name
 
-            name : string = char_buffer_toString c_name.data
-            name = name.slice 0, name.length //want to copy string
+    aMat := *indexPtr scene.mMaterials, mesh.mMaterialIndex
+    c_name : aiString = _
+    aiGetMaterialString aMat, ai_matkey_name, &c_name
 
-            id : Maybe[uint] = None
-            for mat_name := *materials do
-                if mat_name == name then
-                    id = Some i
+    name : string = char_buffer_toString c_name.data
+    name = name.slice 0, name.length //want to copy string
 
-            match id with
-                Some x -> x
-                None ->
-                    materials.append name
-                    materials.length - 1
-        else
-            panic "No material defined for mesh"
-            0
+    id : Maybe[uint] = None
+    for mat_name := *materials do
+        if mat_name == name then
+            id = Some i
+
+    material_id := match id with
+        Some x -> x
+        None ->
+            materials.append name
+            materials.length - 1
 
     make_Mesh vertices, indices, material_id
 
@@ -110,11 +106,8 @@ def load_in_place(model: &Model) =
     model.materials = materials
 
 def load_model(path: string) &Model =
-    match assetManager.in_cache model_system, path with
-        Some m -> return m
-        None ->
-
-    log path
+    if Some m := assetManager.in_cache models, path then
+        return m
 
     model := make_Model ecs.make_ID!
     model.path = path

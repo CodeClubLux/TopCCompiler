@@ -1,16 +1,19 @@
 type Slot[T] either
     Free(Maybe[&Slot[T]])
-    Active(T)
+    Active(T, ID)
 
-type Store[T: Component] =
-    make_component_func: |ID| -> &T
+type Pair[A,B] =
+    a: A
+    b: B
+
+type Store[T] =
+    default_with: T
     id_to_obj: [..]Maybe[&T]
     components: []Slot[T]
     free_node: Maybe[&Slot[T]]
     max_number: uint
-    added: uint
 
-def make_Store[T: Component](make_component: |ID| -> &T, max_number: uint) &Store[T] =
+def make_Store[T](max_number: uint, default: T) &Store[T] =
     assert max_number > 0, "Minimum number of elements has to be bigger than 0"
 
     id_to_key := [..]Maybe[&T]
@@ -26,39 +29,41 @@ def make_Store[T: Component](make_component: |ID| -> &T, max_number: uint) &Stor
         slots[i] = Free Some &slots[i+1]
 
     self := box Store{
-        make_component_func = make_component
+        default_with = default
         id_to_obj = id_to_key
         free_node = Some &slots[0]
         components = slots
         max_number = max_number
-        added = 0
     }
 
-    self.deserialize!
+    //self.deserialize!
 
     component_types.append self
 
     self
 
-def Store[T: Component].get_component_type(&self) Type =
-    get_type T
+entities := make_Store 100, Entity{
+    enabled = true
+    layermask = make_Layermask!
+        .enable game_layer
+        .enable serialize_layer
+}
 
-def Store[T].make_component(&self, id: ID) =
-    _ := self.make_component_func id
+def Store[T].get_component_type(&self) Type = get_type T
 
 //get actuall type
-def Store[T].component_by_id(&self, id: ID) Maybe[&T] =
+def Store[T].by_id(&self, id: ID) Maybe[&T] =
     if id >= self.id_to_obj.length then return None
     self.id_to_obj[id]
 
 //get component
-def Store[T].get_component_by_id(&self, id: ID) Maybe[Component] =
-    match self.component_by_id id with
-        Some ptr -> Some ptr as Component
+def Store[T].get_by_id(&self, id: ID) Maybe[&none] =
+    match self.by_id id with
+        Some ptr -> Some ptr cast &none
         None -> None
 
-def Store[T].free_component_by_id(&self, id: ID) =
-    match self.component_by_id id with
+def Store[T].free_by_id(&self, id: ID) =
+    match self.by_id id with
         Some obj_ptr ->
             self.id_to_obj[id] = None
             slot := obj_ptr cast &Slot[T]
@@ -80,9 +85,7 @@ def Store[T].register_component(&self, id: ID, obj_ptr: &T) &T =
 
     obj_ptr
 
-def Store[T].add_component(&self, comp: T) &T =
-    id := (comp.get_entity!).id
-
+def Store[T].add_component(&self, id: ID, comp: T) &T =
     guard Some free_node := self.free_node
     else panic "Out of memory for system: {get_type T}"
 
@@ -90,52 +93,64 @@ def Store[T].add_component(&self, comp: T) &T =
     else panic "Node that was said to be free is active"
 
     self.free_node = next_free_node
-    *free_node = Active comp
+    *free_node = Active comp, id
 
     obj_ptr := free_node cast &T //take advantage of the fact that tag is last and since its a union there is enough space for T
 
-    self.added += 1
     self.register_component id, obj_ptr
 
-def Store[T].get_all_active(&self) [..]&T =
+def Store[T].make(&self, id: ID) &T =
+    self.add_component id, self.default_with
+
+def Store[T].get_all_active(&self) []&T =
     active_components := [..]&T
 
-    for slot := self.components do
-        guard Active _ := slot
-        else continue
-
-        comp := (&self.components[i]) cast &T
-        entity := comp.get_entity!
-
-        if entity.enabled then
-            active_components.append comp
-
-    active_components
-
-def Store[T].index_active(&self, i: uint) Maybe[&T] =
-    guard Active hey := self.components[i]
-    else return None
-
-    comp := (&self.components[i]) cast &T
-    if not comp.get_entity!.enabled then return None
-
-    Some comp
-
-def Store[T].get_active(&self) Maybe[&T] =
     for slot := self.components do
         guard Some active_comp := self.index_active i
         else continue
 
-        return Some active_comp
+        active_components.append active_comp.a
+
+    active_components
+
+def Store[T].mask_components(&self, layer_mask: Layermask) []&T =
+    components := [..]&T
+
+    for slot := self.components do
+        guard Some active_comp := self.index_active i
+        else continue
+
+        if not active_comp.b.layermask.mask layer_mask then
+            components.append active_comp.a
+
+    components
+
+def Store[T].index_active(&self, i: uint) Maybe[Pair[&T, &Entity]] =
+    guard Active _, id := self.components[i]
+    else return None
+
+    comp := (&self.components[i]) cast &T
+    guard Some entity := entities.by_id id
+    else return None
+
+    if not entity.enabled then return None
+
+    Some Pair{comp, entity}
+
+def Store[T].get_active(&self) Maybe[&T] =
+    for slot := self.components do
+        if Some active_comp := self.index_active i then
+            return Some active_comp.a
 
     None
 
+/*
 def Store[T].render(&self, layer_mask: Layer) =
     for i := 0..self.components.length do
         guard Some comp := self.index_active i
         else continue
 
-        if not mask comp.get_entity!.layermask, layer_mask then
+        if not mask comp.b.layermask, layer_mask then
             comp.render!
 
 def Store[T].update(&self, layer_mask: Layermask) =
@@ -145,6 +160,7 @@ def Store[T].update(&self, layer_mask: Layermask) =
 
         if not mask comp.get_entity!.layermask, layer_mask then
             comp.update!
+*/
 
 import "sBuffer"
 
@@ -155,27 +171,16 @@ def Store[T].serialize(&self) =
     defer new_context.allocator.reset_to new_context.allocator.get_occupied!
 
     #pushContext new_context do
-        comps := [..]&T
         serialize_layermask := make_Layermask!
-        serialize_layermask = enable serialize_layermask, layermask.serialize_layer
+            .enable layermask.serialize_layer
 
-        for slot := self.components do
-            guard Active _ := self.components[i]
-            else continue
-
-            comp := (&self.components[i]) cast &T
-            if not mask comp.get_entity!.layermask, serialize_layermask then
-                comps.append (&self.components[i]) cast &T
+        comps := self.mask_components serialize_layermask
 
         write_buffer := (sBuffer.make_write_Buffer 10_000_000)
         write_buffer.write_integer comps.length
 
-        if comps.length > 0 then
-            log "serialized: {get_type T}"
-        else
-            log "did not serialize: {get_type T}"
         for comp := comps do
-            log "====="
+            write_buffer.write_integer self.id_of comp
             write_buffer.write_object get_type T, comp
 
         guard Some f := open "assets\\save_files\\{get_type T}.tsf", WriteFile
@@ -183,6 +188,12 @@ def Store[T].serialize(&self) =
 
         f.write write_buffer.string_buffer!
         f.free!
+
+def Store[T].id_of(&self, comp: &T) ID =
+    guard Active _, id := *(comp cast &Slot[T])
+    else panic "Cannot retrieve id: used after free!"
+
+    id
 
 def Store[T].deserialize(&self) =
     return
@@ -200,30 +211,46 @@ def Store[T].deserialize(&self) =
 
         for i := 0..num do
             comp : T = _
+            id := read_buffer.read_integer!
             read_buffer.read_object get_type T, &comp
-            self.add_component comp
+            self.add_component id, comp
 
         f.free!
 
 def render(layer_mask: Layermask) =
-    for i := 0..component_types.length do
-        component_types[i].render layer_mask
+    for system := systems do
+        system.render layer_mask
 
 def update(layer_mask: Layermask) =
-    for i := 0..component_types.length do
-        component_types[i].update layer_mask
+    for system := systems do
+        system.render layer_mask
 
 def serialize() =
     for i := 0..component_types.length do
         component_types[i].serialize!
 
-def components_by_id(id: ID) [..]Component =
-    components := [..]Component
+def components_by_id(id: ID) [..]&none =
+    components := [..]&none
 
     for system := component_types do
-        match system.get_component_by_id id with
+        match system.get_by_id id with
             Some comp -> components.append comp
             _ ->
 
     components
 
+def register_system(s: System) =
+    systems.append s
+
+def filter2[A, B](store_a: &Store[A], store_b: &Store[B], lm: Layermask) [](&A, &B) =
+    components_a := store_a.mask_components lm
+    zipped := [..](&A, &B)
+
+    for comp := components_a do
+        if Some comp2 := store_b.by_id store_a.id_of comp then
+            zipped.append (comp, comp2)
+
+    zipped
+
+def filter[A](store: &Store[A], lm: Layermask) []&A =
+    store.mask_components lm

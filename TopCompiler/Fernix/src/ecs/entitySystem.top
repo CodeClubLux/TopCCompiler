@@ -1,5 +1,3 @@
-entity_system := make_Store::[Entity] make_Entity, 100
-
 last_assigned_id := 0
 
 def make_ID() ID =
@@ -7,16 +5,17 @@ def make_ID() ID =
     last_assigned_id - 1
 
 def make_Entity(id: ID) &Entity =
-    entity_system.add_component Entity{
-        id = id
+    entities.add_component id, Entity{
         enabled = true
-        layermask = enable (enable make_Layermask!, game_layer), serialize_layer
+        layermask = make_Layermask!
+            .enable game_layer
+            .enable serialize_layer
     }
 
 def free_entity(id: ID) =
     i := component_types.length - 1
     while not i == 0 do
         system := &component_types[i]
-        system.free_component_by_id id
+        system.free_by_id id
 
         i -= 1

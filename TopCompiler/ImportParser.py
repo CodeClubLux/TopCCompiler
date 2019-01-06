@@ -10,6 +10,7 @@ from TopCompiler import Lexer
 
 import AST as Tree
 from TopCompiler import Types
+import os
 
 ignore = {}
 
@@ -39,6 +40,12 @@ def shouldCompile(decl, name, parser, mutated= ()):
 
         return res
 
+    try:
+        t = os.path.getmtime("lib/" + name.replace("/", ".") + ".c")
+        t = datetime.datetime.fromtimestamp(int(t))
+    except FileNotFoundError:
+        sp = True
+
     return False
 
 import datetime
@@ -67,11 +74,6 @@ def importParser(parser, decl= False):
             sp = shouldCompile(decl, oname, parser)
 
             outputfile = oname
-            try:
-                t = os.path.getmtime("lib/" + outputfile.replace("/", ".") + ".c")
-                t = datetime.datetime.fromtimestamp(int(t))
-            except FileNotFoundError:
-                sp = True
                 #print("Error ", outputfile)
 
         if sp:
@@ -90,6 +92,7 @@ def importParser(parser, decl= False):
 
             parser.compiled[name] = None
             #parser.externFuncs[name] = []
+
 
             parsed = p.parse()
 

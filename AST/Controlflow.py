@@ -235,3 +235,4 @@ class Block(Node):
 
     def validate(self, parser):
         checkUseless(self)
+        self.ifexpr = None

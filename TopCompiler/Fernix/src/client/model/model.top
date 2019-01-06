@@ -4,7 +4,12 @@ import "assetManager"
 import "vfs"
 import "transform"
 
-model_system := ecs.make_Store::[Model] make_Model, 10
+models := ecs.make_Store 10, Model{
+    path = ""
+    meshes = []
+    materials = []
+    bounding_box = BoundingBox{ 0, 0, 0, 0, 0, 0}
+}
 
 from "materialSystem" import Material
 
@@ -17,37 +22,24 @@ type BoundingBox =
     backwards: float
 
 type Model =
-    entity: &ecs.Entity
     path: string
     meshes: []Mesh
     materials: []string
     bounding_box: BoundingBox
 
 def make_Model(id: ecs.ID) &Model =
-    entity := ecs.make_Entity id
-
-    match ecs.entity_system.component_by_id id with
+    entity := match ecs.entities.by_id id with
         Some x -> x
         None -> ecs.make_Entity id
 
     entity.layermask = layermask.make_Layermask!
-    entity.layermask = layermask.enable entity.layermask, layermask.serialize_layer
+    entity.layermask = entity.layermask.enable layermask.serialize_layer
 
-    model_system.add_component Model{
-        entity = entity
-        path = ""
-        meshes = []
-        materials = []
-        bounding_box = BoundingBox{ 0, 0, 0, 0, 0, 0}
-    }
+    models.make id
 
-def get_model_system() &ecs.Store[Model] =
-    model_system
+//def get_models() &ecs.Store[Model] =
+//    models
 
-def Model.update(&self) =
-def Model.render(&self) =
-def Model.get_entity(&self) &ecs.Entity =
-    self.entity
 
 def Model.get_filename(&self) string =
     self.path

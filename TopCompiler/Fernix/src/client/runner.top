@@ -10,16 +10,19 @@ import "input"
 import "time"
 import "layermask"
 import "editor"
-import "renderPass"
 import "ui"
+from "transform" import transforms
+import "draw"
 
 def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
+    trans := (transforms.by_id camera.cameras.id_of cam).unwrap!
+
     dir_light := lights.get_dir_light!
 
     _shader.set_mat4x4 "projection", &cam.projection_matrix
     _shader.set_mat4x4 "view", &cam.view_matrix
-    _shader.set_vec3 "viewPos", &cam.transform.position
+    _shader.set_vec3 "viewPos", &trans.position
 
     _shader.set_vec3 "dirLight.direction", &dir_light.direction
     _shader.set_vec3 "dirLight.color", &dir_light.color
@@ -30,18 +33,16 @@ def set_shader_scene_params(_shader: shader.Shader) =
 import "ui"
 
 def game_mask() layermask.Layermask =
-    edit := editor.get_editor!
-
-    if edit.in_editor then layermask.editor_layer
+    if editor.in_editor! then layermask.editor_layer
     else layermask.game_layer
 
 def init() =
     log "initializing"
     w := window.get_window!
-    ui_ctx := ui.get_ui!
+    //ui_ctx := ui.get_ui!
 
     defer w.close!
-    defer ui_ctx.free!
+    // defer ui_ctx.free!
     defer context.allocator.free_allocator!
 
     while not w.should_close! do
@@ -50,26 +51,33 @@ def init() =
         //@todo move these systems into the entity component system
 
         mask := game_mask!
+        render_mask := layermask.make_Layermask!
+            .enable mask
+            .enable layermask.game_layer
 
-        inp := input.get_input!
-        inp.clear!
-        inp.update_inputs!
+        input.clear!
+        input.update_inputs!
 
         time.update_delta_time!
-        editor.editor.update!
-        ecs.update layermask.enable layermask.make_Layermask!, mask
+        ecs.update layermask.make_Layermask!.enable mask
 
         camera
             .get_camera!
             .update_matrices!
 
         //render scene
-        renderPass.render_all!
+        draw.clear!
 
-def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
+        ecs.render render_mask
+
+        draw.submit_to_gpu!
+
+        //renderPass.render_all!
+
+//def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
     //log char_buffer_toString message
 
-opengl.enable opengl.debug_output
-opengl.debugMessageCallback error_callback, context
+//opengl.enable opengl.debug_output
+//opengl.debugMessageCallback error_callback, context
 
 

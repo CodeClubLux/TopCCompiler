@@ -513,7 +513,7 @@ class String(Type):
 
     def hasMethod(self, parser, field, isP=False):
         self.methods = {
-            "slice": FuncPointer([self, I32(), I32()], self),
+            "slice": FuncPointer([self, I32(unsigned=True), I32(unsigned=True)], self),
             "starts_with": FuncPointer([self, self], Bool()),
             "ends_with": FuncPointer([self, self], Bool()),
             "indexOf": FuncPointer([self, self], I32()),
@@ -545,9 +545,6 @@ import string
 
 class FuncPointer(Type):
     def __init__(self, argtypes, returnType, generic=coll.OrderedDict(), do=False):
-        if not (type(generic) in [dict, coll.OrderedDict]):
-            raise Error()
-
         self.args = argtypes
         self.name = "|" + ", ".join([i.name for i in argtypes]) + "| " + ("do " if do else "-> ") + returnType.name
 
@@ -797,17 +794,29 @@ class Tuple(Type):
                 beforeError(e, "Tuple element #" + key + ": ")
 
     def toCType(self):
-        def genContents():
-            s = " { "
-            for (iter, i) in enumerate(self.list):
-                s += i.toCType() + " field" + str(iter) + ";"
-
-            s += " }"
-            return s
-
         name = SimplifyAst.sanitize(self.name)
+        def genContents():
+            s = [" { "]
+            for (iter, i) in enumerate(self.list):
+                s.append(i.toCType() + " field" + str(iter) + ";")
+
+            s.append(" };\n")
+
+            args =  ",".join((i.toCType() + " field" + str(iter) for (iter, i) in enumerate(self.list)))
+            s.append(f"struct {name} {name}Init({args}) {{")
+            s.append(f"struct {name} tuple;\n")
+
+            for (iter, i) in enumerate(self.list):
+                s.append(f"tuple.field{iter} = field{iter};\n")
+            s.append("return tuple; }\n")
+
+            return "".join(s)
+
         funcP = f"struct {name}"
         return genCType(funcP, genContents)
+
+    def hasMethod(self, parser, field, isP=False):
+        return False
 
 
 class Array(Type):
@@ -1084,7 +1093,7 @@ def hasMethodEnum(attachTyp, parser, name, isP=False):
 
     packages = []
     b = None
-    arr = [parser.package, "_global"] if parser.package != "_global" else ["_global"]
+    arr = [parser.package, attachTyp.package, "_global"] if parser.package != "_global" else ["_global"]
     for i in parser.imports + arr:
         if not i in self.methods: continue
 
@@ -1115,11 +1124,7 @@ def isMaybe(typ):
 
 
 class Enum(Type):
-    def __init__(self, package, name, const, generic):
-        for i in generic:
-            if generic[i].name == "main.Slot":
-                print("what")
-
+    def __init__(self, package, name, const, generic, findRemaining=True):
         self.generic = generic
         self.gen = generic
 
@@ -1129,7 +1134,10 @@ class Enum(Type):
         self.package = package
         self.normalName = name
 
-        remaining = remainingT(self)
+        if findRemaining:
+            remaining = remainingT(self)
+        else:
+            remaining = generic
 
         self.remainingGen = remaining
         self.methods = {}
@@ -1237,16 +1245,12 @@ class Alias(Type):
         else:
             return hasMethodEnum(attachTyp, parser, field, isP)
 
-
 All = Interface(False, {}, name="All")
 
 
 def isGeneric(t, unknown=False):
-    if unknown: return True
-    if type(t) in [FuncPointer]:
-        if not (type(t.generic) in [dict, coll.OrderedDict]):
-            print(type(t.generic))
-
+    #if unknown: return True
+    if type(t) is FuncPointer: #return True
         if t.generic != {}: return True
         for i in t.args:
             if isGeneric(i): return True
@@ -1260,10 +1264,10 @@ def isGeneric(t, unknown=False):
     elif type(t) in [Interface, Struct, Alias, Enum]:
         return len(t.remainingGen) > 0
 
-    elif type(t) is Tuple:
-        for i in t.list:
-            if isGeneric(i):
-                return True
+    elif type(t) is Tuple: return True
+        #for i in t.list:
+        #    if isGeneric(i):
+        #        return True
 
     return False
 
@@ -1276,7 +1280,11 @@ class Null(Type):
         return "void"
 
 
+cache = {}
 def remainingT(s):
+    if s in cache:
+        return cache[s]
+
     args = coll.OrderedDict()
     if type(s) is FuncPointer:
         for i in s.args:
@@ -1303,8 +1311,8 @@ def remainingT(s):
         except AttributeError:
             s.count = 1
 
+    cache[s] = args
     return args
-
 
 intTypeToString = {
     (None, True): "uint",
@@ -1322,7 +1330,7 @@ intTypeToString = {
 
 class Char(Type):
     def __init__(self, unsigned=False, size=None):
-        Type.__init__(self)
+        #Type.__init__(self)
 
         self.name = "char"
         self.normalName = "char"
@@ -1348,7 +1356,7 @@ class Char(Type):
 
 class I32(Type):
     def __init__(self, unsigned=False, size=None):
-        Type.__init__(self)
+        #Type.__init__(self)
 
         self.name = intTypeToString[(size, unsigned)]
         self.normalName = self.name
@@ -1455,7 +1463,7 @@ class Pointer(Type):
 
 class Float(Type):
     def __init__(self, size=None):
-        Type.__init__(self)
+        #Type.__init__(self)
 
         if not size:
             self.name = "float"
@@ -1564,6 +1572,8 @@ class Underscore(Type):
 
 
 def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
+    if typ is None: return
+
     if not acc:
         acc = {}
 
@@ -1593,9 +1603,15 @@ def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
             else:
                 rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
 
-        types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
+        #types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
 
-        return Struct(False, typ.normalName, types, typ.package, rem)
+        joined = {}
+        for i in rem:
+            joined[i] = rem[i]
+
+        for i in gen:
+            joined[i] = gen[i]
+        return Struct(False, typ.normalName, typ.types, typ.package, joined)
     elif type(typ) is Alias:
         rem = {}
         for i in typ.generic:
@@ -1641,7 +1657,7 @@ def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
         for name in typ.remainingGen:
             g[name] = replaceT(typ.remainingGen[name], gen, acc, unknown)
 
-        c.fromObj(Enum(typ.package, typ.normalName, const, g))
+        c.fromObj(Enum(typ.package, typ.normalName, const, g, findRemaining=False))
         return c
 
     elif type(typ) is Tuple:
@@ -1664,8 +1680,8 @@ def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
         newTyp = replaceT(typ.returnType, gen, acc, unknown)
         r = FuncPointer(arr, newTyp, gen, do=typ.do)
         r.remainingGen = {}
-        for field in r.remainingGen:
-            r.remainingGen[field] = replaceT(r.remainingGen[field], gen, acc, unknown)
+        #for field in r.remainingGen:
+        #    r.remainingGen[field] = replaceT(r.remainingGen[field], gen, acc, unknown)
 
         return r
     else:
