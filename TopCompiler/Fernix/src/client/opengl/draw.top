@@ -1,13 +1,3 @@
-from "math" import Vec4
-from "materialSystem" import Material
-import "buffer"
-import "ecs"
-import "transform"
-import "shader"
-import "texture"
-import "runner"
-import "opengl"
-
 type DepthFunc either
     DepthFunc_Less
     DepthFunc_Lequal
@@ -23,6 +13,22 @@ draw_first := 0
 draw_skybox := 1
 draw_transparency := 2
 draw_last := 3
+
+default_state := State{
+    depth_func = DepthFunc_Lequal
+    order = 0
+    clear_depth_buffer = false
+}
+
+from "math" import Vec4
+import "buffer"
+import "ecs"
+import "shader"
+import "texture"
+import "runner"
+import "opengl"
+from "materialSystem" import Material
+import "transform"
 
 type DrawCommand =
     key: u64
@@ -50,12 +56,6 @@ def make_CommandBuffer() &CommandBuffer =
 def clear() =
     command_buffer := context.command_buffer
     command_buffer.commands = [..]DrawCommand
-
-default_state := State{
-    depth_func = DepthFunc_Lequal
-    order = 0
-    clear_depth_buffer = false
-}
 
 def make_DrawCommand(trans: Maybe[&transform.Transform], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
     cmd := DrawCommand{
@@ -131,9 +131,9 @@ def DepthFunc.bind(self) =
         DepthFunc_Less -> opengl.depthFunc opengl.less
 
 def submit_to_gpu() =
-    commands := context.command_buffer.commands
+    cmds := context.command_buffer.commands
 
-    cmds := quick_sort commands
+    //cmds := quick_sort commands
 
     for cmd := cmds do
         mat := cmd.material
@@ -166,7 +166,5 @@ def submit_to_gpu() =
             None ->
 
         opengl.drawElements opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0
-
-
 
 

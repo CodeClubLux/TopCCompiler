@@ -7,16 +7,9 @@ import "texture"
 import "draw"
 
 type ModelSettings =
-    entity: &ecs.Entity
     filename: string
     materials: []Material
     model_id: Maybe[ecs.ID]
-
-def ModelSettings.get_entity(&self) &ecs.Entity =
-    self.entity
-
-def ModelSettings.render(&self) =
-def ModelSettings.update(&self) =
 
 checker_board_texture : Maybe[&texture.Texture] = None
 
@@ -26,7 +19,7 @@ def ModelSettings.load(&self) =
         None -> texture.load "wet_street/Pebble_Wet_street_Normal_Map.jpg"
 
     m := model.load_model self.filename
-    self.model_id = Some ecs.get_id_for m
+    self.model_id = Some model.models.id_of m
 
     materials := [..]Material
     materials.allocator = Some context.longterm_storage
@@ -52,18 +45,17 @@ def ModelSettings.load(&self) =
 
     self.materials = materials
 
-model_settings_system := ecs.make_Store make_ModelSetting, 10
+model_settings_system := ecs.make_Store 10, ModelSettings{
+    filename = ""
+    materials = []
+    model_id = None
+}
 
 def make_ModelSetting(id: ecs.ID) &ModelSettings =
-    entity := match ecs.entity_system.by_id id with
+    entity := match ecs.entities.by_id id with
         Some comp -> comp
         None -> ecs.make_Entity id
 
     entity.layermask = layermask.make_Layermask!
 
-    model_settings_system.add_component ModelSettings{
-        entity = entity
-        filename = ""
-        materials = []
-        model_id = None
-    }
+    model_settings_system.make id

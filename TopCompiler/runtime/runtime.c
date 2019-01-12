@@ -5,9 +5,6 @@ struct _global_String _global_StringInit(unsigned int length, char* data) {
     struct _global_String s;
     s.data = data;
     s.length = length;
-    if (s.length > 10000) {
-        printf("Wtf!");
-    }
     return s;
 };
 struct _global_String _global_String_toStringByValue(struct _global_String s,__Context) {
@@ -120,9 +117,6 @@ struct _global_String _global_String_op_addByValue(struct _global_String a, stru
 };
 
 struct _global_String _global_String_op_add(struct _global_String* a, struct _global_String b,__Context) {
-    if (b.length > 10000) {
-        printf("Wtf!");
-    }
     return _global_String_op_addByValue(*a, b, context);
 }
 
@@ -268,7 +262,7 @@ gen_integer(i64, int64_t, 1)
 
 void _global_c_log(struct _global_String s) {
     printf("%s\n", s.data);
-    //fflush(stdout);
+    fflush(stdout);
 };
 
 static inline void* _global_offsetPtr(void* ptr, int offset, __Context) {
@@ -310,10 +304,13 @@ FILE* _runtime_c_open_file(struct _global_String filename, struct _global_String
     return f;
 }
 
-struct _global_String _runtime_read_file(FILE* f, __Context) {
-    fseek (f, 0, SEEK_END);
-    int length = ftell (f);
-    fseek (f, 0, SEEK_SET);
+#include <sys/stat.h>
+
+struct _global_String _runtime_read_file(FILE* f, struct _global_String filename, __Context) {
+    struct stat info[1];
+
+    stat (filename.data, info);
+    int length = info->st_size;
     char* buffer = alloc(context->allocator, length + 1, context);
 
     length = fread(buffer, sizeof(char), sizeof(char) * length, f);
@@ -388,11 +385,11 @@ struct StringType* _global_String_get_typeByValue(struct _global_String s, __Con
     return &_global_StringType;
 }
 
-struct _global_PointerType pointerTypes[100];
+struct _global_PointerType pointerTypes[200];
 unsigned int pointerTypeCounter;
 
 struct _global_PointerType* _global_boxPointerType(struct _global_PointerType p, __Context) {
-    if (pointerTypeCounter > 99) {
+    if (pointerTypeCounter > 199) {
         printf("More pointer types than available");
     }
 

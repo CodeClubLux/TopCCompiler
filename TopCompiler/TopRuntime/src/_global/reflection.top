@@ -47,6 +47,7 @@ def AliasType.get_size(&self) u64 =
 
 type PointerType =
     p_type: Type
+    nullable: bool
 
 def PointerType.toString(&self) string =
     "&{self.p_type}"
@@ -68,9 +69,13 @@ def StructType.toString(&self) string =
     if self.package == "_global" then self.name
     else "{self.package}.{self.name}"
 
-type Cases =
+type CaseArg =
+    arg_type: Type
+    offset: uint
+
+type Case =
     name: string
-    args: []Type
+    args: []CaseArg
 
 type Field =
     name: string
@@ -84,8 +89,9 @@ type Method =
 type EnumType =
     name: string
     package: string
-    cases: []Cases
+    cases: []Case
     methods: []Method
+    tag_field: Field
     size: u64
 
 def EnumType.toString(&self) string =
@@ -119,17 +125,17 @@ type ArraySize either
     Both
 
 type ArrayType =
-    size: ArraySize
+    size: &ArraySize
     array_type: Type
 
 def ArrayType.get_size(&self) u64 =
-    match self.size with
+    match *self.size with
         Static length -> length * self.array_type.get_size!
         Dynamic -> sizeof [..]none
         Both -> sizeof []none
 
 def ArrayType.toString(&self) string =
-    match self.size with
+    match *self.size with
         Static length -> "[{length}]{self.array_type}"
         Dynamic -> "[..]{self.array_type}"
         Both -> "[]{self.array_type}"

@@ -619,7 +619,7 @@ def compareFirstArg(self, firstArg, isP, parser):
     generic = firstArg.remainingGen
 
     for name in generic:
-        a = replaceT(generic[name], self.remainingGen)
+        a = replaceT(generic[name].type, self.remainingGen)
         b = self.remainingGen[name]
 
         if type(a) is T:
@@ -680,7 +680,7 @@ class Struct(Type):
                 types = self._types
                 self.lastReplace = len(self.remainingGen)
 
-                self._types = {i: replaceT(types[i], self.remainingGen) for i in types}
+                self._types = {i: replaceT(types[i], self.gen) for i in types}
 
         return self._types
 
@@ -1129,7 +1129,6 @@ class Enum(Type):
         self.gen = generic
 
         self.const = const
-        self.types = {"tag": Types.I32(unsigned=True)}
 
         self.package = package
         self.normalName = name
@@ -1149,6 +1148,7 @@ class Enum(Type):
         genericS = "[" + ",".join([str(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
 
         self.name = (package + "." if package != "_global" else "") + name + genericS
+        self.types = {"tag": Types.I32(unsigned=True, size=8)}
 
     def fromObj(self, other):
         self.remainingGen = other.remainingGen
@@ -1168,6 +1168,8 @@ class Enum(Type):
 
     def toCType(self):
         # if self.remainingGen:
+
+        Parser.EnumType.toCType()
         val = genGenericCType(self, E)
         if isMaybe(self):
             return self.remainingGen["Maybe.T"].toCType()
@@ -1187,7 +1189,7 @@ class Enum(Type):
             if not (b.isType(T) and b.owner == (
             self.package + "." if self.package != "_global" else "") + self.normalName):
                 if a != b:
-                    mynode.error(
+                    node.error(
                         "For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(
                             b))
 

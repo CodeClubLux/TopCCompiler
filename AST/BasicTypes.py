@@ -115,7 +115,10 @@ class Typeof(Node):
         elif type(self.typ) is Types.Alias:
             self.type = Types.Pointer(Parser.AliasType)
         elif type(self.typ) is Types.Enum:
-            self.type = Types.Pointer(Parser.EnumType)
+            if Types.isMaybe(self.typ):
+                self.type = Types.Pointer(Parser.PointerType)
+            else:
+                self.type = Types.Pointer(Parser.EnumType)
         elif type(self.typ) is Types.Pointer:
             self.type = Types.Pointer(Parser.PointerType)
         elif type(self.typ) is Types.Interface:
@@ -155,7 +158,7 @@ class Typeof(Node):
                 codegen.append("_global_boxPointerType(_global_PointerTypeInit(")
                 tmp = Typeof(self, self.typ.pType)
                 Cast.castFrom(tmp.type, Parser.IType, tmp, "", codegen)
-                codegen.append(")," + codegen.getContext() + ")")
+                codegen.append(",0)," + codegen.getContext() + ")")
             elif type(self.typ) is Types.Null:
                 codegen.append(f"&None_Type")
             else:
@@ -222,6 +225,12 @@ class CastToType(Node):
     def __init__(self, parser):
         Node.__init__(self, parser)
 
+
     def compileToC(self, codegen):
-        codegen.append("(" + self.type.toCType() + ")")
-        self.nodes[0].compileToC(codegen)
+        #if self.nodes[0].type.name == "uint" and self.type.name == "u64":
+        #    print("what")
+
+        #castFrom(originalType, newType, node, realName, codegen):
+        Cast.castFrom(self.nodes[0].type, self.type, self.nodes[0], "", codegen)
+        #codegen.append("(" + self.type.toCType() + ")")
+        #self.nodes[0].compileToC(codegen)

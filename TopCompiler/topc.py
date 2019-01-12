@@ -283,7 +283,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
         beforeLoad = time()
         if not _hotswap and opt == 0 and not compileRuntime:
-            cache = saveParser.load(compileRuntime)
+            #cache = saveParser.load(compileRuntime)
             pass
 
         try:
@@ -556,11 +556,11 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     for c in deleteQue:
                         del parser.generatedGenericTypes[c]
 
-                saveParser.save(parser, compileRuntime)
                 timeForCodeAnalysis = time() - beforeLoad
 
                 l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
-
+                if compileRuntime:
+                    saveParser.save(parser, compileRuntime)
 
                 print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
@@ -600,7 +600,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 import datetime
 modified_ = {}
 def modified(_target, files, outputfile, jsFiles=[]):
-    #return True #while developing incremental compilation sucks
+    return True #while developing incremental compilation sucks
 
     def inner():
         target = _target

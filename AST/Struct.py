@@ -221,12 +221,14 @@ class Type(Node):
 
             codegen.outFunction()
 
-            if self.isArray:
-                codegen.append(f"{nameOfI}.size.tag = 2;")
-            else:
-                codegen.append(f"{nameOfI}.size.tag = 1;")
+            codegen.append(f"{nameOfI}.size = malloc(sizeof(struct _global_ArraySize));")
 
-            codegen.append(f"{nameOfI}.array_type = ")
+            if self.isArray:
+                codegen.append(f"{nameOfI}.size->tag = 2;")
+            else:
+                codegen.append(f"{nameOfI}.size->tag = 1;")
+
+            codegen.append(f"{nameOfI}.array_type=")
 
             t = Tree.Typeof(self, elemT)
             Cast.castFrom(t.type, Parser.IType, t, "", codegen)
@@ -304,6 +306,7 @@ class Field(Node):
         self.unary = False
         self.replaced = {}
         self.using = False
+        self.method = True
 
     def __str__(self):
         return "."+self.field

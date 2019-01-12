@@ -1,8 +1,21 @@
 last_assigned_id := 0
+skipped_ids := [..]ID
+skipped_ids.allocator = Some context.longterm_storage
 
 def make_ID() ID =
-    last_assigned_id += 1
+    unique := false
+    while not unique do
+        last_assigned_id += 1
+
+        unique = true
+        for c := skipped_ids do
+            if last_assigned_id - 1 == c then
+                unique = false
+
     last_assigned_id - 1
+
+def skip_ID(id: ID) =
+    skipped_ids.append id
 
 def make_Entity(id: ID) &Entity =
     entities.add_component id, Entity{

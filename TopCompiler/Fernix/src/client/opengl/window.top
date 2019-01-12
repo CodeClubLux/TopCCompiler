@@ -154,8 +154,8 @@ def make_Window() &Window =
         title = "Fernix"
         vSync = true
         full_screen = false
-        width = 2000
-        height = 1000
+        width = 3840
+        height = 2160
         window_ptr = None
         cursor_pos_callback = None
         key_callback = None
@@ -170,3 +170,10 @@ def make_Window() &Window =
 
 def get_window() &Window =
     context.window
+
+//debugging
+def gl_error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
+    log char_buffer_toString message
+
+//opengl.enable opengl.debug_output
+//opengl.debugMessageCallback gl_error_callback, context

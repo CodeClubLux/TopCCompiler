@@ -15,7 +15,7 @@ type Texture =
     filename: string
     texture_id: TextureID
 
-textures := ecs.make_Store 20, Texture{"", 0}
+textures := ecs.make_Store_with_init 20, Texture{"", 0}, Some load_in_place
 
 def make_Texture(id: ecs.ID) &Texture =
     entity := match ecs.entities.by_id id with
@@ -29,11 +29,9 @@ def make_Texture(id: ecs.ID) &Texture =
 def Texture.get_filename(&self) string =
     self.filename
 
-def load(filename: string) &Texture =
-    real_filename := vfs.asset_path filename
-
-    if Some texture := assetManager.in_cache textures, filename then
-        return texture
+def load_in_place(tex: &Texture) =
+    filename := tex.filename
+    real_filename := vfs.asset_path tex.filename
 
     stbi.set_flip_vertically_on_load true
 
@@ -66,9 +64,16 @@ def load(filename: string) &Texture =
     texImage2D texture_2D, 0, rgb, width, height, 0, internal_color_format, unsigned_byte, Some data
     generateMipmap texture_2D
 
+    tex.texture_id = texture_id
+
+def load(filename: string) &Texture =
+    if Some texture := assetManager.in_cache textures, filename then
+        return texture
+
     texture := make_Texture ecs.make_ID!
     texture.filename = filename
-    texture.texture_id = texture_id
+
+    load_in_place texture
 
     texture
 

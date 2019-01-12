@@ -11,7 +11,9 @@ dir_lights := ecs.make_Store 1, DirLight{
 }
 
 if dir_lights.get_active!.is_none! then
-    _ := make_DirLight ecs.make_ID!
+    tmp_id := ecs.make_ID!
+    _ := ecs.make_Entity tmp_id
+    _ := make_DirLight tmp_id
 
 def make_DirLight(id: ecs.ID) &DirLight = dir_lights.make id
 

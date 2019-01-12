@@ -1,4 +1,10 @@
-ext _ = "#include<time.h>"
+/*ext _ = "#include<time.h>"
+
+def get_time() f64 =
+    spec : timespec = _
+
+    clock_gettime clock_realtime, &spec
+    spec.tv_nsec / 1000_000_000.0
 
 type ext timespec =
     tv_nsec: u64
@@ -6,16 +12,22 @@ type ext timespec =
 ext clock_gettime: |uint, &timespec| -> none = "clock_gettime"
 ext clock_realtime: uint = "CLOCK_REALTIME"
 
+def get_time() f64 =
+    spec : timespec = _
+
+    clock_gettime clock_realtime, &spec
+    spec.tv_nsec / 1000_000_000.0
+
+*/
+
+import "glfwWrapper"
 
 type Time =
     last_frame: f64
     delta_time: f64
 
 def get_time() f64 =
-    spec : timespec = _
-
-    clock_gettime clock_realtime, &spec
-    spec.tv_nsec / 1000_000_000.0
+    glfwWrapper.getTime!
 
 #addToContext time := box Time{
     last_frame = 0

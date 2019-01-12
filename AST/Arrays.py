@@ -183,9 +183,9 @@ class ArrDataType(Node):
 
         codegen.outFunction()
 
-
-        codegen.append(f"{nameOfI}.size.tag = 0;")
-        codegen.append(f"{nameOfI}.size.cases.Static.field0 = {numElements};" )
+        codegen.append(f"{nameOfI}.size = malloc(sizeof(struct _global_ArraySize));")
+        codegen.append(f"{nameOfI}.size->tag = 0;")
+        codegen.append(f"{nameOfI}.size->cases.Static.field0 = {numElements};" )
         codegen.append(f"{nameOfI}.array_type = ")
 
         t = Tree.Typeof(self, elemT)

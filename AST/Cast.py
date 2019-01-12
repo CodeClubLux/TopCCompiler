@@ -90,8 +90,8 @@ def castFrom(originalType, newType, node, realName, codegen):
 
     if originalType.isType(Types.FuncPointer):
         return node.compileToC(codegen)
-    elif type(newType) is Types.I32:
-        return node.compileToC(codegen)
+    #elif type(newType) is Types.I32:
+    #    return node.compileToC(codegen)
     elif type(newType) is Types.Interface:
         n = SimplifyAst.sanitize(newType.name if newType.package != "_global" else "_global_" + newType.name)
 
@@ -248,6 +248,7 @@ def castFrom(originalType, newType, node, realName, codegen):
         node.compileToC(codegen)
         codegen.append(")")
         return
+
 
     codegen.append("(" + newType.toCType() + ")")
     node.compileToC(codegen)

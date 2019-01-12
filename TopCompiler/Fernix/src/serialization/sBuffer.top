@@ -48,12 +48,41 @@ def Buffer.read_long(&buffer) u64 =
     ptr := (buffer.pointer_to_n_bytes 8) cast &u64
     u64_to_local *ptr
 
-let float_precision = 100
-let double_precision = 10000
+let float_precision = 10000000
+let double_precision = 100000000
 
 def Buffer.write_struct(&buffer, struct_type: &StructType, ptr: &none) =
     for field := struct_type.fields do
         buffer.write_object field.field_type, (offsetPtr ptr, field.offset)
+
+def Buffer.read_struct(&buffer, struct_type: &StructType, ptr: &none) =
+    for field := struct_type.fields do
+        buffer.read_object field.field_type, (offsetPtr ptr, field.offset)
+
+
+def Buffer.write_enum(&buffer, enum_type: &EnumType, ptr: &none) =
+    tag := *(offsetPtr ptr, enum_type.tag_field.offset) cast &u8
+    buffer.write_byte tag
+
+    //log "writing to enum"
+    //log enum_type.cases.length
+    //log tag
+
+    case := &enum_type.cases[tag]
+    //log case.name
+
+    for case_arg := case.args do
+        buffer.write_object case_arg.arg_type, (offsetPtr ptr, case_arg.offset)
+
+def Buffer.read_enum(&buffer, enum_type: &EnumType, ptr: &none) =
+    tag := buffer.read_byte!
+    *(offsetPtr ptr, enum_type.tag_field.offset) cast &u8 = tag
+
+    case := &enum_type.cases[tag]
+
+    for case_arg := case.args do
+        buffer.read_object case_arg.arg_type, (offsetPtr ptr, case_arg.offset)
+
 
 def Buffer.write_v_int(&buffer, int_type: &IntType, ptr: &none) = //variable size integer
     if int_type.size == 8 then
@@ -61,16 +90,44 @@ def Buffer.write_v_int(&buffer, int_type: &IntType, ptr: &none) = //variable siz
     else
         buffer.write_integer *(ptr cast &u32)
 
+def Buffer.read_v_int(&buffer, int_type: &IntType, ptr: &none) =
+    if int_type.size == 8 then
+        *(ptr cast &u64) = buffer.read_long!
+    else
+        *(ptr cast &u32) = buffer.read_integer!
+
 def Buffer.write_pointer(&buffer, pointer_type: &PointerType, ptr: &none) =
     ptr_ptr := *(ptr cast &&none)
     for p := buffer.ptrs do
         if (p cast u64) == (ptr_ptr cast u64) then //Pointer was already serialized
-            buffer.write_integer i + 1
+            buffer.write_integer i
+            log "writing pointer id = {i}"
             return
 
     buffer.ptrs.append Some ptr_ptr
-    buffer.write_integer buffer.ptrs.length
+    //log "creating pointer id = {buffer.ptrs.length - 1}"
+    buffer.write_integer buffer.ptrs.length - 1
     buffer.write_object pointer_type.p_type, ptr_ptr
+
+def Buffer.read_pointer(&buffer, pointer_type: &PointerType, ptr: &none) =
+    ptr_to_ptr := ptr cast &&none
+    p_type := pointer_type.p_type
+
+    id := buffer.read_integer!
+
+    //log "reading pointer id = {id}"
+
+    if id == 0 then
+        *(ptr_to_ptr cast &Maybe[&none]) = None
+    else
+        match buffer.ptrs[id] with
+            Some created_ptr ->
+                *ptr_to_ptr = created_ptr
+            None -> //pointer has not been created
+                alloc_ptr := alloc::[none] p_type.get_size!
+                buffer.ptrs[id] = Some alloc_ptr
+                buffer.read_object p_type, alloc_ptr
+                *ptr_to_ptr = alloc_ptr
 
 def Buffer.write_float(&buffer, float_type: &FloatType, ptr: &none) =
     if float_type.size == 4 then
@@ -80,11 +137,25 @@ def Buffer.write_float(&buffer, float_type: &FloatType, ptr: &none) =
         i := (*(ptr cast &f64) * double_precision) cast i64
         buffer.write_long *((&i) cast &u64)
 
+
+def Buffer.read_float(&buffer, float_type: &FloatType, ptr: &none) =
+    if float_type.size == 4 then
+        u_int := buffer.read_integer!
+        as_int := *((&u_int) cast &i32)
+        f_ptr := ptr cast &float
+        *f_ptr = ((as_int cast float) / float_precision)
+        //first cast to i32, then cast to float and multiply
+    else
+        u_int := buffer.read_long!
+        as_int := *((&u_int) cast &i64)
+        f_ptr := ptr cast &f64
+        *f_ptr = ((as_int cast f64) / double_precision)
+
 def Buffer.write_array(&buffer, array_type: &ArrayType, ptr: &none) =
     elem_size := array_type.array_type.get_size!
     elem_type := array_type.array_type
 
-    match array_type.size with
+    match *array_type.size with
         Static length ->
             for i := 0..length do
                 buffer.write_object elem_type, offsetPtr ptr, i * elem_size
@@ -92,6 +163,8 @@ def Buffer.write_array(&buffer, array_type: &ArrayType, ptr: &none) =
         Both ->
             arr := ptr cast &[]none
             buffer.write_integer arr.length
+
+            //log "writing array length: {arr.length}"
 
             for i := 0..arr.length do
                 buffer.write_object elem_type, (offsetPtr arr.data, i * elem_size)
@@ -107,12 +180,57 @@ def Buffer.write_array(&buffer, array_type: &ArrayType, ptr: &none) =
             for i := 0..arr.length do
                 buffer.write_object elem_type, (offsetPtr data, i * elem_size)
 
+def Buffer.read_array(&buffer, array_type: &ArrayType, ptr: &none) =
+    elem_size := array_type.array_type.get_size!
+    elem_type := array_type.array_type
+
+    match *array_type.size with
+        Static length ->
+            for i := 0..length do
+                buffer.read_object array_type.array_type, offsetPtr ptr, i * elem_size
+
+        Both ->
+            arr := ptr cast &[]none
+            arr.length = buffer.read_integer!
+            arr.data = alloc::[none] arr.length * elem_size
+
+            //log "reading array length: {arr.length}"
+
+            for i := 0..arr.length do
+                buffer.read_object elem_type, offsetPtr arr.data, i * elem_size
+
+        Dynamic ->
+            arr := ptr cast &[..]none
+            *arr = [..]none
+
+            length := buffer.read_integer!
+            arr.reserve (length * elem_size) cast uint
+            arr.length = length
+
+            guard Some data := arr.data
+            else return
+
+            for i := 0..length do
+                buffer.read_object elem_type, offsetPtr data, i * elem_size
+
+            arr.capacity = length
+
 def Buffer.write_string(&buffer, s: string) =
     c_string := s.to_c_string!
     buffer.write_integer s.length
 
     for i := 0..s.length do
         buffer.write_byte (*(indexPtr c_string, i)) cast u8
+
+def Buffer.read_string(&buffer, ptr: &none) =
+    length := buffer.read_integer!
+
+    c_string := alloc::[char] length + 1
+    *(indexPtr c_string, length) = null_char
+    for i := 0..length do
+        *(indexPtr c_string, i) = buffer.read_byte! cast char
+
+    *(ptr cast &string) = make_String length, c_string
 
 //Complex Types
 def Buffer.write_object(&buffer, typ: Type, ptr: &none) =
@@ -125,102 +243,22 @@ def Buffer.write_object(&buffer, typ: Type, ptr: &none) =
         bool_type as &BoolType -> buffer.write_byte *(ptr cast &u8)
         array_type as &ArrayType -> buffer.write_array array_type, ptr
         string_type as &StringType -> buffer.write_string *(ptr cast &string)
+        enum_type as &EnumType -> buffer.write_enum enum_type, ptr
         _ -> //panic "unsupported type {typ}"
 
 def Buffer.read_object(&buffer, typ: Type, ptr: &none) =
     match typ with
-        struct_type as &StructType ->
-            for field := struct_type.fields do
-                buffer.read_object field.field_type, (offsetPtr ptr, field.offset)
-
-        int_type as &IntType ->
-            if int_type.size == 8 then
-                *(ptr cast &u64) = buffer.read_long!
-            else
-                *(ptr cast &u32) = buffer.read_integer!
-
-        alias_type as &AliasType ->
-            buffer.read_object alias_type.real_type, ptr
-
+        struct_type as &StructType -> buffer.read_struct struct_type, ptr
+        int_type as &IntType -> buffer.read_v_int int_type, ptr
+        alias_type as &AliasType -> buffer.read_object alias_type.real_type, ptr
         bool_type as &BoolType ->
             *(ptr cast &bool) = buffer.read_byte! cast bool
-
-        float_type as &FloatType ->
-            if float_type.size == 4 then
-                u_int := buffer.read_integer!
-                as_int := *((&u_int) cast &i32)
-                f_ptr := ptr cast &float
-                *f_ptr = ((as_int cast float) / float_precision)
-                //first cast to i32, then cast to float and multiply
-            else
-                u_int := buffer.read_long!
-                as_int := *((&u_int) cast &i64)
-                f_ptr := ptr cast &f64
-                *f_ptr = ((as_int cast f64) / double_precision)
-
-        pointer_type as &PointerType ->
-            ptr_to_ptr := ptr cast &&none
-            p_type := pointer_type.p_type
-
-            id := buffer.read_integer!
-
-            if id == 0 then
-                *(ptr_to_ptr cast &Maybe[&none]) = None
-            else
-                id = id - 1
-                match buffer.ptrs[id] with
-                    Some created_ptr ->
-                        *ptr_to_ptr = created_ptr
-                    None -> //pointer has not been created
-                        alloc_ptr := alloc::[none] p_type.get_size!
-                        buffer.ptrs[id] = Some alloc_ptr
-                        buffer.read_object p_type, alloc_ptr
-                        *ptr_to_ptr = alloc_ptr
-
-        array_type as &ArrayType ->
-            elem_size := array_type.array_type.get_size!
-            elem_type := array_type.array_type
-
-            match array_type.size with
-                Static length ->
-                    for i := 0..length do
-                        buffer.read_object array_type.array_type, offsetPtr ptr, i * elem_size
-
-                Both ->
-                    arr := ptr cast &[]none
-                    arr.length = buffer.read_integer!
-                    arr.data = alloc::[none] arr.length * elem_size
-
-                    for i := 0..arr.length do
-                        buffer.read_object elem_type, offsetPtr arr.data, i * elem_size
-
-                Dynamic ->
-                    arr := ptr cast &[..]none
-                    *arr = [..]none
-
-                    length := buffer.read_integer!
-                    arr.reserve (length * elem_size) cast uint
-                    arr.length = length
-
-                    guard Some data := arr.data
-                    else return
-
-                    for i := 0..length do
-                        buffer.read_object elem_type, offsetPtr data, i * elem_size
-
-                    arr.capacity = length
-
-        string_type as &StringType ->
-            length := buffer.read_integer!
-
-            c_string := alloc::[char] length + 1
-            *(indexPtr c_string, length) = null_char
-            for i := 0..length do
-                *(indexPtr c_string, i) = buffer.read_byte! cast char
-
-            *(ptr cast &string) = make_String length, c_string
-
-        _ -> //panic "unsupported type {typ}"
+        float_type as &FloatType -> buffer.read_float float_type, ptr
+        pointer_type as &PointerType -> buffer.read_pointer pointer_type, ptr
+        array_type as &ArrayType -> buffer.read_array array_type, ptr
+        string_type as &StringType -> buffer.read_string ptr
+        enum_type as &EnumType -> buffer.read_enum enum_type, ptr
+        _ -> log "unsupported type {typ}"
 
 //initializing
 def make_read_Buffer(data: string) Buffer =
@@ -242,11 +280,14 @@ def make_read_Buffer(data: string) Buffer =
 
 def make_write_Buffer(max_size: uint) Buffer =
     //going to convert the buffer to a string, strings must have a null char ending for c compatibility
+    ptrs := [..]Maybe[&none]
+    ptrs.append None
+
     Buffer{
         data = alloc::[char] max_size + 1
         size = max_size
-        index = 4 //save space for number of pointers
-        ptrs = [..]Maybe[&none]
+        index = 4//save space for meta data
+        ptrs = ptrs
     }
 
 //output

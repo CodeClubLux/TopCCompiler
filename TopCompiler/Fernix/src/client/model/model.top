@@ -4,12 +4,12 @@ import "assetManager"
 import "vfs"
 import "transform"
 
-models := ecs.make_Store 10, Model{
+models := ecs.make_Store_with_init::[Model] 10, Model{
     path = ""
     meshes = []
     materials = []
     bounding_box = BoundingBox{ 0, 0, 0, 0, 0, 0}
-}
+}, Some init_model
 
 from "materialSystem" import Material
 
@@ -27,6 +27,10 @@ type Model =
     materials: []string
     bounding_box: BoundingBox
 
+def init_model(self: &Model) =
+    for i := 0..self.meshes.length do
+        self.meshes[i].submit!
+
 def make_Model(id: ecs.ID) &Model =
     entity := match ecs.entities.by_id id with
         Some x -> x
@@ -37,6 +41,7 @@ def make_Model(id: ecs.ID) &Model =
 
     models.make id
 
+
 //def get_models() &ecs.Store[Model] =
 //    models
 
@@ -45,8 +50,6 @@ def Model.get_filename(&self) string =
     self.path
 
 def Model.render_model_for(&self, trans: &transform.Transform, materials: []Material) =
-    meshes := self.meshes
-
-    for i := 0..meshes.length do
-        mesh := &meshes[i]
+    for i := 0..self.meshes.length do
+        mesh := &self.meshes[i]
         mesh.render trans, materials

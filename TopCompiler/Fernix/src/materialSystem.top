@@ -1,9 +1,8 @@
+import "draw"
 import "shader"
 import "math"
 import "texture"
-import "runner"
 import "ecs"
-import "draw"
 
 type Param either
     Param_Vec3(string, math.Vec3)

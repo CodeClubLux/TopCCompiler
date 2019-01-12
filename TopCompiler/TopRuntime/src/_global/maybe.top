@@ -2,7 +2,7 @@ type Maybe[T] either
     Some(T)
     None
 
-def Maybe[T: Stringer].toString(self) =
+def Maybe[T: Stringer].toString(self) string =
     match self with
         Some x ->
             "Some({x})"
@@ -13,6 +13,12 @@ def Maybe[T: Stringer].toString(self) =
 def Maybe[T].unwrap(self) T =
     guard Some x := self
     else panic "Trying to unwrap maybe, which was None"
+
+    x
+
+def Maybe[T].expect(self, mesg: string) T =
+    guard Some x := self
+    else panic mesg
 
     x
 

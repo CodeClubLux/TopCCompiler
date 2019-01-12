@@ -39,9 +39,14 @@ def make_default_camera() &Camera =
 
     entity := ecs.entities.make id
     entity.layermask = entity.layermask.disable layermask.serialize_layer
+    entity.layermask = entity.layermask.enable layermask.editor_layer
 
-    trans := transform.transforms.make ecs.make_ID!
+    trans := transform.transforms.make id
     trans.position = math.Vec3{ 0, 0, 1.8 }
+
+    _ := (transform.transforms.by_id id).unwrap!
+
+    log "made camera : {id}"
 
     cameras.make id
 

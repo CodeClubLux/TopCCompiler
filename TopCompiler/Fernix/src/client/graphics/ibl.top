@@ -1,3 +1,4 @@
+import "draw"
 import "runner"
 import "texture"
 import "opengl"
@@ -8,7 +9,6 @@ import "buffer"
 import "camera"
 import "runner"
 import "ecs"
-import "draw"
 from "materialSystem" import all
 import "layermask"
 
@@ -30,8 +30,6 @@ skyboxes := ecs.make_Store 1, default_skybox
 type SkyboxSystem =
 def SkyboxSystem.update(&self, m: layermask.Layermask) =
 def SkyboxSystem.render(&system, m: layermask.Layermask) =
-    defer context.allocator.reset_to context.allocator.get_occupied!
-
     for self := ecs.filter skyboxes, m do
         mat := box Material{
             name = "skybox_shader"
@@ -42,7 +40,7 @@ def SkyboxSystem.render(&system, m: layermask.Layermask) =
             state = &skybox_state
         }
 
-        cmd := draw.make_DrawCommand None, primitives.cube.meshes[0].buffer, mat
+        cmd := draw.make_DrawCommand None, &primitives.cube.meshes[0].buffer, mat
         cmd.submit!
 
 skybox_system := SkyboxSystem{}

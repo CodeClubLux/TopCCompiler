@@ -1,3 +1,5 @@
+from "modelSettings" import (make_ModelSetting, model_settings_system)
+from "modelAssetTab" import (ModelAssetTab, make_ModelAssetTab)
 import "ecs"
 import "input"
 import "key"
@@ -5,10 +7,8 @@ import "ui"
 import "window"
 import "model"
 from "math" import all
-from "modelSettings" import (make_ModelSetting, model_settings_system)
 import "layermask"
 from "displayComponents" import (render_properties, update_properties)
-from "modelAssetTab" import (ModelAssetTab, make_ModelAssetTab)
 from "materialSystem" import (Param_Image)
 import "texture"
 import "key"
@@ -19,7 +19,7 @@ type DroppableField =
 
 type EditorEvents either
     SelectedField(DroppableField)
-    AddComponent(ecs.ID, ecs.System)
+    AddComponent(ecs.ID, ecs.ComponentStore)
 
 type Editor =
     in_editor: bool
@@ -38,15 +38,14 @@ def project(mat: &Mat4x4, vec: Vec3) Vec4 =
     vec2 := mat.mul_vec4 Vec4{ vec.x, vec.y, vec.z, 1}
     vec2.scale (1.0/vec2.w)
 
-def Editor.update(&self) =
-    inp := input.get_input!
+def Editor.update(&self, m: layermask.Layermask) =
     win := window.get_window!
     
-    if inp.key_pressed key.from_char `P` then
+    if input.key_pressed key.from_char `P` then
         log "switch between editor and game"
         self.in_editor = not self.in_editor
 
-    if inp.key_pressed key.from_char `X` then
+    if input.key_pressed key.from_char `X` then
         self.selected = match self.selected with
             Some id ->
                 ecs.free_entity id
@@ -54,7 +53,7 @@ def Editor.update(&self) =
 
             None -> None
 
-    if inp.key_pressed key.from_char `L` then //change to use contro
+    if input.key_pressed key.from_char `L` then //change to use contro
         ecs.serialize!
 
     self.asset_tab.update!
@@ -64,7 +63,7 @@ def Editor.update(&self) =
 def Editor.select(&self, id: ecs.ID) =
     self.selected = Some id
 
-def Editor.render(&self) =
+def Editor.render(&self, m: layermask.Layermask) =
     if not self.in_editor then return
     render_properties!
 
@@ -87,6 +86,8 @@ editor := Editor{
     asset_tab = make_ModelAssetTab!
     ui_mesg_queue = ui.make_MesgQueue::[EditorEvents] 10
 }
+
+ecs.register_system &editor
 
 def in_editor() bool =
     editor.in_editor

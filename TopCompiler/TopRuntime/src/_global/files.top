@@ -1,35 +1,42 @@
 type FileAcess either
     ReadFile
     WriteFile
+    ReadBFile
+    WriteBFile
 
 def FileAcess.toString(self) string =
     match self with
         ReadFile -> "r"
         WriteFile -> "w"
+        ReadBFile -> "rb"
+        WriteBFile -> "wb"
 
 type ext FILE =
 
 ext c_open_file: |string, string| -> Maybe[&FILE] = "_runtime_c_open_file"
 ext c_close_file: |&FILE| -> none = "_runtime_c_close_file"
 
-ext c_read_file: |&FILE, &Context| -> string = "_runtime_read_file"
+ext c_read_file: |&FILE, string, &Context| -> string = "_runtime_read_file"
 ext c_write_file: |&FILE, string, &Context| -> none = "_runtime_write_file"
 
 type File =
     c_file: &FILE
     acess: FileAcess
+    filename: string
 
 def File.read(&self) string =
     match self.acess with
         ReadFile ->
+        ReadBFile ->
         _ -> panic "Trying to read from file not set to read"
 
-    c_read_file self.c_file, context
+    c_read_file self.c_file, self.filename, context
 
 def File.write(&self, s: string) =
     match self.acess with
         WriteFile ->
-        _ -> panic "Trying to write to file not set to read"
+        WriteBFile ->
+        _ -> panic "Trying to write to file not set to write"
 
     c_write_file self.c_file, s, context
 
@@ -42,6 +49,7 @@ def open(filename: string, acess: FileAcess) Maybe[File] =
             Some File{
                 c_file = file
                 acess = acess
+                filename = filename
             }
 
         None ->

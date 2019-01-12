@@ -13,6 +13,7 @@ import "editor"
 import "ui"
 from "transform" import transforms
 import "draw"
+import "renderPass"
 
 def set_shader_scene_params(_shader: shader.Shader) =
     cam := camera.get_camera!
@@ -43,6 +44,7 @@ def init() =
 
     defer w.close!
     // defer ui_ctx.free!
+    defer ecs.serialize!
     defer context.allocator.free_allocator!
 
     while not w.should_close! do
@@ -66,18 +68,9 @@ def init() =
             .update_matrices!
 
         //render scene
-        draw.clear!
-
-        ecs.render render_mask
-
-        draw.submit_to_gpu!
+        renderPass.render_all!
 
         //renderPass.render_all!
 
-//def error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
-    //log char_buffer_toString message
-
-//opengl.enable opengl.debug_output
-//opengl.debugMessageCallback error_callback, context
 
 

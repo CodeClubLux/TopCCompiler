@@ -530,7 +530,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             upperDeleteQueue.append(funcBrace)
             upperDeleteQueue.append(funcBody)
 
-        elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar and not ast.nodes[0].name == "indexPtr":
+        elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar and not ast.nodes[0].name == "indexPtr" and ast.nodes[0].isGlobal:
             readVar = ast.nodes[0]
             if readVar.replaced:  # for method calls
                 if readVar.name.endswith("ByValue"):
@@ -553,7 +553,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             #    ast.nodes[0].constructor = ast.toT
             readVar.replaced = {}
             ast.replaced = {}
-        elif type(ast) is Tree.Field:
+        elif type(ast) is Tree.Field and ast.method:
             typ = ast.nodes[0].type
             struct = typ
             self = ast
@@ -579,6 +579,8 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 package = typ.package if not typ.package == "_global" else ""
 
                 if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
+                    if name == "init":
+                        print("was")
                     r = Tree.ReadVar(name, self.type, self)
                     if not type(self.nodes[0].type) is Types.Pointer:
                         r.name += "ByValue"

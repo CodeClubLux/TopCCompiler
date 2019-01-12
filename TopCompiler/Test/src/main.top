@@ -1,40 +1,4 @@
+type NoToString =
 
-
-//else
-//    log "else"
-
-//else
-//    log "ten"
-
-/*
-match val with
-    Some i ->
-        log "some {i}"
-    None ->
-        log "ten"
-*/
-
-
-
-
-/*
-type Transform =
-    using entity: &ecs.Entity
-    position: Vec3
-    rotation: Quat
-    scale: Vec3
-
-transform_system := ecs.make_Store::[Transform] 10
-transform_system := ecs.make_Parallel
-
-def make_Transform(id: ecs.ID) =
-    transform_system.add_component Entity{
-        entity = (ecs.entity_system.by_id id).expect "Transform requires entity component"
-        position = Vec3{0,0,0}
-        rotation = make_Quat!
-        scale = Vec3{1,1,1}
-    }
-
-def Transform.render(&self) =
-    log transform.position
-*/
+i := [NoToString{}]
+log i.toString!

@@ -41,7 +41,7 @@ def infer(parser, tree):
                 if type(condition) is Tree.CreateAssign:
                     _for.implicit = False
                     _for.implicit_index = False
-                    if condition.nodes[0].varType.isType(Types.Array):
+                    if condition.nodes[0].varType.isType(Types.Array) and condition.nodes[0].name != "i":
                         it_should_be = Types.I32(unsigned=True)
                         _for.implicit_index = True
 
@@ -292,6 +292,7 @@ def infer(parser, tree):
 
                     try:
                         i.type = struct.types[self.field]
+                        i.method = False
                         #else:
                         #    i.type = struct.using_types()[self.field]
                         #    i.using = True
@@ -557,6 +558,7 @@ def infer(parser, tree):
                         i.replaced[key] = generics[key]
 
                 i.type = Types.replaceT(i.nodes[0].type.returnType, generics)
+
             elif type(i) is Tree.If:
                 ElseExpr.checkIf(parser, i)
             elif type(i) is Tree.Block:

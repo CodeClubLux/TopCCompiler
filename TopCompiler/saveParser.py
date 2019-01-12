@@ -50,7 +50,7 @@ def save(parser, runtimeBuild):
 
     for package in parser.structs:
         for s in parser.structs[package]:
-            parser.structs[package][s].actualfields = None
+            #parser.structs[package][s].actualfields = list(parser.structs[package][s].actualfields.keys())
             parser.structs[package][s].node = 0
 
     def removeRedundantProperties(ast):

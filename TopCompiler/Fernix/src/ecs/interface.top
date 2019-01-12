@@ -4,13 +4,15 @@ type ComponentStore with
     def get_component_type() Type
     def make(ID) &none
     def free_by_id(ID)
-    def get_by_id(ID) Maybe[&none]
+    def get_by_id(ID) Maybe[Component]
     def serialize()
     def deserialize()
 
 type System with
     def render(Layermask)
     def update(Layermask)
+
+type Component with
 
 component_types := [..]ComponentStore
 systems := [..]System

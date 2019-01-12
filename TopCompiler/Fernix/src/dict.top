@@ -10,7 +10,7 @@ def hash_string(s_key: string, table_size: uint) Hash =
     key := s_key.to_c_string!
 
     for i := 0..s_key.length do
-        h = (o * h + (indexPtr key, i) cast uint) % table_size
+        h = (o * h + (*(indexPtr key, i)) cast uint) % table_size
         o = o * t % (table_size - 1)
 
     h

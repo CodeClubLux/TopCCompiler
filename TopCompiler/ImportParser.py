@@ -15,6 +15,8 @@ import os
 ignore = {}
 
 def shouldCompile(decl, name, parser, mutated= ()):
+    return True #not name in parser.compiled
+
     if not decl and not name in parser.compiled and not name in mutated:
         mutated += (name,)
 
@@ -88,11 +90,11 @@ def importParser(parser, decl= False):
 
             sc = shouldCompile(decl, oname, parser)
 
+
             p.sc = sc
 
             parser.compiled[name] = None
             #parser.externFuncs[name] = []
-
 
             parsed = p.parse()
 

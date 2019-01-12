@@ -3,8 +3,8 @@
         "name": "FernixGameEngine",
         "target": "windows",
         "version": 0,
-        "headerIncludePath": ["/Users/luke/desktop/Game Engine/include", "bin/c_deps/libtask"],
-        "linkWith": [
+        "headerIncludePath": ["C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Include", "bin/c_deps/libtask"],
+        "_linkWith": [
             "bin/c_deps/libtask/libtask.a",
             "/Users/luke/desktop/Game Engine/bin/libglfw3.a",
             "/Users/luke/desktop/Game Engine/bin/glad.o",
@@ -13,7 +13,7 @@
             "-framework", "CoreVideo",
             "-framework", "IOKit"
         ],
-        "_linkWith": [
+        "linkWith": [
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glfw3.lib",
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glad.o",
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\nuklear.o",
@@ -26,6 +26,6 @@
         "tags": {
             "render_backend": "OpenGL",
             "headless": false,
-            "editor": false
+            "editor": true
         }
     }

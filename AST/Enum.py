@@ -3,6 +3,7 @@ from TopCompiler import Types
 from PostProcessing import SimplifyAst
 from TopCompiler import Scope
 from TopCompiler import CodeGen
+from TopCompiler import Parser
 
 class Enum(Node):
     def __init__(self, const, normalName, parser, generic={}):
@@ -66,15 +67,15 @@ class Enum(Node):
 
             numCases = len(self.const)
 
-            tag = ""
-            if numCases <= 2:
-                tag = "_Bool"
-            else:
-                sizes = ["char", "short", "int", "long"]
-                for (iter, size) in enumerate(sizes):
-                    if numCases < 2 ^ ((iter+1) * 8):
-                        tag = size
-                        break
+            tag = Types.I32(unsigned=True, size=8).toCType()
+            #if numCases <= 2:
+            #    tag = "_Bool"
+            #else:
+            #    sizes = ["char", "short", "int", "long"]
+            #    for (iter, size) in enumerate(sizes):
+            #        if numCases < 2 ^ ((iter+1) * 8):
+            #            tag = size
+            #            break
 
             tag += " tag;"
 
@@ -132,28 +133,65 @@ class Enum(Node):
         # Type Introspection
         nameOfI = f"{self.package}_{self.normalName}Type"
 
-        codegen.append("struct _global_StructType " + nameOfI + ";")
+        intro_typ = "struct _global_EnumType"
+        if isMaybe:
+            intro_typ = "struct _global_PointerType"
+
+        codegen.append(f"{intro_typ} {nameOfI};")
 
         codegen.append(
-                    f"struct _global_StructType* {self.package}_{self.normalName}_get_type({cType}* self, struct _global_Context* c)" + "{")
+                    f"{intro_typ}* {self.package}_{self.normalName}_get_type({cType}* self, struct _global_Context* c)" + "{")
         codegen.append(f"return &{self.package}_{self.normalName}Type;")
         codegen.append("}\n")
 
         codegen.append(
-                    f"struct _global_StructType* {self.package}_{self.normalName}_get_typeByValue({cType} self, struct _global_Context* c)" + "{")
+                    f"{intro_typ}* {self.package}_{self.normalName}_get_typeByValue({cType} self, struct _global_Context* c)" + "{")
         codegen.append(f"return &{self.package}_{self.normalName}Type;")
         codegen.append("}\n")
         codegen.outFunction()
 
+        if isMaybe:
+            codegen.append(f"{nameOfI}.p_type =")
+            Types.output_type(self, self.type.remainingGen["Maybe.T"].pType, codegen)
+            codegen.append(";")
+            codegen.append(f"{nameOfI}.nullable = 1;")
+            return
+
         fieldTypeInArray = "Field"  # SimplifyAst.sanitize(structType)
+        caseTypeInArray = "Case"
 
         def as_string(s):
             return f'_global_StringInit({len(s)}, "{s}")'
 
+        cases = codegen.getName()
+        codegen.append(f"struct _global_Case* {cases} =")
+        codegen.append(f"(struct _global_Case*) malloc(sizeof(struct _global_Case) * {len(self.const)});")
 
-        codegen.append(f"{nameOfI}.fields = _global_StaticArray_StaticArray_S_" + fieldTypeInArray + "Init(NULL, 0);")
+        for it, name in enumerate(self.const):
+            fields = self.const[name]
+
+            codegen.append(f"{cases}[{it}].name = {as_string(name)};")
+            codegen.append(f"{cases}[{it}].args = _global_StaticArray_StaticArray_S_CaseArgInit(malloc(sizeof(struct _global_CaseArg) * {len(fields)}), {len(fields)});")
+
+            for i, field in enumerate(fields):
+                codegen.append(f"{cases}[{it}].args.data[{i}].arg_type = ")
+                Types.output_type(self, field, codegen)
+                codegen.append(f"; {cases}[{it}].args.data[{i}].offset = offsetof(struct {self.package}_{self.normalName}_{name}, field{i});")
+
+        fields = codegen.getName()
+
+        field_tag = f"{nameOfI}.tag_field"
+        codegen.append(f"{field_tag}.name = {as_string('tag')};\n")
+        codegen.append(f"{field_tag}.offset = offsetof(struct {self.package}_{self.normalName}, tag);")
+        codegen.append(f"{field_tag}.field_type = ")
+        Types.output_type(self, self.type.types["tag"], codegen)
+        codegen.append(";\n")
+
+        codegen.append(f"{nameOfI}.size = sizeof(struct {self.package}_{self.normalName});\n")
         codegen.append(f"{nameOfI}.package = " + as_string(self.package) + ";")
         codegen.append(f"{nameOfI}.name = " + as_string(self.normalName) + ";")
+        codegen.append(f"{nameOfI}.cases.data = {cases};")
+        codegen.append(f"{nameOfI}.cases.length = {len(self.const)};\n")
 
     def validate(self, parser):
         pass

@@ -1,18 +1,10 @@
 from "math" import all
 from "layermask" import all
 
-//Never store entity by reference, only id (unless as a component)
+//Never store entity by reference, only id
 type ID is uint
 
 type Entity =
     enabled: bool
     layermask: Layermask
-
-def Entity.get_entity(&self) &Entity =
-    self
-
-def Entity.update(&self) =
-def Entity.render(&self) =
-
-
 

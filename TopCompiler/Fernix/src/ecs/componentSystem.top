@@ -12,8 +12,9 @@ type Store[T] =
     components: []Slot[T]
     free_node: Maybe[&Slot[T]]
     max_number: uint
+    init: Maybe[|&T| -> none]
 
-def make_Store[T](max_number: uint, default: T) &Store[T] =
+def make_Store_with_init[T](max_number: uint, default: T, init: Maybe[|&T| -> none]) &Store[T] =
     assert max_number > 0, "Minimum number of elements has to be bigger than 0"
 
     id_to_key := [..]Maybe[&T]
@@ -34,13 +35,17 @@ def make_Store[T](max_number: uint, default: T) &Store[T] =
         free_node = Some &slots[0]
         components = slots
         max_number = max_number
+        init = init
     }
 
-    //self.deserialize!
+    self.deserialize!
 
     component_types.append self
 
     self
+
+def make_Store[T](max_number: uint, default: T) &Store[T] =
+    make_Store_with_init max_number, default, None as Maybe[|&T| -> none]
 
 entities := make_Store 100, Entity{
     enabled = true
@@ -57,9 +62,9 @@ def Store[T].by_id(&self, id: ID) Maybe[&T] =
     self.id_to_obj[id]
 
 //get component
-def Store[T].get_by_id(&self, id: ID) Maybe[&none] =
+def Store[T].get_by_id(&self, id: ID) Maybe[Component] =
     match self.by_id id with
-        Some ptr -> Some ptr cast &none
+        Some ptr -> Some ptr cast Component
         None -> None
 
 def Store[T].free_by_id(&self, id: ID) =
@@ -165,6 +170,7 @@ def Store[T].update(&self, layer_mask: Layermask) =
 import "sBuffer"
 
 def Store[T].serialize(&self) =
+
     new_context := *context
     new_context.allocator = new_context.longterm_storage
 
@@ -179,11 +185,13 @@ def Store[T].serialize(&self) =
         write_buffer := (sBuffer.make_write_Buffer 10_000_000)
         write_buffer.write_integer comps.length
 
+        log "serializing {get_type T}: {comps.length}"
+
         for comp := comps do
             write_buffer.write_integer self.id_of comp
             write_buffer.write_object get_type T, comp
 
-        guard Some f := open "assets\\save_files\\{get_type T}.tsf", WriteFile
+        guard Some f := open "assets/save_files/{get_type T}.tsf", WriteBFile
         else panic "Could not write to save_files"
 
         f.write write_buffer.string_buffer!
@@ -196,26 +204,36 @@ def Store[T].id_of(&self, comp: &T) ID =
     id
 
 def Store[T].deserialize(&self) =
-    return
+    //return
+
+    guard Some f := open "assets/save_files/{get_type T}.tsf", ReadBFile
+    else panic "Could not read save_files\\{get_type T}"
+
+    defer f.free!
+    defer context.allocator.reset_to context.allocator.get_occupied!
 
     new_context := *context
     new_context.allocator = new_context.longterm_storage
 
     #pushContext new_context do
-
-        guard Some f := open "assets\\save_files\\{get_type T}.tsf", ReadFile
-        else panic "Could not read save_files\\{get_type T}"
-
         read_buffer := sBuffer.make_read_Buffer f.read!
+
         num := read_buffer.read_integer!
+
+        log "deserializing {get_type T}: {num}"
 
         for i := 0..num do
             comp : T = _
             id := read_buffer.read_integer!
+            skip_ID id
             read_buffer.read_object get_type T, &comp
-            self.add_component id, comp
 
-        f.free!
+            ptr := self.add_component id, comp
+
+            guard Some init := self.init
+            else continue
+
+            init ptr
 
 def render(layer_mask: Layermask) =
     for system := systems do
@@ -223,14 +241,14 @@ def render(layer_mask: Layermask) =
 
 def update(layer_mask: Layermask) =
     for system := systems do
-        system.render layer_mask
+        system.update layer_mask
 
 def serialize() =
     for i := 0..component_types.length do
         component_types[i].serialize!
 
-def components_by_id(id: ID) [..]&none =
-    components := [..]&none
+def components_by_id(id: ID) [..]Component =
+    components := [..]Component
 
     for system := component_types do
         match system.get_by_id id with
