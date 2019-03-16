@@ -39,6 +39,7 @@ type ext aiNode =
     mNumMeshes: uint
     mNumChildren: uint
     mChildren: &&aiNode
+    mMeshes: &uint
 
 type ext aiScene =
     mMaterialIndex: uint

@@ -1,5 +1,6 @@
 import "ecs"
 from "math" import all
+from "layermask" import Layermask
 
 type Transform =
     position: math.Vec3
@@ -8,7 +9,7 @@ type Transform =
 
 transforms := ecs.make_Store 100, Transform{
     position = Vec3{ 0, 0, 0}
-    rotation = Quat{ 0, 0, 0, 1}
+    rotation = quat_from_euler Vec3{0, 0, 0}
     scale = Vec3{ 1, 1, 1}
 }
 
@@ -20,3 +21,43 @@ def Transform.compute_model_matrix(&self) Mat4x4 =
     trans * scal * rotation
 
 def make_Transform(id: ecs.ID) &Transform = transforms.make id
+
+type LocalTransform =
+    position: math.Vec3
+    rotation: math.Quat
+    scale: math.Vec3
+    owner: ecs.ID
+
+local_transforms := ecs.make_Store 100, LocalTransform{
+    position = Vec3{ 0, 0, 0}
+    rotation = quat_from_euler Vec3{0,0,0}
+    scale = Vec3{ 1, 1, 1}
+    owner = 0
+}
+
+def make_LocalTransform(id: ecs.ID) &LocalTransform = local_transforms.make id
+
+def LocalTransform.calc_global_transform(&self) =
+    if Some owner_local_trans := local_transforms.by_id self.owner then
+        owner_local_trans.calc_global_transform!
+
+    guard Some owner_trans := transforms.by_id self.owner
+    else return //panic "Owner of local body: {self.owner} is missing transform"
+
+    guard Some trans := transforms.by_id local_transforms.id_of self
+    else return //panic "Local body: {local_transforms.id_of self} is missing transform"
+
+    trans.scale = owner_trans.scale * self.scale
+    trans.rotation = owner_trans.rotation * self.rotation
+    position := owner_trans.rotation.mul_vec3 self.position
+    trans.position = owner_trans.position + position
+
+type LocalTransformSystem =
+def LocalTransformSystem.update(&self, m: Layermask) =
+def LocalTransformSystem.render(&self, m: Layermask) =
+def LocalTransformSystem.update_transforms(&self, m: Layermask) =
+    for (trans, local) := ecs.filter2 transforms, local_transforms, m do
+        local.calc_global_transform!
+
+local_transform_system := LocalTransformSystem{}
+ecs.register_system &local_transform_system

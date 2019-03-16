@@ -1,5 +1,8 @@
 import "ecs"
 import "math"
+from "layermask" import Layermask
+from "transform" import transforms
+import "math"
 
 type DirLight =
     direction: math.Vec3
@@ -20,3 +23,12 @@ def make_DirLight(id: ecs.ID) &DirLight = dir_lights.make id
 def get_dir_light() &DirLight =
     dir_lights.get_active!.unwrap!
 
+type DirLightSystem =
+def DirLightSystem.render(&self, m: Layermask) =
+    for (light, trans) := ecs.filter2 dir_lights, transforms, m do
+        light.direction = trans.rotation.mul_vec3 math.Vec3{0,-1,0}
+
+def DirLightSystem.update(&self, m: Layermask) =
+
+dirLight_system := DirLightSystem{}
+ecs.register_system &dirLight_system

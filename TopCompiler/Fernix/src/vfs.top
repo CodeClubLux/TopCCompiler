@@ -1,14 +1,36 @@
-prefix := "assets/"
+prefix := "assets\\"
 full_path := "C:\\Users\\User\\Desktop\\TopCCompiler\\TopCompiler\\Fernix\\assets\\"
 
+level := "level2\\"
+
 def asset_path(filename: string) string =
-    prefix + filename
+    prefix + "\\" + level + filename
 
 def to_asset_path(filename: string) Maybe[string] =
-    if filename.starts_with full_path then
-        Some filename.slice full_path.length, filename.length
+    log full_path + "\\" + level
+    if filename.starts_with full_path + level then
+        Some filename.slice full_path.length + level.length, filename.length
     else
         None
 
 def open_file(filename: string, acess: FileAcess) Maybe[File] =
     open (asset_path filename), acess
+
+ext _ = "#include <sys/stat.h>"
+ext _ = "#include <time.h>"
+
+type ext _stat =
+    st_mtime: i64
+
+ext stat: |&char, &_stat| -> int = "_stat"
+
+def time_modified(filename: string) i64 =
+    filename = asset_path filename
+
+    buffer : _stat = _
+    if (stat filename.to_c_string!, &buffer) != 0 then
+        log "could not read file: {filename}"
+        return 0
+
+    buffer.st_mtime
+

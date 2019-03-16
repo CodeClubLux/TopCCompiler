@@ -8,6 +8,9 @@ cube := model.load_model "cube.fbx"
 sphere := model.load_model "sphere.fbx"
 plane := model.load_model "plane.fbx"
 
+log "plane: {plane.meshes[0].vertices.length}"
+log "plane id: {plane.meshes[0].buffer.vao}"
+
 def render_cube() =
     self := cube.meshes[0]
 

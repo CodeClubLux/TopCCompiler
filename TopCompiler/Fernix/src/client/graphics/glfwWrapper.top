@@ -28,6 +28,7 @@ ext glfwSetKeyCallback: |&GLFWwindow, |&GLFWwindow, int, int, int, int| -> none|
 ext glfwSetDropCallback: |&GLFWwindow, |&GLFWwindow, int, &&char| -> none| -> none = "glfwSetDropCallback"
 ext glfwGetMouseButton: |&GLFWwindow, uint| -> int = "glfwGetMouseButton"
 ext glfwSwapInterval: |int| -> none = "glfwSwapInterval"
+ext glfwSetMouseButtonCallback: |&GLFWwindow, |&GLFWwindow, int, int, int| -> none| -> none = "glfwSetMouseButtonCallback	"
 
 ext glfw_cursor: uint = "GLFW_CURSOR"
 ext glfw_cursor_disabled: uint = "GLFW_CURSOR_DISABLED"

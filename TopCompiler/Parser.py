@@ -381,6 +381,7 @@ class Parser:  # all mutable state
 
         self.interfaces = {}
         self.scope = {}
+        self.alwaysRecompile = []
 
         self.iter = 0
 

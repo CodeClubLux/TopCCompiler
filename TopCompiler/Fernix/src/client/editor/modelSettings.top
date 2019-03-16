@@ -5,51 +5,97 @@ import "model"
 import "shader"
 import "texture"
 import "draw"
+from "math" import Vec2
+import "runner"
 
 type ModelSettings =
     filename: string
-    materials: []Material
+    materials: &[]Material
     model_id: Maybe[ecs.ID]
 
+type Prefab =
+    children: [..]ecs.ID
+    last: Maybe[ecs.ID] //a clone of this entity, to check for differences between current and previos prefab
+
+def init_Prefab(self: &Prefab) =
+    self.last = None
+
 checker_board_texture : Maybe[&texture.Texture] = None
+
+model_settings_system := ecs.make_Store 20, ModelSettings{
+    filename = ""
+    materials = box [] as []Material
+    model_id = None
+}
+
+longterm_arr := [..]ecs.ID
+longterm_arr.allocator = Some context.longterm_storage
+
+prefabs := ecs.make_Store_with_init 20, Prefab{
+    children = longterm_arr
+    last = None
+}, Some init_Prefab
 
 def ModelSettings.load(&self) =
     checker_board := match checker_board_texture with
         Some tex -> tex
-        None -> texture.load "wet_street/Pebble_Wet_street_Normal_Map.jpg"
+        None -> texture.load "solid_white.png"
+
+    normal := texture.load "normal.jpg"
+
+    model_settings := model_settings_system.get_all_active!
+
+    exists := false
+
+    for model_setting := model_settings do
+        if model_setting.filename == self.filename and (model_setting cast u64) != (self cast u64) then
+            exists = true
+            break
 
     m := model.load_model self.filename
+    if exists then
+        model.load_in_place m //make sure to update
+        ecs.free_entity model_settings_system.id_of self
+        log "model already exists"
+        log m.materials
+        return
+
     self.model_id = Some model.models.id_of m
 
     materials := [..]Material
     materials.allocator = Some context.longterm_storage
 
+    //pbr_shader := shader.make "shaders/pbr.vert", "shaders/pbr.frag"
+
     for mat_name := m.materials do
+        log "got materials: {mat_name}"
         longterm_context := *context
         longterm_context.allocator = context.longterm_storage
 
         #pushContext longterm_context do
             params := box [
-                Param_Image "material.diffuse", checker_board
-                Param_Image "material.metallic", checker_board
-                Param_Image "material.roughness", checker_board
-                Param_Image "material.normal", checker_board
+                Param_Image (pbr_shader.location "material.diffuse"), texture.textures.id_of checker_board
+                Param_Image (pbr_shader.location "material.metallic"), texture.textures.id_of checker_board
+                Param_Image (pbr_shader.location "material.roughness"), texture.textures.id_of checker_board
+                Param_Image (pbr_shader.location "material.normal"), texture.textures.id_of normal
+                Param_Vec2 (pbr_shader.location "transformUVs"), Vec2{1,1}
             ]
 
         materials.append Material{
             name = mat_name
-            shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
+            shader = pbr_shader.get_id!
             params = params
             state = &draw.default_state
         }
 
-    self.materials = materials
+    self.materials = box materials as []Material
 
-model_settings_system := ecs.make_Store 10, ModelSettings{
-    filename = ""
-    materials = []
-    model_id = None
-}
+
+//def init_model_setting(self: &ModelSettings) =
+//    for i := 0..self.materials.length do
+//        self.materials[i].init!
+
+import "transform"
 
 def make_ModelSetting(id: ecs.ID) &ModelSettings =
     entity := match ecs.entities.by_id id with
@@ -57,5 +103,99 @@ def make_ModelSetting(id: ecs.ID) &ModelSettings =
         None -> ecs.make_Entity id
 
     entity.layermask = layermask.make_Layermask!
+        .enable layermask.editor_layer
+        .enable layermask.serialize_layer
+
+    _ := prefabs.make id
+    _ := transform.make_Transform id
 
     model_settings_system.make id
+
+def update_prefab(current_prefab: &none, past_prefab: &none, apply_to: &none, kind: Type) =
+    match kind with
+        struct_type as &StructType ->
+            for field := struct_type.fields do
+                update_prefab (offsetPtr current_prefab, field.offset), (offsetPtr past_prefab, field.offset), (offsetPtr apply_to, field.offset), field.field_type
+
+        int_type as &IntType ->
+            if int_type.size == 4 then
+                if *(past_prefab cast &int) == *(apply_to cast &int) then
+                    *(apply_to cast &int) = (*(current_prefab cast &int))
+            else
+                if *(past_prefab cast &i64) == *(apply_to cast &i64) then
+                    *(apply_to cast &i64) = (*(current_prefab cast &i64))
+        
+        float_type as &FloatType ->
+            if float_type.size == 4 then
+                if *(past_prefab cast &float) == *(apply_to cast &float) then
+                    *(apply_to cast &float) = (*(current_prefab cast &float))
+            else
+                if *(past_prefab cast &f64) == *(apply_to cast &f64) then
+                    *(apply_to cast &f64) = (*(current_prefab cast &f64))
+
+        _ ->
+
+type PrefabSystem =
+
+def PrefabSystem.render(&self, m: layermask.Layermask) =
+def PrefabSystem.update(&self, m: layermask.Layermask) = //creating a new id, leaks memory
+    if not runner.in_editor! then return
+
+    for prefab := ecs.filter prefabs, m do
+        prefab_id := prefabs.id_of prefab
+
+        last_id :=
+            if Some id := prefab.last then id
+            else
+                new_id := ecs.clone prefab_id
+                entity := (ecs.entities.by_id new_id).unwrap!
+                entity.enabled = false
+                entity.layermask = entity.layermask.disable layermask.serialize_layer
+                new_id
+
+        for id := prefab.children do
+            guard Some e := ecs.entities.by_id id
+            else continue
+
+            for store := ecs.component_types do
+
+                guard Some comp := store.get_by_id prefab_id
+                else continue
+
+                comp_type := store.get_component_type!
+
+                if comp_type.toString! == "modelSettings.Prefab" then continue
+
+                if comp_type.toString! == "modelSettings.ModelSettings" then
+                    model_setting := comp.get_pointer_to_data! cast &ModelSettings
+
+                    mr := match model.model_renderers.by_id id with
+                        Some x -> x
+                        None -> model.make_ModelRenderer id
+
+                    mr.materials = model_setting.materials
+                    mr.model_id = model_setting.model_id
+                    continue
+
+                prefab_data := comp.get_pointer_to_data!
+
+                some_child := store.get_by_id id
+
+                if Some last_comp := store.get_by_id last_id then
+                    last_prefab_data := last_comp.get_pointer_to_data!
+
+                    if Some child := some_child then
+                        child_ptr := child.get_pointer_to_data!
+                        update_prefab prefab_data, last_prefab_data, child_ptr, comp_type
+
+                if some_child.is_none! then
+                    x := store.make id
+                    memcpy x, comp.get_pointer_to_data!, comp_type.get_size! cast uint
+
+        ecs.free_entity last_id
+        last_id = ecs.clone prefab_id
+        prefab.last = Some last_id // updated last prefab
+        ((ecs.entities.by_id last_id).unwrap!).enabled = false
+
+prefab_system := PrefabSystem{}
+ecs.register_system &prefab_system

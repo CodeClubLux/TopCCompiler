@@ -14,9 +14,14 @@ type Input =
     scroll_offset: float
 
     keys: KeyActionMap
-    last_frame_keys: KeyActionMap //@cleanup might want to remove this dynamic array, replace with static
+    last_frame_keys: KeyActionMap //@todo might want to remove this dynamic array, replace with static
 
     window: &window.Window
+
+    mouse_captured: bool
+
+    mouse_button_down: [3]bool
+    last_mouse_button_down: [3]bool
 
 def window_cursor_pos_callback(mouse_position: Vec2) =
     self := get_input!
@@ -35,6 +40,7 @@ def window_cursor_pos_callback(mouse_position: Vec2) =
 
     self.mouse_position = mouse_position
 
+
 def to_device_coord(position: Vec2) Vec2 = //Takes mouse postion and transforms into device coordinates
     w := window.get_window!
 
@@ -44,6 +50,8 @@ def to_device_coord(position: Vec2) Vec2 = //Takes mouse postion and transforms 
     }
 
 def capture_mouse(captured: bool) =
+    get_input!.mouse_captured = captured
+
     window
         .get_window!
         .capture_mouse captured
@@ -63,12 +71,23 @@ def mouse_button_down(button: MouseButton) bool =
         .get_window!
         .mouse_button_down button
 
+def mouse_button_pressed(button: MouseButton) bool =
+    inp := get_input!
+    (not inp.last_mouse_button_down[button.tag]) and mouse_button_down button
+
 def key_pressed(_key: Key) bool =
     self := get_input!
     if not self.last_frame_keys.contains _key then
         return key_down _key
 
     self.last_frame_keys[_key] == Released and key_down _key
+
+/*
+def mouse_button_callback(button: MouseButton, action: KeyAction) =
+    self := get_input!
+    log "clicked"
+    self.mouse_button_down[button.tag] = action
+*/
 
 def clear() =
     self := get_input!
@@ -78,6 +97,8 @@ def clear() =
         self.last_frame_keys.insert _key, value
 
     self.keys.clear!
+
+    self.last_mouse_button_down = self.mouse_button_down
 
 def get_vertical_axis() float =
     if key_down key.from_char `W` then 1
@@ -97,11 +118,18 @@ def update_inputs() =
         .get_window!
         .update_inputs!
 
+    s.mouse_button_down = [
+        mouse_button_down Middle
+        mouse_button_down Right
+        mouse_button_down Left
+    ]
+
 def make_Input() Input =
     w := window.get_window!
 
     w.set_cursor_pos_callback window_cursor_pos_callback
     w.set_key_callback window_key_callback
+    //w.set_mouse_button_callback mouse_button_callback
 
     Input{
         first_mouse = true
@@ -115,8 +143,12 @@ def make_Input() Input =
         last_frame_keys = make_KeyActionMap!
 
         window = w
-    }
 
+        mouse_captured = false
+
+        mouse_button_down = [3: false]
+        last_mouse_button_down = [3: false]
+    }
 
 #addToContext input := box make_Input!
 

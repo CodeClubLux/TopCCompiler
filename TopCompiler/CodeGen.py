@@ -157,10 +157,11 @@ class CodeGen:
                 self.append(";\n")
             if self.debug:
                 filename = ast.fullFilePath().replace("\\", "\\\\")
-                #self.append(f'#line {ast.token.line+1} "{filename}.top"\n')
+                self.append(f'#line {ast.token.line+1} "{filename}.top"\n')
 
     def createName(self, name, typ):
         self.names[-1][name] = (typ, name)
+
         return name
 
     def append(self, value):
@@ -294,7 +295,7 @@ import os
 
 
 
-def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
+def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild, to_obj): #Add Option to change compiler
     print(compiled)
     topRuntime = ""
     (context, mainC) = context
@@ -352,11 +353,14 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
     """
 
     if debug:
-        debug = ["-g", "-O0", "-gcodeview"]
+        debug = ["-g", "-gcodeview", "-O" + str(opt)]
     else:
         debug = ["-O" + str(opt)] #["-g",  "-gcodeview"]
 
-    clang_commands += [ "-o", "bin/" + outputFile + ".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
+    if to_obj:
+        clang_commands += [ "-c", "-o", "bin/" + outputFile + ".o"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
+    else:
+        clang_commands += [ "-o", "bin/" + outputFile + ".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
 
     print(" ".join(clang_commands),"\n")
     try:
@@ -392,7 +396,7 @@ def genNames(info):
         elif info.pointer != len(info.array) - 1:
 
             yield ("".join((letters[i] for i in info.array)))
-            info.pointer += 1
+            #info.pointer += 1
             info.array[info.pointer] += 1
         else:
 

@@ -1,0 +1,54 @@
+type MesgQueue[E] =
+    messages: [..]E
+    max_messages: uint
+
+def make_MesgQueue[E](max_messages: uint) MesgQueue[E] =
+    messages := [..]E
+    messages.reserve max_messages
+
+    MesgQueue{
+        messages = messages
+        max_messages = max_messages
+    }
+
+def MesgQueue[E].handle(using &self, mesg: E) =
+    assert messages.length != max_messages, "Message queue can only handle {max_messages} messages."
+    messages.append mesg
+
+def MesgQueue[E].clear(&self) =
+    self.messages.clear!
+
+type EventHandler[E] with
+    def handle(E)
+
+type Dispatch[A: enum,B] =
+    mesg_queue: &MesgQueue[B]
+    only: A
+    mesg: B
+
+def dispatch[A: enum,B](self: &MesgQueue[B], only: A, mesg: B) EventHandler[A] =
+    box Dispatch{
+        mesg_queue = self
+        only = only
+        mesg = mesg
+    }
+
+def Dispatch[A: enum,B].handle(&self, ev: A) =
+    if ev.tag == self.only.tag then
+        self.mesg_queue.handle self.mesg
+
+type EventSource[E: enum] =
+    dispatchers: [..]EventHandler[E]
+
+def EventSource[E].subscribe(&self, ev_handler: EventHandler[E]) =
+    self.dispatchers.append ev_handler
+
+def EventSource[E].handle(&self, ev: E) =
+    for i := 0..self.dispatchers.length do
+        self.dispatchers[i].handle ev
+
+def make_EventSource[E: enum]() EventSource[E] =
+    arr := [..]EventHandler[E]
+    arr.allocator = Some context.longterm_storage
+
+    EventSource{ arr }

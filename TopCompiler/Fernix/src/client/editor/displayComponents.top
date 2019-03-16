@@ -1,0 +1,340 @@
+import "editor"
+import "model"
+import "ecs"
+import "ui"
+import "window"
+from "math" import all
+import "modelAssetTab"
+import "time"
+import "shader"
+import "materialSystem"
+import "layermask"
+import "events"
+
+def render_model_renderer(w: &ui.Window, obj: &model.ModelRenderer, field_name: string) =
+    guard Some model_id := obj.model_id
+    else
+        _ := ui.label w, "name : unselected"
+        return
+
+    match (model.models.by_id model_id) with
+        Some m -> ui.label w, "name : '{m.path}'"
+        None -> ui.label w, "name : unselected"
+
+def render_field_vec3(w: &ui.Window, vec: &Vec3, field_name: string) =
+    field_label := ui.label w, "{field_name}"
+    field_label.style.width = ui.Perc 0.2
+
+    typ := get_type Vec3
+
+    for field := typ.fields do
+        value_of_field := (offsetPtr vec, field.offset) cast &float
+        p := ui.propertyf w, field.name, value_of_field
+        p.style.width = ui.Perc 0.8/3
+
+def render_field_vec2(w: &ui.Window, vec: &Vec2, field_name: string) =
+    field_label := ui.label w, "{field_name}"
+    field_label.style.width = ui.Perc 0.2
+
+    typ := get_type Vec2
+
+    for field := typ.fields do
+        value_of_field := (offsetPtr vec, field.offset) cast &float
+        p := ui.propertyf w, field.name, value_of_field
+        p.style.width = ui.Perc 0.8/2
+
+tmp_vec3 := Vec3{0,0,0} //todo very hacky find better way
+ptr_to_quat : Maybe[&Quat] = None
+
+def render_field_quat(w: &ui.Window, quat: &Quat, field_name: string) =
+    tmp_vec3 = quat.to_euler!
+    tmp_vec3 = Vec3{
+        degrees tmp_vec3.x
+        degrees tmp_vec3.y
+        degrees tmp_vec3.z
+    }
+
+    ptr_to_quat = Some quat
+
+    field_label := ui.label w, "{field_name}"
+    field_label.style.width = ui.Perc 0.2
+
+    typ := get_type Vec3
+
+    for field := typ.fields do
+        value_of_field := (offsetPtr &tmp_vec3, field.offset) cast &float
+        p := ui.propertyf w, field.name, value_of_field
+        p.style.width = ui.Perc 0.8/3
+        p.inc_per_pixel = 1
+        p.max = 180
+        p.min = -180
+
+def render_field_shader(w: &ui.Window, id: &ecs.ID, field_name: string) =
+    guard Some shad := shader.shaders.by_id *id
+    else
+        field_name2 := ui.button w, "{field_name} : Shader {id} not found"
+        field_name2.style.width = ui.Perc 1
+        return
+
+    edit := editor.get_editor!
+
+    selected := match edit.droppable_field with
+        Some f -> match edit.selected with
+            Some selected_id -> f.id == selected_id and (id cast u64) == (f.ptr cast u64)
+            None -> false
+        None -> false
+
+    field_name_label := ui.button w, "{field_name} : #{id}, '{shad.v_filename}, {shad.f_filename}'"
+    field_name_label.style.width = ui.Perc 1
+    field_name_label.selected = selected
+    field_name_label.ev_handler = Some events.dispatch &edit.ui_mesg_queue, ui.Pressed,
+                editor.SelectedField editor.DroppableField{ ptr = id, typ = "Shader", id = edit.selected.default 0}
+
+import "texture"
+
+def render_field_param(w: &ui.Window, param: &materialSystem.Param, field_name: string) =
+    match *param with
+        Param_Vec3 name, x ->
+            render_field_vec3 w, (box x), field_name
+
+        Param_Vec2 name, x ->
+            render_field_vec2 w, (box x), field_name
+
+        Param_Image name, tex_id ->
+            edit := editor.get_editor!
+
+            selected := match edit.droppable_field with
+                Some f -> match edit.selected with
+                    Some selected_id -> f.id == selected_id and (param cast u64) == (f.ptr cast u64)
+                    None -> false
+                None -> false
+
+            filename := match texture.textures.by_id tex_id with
+                Some x -> x.filename
+                None -> "Deleted"
+
+            field_name_label := ui.button w, "{name.name} : '{filename}'"
+            field_name_label.style.width = ui.Perc 1
+            field_name_label.selected = selected
+            field_name_label.ev_handler = Some events.dispatch &edit.ui_mesg_queue, ui.Pressed,
+                editor.SelectedField editor.DroppableField{ ptr = param, typ = "Param_Image", id = edit.selected.default 0}
+
+        _ ->
+
+def render_field(w: &ui.Window, obj: &none, field: Field) =
+    match field.field_type with
+        float_type as &FloatType ->
+            value_of_field := (offsetPtr obj, field.offset) cast &float
+
+            l := ui.label w, "{field.name} "
+            l.style.width = ui.Perc 1.0 - (0.8/3)
+
+            p := ui.propertyf w, "", value_of_field
+            p.style.width = ui.Perc 0.8/3
+
+        struct_type as &StructType ->
+            render_object w, (offsetPtr obj, field.offset), field.field_type, field.name
+
+        string_type as &StringType ->
+            s := (offsetPtr obj, field.offset) cast &string
+
+            l := ui.label w, field.name
+            l.style.width = ui.Perc 0.2
+
+            i := ui.input w, 50, s
+            i.style.width = ui.Perc 0.8
+
+        pointer_type as &PointerType ->
+            s := (offsetPtr obj, field.offset) cast &&none
+            render_field w, *s, field{ offset = 0, field_type = pointer_type.p_type}
+
+        int_type as &IntType ->
+            obj = (offsetPtr obj, field.offset)
+
+            if int_type.sign then
+                p := ui.label w, "{field.name} : {obj cast &int}"
+                p.style.width = ui.Perc 1
+            else
+                p := ui.propertyu w, field.name, obj cast &uint
+                p.style.width = ui.Perc 1
+
+        alias_type as &AliasType ->
+            if alias_type.name == "Layermask" and alias_type.package == "layermask" then
+                s := "{field.name} : "
+                layer := *((offsetPtr obj, field.offset) cast &layermask.Layermask)
+                if layer.layer_in_mask layermask.game_layer then
+                    s += " Game"
+                if layer.layer_in_mask layermask.editor_layer then
+                    s += " Editor"
+                if layer.layer_in_mask layermask.serialize_layer then
+                    s += " Serialize"
+
+                l := ui.label w, s
+                l.style.width = ui.Perc 1
+            elif alias_type.name == "ID" and alias_type.package == "ecs" and field.name == "shader" then
+                render_field_shader w, (offsetPtr obj, field.offset) cast &ecs.ID, field.name
+            else
+                render_field w, obj, field{
+                    field_type = alias_type.real_type
+                }
+
+        array_type as &ArrayType ->
+            match *array_type.size with
+                Both ->
+                    arr := (offsetPtr obj, field.offset) cast &[]&none
+                    elem_type := array_type.array_type
+
+                    l := ui.label w, "{field.name}: [{arr.length}]"
+                    l.style.width = ui.Perc 1
+
+                    for i := 0..arr.length do //@todo implement this for general case
+                        if elem_type.toString! == "materialSystem.Param" then
+                            render_object w, (offsetPtr arr.data, i * sizeof materialSystem.Param), array_type.array_type, ""
+                        elif elem_type.toString! == "materialSystem.Material" then
+                            render_object w, (offsetPtr arr.data, i * sizeof materialSystem.Material), array_type.array_type, ""
+
+                _ ->
+
+        enum_type as &EnumType ->
+            obj = offsetPtr obj, field.offset
+
+            tag_ptr := offsetPtr obj, enum_type.tag_field.offset
+            tag := *(offsetPtr obj, enum_type.tag_field.offset) cast &u8
+
+            l := ui.label w, "{enum_type.cases[tag].name}"
+            l.style.width = ui.Perc 1
+
+        _ ->
+
+def render_object(w: &ui.Window, obj: &none, obj_typ: Type, prefix: string) =
+    match obj_typ with
+        typ as &StructType ->
+            if typ.name == "ModelRenderer" and typ.package == "model" then
+                title :=
+                    if prefix.length > 0 then "{prefix} : {typ}"
+                    else toString typ
+
+                w = ui.group w, title
+                w.style.width = ui.Perc 1
+
+                render_model_renderer w, obj cast &model.ModelRenderer, prefix
+            elif typ.name == "Quat" and typ.package == "math" then
+                render_field_quat w, (obj cast &Quat), prefix
+            elif typ.name == "Vec3" and typ.package == "math" then
+                render_field_vec3 w, obj cast &Vec3, prefix
+            else
+                title :=
+                    if prefix.length > 0 then "{prefix} : {typ}"
+                    else toString typ
+
+                w = ui.group w, title
+                w.style.width = ui.Perc 1
+
+                for field := typ.fields do
+                    render_field w, obj, field
+
+        typ as &EnumType ->
+            if typ.name == "Param" and typ.package == "materialSystem" then
+                render_field_param w, obj cast &materialSystem.Param, prefix
+
+
+        _ -> log obj_typ
+
+def render_add_component(w: &ui.Window, id: ecs.ID, components: []ecs.Component) =
+    w = ui.group w, "Add Component"
+    w.style.width = ui.Perc 1
+
+    edit := editor.get_editor!
+
+    //log "========="
+
+    for system := ecs.component_types do
+        component_type := system.get_component_type!
+        component_type_string := component_type.toString!
+
+        already_active := false
+
+        for comp := components do
+            comp_typ := comp.get_type!.toString!
+            if comp_typ == component_type_string then
+                already_active = true
+                break
+
+        if already_active then continue
+
+        //log component_type_string
+        b := ui.button w, component_type_string
+        b.style.width = ui.Perc 1
+        b.ev_handler = Some events.dispatch &edit.ui_mesg_queue, ui.Pressed, editor.AddComponent id, system
+
+        //if ui.button ui.default_button{ text = component_type_string } then
+        //    log "component was pressed"
+        //    system.make_component id
+
+def update_properties() =
+    self := editor.get_editor!
+
+    for mesg := self.ui_mesg_queue.messages do
+        self.event_source.handle mesg
+
+        match mesg with
+            SelectedField dp ->
+                self.droppable_field = Some dp
+
+            AddComponent id, system ->
+                _ := system.make id
+
+            InGame ->
+
+    guard Some quat := ptr_to_quat
+    else return
+
+    rad := radians 180
+
+    as_angle := Vec3{
+        (radians tmp_vec3.x)
+        (radians tmp_vec3.y)
+        (radians tmp_vec3.z)
+    }
+
+    *quat = quat_from_euler as_angle //(make_quat rad*len, as_angle.scale 1/len).norm!
+
+    //todo very hacky find better way
+
+import "lister"
+
+fps_time_avg := 0.0 as f64
+fps_time_length := 0
+fps_time_num := 10
+
+def render_properties() =
+    self := editor.get_editor!
+
+    panel := ui.window "Editor"
+    panel.style.width = ui.Perc self.editor_tab_width
+    panel.style.height = ui.Perc 1
+
+    fps_time_avg += time.get_delta_time!
+    fps_counter := ui.label panel, "FPS: {(1.0 / (fps_time_avg / fps_time_length)) cast int}"
+
+    if fps_time_length == 100 then
+        fps_time_avg = 0
+        fps_time_length = 0
+    else
+        fps_time_length += 1
+
+    match self.selected with
+        Some selected ->
+            id := ui.label panel, lister.name_with_id selected
+            id.style.width = ui.Perc 1
+
+            components := ecs.components_by_id selected
+
+            for comp := components do
+                comp_typ := comp.get_type!
+
+                render_object panel, comp.get_pointer_to_data!, comp_typ, "Component"
+
+            render_add_component panel, selected, components
+
+        None ->

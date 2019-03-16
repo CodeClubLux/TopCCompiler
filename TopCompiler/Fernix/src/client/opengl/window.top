@@ -1,7 +1,7 @@
 import "opengl"
 from "glfwWrapper" import all
 from "math" import Vec2
-from "key" import (Key, KeyAction)
+from "key" import (Key, KeyAction, MouseButton)
 
 def framebuffer_size_callback(window_ptr: &GLFWwindow, width: int, height: int) =
     context = (glfwGetWindowUserPointer window_ptr) cast &Context
@@ -29,10 +29,10 @@ def error_callback(error: int, description: &char) =
 def Window.init(&self) =
     glfwSetErrorCallback error_callback
     glfwInit!
-    glfwWindowHint glfw_opengl_forward_compat, opengl.gl_true
-    //glfwWindowHint glfw_opengl_profile, glfw_opengl_core_profile
+    //glfwWindowHint glfw_opengl_forward_compat, opengl.gl_true
     glfwWindowHint glfw_context_version_major, 4
-    glfwWindowHint glfw_context_version_minor, 1
+    glfwWindowHint glfw_context_version_minor, 4
+    glfwWindowHint glfw_opengl_profile, glfw_opengl_core_profile
 
     glfwWindowHint glfw_samples, 4
 
@@ -61,6 +61,10 @@ def Window.init(&self) =
 
     if not (opengl.gladLoadGLLoader getProcAddress) then
         panic "Failed to initialize GLAD!"
+
+    //debugging opengl
+    opengl.enable opengl.debug_output
+    opengl.debugMessageCallback gl_error_callback, context
 
     log "initialized opengl"
     self.update_context!
@@ -173,7 +177,9 @@ def get_window() &Window =
 
 //debugging
 def gl_error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
-    log char_buffer_toString message
+    defer context.allocator.reset_to context.allocator.get_occupied!
 
-//opengl.enable opengl.debug_output
-//opengl.debugMessageCallback gl_error_callback, context
+    return
+
+    log "=========== memory usage: {context.longterm_storage.get_occupied!}"
+    log char_buffer_toString message

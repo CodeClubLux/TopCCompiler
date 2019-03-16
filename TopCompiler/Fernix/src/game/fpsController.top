@@ -1,0 +1,134 @@
+import "ecs"
+import "camera"
+import "input"
+from "time" import (get_delta_time)
+import "camera"
+import "key"
+from "math" import all
+from "layermask" import Layermask
+from "transform" import all
+import "editor"
+import "physics"
+import "model"
+from "materialSystem" import all
+import "draw"
+import "shader"
+
+
+type FPSController =
+    mouse_sensitivity: float
+    movement_speed: float
+    yaw: float
+    pitch: float
+
+    body_id: ecs.ID
+
+def FPSController.get_velocity(using &self) float =
+    if input.key_down key.lshift then movement_speed * 2
+    else movement_speed
+
+def FPSController.update(using &self, entity: &LocalTransform) =
+    //movement
+    guard Some rb := physics.rigid_bodies.by_id body_id
+    else panic "Could not find rigid body"
+
+    //guard Some body_transform := transforms.by_id body_id
+    //else panic "could not find body_transform"
+
+    facing_rotation := math.quat_from_euler math.Vec3{0, (radians yaw), 0}
+    forward := (facing_rotation.mul_vec3 math.Vec3{0,0,-1}).norm!
+    right := (facing_rotation.mul_vec3 math.Vec3{1,0,0}).norm!
+
+    vertical_axis := input.get_vertical_axis!
+    horizontal_axis := input.get_horizontal_axis!
+
+    vec := forward.scale vertical_axis * self.get_velocity!
+    vec += right.scale horizontal_axis * self.get_velocity!
+
+    rb.velocity.x = vec.x
+    rb.velocity.z = vec.z
+
+    if input.key_pressed key.from_char ` ` then
+        rb.override_velocity_y = true
+        rb.velocity.y = 5
+    else
+        rb.override_velocity_y = false
+
+    //rb.velocity.y = 0
+
+    //mouse look
+    mouse_offset := context.input.mouse_offset.scale mouse_sensitivity
+
+    input.capture_mouse true
+
+    yaw = -mouse_offset.x + yaw
+    pitch = (mouse_offset.y) + pitch
+
+    if pitch > 89 then
+        pitch = 89
+    if pitch < (-89) then
+        pitch = -89
+    if yaw > 360 then
+        yaw -= 360
+    if yaw < (-360) then
+        yaw += 360
+
+    orientation := math.quat_from_euler math.Vec3{(radians pitch), (radians yaw), 0}
+
+    entity.rotation = orientation
+
+    //entity.position = body_transform.position
+
+fpsControllers := ecs.make_Store 5, FPSController{
+    mouse_sensitivity = 0.01
+    movement_speed = 6
+    yaw = 0
+    pitch = 0
+    body_id = 0
+}
+
+type FPSControllerSystem =
+def FPSControllerSystem.render(&system, m: Layermask) =
+def FPSControllerSystem.update(&system, m: Layermask) =
+    for (controller, trans) := ecs.filter2 fpsControllers, local_transforms, m do
+        controller.update trans
+
+fpsController_system := FPSControllerSystem{}
+ecs.register_system &fpsController_system
+
+import "lister"
+
+def make_FPSController(id: ecs.ID) &FPSController =
+    n := lister.named.make id
+    n.name = "Character_controller_look"
+
+    body_id := ecs.make_ID!
+
+    entity := ecs.make_Entity body_id
+    entity.layermask = (ecs.entities.by_id id).unwrap!.layermask
+
+    n = lister.named.make body_id
+    n.name = "Character_controller_body"
+
+    rb := physics.rigid_bodies.make body_id
+    rb.shape = physics.Box math.Vec3{0.5, 1, 0.5}
+    rb.mass = 1
+    rb.override_rotation = true
+    rb.override_velocity_x = true
+    rb.override_velocity_y = true
+    rb.override_velocity_z = true
+    rb.continous = true
+
+    curr_trans := (transforms.by_id id).expect "Could not find transform"
+
+    trans := make_Transform body_id
+    *trans = (*curr_trans)
+
+    fp_controller := (fpsControllers.make id)
+    fp_controller.body_id = body_id
+
+    child_transform := make_LocalTransform id
+    child_transform.owner = body_id
+    child_transform.position.y = 1.0
+
+    fp_controller

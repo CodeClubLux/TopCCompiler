@@ -52,6 +52,7 @@ entities := make_Store 100, Entity{
     layermask = make_Layermask!
         .enable game_layer
         .enable serialize_layer
+        .enable pickable_layer
 }
 
 def Store[T].get_component_type(&self) Type = get_type T
@@ -75,7 +76,7 @@ def Store[T].free_by_id(&self, id: ID) =
             *slot = Free self.free_node
             self.free_node = Some slot
 
-        None ->
+        None -> //panic "Trying to free object which doesn't exist"
 
 //function sets the id_to_obj array which allows components to be indexed by global id
 //@cleanup remove all use of dynamic memory allocation
@@ -149,6 +150,16 @@ def Store[T].get_active(&self) Maybe[&T] =
 
     None
 
+def Store[T].first_in_mask(&self, m: Layermask) Maybe[&T] =
+    for slot := self.components do
+        guard Some active_comp := self.index_active i
+        else continue
+
+        if not active_comp.b.layermask.mask m then
+            return Some active_comp.a
+
+    None
+
 /*
 def Store[T].render(&self, layer_mask: Layer) =
     for i := 0..self.components.length do
@@ -167,50 +178,112 @@ def Store[T].update(&self, layer_mask: Layermask) =
             comp.update!
 */
 
-import "sBuffer"
-
-def Store[T].serialize(&self) =
-
-    new_context := *context
-    new_context.allocator = new_context.longterm_storage
-
-    defer new_context.allocator.reset_to new_context.allocator.get_occupied!
-
-    #pushContext new_context do
-        serialize_layermask := make_Layermask!
-            .enable layermask.serialize_layer
-
-        comps := self.mask_components serialize_layermask
-
-        write_buffer := (sBuffer.make_write_Buffer 10_000_000)
-        write_buffer.write_integer comps.length
-
-        log "serializing {get_type T}: {comps.length}"
-
-        for comp := comps do
-            write_buffer.write_integer self.id_of comp
-            write_buffer.write_object get_type T, comp
-
-        guard Some f := open "assets/save_files/{get_type T}.tsf", WriteBFile
-        else panic "Could not write to save_files"
-
-        f.write write_buffer.string_buffer!
-        f.free!
-
 def Store[T].id_of(&self, comp: &T) ID =
     guard Active _, id := *(comp cast &Slot[T])
     else panic "Cannot retrieve id: used after free!"
 
     id
 
+import "sBuffer"
+import "dict"
+
+type ComponentField =
+    name: string
+    kind: string
+
+type ComponentTypeInfo =
+    fields: []ComponentField
+
+def type_info_to_component_type_info(typ: Type) ComponentTypeInfo =
+    match typ with
+        struct_type as &StructType ->
+            fields := [..]ComponentField
+
+            for field := struct_type.fields do
+                fields.append ComponentField{
+                    name = field.name
+                    kind = field.field_type.toString!
+                }
+
+            ComponentTypeInfo{ fields }
+
+        _ ->
+            panic "Only supports converting from struct"
+            ComponentTypeInfo{ [] }
+
+def get_field(s_type: &StructType, name: string) Maybe[&Field] =
+    for i := 0..s_type.fields.length do
+        field := &s_type.fields[i]
+        if field.name == name then
+            return Some field
+
+    None
+
+def get_struct_type[T]() &StructType =
+    type_t_as_type : Type = get_type T
+
+    match type_t_as_type with
+        x as &StructType -> x
+        _ ->
+            panic "Only supports struct components"
+            0 cast &StructType
+
+import "vfs"
+
+def Store[T].serialize(&self) =
+    new_context := *context
+    new_context.allocator = new_context.longterm_storage
+
+    defer new_context.allocator.reset_to new_context.allocator.get_occupied!
+
+    type_t := get_struct_type::[T]!
+    component_type_info := type_info_to_component_type_info get_type T
+
+    #pushContext new_context do
+        serialize_layermask := make_Layermask!
+            .enable layermask.serialize_layer
+
+        comps := self.mask_components serialize_layermask //will not serialize unactive components
+
+        write_buffer := (sBuffer.make_write_Buffer 30_000_000)
+        write_buffer.write_integer comps.length
+
+        write_buffer.write_object (get_type ComponentTypeInfo), &component_type_info
+
+        log "serializing {get_type T}: {comps.length}"
+
+        for comp := comps do
+            write_buffer.write_integer self.id_of comp
+
+            for field := type_t.fields do
+                if field.name == "bt_rigid_body" then continue
+
+                skip := write_buffer.pointer_to_n_bytes sizeof uint
+                index := write_buffer.index
+
+                write_buffer.write_object field.field_type, offsetPtr comp, field.offset
+
+                //log "skip: {write_buffer.index - index}, {field.name}"
+                *(skip cast &uint) = sBuffer.u32_to_network (write_buffer.index - index)
+
+        guard Some f := vfs.open_file "save_files/{get_type T}.tsf", WriteBFile
+        else return panic "Could not write to save_files"
+
+        f.write write_buffer.string_buffer!
+        f.free!
+
 def Store[T].deserialize(&self) =
     //return
 
-    guard Some f := open "assets/save_files/{get_type T}.tsf", ReadBFile
-    else panic "Could not read save_files\\{get_type T}"
+    guard Some f := vfs.open_file "save_files/{get_type T}.tsf", ReadBFile
+    else
+        log "Could not read save_files\\{get_type T}"
+        return
 
     defer f.free!
     defer context.allocator.reset_to context.allocator.get_occupied!
+
+    type_t := get_struct_type::[T]!
 
     new_context := *context
     new_context.allocator = new_context.longterm_storage
@@ -219,14 +292,37 @@ def Store[T].deserialize(&self) =
         read_buffer := sBuffer.make_read_Buffer f.read!
 
         num := read_buffer.read_integer!
+        last_component_type_info : ComponentTypeInfo = _
+        read_buffer.read_object get_type ComponentTypeInfo, &last_component_type_info
 
         log "deserializing {get_type T}: {num}"
 
         for i := 0..num do
-            comp : T = _
+            comp : T = self.default_with
             id := read_buffer.read_integer!
             skip_ID id
-            read_buffer.read_object get_type T, &comp
+
+            for field := last_component_type_info.fields do
+                if field.name == "bt_rigid_body" then continue
+
+                skip : uint = 0
+                read_buffer.read_object (get_type uint), &skip
+
+                guard Some current_field := get_field type_t, field.name
+                else
+                    _ := read_buffer.pointer_to_n_bytes skip  //field no longer exists
+                    log "skipping field as it no longer exists: {field.name}, {skip}, {field.kind}, {sizeof string}"
+                    continue
+
+                if not current_field.field_type.toString! == field.kind then
+                    _ := read_buffer.pointer_to_n_bytes skip
+                    log "skipping field because its of a different type: {field.name}"
+                    continue //field is of different type
+
+                //log "skip is: {skip}"
+                //log "current field: {field.name}: {current_field.field_type}"
+
+                read_buffer.read_object current_field.field_type, offsetPtr &comp, current_field.offset
 
             ptr := self.add_component id, comp
 
@@ -267,6 +363,23 @@ def filter2[A, B](store_a: &Store[A], store_b: &Store[B], lm: Layermask) [](&A, 
     for comp := components_a do
         if Some comp2 := store_b.by_id store_a.id_of comp then
             zipped.append (comp, comp2)
+
+    zipped
+
+def filter3[A,B,C](store_a: &Store[A], store_b: &Store[B], store_c: &Store[C], lm: Layermask) [](&A, &B, &C) =
+    components_a := store_a.mask_components lm
+    zipped := [..](&A, &B, &C)
+
+    for comp := components_a do
+        id := store_a.id_of comp
+
+        guard Some comp2 := store_b.by_id id
+        else continue
+
+        guard Some comp3 := store_c.by_id id
+        else continue
+
+        zipped.append (comp, comp2, comp3)
 
     zipped
 

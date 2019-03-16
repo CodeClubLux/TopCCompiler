@@ -114,6 +114,13 @@ def Vec3.cross(a, b: Vec3) Vec3 =
         (a.x * b.y) - (a.y * b.x)
     }
 
+def Vec3.to_degrees(self) Vec3 =
+    Vec3{
+        degrees self.x
+        degrees self.y
+        degrees self.z
+    }
+
 def Vec4.cross(a, b: Vec4) Vec4 =
     Vec4{
         (a.y * b.z) - (a.z * b.y)

@@ -11,22 +11,23 @@ import "time"
 import "layermask"
 import "editor"
 import "ui"
-from "transform" import transforms
+from "transform" import (transforms, local_transform_system)
 import "draw"
 import "renderPass"
+import "physics"
 
-def set_shader_scene_params(_shader: shader.Shader) =
-    cam := camera.get_camera!
+def set_shader_scene_params(_shader: &shader.Shader) =
+    cam := context.camera //camera.get_camera!
     trans := (transforms.by_id camera.cameras.id_of cam).unwrap!
 
     dir_light := lights.get_dir_light!
 
-    _shader.set_mat4x4 "projection", &cam.projection_matrix
-    _shader.set_mat4x4 "view", &cam.view_matrix
-    _shader.set_vec3 "viewPos", &trans.position
+    _shader.set_mat4x4 _shader.projection, &cam.projection_matrix
+    _shader.set_mat4x4 _shader.view, &cam.view_matrix
+    _shader.set_vec3 _shader.viewPos, &trans.position
 
-    _shader.set_vec3 "dirLight.direction", &dir_light.direction
-    _shader.set_vec3 "dirLight.color", &dir_light.color
+    _shader.set_vec3 _shader.dirLight_direction, &dir_light.direction
+    _shader.set_vec3 _shader.dirLight_color, &dir_light.color
 
     ibl.get_skybox!
         .set_ibl_params_for _shader
@@ -37,6 +38,9 @@ def game_mask() layermask.Layermask =
     if editor.in_editor! then layermask.editor_layer
     else layermask.game_layer
 
+def in_editor() bool =
+    editor.in_editor!
+
 def init() =
     log "initializing"
     w := window.get_window!
@@ -46,6 +50,9 @@ def init() =
     // defer ui_ctx.free!
     defer ecs.serialize!
     defer context.allocator.free_allocator!
+    defer physics.physics_system.free!
+
+    local_transform_system.update_transforms layermask.make_Layermask!.enable layermask.game_layer
 
     while not w.should_close! do
         defer context.allocator.reset_to context.allocator.get_occupied!
@@ -63,14 +70,14 @@ def init() =
         time.update_delta_time!
         ecs.update layermask.make_Layermask!.enable mask
 
-        camera
-            .get_camera!
+        local_transform_system.update_transforms render_mask
+
+        context
+            .camera
             .update_matrices!
 
         //render scene
         renderPass.render_all!
 
         //renderPass.render_all!
-
-
 

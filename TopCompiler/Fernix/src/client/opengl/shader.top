@@ -1,15 +1,34 @@
 import "opengl"
 import "math"
 import "vfs"
+import "ecs"
+import "assetManager"
 
 type Shader =
-    filename: string
+    v_filename: string
+    f_filename: string
     id: uint
 
-def Shader.free(self) =
-    opengl.deleteShader self.id
+    //core shader properties
+    irradianceMap: int
+    prefilterMap: int
+    brdfLUT: int
+    model: int
+    projection: int
+    view: int
+    viewPos: int
+    dirLight_direction: int
+    dirLight_color: int
 
-def make_shader(filename: string, source: string, kind: uint, info_log: &char) uint =
+    v_time_modified: i64
+    f_time_modified: i64
+
+shaders := ecs.make_Store_with_init 20, Shader{"", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Some load_in_place
+
+def Shader.free(self) =
+    opengl.deleteProgram self.id
+
+def make_shader(filename: string, source: string, kind: uint, info_log: &char) Result[uint, string] =
     c_source := source.to_c_string!
     shader := opengl.createShader kind
 
@@ -22,22 +41,30 @@ def make_shader(filename: string, source: string, kind: uint, info_log: &char) u
     if sucess == 0 then
         opengl.getShaderInfoLog shader, 512, None, info_log
         if kind == opengl.vertex_shader then
-            panic "({filename}) Vertex shader compilation: {char_buffer_toString info_log}"
+            return Error "({filename}) Vertex shader compilation: {char_buffer_toString info_log}"
         else
-            panic "({filename}) Fragment shader compilation: {char_buffer_toString info_log}"
+            return Error "({filename}) Fragment shader compilation: {char_buffer_toString info_log}"
 
-    shader
+    Ok shader
 
-def read_shader_file(filename: string) string =
-    match vfs.open_file filename, ReadFile with
-        Some file -> file.read!
-        None ->
-            panic "Failed to read shader source file {filename}"
-            ""
+def read_shader_file(filename: string) Maybe[File] =
+    vfs.open_file filename, ReadFile with
 
-def make(vfilename: string, ffilename: string) Shader =
-    vshader_source := read_shader_file vfilename
-    fshader_source := read_shader_file ffilename
+def load_in_place_with_err(self: &Shader) Maybe[string] =
+    //if self.id > 0 then return //already initialized
+    log "loading shader {self.v_filename}, {self.f_filename}"
+
+    vfilename := self.v_filename
+    ffilename := self.f_filename
+
+    vshader_f := (read_shader_file vfilename).expect "Could not read vertex file"
+    fshader_f := (read_shader_file ffilename).expect "Could not read fragment file"
+
+    defer vshader_f.free!
+    defer fshader_f.free!
+
+    vshader_source := vshader_f.read!
+    fshader_source := fshader_f.read!
 
     defer context.allocator.reset_to context.allocator.get_occupied!
 
@@ -46,8 +73,11 @@ def make(vfilename: string, ffilename: string) Shader =
     info_log := (alloc 512 * sizeof char) cast &char
     defer free info_log
 
-    vertex_shader := make_shader vfilename, vshader_source, opengl.vertex_shader, info_log
-    fragment_shader := make_shader ffilename, fshader_source, opengl.fragment_shader, info_log
+    guard Ok vertex_shader := make_shader vfilename, vshader_source, opengl.vertex_shader, info_log
+    elif Error e then return Some e
+
+    guard Ok fragment_shader := make_shader ffilename, fshader_source, opengl.fragment_shader, info_log
+    elif Error e2 then return Some e2
 
     id := opengl.createProgram!
 
@@ -65,24 +95,96 @@ def make(vfilename: string, ffilename: string) Shader =
     opengl.deleteShader vertex_shader
     opengl.deleteShader fragment_shader
 
-    Shader{vfilename, id}
+    self.id = id
 
-def Shader.bind(self) =
+    self.irradianceMap = self.uniform_location "irradianceMap"
+    self.prefilterMap = self.uniform_location "prefilterMap"
+    self.brdfLUT = self.uniform_location "brdfLUT"
+    self.model = self.uniform_location "model"
+    self.projection = self.uniform_location "projection"
+    self.view = self.uniform_location "view"
+    self.viewPos = self.uniform_location "viewPos"
+    self.dirLight_direction = self.uniform_location "dirLight.direction"
+    self.dirLight_color = self.uniform_location "dirLight.color"
+
+    self.v_time_modified = vfs.time_modified self.v_filename
+    self.f_time_modified = vfs.time_modified self.f_filename
+
+    None
+
+def load_in_place(self: &Shader) =
+    if Some e := load_in_place_with_err self then
+        panic e
+
+def make(vfilename: string, ffilename: string) &Shader =
+    if Some s := assetManager.in_cache shaders, vfilename + ffilename then
+        return s
+
+    id := ecs.make_ID!
+    _ := ecs.make_Entity id
+    s := shaders.make id //Shader{ vfilename, ffilename, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+    s.v_filename = vfilename
+    s.f_filename = ffilename
+    load_in_place s
+    s
+
+def Shader.get_filename(&self) string =
+    self.v_filename + self.f_filename
+
+def Shader.bind(&self) =
     opengl.useProgram self.id
 
-def Shader.set_mat4x4(self, name: string, value: &math.Mat4x4) =
-    loc := opengl.getUniformLocation self.id, name.to_c_string!
+def Shader.get_id(&self) ecs.ID =
+    shaders.id_of self
+
+type Uniform =
+    name: string
+    id: int
+
+def Shader.location(&self, name: string) Uniform =
+    Uniform{ name, opengl.getUniformLocation self.id, name.to_c_string! }
+
+def Shader.uniform_location(&self, name: string) int =
+    opengl.getUniformLocation self.id, name.to_c_string!
+
+def Shader.set_mat4x4(&self, loc: int, value: &math.Mat4x4) =
     opengl.uniformMatrix4fv loc, 1, true, value.data
 
-def Shader.set_vec3(self, name: string, value: &math.Vec3) =
-    loc := opengl.getUniformLocation self.id, name.to_c_string!
+def Shader.set_vec3(&self, loc: int, value: &math.Vec3) =
     opengl.uniform3fv loc, 1, &(value.x)
 
-def Shader.set_int(self, name: string, value: int) =
-    loc := opengl.getUniformLocation self.id, name.to_c_string!
+def Shader.set_vec2(&self, loc: int, value: &math.Vec2) =
+    opengl.uniform2fv loc, 1, &(value.x)
+
+def Shader.set_int(&self, loc: int, value: int) =
     opengl.uniform1i loc, value
 
-def Shader.set_float(self, name: string, value: float) =
-    loc := opengl.getUniformLocation self.id, name.to_c_string!
+def Shader.set_float(&self, loc: int, value: float) =
     opengl.uniform1f loc, value
-     
+
+from "layermask" import Layermask
+
+type ShaderReloadSystem =
+def ShaderReloadSystem.render(&self, m: Layermask) =
+def ShaderReloadSystem.update(&self, m: Layermask) =
+    if not m.layer_in_mask layermask.editor_layer then return
+
+    m = m.enable layermask.game_layer
+
+    for shad := ecs.filter shaders, m do
+        v_time_modified := vfs.time_modified shad.v_filename
+        f_time_modified := vfs.time_modified shad.f_filename
+
+        if v_time_modified > shad.v_time_modified or f_time_modified > shad.f_time_modified then
+            log "recompiled shader: {shad.v_filename}"
+            previous := shad.id
+
+            if Some e := load_in_place_with_err shad then
+                log "Error: {e}"
+                shad.v_time_modified = v_time_modified
+                shad.f_time_modified = f_time_modified //avoid printing errors a billion times
+            else
+                opengl.deleteProgram previous
+
+shader_reload_system := ShaderReloadSystem{}
+ecs.register_system &shader_reload_system

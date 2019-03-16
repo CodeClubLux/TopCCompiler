@@ -94,7 +94,7 @@ def newOperator(kind, precidence, takesIn, func=None, unary= False, token=True):
     if func == None: func = f
     Parser.precidences[kind] = precidence
 
-    _f = lambda parser: Error.parseError(parser, "unexpected operator") if not unary and parser.lookBehind().type == "operator" else func(parser)
+    _f = func #lambda parser: Error.parseError(parser, "unexpected operators") if not unary and parser.lookBehind().type == "operator" else func(parser)
 
     if token:
         Parser.exprToken[kind] = _f

@@ -14,10 +14,19 @@ import os
 
 ignore = {}
 
-def shouldCompile(decl, name, parser, mutated= ()):
-    return True #not name in parser.compiled
+def shouldCompile(decl, name, parser, mutated= (), dependency=False):
+    return not name in parser.compiled
+    #print(parser.alwaysRecompile)
+
+    if not dependency and name in parser.alwaysRecompile and not decl:
+        if name in parser.compiled:
+            return not parser.compiled[name][0]
+
+        return True
 
     if not decl and not name in parser.compiled and not name in mutated:
+
+
         mutated += (name,)
 
         if name in ignore:
@@ -30,7 +39,7 @@ def shouldCompile(decl, name, parser, mutated= ()):
             return True
 
         for i in parser.allImports[name]:
-            if shouldCompile(decl, i, parser, mutated):
+            if shouldCompile(decl, i, parser, mutated, dependency=True):
                 parser.shouldCompile[name] = True
                 return True
 
@@ -68,6 +77,7 @@ def importParser(parser, decl= False):
         Error.parseError(parser, "package "+oname+" not found")
 
     name = os.path.basename(oname)
+
 
     if not decl:
         if not parser.hotswap:
@@ -110,7 +120,10 @@ def importParser(parser, decl= False):
         else:
             if not name in parser.compiled:
                 def loop(name):
+                    #if name in parser.alwaysRecompile:
                     parser.compiled[name] = (False,)
+                    #return
+
                     parser.currentNode.addNode(Tree.InitPack(name, parser))
 
                     #print("not recompiling", name)
@@ -118,7 +131,8 @@ def importParser(parser, decl= False):
 
                     for imports in parser.allImports[name]:
                         if not imports in parser.compiled:
-                            parser.compiled[imports] = (False,) #Assumption is correct as package has to be recompiled when it's dependencies change
+                            parser.compiled[imports] = (False,)
+                            #parser.compiled[imports] = (False,) #Assumption is correct as package has to be recompiled when it's dependencies change
                             parser.currentNode.addNode(Tree.InitPack(imports, parser))
 
                             loop(imports)

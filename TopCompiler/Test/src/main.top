@@ -1,4 +1,3 @@
-type NoToString =
-
-i := [NoToString{}]
-log i.toString!
+for (a,b) := [(10,20)] do
+    a += 30
+    log a

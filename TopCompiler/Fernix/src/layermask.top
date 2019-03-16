@@ -19,3 +19,4 @@ def Layermask.mask(layermask_to_be_masked, use_mask: Layermask) bool =
 let game_layer = 1
 let editor_layer = 2
 let serialize_layer = 3
+let pickable_layer = 4

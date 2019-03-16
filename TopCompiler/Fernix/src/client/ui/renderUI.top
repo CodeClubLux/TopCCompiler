@@ -1,7 +1,9 @@
 import "window"
 import "vfs"
+import "math"
 
 def make_ui() &UI =
+    log "making ui"
     let max_vertex_buffer = 512 * 1024
     let max_element_buffer = 128 * 1024
 
@@ -21,53 +23,25 @@ def make_ui() &UI =
     }
 
 def UI.render(&self) =
+    nk_glfw3_new_frame!
+
     for w := self.windows do
         w.render!
 
     nk_glfw3_render nk_anti_aliasing_on
 
+def UI.render_unselectable(&self) =
+    for w := self.windows do
+        w.render_unselectable!
+
 def UI.new_frame(&self) =
     self.windows = []
-    nk_glfw3_new_frame!
 
 def UI.free(&self) =
     nk_glfw3_shutdown!
 
 ext nk_window_options: uint = "NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE|NK_WINDOW_BORDER"
 ext nk_group_options: uint = "NK_WINDOW_TITLE"
-
-type MesgQueue[E] =
-    messages: [..]E
-    max_messages: uint
-
-def make_MesgQueue[E](max_messages: uint) MesgQueue[E] =
-    messages := [..]E
-    messages.reserve max_messages
-
-    MesgQueue{
-        messages = messages
-        max_messages = max_messages
-    }
-
-def MesgQueue[E].clear(&self) =
-    self.messages.clear!
-
-type Dispatch[E] =
-    mesg_queue: &MesgQueue[E]
-    only: Event
-    mesg: E
-
-def dispatch[E](self: &MesgQueue[E], only: Event, mesg: E) EventHandler =
-    box Dispatch{
-        mesg_queue = self
-        only = only
-        mesg = mesg
-    }
-
-def Dispatch[E].handle(&self, ev: Event) =
-    if ev.tag == self.only.tag then
-        assert self.mesg_queue.messages.length != self.mesg_queue.max_messages, "Message qeueu can only handle {self.mesg_queue.max_messages} messages."
-        self.mesg_queue.messages.append self.mesg
 
 type Block =
     width: uint
@@ -84,7 +58,8 @@ type Row =
 def Row.render(&self, width: uint, height: uint) =
     ui := get_ui!
 
-    nk_layout_row ui.nk_ptr, nk_dynamic, self.height, self.ratios.length, self.ratios.data.unwrap!
+    if self.ratios.length > 0 then
+        nk_layout_row ui.nk_ptr, nk_dynamic, self.height, self.ratios.length, self.ratios.data.unwrap!
 
     for elem := self.elements do
         elem.render (self.width * self.ratios[i]) cast uint, self.height
@@ -146,6 +121,7 @@ default_row := Row{
 let default_property_width = 15 * 20 //100
 let default_input_width = 15 * 20
 
+//calculate layout
 def calculate_layout(rows: &[..]Row, owner_block: &Block, element: &UIElement) =
     current_row :=
         if rows.length == 0 then
@@ -159,6 +135,7 @@ def calculate_layout(rows: &[..]Row, owner_block: &Block, element: &UIElement) =
         Element_Label l -> l.style.calculate_block owner_block, (calculate_text_width l.text, &l.style), (calculate_text_height &l.style)
         Element_Button l -> l.style.calculate_block owner_block, (calculate_text_width l.text, &l.style), (calculate_text_height &l.style)
         Element_Propertyf l -> l.style.calculate_block owner_block, default_property_width, (calculate_text_height &l.style)
+        Element_Propertyu l ->  l.style.calculate_block owner_block, default_property_width, (calculate_text_height &l.style)
         Element_Input l -> l.style.calculate_block owner_block, default_input_width, (calculate_text_height &l.style)
         Element_NewLine ->
             newline = true
@@ -197,6 +174,7 @@ def UIElement.render(&self, width: uint, height: uint) =
         Element_Label l -> l.render!
         Element_Button l -> l.render!
         Element_Propertyf l -> l.render!
+        Element_Propertyu l -> l.render!
         Element_Input l -> l.render!
         Element_NewLine ->
         Element_Group g ->
@@ -252,6 +230,66 @@ def Window.render(&self) =
     //destroy window
     self.end!
 
+import "shader"
+import "primitives"
+import "math"
+
+unselectable_shader := shader.make "shaders/screenspace.vert", "shaders/unselectable.frag"
+
+def Window.render_unselectable(&self) = //todo create function
+    w := window.get_window!
+
+    window_block := Block{
+        width = w.width cast uint
+        height = w.height cast uint
+        margin_top_left = Vec2{0,0}
+        margin_bottom_right = Vec2{0,0}
+    }
+
+    //layouting
+    block := self.style.calculate_block &window_block, 100, 100
+
+    position := match self.position with
+        Absolute x, y -> Vec2{ x, y }
+        Relative -> Vec2{0, 0}
+
+    scale_m := math.scale math.Vec3{
+        block.width / w.width
+        block.height / w.height
+        0
+    }
+
+    origin := math.Vec3{
+        (w.width/2.0) - block.width/2.0
+        (w.height/2.0) - block.height/2.0
+        0
+    }
+
+    translate_by := math.Vec3{
+        position.x - origin.x
+        position.y - origin.y
+        0
+    }
+
+    //log "position = {position.x}, {position.y}"
+
+    norm := math.Vec3{
+        translate_by.x / (w.width/(2))
+        translate_by.y / (w.height/(-2))
+        0
+    }
+    trans_m := math.translate norm
+
+    //log "origin = {origin}"
+    //log "trans = {translate_by}"
+    //log "norm = {norm}"
+
+    model := trans_m * scale_m
+
+    unselectable_shader.bind!
+    unselectable_shader.set_mat4x4 (unselectable_shader.uniform_location "model"), &model //todo cache location
+    primitives.render_quad!
+
 def Label.render(&options) =
     ui := get_ui!
     nk_label ui.nk_ptr, options.text.to_c_string!, nk_text_left
@@ -264,6 +302,8 @@ def Button.render(&options) =
         guard Some ev_handler := options.ev_handler
         else return
 
+        //ev_handler as int
+
         ev_handler.handle Pressed
 
 def Propertyf.render(&options) =
@@ -272,6 +312,11 @@ def Propertyf.render(&options) =
     field_with_id := "#{options.text}"
     *options.value = nk_propertyf ui.nk_ptr, field_with_id.to_c_string!, options.min, *options.value, options.max, options.step, options.inc_per_pixel
 
+def Propertyu.render(&options) =
+    ui := get_ui!
+
+    field_with_id := "#{options.text}"
+    *options.value = (nk_propertyi ui.nk_ptr, field_with_id.to_c_string!, options.min, *options.value, options.max, options.step, options.inc_per_pixel) cast uint
 /*
 def group_begin(options: GroupOptions) bool =
     ui := get_ui!
@@ -283,11 +328,37 @@ def group_end() =
     nk_group_end ui.nk_ptr
 */
 
-def Input.render(&options) =
+
+char_buffers := [..][..](u64, &char)
+for i := 0..1003 do
+    arr := [..](u64, &char)
+    arr.allocator = Some context.longterm_storage
+    char_buffers.append arr
+
+def Input.render(&options) = //will leak
     ui := get_ui!
-    buffer := options.buffer
+
+    c_string := options.value.to_c_string!
+    bucket := &char_buffers[((options.value cast u64) % char_buffers.length) cast u32]
+
+    found : Maybe[&char] = None
+    for (ptr, str) := *bucket do
+        if ptr == (options.value cast u64) then
+            found = Some str
+            break
+
+    buffer :=
+        if Some x := found then x
+        else
+            new_buffer := longterm_alloc::[char] options.max_length + 1
+            bucket.append (options.value cast u64, new_buffer)
+            new_buffer
+
+    assert options.value.length < options.max_length, "Input, max length is smaller than size of value"
+    memcpy buffer, c_string, options.value.length + 1
+
     nk_edit_string_zero_terminated ui.nk_ptr, nk_edit_simple, buffer, options.max_length, None
-    //*options.value = char_buffer_toString buffer
+    *options.value = char_buffer_toString buffer
 
 def Window.begin(&self, size: Vec2) bool =
     ui := get_ui!

@@ -1,5 +1,5 @@
-recursive-include TopCompiler/TopRuntime/ *
-recursive-include TopCompiler/runtime/ *
+recursive-include TopCompiler/TopRuntime *
+recursive-include TopCompiler/runtime *
 include setup.cfg
 exclude .gitignore
 recursive-exclude *.egg-info *

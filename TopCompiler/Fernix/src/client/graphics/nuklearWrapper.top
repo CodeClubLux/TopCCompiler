@@ -49,8 +49,9 @@ ext nk_font_atlas_add_default: |&nk_font_atlas, float, Maybe[&nk_font_config]| -
 ext nk_style_set_font: |&nk_context, &nk_user_font| -> none = "nk_style_set_font"
 ext nk_font_atlas_add_from_file: |&nk_font_atlas, &char, float, Maybe[&nk_font_config]| -> &nk_font = "nk_font_atlas_add_from_file"
 
+//ext nk_propertyd: |&nk_context, &char, f64, float, float, float, float| -> float = "nk_propertyd"
 ext nk_propertyf: |&nk_context, &char, float, float, float, float, float| -> float = "nk_propertyf"
-
+ext nk_propertyi: |&nk_context, &char, int, int, int, int, float| -> int = "nk_propertyi"
 //ext nk_group_begin_titled: |&nk_context, &char, &char, uint| -> bool = "nk_group_begin_titled"
 ext nk_group_begin: |&nk_context, &char, uint| -> bool = "nk_group_begin"
 

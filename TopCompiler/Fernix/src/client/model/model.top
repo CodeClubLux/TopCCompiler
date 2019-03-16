@@ -4,7 +4,7 @@ import "assetManager"
 import "vfs"
 import "transform"
 
-models := ecs.make_Store_with_init::[Model] 10, Model{
+models := ecs.make_Store_with_init::[Model] 20, Model{
     path = ""
     meshes = []
     materials = []
@@ -40,7 +40,6 @@ def make_Model(id: ecs.ID) &Model =
     entity.layermask = entity.layermask.enable layermask.serialize_layer
 
     models.make id
-
 
 //def get_models() &ecs.Store[Model] =
 //    models

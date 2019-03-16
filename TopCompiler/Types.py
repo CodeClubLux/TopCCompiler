@@ -338,7 +338,6 @@ def genGenericCType(struct, func=S.Type, externalStruct=False):
 
     return "struct " + newName
 
-
 def genInterface(interface):
     if interface.package == "_global":
         newName = SimplifyAst.sanitize(interface.package + "." + interface.name)
@@ -452,12 +451,13 @@ class Type:
 class EnumT(Type):
     def __init__(self):
         self.name = "enumT"
-        self.types = {}
+        self.types = {"tag": I32(unsigned=True, size=8)}
 
     def duckType(self, parser, other, node, mynode, iter):
         if not type(other) in [Enum, EnumT]:
+            if type(other) is T:
+                return self.duckType(parser, other.type, node, mynode, iter)
             node.error("type " + str(other) + " is not an enum")
-
 
 class Assign(Type):
     def __init__(self, const):
@@ -716,7 +716,7 @@ class Struct(Type):
         structType = topc.global_parser.structs[self.package][self.normalName]
         if structType.externalStruct:
             genGenericCType(self, externalStruct=True)
-            if self.normalName.startswith("atomic") or self.normalName.startswith("pthread"):
+            if self.normalName.startswith("atomic") or self.normalName.startswith("pthread") or self.normalName.startswith("LLVM"):
                 return self.normalName
             return "struct " + self.normalName
 
@@ -769,11 +769,11 @@ class Struct(Type):
 class Tuple(Type):
     def __init__(self, types):
         self.list = types
-        self.types = dict([(str(index), i) for (index, i) in enumerate(types)])
+        self.types = dict([("field" + str(index), i) for (index, i) in enumerate(types)])
 
-        array = list(range(0, len(self.types)))
-        for i in self.types:
-            array[int(i)] = str(self.types[i])
+        array = []
+        for i in self.list:
+            array.append(str(i))
         self.name = "(" + ",".join(array) + ")"
 
     def duckType(self, parser, other, node, mynode, iter):
@@ -949,6 +949,14 @@ class Interface(Type):
 
         self.methods = methods
 
+        #if self.name == "EventHandler":
+        #    print("what")
+
+        #if self.name == "{handle: |ui.Event| -> none}":
+        #    print("wtf")
+
+
+
     def fromObj(self, obj):
         self.name = obj.name
         self.types = obj.types
@@ -958,6 +966,7 @@ class Interface(Type):
         self.package = obj.package
         self.methods = obj.methods
         self.remainingGen = obj.remainingGen
+        self.fullName = obj.fullName
 
         return self
 
@@ -965,8 +974,8 @@ class Interface(Type):
         return genInterface(self)
 
     def duckType(self, parser, other, node, mynode, iter):
-        if self.name == other.normalName and self.package == other.package:
-            if self.generic != {} and self.name == other.name:
+        if self.normalName == other.normalName and self.package == other.package:
+            if self.name == other.name:
                 return
             for name in self.generic:
                 a = self.generic[name]
@@ -1250,6 +1259,135 @@ class Alias(Type):
 All = Interface(False, {}, name="All")
 
 
+def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
+    if typ is None: return
+
+    if not acc:
+        acc = {}
+
+    isGen = isGeneric(typ, unknown)
+
+    if typ in acc:
+        return acc[typ]
+
+    if not isGen:
+        return typ
+
+    if type(typ) is T:
+        if typ.normalName in gen:
+            r = gen[typ.normalName]
+            acc[typ] = r
+            result = replaceT(r, gen, acc, unknown)
+            return result
+        else:
+            # if type(typ.type) is Assign:
+            return T(typ.realName, replaceT(typ.type, gen, acc, unknown), typ.owner)
+            # return typ
+    elif type(typ) is Struct:
+        rem = {}  # gen
+        types = typ._types
+        for i in typ.remainingGen:
+            if i in gen:
+                rem[i] = gen[i]  # T(i[i.find(".")+1:], gen[i], i[:i.find(".")])
+            else:
+                rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
+
+        #types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
+
+        joined = {}
+        for i in rem:
+            joined[i] = rem[i]
+
+        for i in gen:
+            joined[i] = gen[i]
+        return Struct(False, typ.normalName, typ.types, typ.package, joined)
+    elif type(typ) is Alias:
+        rem = {}
+        for i in typ.generic:
+            if i in gen:
+                rem[i] = gen[i]  # T(i[i.find(".") + 1:], gen[i], i[:i.find(".")])
+            else:
+                rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
+        return Alias(typ.package, typ.normalName, replaceT(typ.typ, gen, acc, unknown), rem)
+    elif type(typ) is Assign:
+        return Assign(replaceT(typ.const, gen, acc, unknown))
+    elif type(typ) is Interface:
+        types = typ.types
+
+        c = Interface(False, {})
+
+        if acc == {}:
+            acc = {typ: c}
+        else:
+            acc[typ] = c
+
+        types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
+        methods = {i: replaceT(typ.methods[i], gen, acc, unknown) for i in typ.methods}
+
+        g = coll.OrderedDict()
+        for name in typ.remainingGen:
+            g[name] = replaceT(typ.remainingGen[name], gen, acc, unknown)
+
+        if typ.package == "" or typ.package == "_global":
+            fullName = typ.normalName
+        else:
+            fullName = typ.package + "." + typ.normalName
+
+        c.fromObj(Interface(False, types, g, methods=methods, name=fullName))
+        return c
+    elif type(typ) is Pointer:
+        tmp = replaceT(typ.pType, gen, acc, unknown)
+
+        newP = Pointer(tmp, typ.mutable)
+        return newP
+    elif type(typ) is Enum:
+        const = coll.OrderedDict()
+        g = {}
+
+        c = Enum(typ.package, typ.normalName, const, g)
+
+        # if acc == {}:
+        #    acc = {typ: c}
+        # else:
+        acc[typ] = c
+
+        for name in typ.const:
+            const[name] = [replaceT(i, gen, acc, unknown) for i in typ.const[name]]
+
+        for name in typ.remainingGen:
+            g[name] = replaceT(typ.remainingGen[name], gen, acc, unknown)
+
+        c.fromObj(Enum(typ.package, typ.normalName, const, g, findRemaining=False))
+        return c
+
+    elif type(typ) is Tuple:
+        arr = []
+        for i in typ.list:
+            arr.append(replaceT(i, gen, acc, unknown))
+
+        return Types.Tuple(arr)
+
+    elif type(typ) is Array and isGen:
+        return Array(replaceT(typ.elemT, gen, acc, unknown), both=typ.both, static=typ.static,
+                     numElements=typ.numElements)
+    elif type(typ) is FuncPointer:
+        generics = typ.generic
+
+        arr = []
+        for i in typ.args:
+            arr.append(replaceT(i, gen, acc, unknown))
+
+        newTyp = replaceT(typ.returnType, gen, acc, unknown)
+        r = FuncPointer(arr, newTyp, gen, do=typ.do)
+        r.remainingGen = {}
+        #for field in r.remainingGen:
+        #    r.remainingGen[field] = replaceT(r.remainingGen[field], gen, acc, unknown)
+
+        return r
+    else:
+        return typ
+
+
 def isGeneric(t, unknown=False):
     #if unknown: return True
     if type(t) is FuncPointer: #return True
@@ -1272,7 +1410,6 @@ def isGeneric(t, unknown=False):
         #        return True
 
     return False
-
 
 class Null(Type):
     name = "none"
@@ -1441,6 +1578,9 @@ class Pointer(Type):
         self.mutable = mutable
         self.package = pType.package
 
+        #if self.pType.name == "events.EventHandler":
+        #    print("hey")
+
     def isMutable(self):
         return self.mutable
 
@@ -1572,122 +1712,6 @@ class Underscore(Type):
     name = "_"
     normalName = "_"
 
-
-def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
-    if typ is None: return
-
-    if not acc:
-        acc = {}
-
-    isGen = isGeneric(typ, unknown)
-
-    if typ in acc:
-        return acc[typ]
-
-    if not isGen:
-        return typ
-
-    if type(typ) is T:
-        if typ.normalName in gen:
-            r = gen[typ.normalName]
-            acc[typ] = r
-            return replaceT(r, gen, acc, unknown)
-        else:
-            # if type(typ.type) is Assign:
-            return T(typ.realName, replaceT(typ.type, gen, acc, unknown), typ.owner)
-            # return typ
-    elif type(typ) is Struct:
-        rem = {}  # gen
-        types = typ._types
-        for i in typ.remainingGen:
-            if i in gen:
-                rem[i] = gen[i]  # T(i[i.find(".")+1:], gen[i], i[:i.find(".")])
-            else:
-                rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
-
-        #types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
-
-        joined = {}
-        for i in rem:
-            joined[i] = rem[i]
-
-        for i in gen:
-            joined[i] = gen[i]
-        return Struct(False, typ.normalName, typ.types, typ.package, joined)
-    elif type(typ) is Alias:
-        rem = {}
-        for i in typ.generic:
-            if i in gen:
-                rem[i] = gen[i]  # T(i[i.find(".") + 1:], gen[i], i[:i.find(".")])
-            else:
-                rem[i] = replaceT(typ.remainingGen[i], gen, acc, unknown)
-        return Alias(typ.package, typ.normalName, replaceT(typ.typ, gen, acc, unknown), rem)
-    elif type(typ) is Assign:
-        return Assign(replaceT(typ.const, gen, acc, unknown))
-    elif type(typ) is Interface:
-        types = typ.types
-
-        c = Interface(False, {})
-
-        if acc == {}:
-            acc = {typ: c}
-        else:
-            acc[typ] = c
-
-        types = {i: replaceT(types[i], gen, acc, unknown) for i in types}
-        methods = {i: replaceT(typ.methods[i], gen, acc, unknown) for i in typ.methods}
-
-        c.fromObj(Interface(False, types, gen, typ.fullName, methods=methods))
-        return c
-    elif type(typ) is Pointer:
-        newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.mutable)
-        return newP
-    elif type(typ) is Enum:
-        const = coll.OrderedDict()
-        g = {}
-
-        c = Enum(typ.package, typ.normalName, const, g)
-
-        # if acc == {}:
-        #    acc = {typ: c}
-        # else:
-        acc[typ] = c
-
-        for name in typ.const:
-            const[name] = [replaceT(i, gen, acc, unknown) for i in typ.const[name]]
-
-        for name in typ.remainingGen:
-            g[name] = replaceT(typ.remainingGen[name], gen, acc, unknown)
-
-        c.fromObj(Enum(typ.package, typ.normalName, const, g, findRemaining=False))
-        return c
-
-    elif type(typ) is Tuple:
-        arr = []
-        for i in typ.list:
-            arr.append(replaceT(i, gen, acc, unknown))
-
-        return Types.Tuple(arr)
-
-    elif type(typ) is Array and isGen:
-        return Array(replaceT(typ.elemT, gen, acc, unknown), both=typ.both, static=typ.static,
-                     numElements=typ.numElements)
-    elif type(typ) is FuncPointer:
-        generics = typ.generic
-
-        arr = []
-        for i in typ.args:
-            arr.append(replaceT(i, gen, acc, unknown))
-
-        newTyp = replaceT(typ.returnType, gen, acc, unknown)
-        r = FuncPointer(arr, newTyp, gen, do=typ.do)
-        r.remainingGen = {}
-        #for field in r.remainingGen:
-        #    r.remainingGen[field] = replaceT(r.remainingGen[field], gen, acc, unknown)
-
-        return r
-    else:
-        return typ
 
 
 from TopCompiler import topc

@@ -1,4 +1,4 @@
-from "modelSettings" import (model_settings_system, make_ModelSetting)
+from "modelSettings" import all
 import "ui"
 import "input"
 import "key"
@@ -9,22 +9,20 @@ import "layermask"
 import "window"
 import "vfs"
 import "transform"
+import "events"
 
 type ModelAssetTabEvents either
     SelectedModel(uint)
 
 type ModelAssetTab =
-    ui_mesg_queue: ui.MesgQueue[ModelAssetTabEvents]
+    ui_mesg_queue: events.MesgQueue[ModelAssetTabEvents]
     selected_id: int
-    filter_buffer: &char
+    filter: string
 
 def make_ModelAssetTab() ModelAssetTab =
-    filter_buffer := (alloc 50 * sizeof char) cast &char
-    *filter_buffer = null_terminated
-
     ModelAssetTab{
-        ui_mesg_queue = ui.make_MesgQueue::[ModelAssetTabEvents] 10
-        filter_buffer = filter_buffer
+        ui_mesg_queue = events.make_MesgQueue::[ModelAssetTabEvents] 10
+        filter = ""
         selected_id = -1
     }
 
@@ -64,37 +62,28 @@ def ModelAssetTab.update(&self) =
 
                 edit.select id
                 self.selected_id = id
-
-                log "dropped file {file}"
             elif (file.ends_with ".png") or (file.ends_with ".JPG") or file.ends_with ".jpg" then
                 editor.handle_dropped_image file
+            elif file.ends_with ".vert" then
+                editor.handle_dropped_shader file
             else
                 log "Unknown file format {file}"
-
-        break
 
     if input.key_pressed key.from_char `N` then
         if self.selected_id < 0 then return
 
         id := ecs.make_ID!
         entity := ecs.make_Entity id
-        trans := transform.make_Transform id
 
         edit.select id
 
-        model_system := model.models
-
-        guard Some model_setting := model_settings_system.by_id (self.selected_id cast uint)
+        guard Some prefab := prefabs.by_id (self.selected_id cast uint)
         else return
 
-        model_renderer := model.make_ModelRenderer id
-        model_renderer.materials = model_setting.materials
-        model_renderer.model_id = model_setting.model_id
+        prefab.children.append id
 
 def ModelAssetTab.render_ui(&self, w: &ui.Window) =
-    filter := ""
-
-    inp := ui.input w, 50, self.filter_buffer, &filter
+    inp := ui.input w, 50, &self.filter
     inp.style.width = ui.Perc 1
 
     model_settings := model_settings_system.get_all_active!
@@ -102,11 +91,11 @@ def ModelAssetTab.render_ui(&self, w: &ui.Window) =
     for model_setting := model_settings do
         id := model_settings_system.id_of model_setting
 
-        if not model_setting.filename.starts_with filter then continue
+        if not model_setting.filename.starts_with self.filter then continue
 
         selected := id == self.selected_id
 
         button := ui.button w, model_setting.filename
         button.style.width = ui.Perc 1
         button.selected = selected
-        button.ev_handler = Some ui.dispatch &self.ui_mesg_queue, ui.Pressed, SelectedModel id
+        button.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, SelectedModel id

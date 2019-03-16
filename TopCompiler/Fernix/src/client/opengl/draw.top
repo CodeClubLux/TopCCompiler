@@ -2,9 +2,13 @@ type DepthFunc either
     DepthFunc_Less
     DepthFunc_Lequal
 
+type Cull either
+    Cull_Front or Cull_Back or Cull_None
+
 type SortKey is u64
 
 type State =
+    cull: Cull
     depth_func: DepthFunc
     clear_depth_buffer: bool
     order: uint
@@ -15,9 +19,15 @@ draw_transparency := 2
 draw_last := 3
 
 default_state := State{
+    cull = Cull_None
     depth_func = DepthFunc_Lequal
     order = 0
     clear_depth_buffer = false
+}
+
+draw_over := default_state{
+    clear_depth_buffer = true
+    order = draw_last
 }
 
 from "math" import Vec4
@@ -31,6 +41,7 @@ from "materialSystem" import Material
 import "transform"
 
 type DrawCommand =
+    id: ecs.ID
     key: u64
     buffer: &buffer.VertexBuffer
 
@@ -41,7 +52,7 @@ def DrawCommand.toString(&self) string =
     "DrawCommand"
 
 def DrawCommand.calc_sort_key(&self) = //pack all state into 64 bit key
-    self.key = (self.material.state.order * 68719476736) + (self.material.state.depth_func.tag * 4294967296) + (self.buffer.vao * 65536) + (self.material.shader.id)
+    self.key = (self.material.state.order * 68719476736) + (self.material.state.depth_func.tag * 4294967298) + (self.material.state.cull.tag * 4294967296) + (self.buffer.vao * 65536) + (self.material.shader)
 
 type CommandBuffer =
     commands: [..]DrawCommand
@@ -57,8 +68,9 @@ def clear() =
     command_buffer := context.command_buffer
     command_buffer.commands = [..]DrawCommand
 
-def make_DrawCommand(trans: Maybe[&transform.Transform], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
+def make_DrawCommand(id: ecs.ID, trans: Maybe[&transform.Transform], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
     cmd := DrawCommand{
+        id = id
         transform = trans
         buffer = buff
         material = material
@@ -105,23 +117,54 @@ def quick_sort(cmds: []DrawCommand) []DrawCommand =
 def set_params(self: &Material) =
     params := &self.params
 
+    guard Some s := shader.shaders.by_id self.shader
+    else return
+
     for i := 0..params.length do
         match params[i] with
             Param_Vec3 field, vector ->
-                self.shader.set_vec3 field, &vector
+                s.set_vec3 field.id, &vector
+
+            Param_Vec2 field, vector ->
+                s.set_vec2 field.id, &vector
 
             Param_Mat4x4 field, matrix ->
-                self.shader.set_mat4x4 field, &matrix
+                s.set_mat4x4 field.id, &matrix
 
-            Param_Image field, tex ->
+            Param_Image field, tex_id ->
+                guard Some tex := texture.textures.by_id tex_id
+                else continue
+
                 tex.bind_to i+3
-                self.shader.set_int field, i + 3
+                s.set_int field.id, i + 3
+
+            Param_Int field, value ->
+                s.set_int field.id, value
 
             Param_Cubemap field, tex ->
                 tex.bind_to i+3
-                self.shader.set_int field, i+3
+                s.set_int field.id, i+3
 
-def switch_shader(shad: shader.Shader) =
+def update_mat(self: &Material) =
+    params := &self.params
+
+    guard Some s := shader.shaders.by_id self.shader
+    else return
+
+    for i := 0..params.length do
+        params[i] = match params[i] with
+            Param_Vec3 field, vector -> materialSystem.Param_Vec3 (s.location field.name), vector
+            Param_Vec2 field, vector -> materialSystem.Param_Vec2 (s.location field.name), vector
+            Param_Mat4x4 field, matrix -> materialSystem.Param_Mat4x4 (s.location field.name), matrix
+            Param_Image field, tex_id -> materialSystem.Param_Image (s.location field.name), tex_id
+            Param_Int field, value -> materialSystem.Param_Int (s.location field.name), value
+            Param_Cubemap field, tex -> materialSystem.Param_Cubemap (s.location field.name), tex
+
+
+def switch_shader(shad_id: ecs.ID) =
+    guard Some shad := shader.shaders.by_id shad_id
+    else return
+
     shad.bind!
     runner.set_shader_scene_params shad
 
@@ -130,10 +173,22 @@ def DepthFunc.bind(self) =
         DepthFunc_Lequal -> opengl.depthFunc opengl.lequal
         DepthFunc_Less -> opengl.depthFunc opengl.less
 
-def submit_to_gpu() =
-    cmds := context.command_buffer.commands
+def Cull.bind(self) =
+    match self with
+        Cull_None -> opengl.disable opengl.cull_face
+        Cull_Back ->
+            opengl.enable opengl.cull_face
+            opengl.cullFace opengl.back
+        Cull_Front ->
+            opengl.enable opengl.cull_face
+            opengl.cullFace opengl.front
 
-    //cmds := quick_sort commands
+def submit_to_gpu() =
+    not_sorted_cmds := context.command_buffer.commands
+    cmds := quick_sort not_sorted_cmds
+    bind_count := 0
+
+    hotreload := runner.in_editor!
 
     for cmd := cmds do
         mat := cmd.material
@@ -142,29 +197,42 @@ def submit_to_gpu() =
             switch_shader mat.shader
             cmd.buffer.bind!
             mat.state.depth_func.bind!
+            mat.state.cull.bind!
+
             if mat.state.clear_depth_buffer then
                 opengl.clear opengl.depth_buffer_bit
+
+            if hotreload then
+                update_mat mat
+            set_params mat
         else
             last_cmd := cmds[i - 1]
             last_mat := last_cmd.material
 
-            if last_cmd.material.shader.id != cmd.material.shader.id then
-                switch_shader cmd.material.shader
+            if last_cmd.material.shader != cmd.material.shader then
+                switch_shader mat.shader
             if last_cmd.buffer.vao != cmd.buffer.vao then
                 cmd.buffer.bind!
-            if last_mat.state.depth_func.tag != last_mat.state.depth_func.tag then
-                last_mat.state.depth_func.bind!
+            if last_mat.state.depth_func.tag != mat.state.depth_func.tag then
+                mat.state.depth_func.bind!
+            if last_mat.state.cull.tag != mat.state.cull.tag then
+                mat.state.cull.bind!
 
             if mat.state.clear_depth_buffer and not last_mat.state.clear_depth_buffer then
                 opengl.clear opengl.depth_buffer_bit
 
-        set_params mat
+            if mat cast u64 != last_mat cast u64 then
+                if hotreload then
+                    update_mat mat
+                set_params mat
+
         match cmd.transform with
             Some trans ->
                 transformation_matrix := trans.compute_model_matrix!
-                mat.shader.set_mat4x4 "model", &transformation_matrix
+                guard Some s := shader.shaders.by_id mat.shader
+                else continue
+
+                s.set_mat4x4 s.model, &transformation_matrix
             None ->
 
         opengl.drawElements opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0
-
-

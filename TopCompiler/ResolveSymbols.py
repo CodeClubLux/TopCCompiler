@@ -213,6 +213,7 @@ def insert(parser, p, only= False, copy= False):
     p.contextType = parser.contextType
     p.compiledTypes = parser.compiledTypes
     p.includes = parser.includes
+    p.alwaysRecompile = parser.alwaysRecompile
 
     return p
 

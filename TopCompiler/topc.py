@@ -257,6 +257,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
     global global_parser
 
     didCompile = False
+    to_obj = False
 
     try:
         opt = 0
@@ -278,6 +279,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 skip = 1
             elif i == "-O1":
                 opt = 1
+            elif i == "-c":
+                to_obj = True
             else:
                 Error.error("unknown argument '" + i + "'.")
 
@@ -409,6 +412,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 declarations.usedModules = cache.usedModules
                 declarations.specifications = cache.specifications
                 declarations.includes = cache.includes
+                declarations.alwaysRecompile = cache.alwaysRecompile
 
                 Types.genericTypes = cache.generatedGenericTypes
                 Types.inProjectTypes = {name: None for name in Types.genericTypes}
@@ -436,6 +440,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             declarations.output_target = target
             declarations.didCompile = False
             declarations.linkWith = linkWith
+
 
             if (dev and run):
                 clearMain(declarations)
@@ -530,6 +535,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     canStartWith.append(dir)
 
                     if parser.compiled[i][0]:
+
                         inc = CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt)
                         includes.extend(inc)
                         parser.includes[i] = inc
@@ -558,8 +564,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 timeForCodeAnalysis = time() - beforeLoad
 
-                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
+                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, to_obj= to_obj, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
                 if compileRuntime:
+                    #if not compileRuntime:
+                    #    saveParser.dontSaveGeneric(parser)
                     saveParser.save(parser, compileRuntime)
 
                 print("Code Analysis : " + str(timeForCodeAnalysis))
@@ -573,6 +581,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 didCompile = True
 
                 parser.didCompile = True
+
                 return parser
             elif run:
                 CodeGen.exec(outputFile)

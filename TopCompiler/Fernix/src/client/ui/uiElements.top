@@ -1,21 +1,18 @@
 from "math" import Vec2
+from "events" import all
 
 type UIElement either
     Element_Label(&Label)
     Element_Button(&Button)
     Element_Propertyf(&Propertyf)
+    Element_Propertyu(&Propertyu)
     Element_Input(&Input)
     Element_NewLine
     Element_Group(&Window)
 
 def UIElement.toString(&self) string =
-    match *self with
-        Element_Label x -> "Label"
-        Element_Button x -> "Button"
-        Element_Propertyf _ -> "Property"
-        Element_Input _ -> "Input"
-        Element_NewLine -> "Newline"
-        Element_Group _ -> "Group"
+    enum_type := get_type UIElement
+    enum_type.cases[self.tag].name
 
 type Size either
     Auto
@@ -53,8 +50,8 @@ def Window.add_child(&self, child: UIElement) =
 type Event either
     Pressed
 
-type EventHandler with
-    def handle(Event)
+def Event.op_eq(self, other: Event) bool =
+    self.tag == other.tag
 
 def window(title: string) &Window =
     ui := get_ui!
@@ -110,7 +107,7 @@ def label[T: Container](w: &T, text: string) &Label =
 type Button =
     text: string
     selected: bool
-    ev_handler: Maybe[EventHandler]
+    ev_handler: Maybe[events.EventHandler[Event]]
     style: Style
 
 def button[T: Container](w: &T, text: string) &Button =
@@ -147,16 +144,37 @@ def propertyf[T: Container](w: &T, text: string, value: &float) &Propertyf =
     w.add_child Element_Propertyf self
     self
 
+type Propertyu =
+    text: string
+    value: &uint
+    min: uint
+    max: uint
+    step: uint
+    inc_per_pixel: float
+    style: Style
+
+def propertyu[T: Container](w: &T, text: string, value: &uint) &Propertyu =
+    self := box Propertyu {
+        text = text
+        value = value
+        min = 0
+        max = 10000
+        step = 1
+        inc_per_pixel = 0.01
+        style = default_style
+    }
+
+    w.add_child Element_Propertyu self
+    self
+
 type Input =
     max_length: uint
-    buffer: &char
     value: &string
     style: Style
 
-def input[T: Container](w: &T, max_length: uint, buffer: &char, value: &string) &Input =
+def input[T: Container](w: &T, max_length: uint, value: &string) &Input =
     self := box Input{
         max_length = max_length
-        buffer = buffer
         value = value
         style = default_style
     }

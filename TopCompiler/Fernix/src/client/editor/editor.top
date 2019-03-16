@@ -12,14 +12,20 @@ from "displayComponents" import (render_properties, update_properties)
 from "materialSystem" import (Param_Image)
 import "texture"
 import "key"
+import "gizmo"
+import "picking"
+import "events"
+from "lister" import (Lister, make_Lister)
 
 type DroppableField =
     ptr: &none
+    typ: string
     id: ecs.ID
 
 type EditorEvents either
     SelectedField(DroppableField)
     AddComponent(ecs.ID, ecs.ComponentStore)
+    InGame(bool)
 
 type Editor =
     in_editor: bool
@@ -29,7 +35,9 @@ type Editor =
     model_tab_width: float
     asset_tab: ModelAssetTab
     droppable_field: Maybe[DroppableField]
-    ui_mesg_queue: ui.MesgQueue[EditorEvents]
+    ui_mesg_queue: events.MesgQueue[EditorEvents]
+    event_source: events.EventSource[EditorEvents]
+    lister: Lister
 
 asset_folder := "C:\\Users\\User\\Desktop\\TopCCompiler\\TopCompiler\\Fernix\\assets\\"
 log "asset folder length {asset_folder.length}"
@@ -44,6 +52,7 @@ def Editor.update(&self, m: layermask.Layermask) =
     if input.key_pressed key.from_char `P` then
         log "switch between editor and game"
         self.in_editor = not self.in_editor
+        self.event_source.handle InGame (not self.in_editor)
 
     if input.key_pressed key.from_char `X` then
         self.selected = match self.selected with
@@ -53,18 +62,23 @@ def Editor.update(&self, m: layermask.Layermask) =
 
             None -> None
 
-    if input.key_pressed key.from_char `L` then //change to use contro
+    if input.key_pressed key.from_char `L` then //@todo change to use contro
         ecs.serialize!
 
     self.asset_tab.update!
+    self.lister.update!
     update_properties!
     self.ui_mesg_queue.clear!
 
 def Editor.select(&self, id: ecs.ID) =
     self.selected = Some id
 
+def Editor.deselect(&self) =
+    self.selected = None
+
 def Editor.render(&self, m: layermask.Layermask) =
     if not self.in_editor then return
+
     render_properties!
 
     w := window.get_window!
@@ -76,18 +90,47 @@ def Editor.render(&self, m: layermask.Layermask) =
 
     self.asset_tab.render_ui panel
 
+    self.lister.render!
+
 editor := Editor{
     in_editor = false
     selected = None
     droppable_field = None
-    editor_tab_width = 0.2
+    editor_tab_width = 0.25
     asset_tab_height = 0.3
     model_tab_width = 0.2
     asset_tab = make_ModelAssetTab!
-    ui_mesg_queue = ui.make_MesgQueue::[EditorEvents] 10
+    ui_mesg_queue = events.make_MesgQueue::[EditorEvents] 10
+    event_source = events.make_EventSource::[EditorEvents]!
+    lister = make_Lister!
 }
 
+editor.event_source.subscribe &gizmo.gizmo_system
 ecs.register_system &editor
+
+import "flyover"
+import "transform"
+import "camera"
+
+def make_EditorCam() =
+    id := ecs.make_ID!
+
+    entity := ecs.entities.make id
+    entity.layermask = entity.layermask.disable layermask.serialize_layer
+    entity.layermask = entity.layermask.disable layermask.game_layer
+    entity.layermask = entity.layermask.enable layermask.editor_layer
+
+    trans := transform.transforms.make id
+    trans.position = math.Vec3{ 0, 1, 1.8 }
+
+    floating_camera := flyover.make_Flyover id //in editor
+
+    _ := camera.cameras.make id
+
+    log "editor id {id}"
+    log entity.layermask.layer_in_mask layermask.game_layer
+
+make_EditorCam!
 
 def in_editor() bool =
     editor.in_editor
@@ -99,12 +142,41 @@ def handle_dropped_image(file: string) =
     self := get_editor!
 
     guard Some selected_field := self.droppable_field
-    else return
+    else
+        log "dropping image when nothing is selected"
+        return
+
+    if not selected_field.typ == "Param_Image" then
+        log "dropping image to unsupported field {selected_field.typ}"
+        return
 
     param := selected_field.ptr cast &materialSystem.Param
 
     guard Param_Image param_name, _ := *param
-    else return
+    else
+        typ := get_type materialSystem.Param
+        log "dropping image to unsupported case {typ.cases[param.tag].name}"
+        return
 
-    *param = Param_Image param_name, texture.load file
+    *param = Param_Image param_name, texture.textures.id_of texture.load file
+
+import "shader"
+
+def handle_dropped_shader(file: string) =
+    base := file.slice 0, file.length - ".vert".length
+    self := get_editor!
+
+    guard Some selected_field := self.droppable_field
+    else
+        log "dropping image when nothing is selected"
+        return
+
+    if not selected_field.typ == "Shader" then
+        log "dropping shader to unsupported field {selected_field.typ}"
+        return
+
+    shad := selected_field.ptr cast &ecs.ID
+    *shad = (shader.make "{base}.vert", "{base}.frag").get_id!
+
+
 

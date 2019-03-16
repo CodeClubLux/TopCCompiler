@@ -1,0 +1,139 @@
+import "ecs"
+import "ui"
+import "window"
+import "events"
+import "editor"
+from "math" import (string_to_int)
+from "transform" import local_transforms
+
+type Name =
+    name: string
+
+named := ecs.make_Store::[Name] 20, Name{
+    "entity"
+}
+
+type ListerEvents either
+    Selected(ecs.ID)
+
+type Lister =
+    filter: string
+    ui_mesg_queue: events.MesgQueue[ListerEvents]
+
+def make_Lister() Lister =
+    Lister{
+        filter = ""
+        ui_mesg_queue = events.make_MesgQueue::[ListerEvents] 3
+    }
+
+def Lister.render_name(&self, w: &ui.Window, name: &NameHierachy, indent: string) =
+    edit := editor.get_editor!
+
+    id := name.id
+
+    if not name.name.starts_with self.filter then return
+
+    selected := match edit.selected with
+        Some s -> id == s
+        None -> false
+
+    button := ui.button w, indent + name.name
+    button.style.width = ui.Perc 1
+    button.selected = selected
+    button.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, Selected id
+
+    new_indent := indent + "    "
+
+    for child := name.children do
+        self.render_name w, child, new_indent
+
+def name_with_id(selected: ecs.ID) string =
+    match named.by_id selected with
+        Some name -> "#{selected} : {name.name}"
+        _ ->  "#{selected}"
+
+type NameHierachy =
+    name: string
+    children: [..]&NameHierachy
+    id: ecs.ID
+
+def insert_in(names: &[..]Maybe[&NameHierachy], id: uint, name: &NameHierachy) =
+    if id >= names.length then
+        for i := 0..(id - names.length + 1) do
+            names.append None
+
+    names[id] = Some name
+
+def get_id(names: []Maybe[&NameHierachy], id: uint) Maybe[&NameHierachy] =
+    if names.length <= id then None
+    else names[id]
+
+def Lister.get_hierachy(&self) []&NameHierachy =
+    names := [..]Maybe[&NameHierachy]
+    active_named := named.get_all_active!
+    top := [..]&NameHierachy
+
+    for name := active_named do
+        id := named.id_of name
+        insert_in &names, id, box NameHierachy{ name = name.name, children = [], id = id }
+
+    for name := active_named do
+        id := named.id_of name
+
+        hierachy := names[id].unwrap!
+
+        if Some local := local_transforms.by_id id then
+            if Some owner_named := get_id names, local.owner then
+                owner_named.children.append hierachy
+            else
+                top.append hierachy
+        else
+            top.append hierachy
+
+    top
+
+def Lister.render(&self) =
+    edit := editor.get_editor!
+
+    filter := &self.filter
+
+    win := window.get_window!
+    
+    w := ui.window "Lister"
+    w.style.width = ui.Perc 0.15
+    w.style.height = ui.Perc 1
+    w.position = ui.Absolute (win.width - win.width * 0.15) cast uint, 0
+
+    inp := ui.input w, 50, filter
+    inp.style.width = ui.Perc 1
+
+    hierarchy_named := self.get_hierachy!
+
+    active_named := named.get_all_active!
+
+    if (*filter).starts_with "#" then
+        splice := (*filter).slice 1, filter.length
+
+        guard Some id := math.string_to_int splice
+        else return
+
+        guard Some e := ecs.entities.by_id id cast ecs.ID
+        else return
+
+        button := ui.button w, name_with_id id cast ecs.ID
+        button.style.width = ui.Perc 1
+        button.selected = match edit.selected with
+            Some s -> id == s
+            None -> false
+
+        button.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, Selected id cast ecs.ID
+    else
+        for name := hierarchy_named do
+            self.render_name w, name, ""
+
+def Lister.update(&self) =
+    for mesg := self.ui_mesg_queue.messages do
+        match mesg with
+            Selected id -> editor.get_editor!.select id
+
+    self.ui_mesg_queue.clear!

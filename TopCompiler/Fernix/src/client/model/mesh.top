@@ -27,6 +27,7 @@ def Mesh.submit(&mesh) =
         buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, bitangent}
     ]
 
+    log "vertices: {mesh.indices.length}"
     mesh.buffer = buffer.make_vertex_buffer mesh.vertices, mesh.indices, &attributes
 
 def make_Mesh(vertices: []Vertex, indices: []uint, material_id: uint) Mesh =
@@ -47,5 +48,6 @@ def make_Mesh(vertices: []Vertex, indices: []uint, material_id: uint) Mesh =
 
 def Mesh.render(&self, trans: &transform.Transform, materials: []Material) =
     material := &materials[self.material_id]
-    cmd := draw.make_DrawCommand (Some trans), &self.buffer, material
+    id := transform.transforms.id_of trans
+    cmd := draw.make_DrawCommand id, (Some trans), &self.buffer, material
     cmd.submit!

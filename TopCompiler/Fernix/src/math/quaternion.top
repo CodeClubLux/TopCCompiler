@@ -82,26 +82,123 @@ def Quat.mul_vec3(&q, v: Vec3) Vec3 =
 
     a + b + c
 
+
 def Quat.toString(&self) string =
     "Quat({self.w}, {self.x}, {self.y}, {self.z})"
 
-def Quat.to_vec3(&rotation) Vec3 = //this does not actually work
-    x := Vec3{1,0,0}
-    y := Vec3{0,1,0}
-    z := Vec3{0,0,1}
+def Quat.to_euler(using &self) Vec3 =
+    heading := 0.0
+    attitude := 0.0
+    bank := 0.0
 
-    rot_x := rotation.mul_vec3 x
-    rot_y := rotation.mul_vec3 y
-    rot_z := rotation.mul_vec3 z
+    test := x*y + z*w;
+    if test > 0.499 then //singularity at north pole
+        heading = 2 * atan2 x,w
+        attitude = pi/2
+        bank = 0
+    elif test < (-0.499) then// singularity at south pole
+        heading = -2 * atan2 x,w
+        attitude = - pi/2
+        bank = 0
+    else
+        sqx := x*x
+        sqy := y*y
+        sqz := z*z
+        heading = atan2 (2*y*w - 2*x*z), (1 - 2*sqy - 2*sqz) // Heading
+        attitude = asin 2*test // attitude
+        bank = atan2 (2*x*w - 2*y*z), (1 - 2*sqx - 2*sqz) // bank
 
-    vec := Vec3{rot_x.x * 180 - 180, rot_y.y * 180 - 180, rot_z.z * 180 - 180}
-    if vec.x > 360 then vec.x -= 360
-    elif vec.x < (-360) then vec.x += 360
-    
-    if vec.y > 360 then vec.y -= 360
-    elif vec.y < (-360) then vec.y += 360
-    
-    if vec.z > 360 then vec.z -= 360
-    elif vec.z < (-360) then vec.z += 360
+    Vec3{ x = bank, y = heading, z = attitude }
 
-    vec
+def quat_look_rotation(lookAt: Vec3, upDirection: Vec3) Quat =
+    forward := lookAt
+    up := upDirection
+
+    forward = forward.norm!
+    up = up - (forward.scale (up.dot forward))
+    up = up.norm!
+
+    vector := forward
+    vector2 := up.cross vector
+    vector3 := vector.cross vector2
+    m00 := vector2.x
+    m01 := vector2.y
+    m02 := vector2.z
+    m10 := vector3.x
+    m11 := vector3.y
+    m12 := vector3.z
+    m20 := vector.x
+    m21 := vector.y
+    m22 := vector.z
+
+    num8 := (m00 + m11) + m22
+
+    if num8 > 0.0 then
+        num := sqrt num8 + 1.0
+        w := num * 0.5
+        num = 0.5 / num;
+        Quat{
+            x = (m12 - m21) * num
+            y = (m20 - m02) * num
+            z = (m01 - m10) * num
+            w = w
+        }
+    elif (m00 >= m11) and (m00 >= m22) then
+        num7 := sqrt ((1.0 + m00) - m11) - m22
+        num4 := 0.5 / num7;
+
+        Quat{
+            x = 0.5 * num7
+            y = (m01 + m10) * num4
+            z = (m02 + m20) * num4
+            w = (m12 - m21) * num4
+        }
+    elif m11 > m22 then
+        num6 := sqrt ((1.0 + m11) - m00) - m22
+        num3 := 0.5 / num6
+        Quat{
+            x = (m10 + m01) * num3
+            y = 0.5 * num6
+            z = (m21 + m12) * num3
+            w = (m20 - m02) * num3
+        }
+    else
+        num5 := sqrt ((1.0 + m22) - m00) - m11
+        num2 := 0.5 / num5;
+        Quat{
+            x = (m20 + m02) * num2
+            y = (m21 + m12) * num2
+            z = 0.5 * num5
+            w = (m01 - m10) * num2
+        }
+
+def quat_from_euler(vec: Vec3) Quat =
+    c1 := cos vec.x/2
+    c2 := cos vec.y/2
+    c3 := cos vec.z/2
+
+    s1 := sin vec.x/2
+    s2 := sin vec.y/2
+    s3 := sin vec.z/2
+
+    Quat{
+        x = s1 * c2 * c3 + c1 * s2 * s3
+        y = c1 * s2 * c3 + s1 * c2 * s3
+        z = c1 * c2 * s3 - s1 * s2 * c3
+        w = c1 * c2 * c3 - s1 * s2 * s3
+    }
+
+def test_quat() =
+    log "quaternion test"
+
+    puts_in := Vec3{(radians 0), (radians 45), radians 0}
+
+    out_q := quat_from_euler puts_in
+    out := out_q.to_euler!
+
+    log "got: {out}"
+    log "expects: {puts_in}"
+
+    //panic "Test complete!"
+
+test_quat!

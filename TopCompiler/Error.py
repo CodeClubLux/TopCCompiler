@@ -17,6 +17,12 @@ def parseError(parser, message):
     errorAst(message, package, filename, token)
 
 def errorAst(message, package, filename, token):
+    #if message == "type All is not an enum":
+    #    print("hey")
+
+    if filename == "":
+        filename = package
+
     from TopCompiler import topc
     html = '<div class="error">'
 

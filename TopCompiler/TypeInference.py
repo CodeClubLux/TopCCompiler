@@ -62,7 +62,7 @@ def infer(parser, tree):
                     try:
                         Scope.addVar(_for, parser, "i", Scope.Type(True, it_should_be, _for.global_target))
                     except EOFError as e:
-                        pass
+                        _for.implicit_index = False
 
             if type(i) is Tree.FuncStart:
                 if not type(n) is Tree.Root:
@@ -104,15 +104,16 @@ def infer(parser, tree):
                     if not i.guard:
                         Scope.decrScope(parser)
 
+
                     if first:
                         try:
                             thisTyp = body.type
-                            first.duckType(parser, thisTyp, body, i, 0)
+                            first.duckType(parser, thisTyp, body, body, 0)
                         except EOFError as e:
                             try:
-                                thisTyp.duckType(parser, first, body, i, 0)
+                                thisTyp.duckType(parser, first,body, body, 0)
                                 first = thisTyp
-                            except EOFError:
+                            except EOFError as e:
                                 Error.beforeError(e, "Type mismatch, this arm has a different type : ")
 
                         #if body.type != first:
@@ -178,7 +179,7 @@ def infer(parser, tree):
                                     node.error("Object has no field "+name)
                                 recur(typ.types[name],p)
                         else:
-                            Scope.addVar(node, parser, pattern.name, Scope.Type(True, typ, i.global_target))
+                            Scope.addVar(node, parser, pattern.name, Scope.Type(False, typ, i.global_target))
                             i.nodes[0].isGlobal = Scope.isGlobal(parser, parser.package, pattern.name)
                             i.nodes[1].isGlobal = i.nodes[0].isGlobal
 
@@ -505,7 +506,7 @@ def infer(parser, tree):
                 if not i.nodes[0].type.isType(Types.FuncPointer):
                     i.nodes[0].error("type "+str(i.nodes[0].type)+" is not callable")
 
-                i.nodes[0].type = i.nodes[0].type.toRealType()
+                #i.nodes[0].type = i.nodes[0].type
                 do = i.nodes[0].type.do
                 returnType = i.nodes[0].type.returnType
                 fType = i.nodes[0].type
@@ -991,7 +992,17 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
             gen[key] = Types.replaceT(shouldBeTyp.generic[key], generics)
 
         #gen = {i: generics[i] for i in generics if ".".join(i.split(".")[:-1]) == shouldBeTyp.normalName}
-        r = Types.Interface(False, types, gen, shouldBeTyp.fullName, methods= methods)
+
+        #todo unify as function
+        typ = shouldBeTyp
+        if typ.package == "" or typ.package == "_global":
+            fullName = typ.normalName
+        else:
+            fullName = typ.package + "." + typ.normalName
+
+        r = Types.Interface(False, types, gen, methods=methods, name=fullName)
+
+        #r = Types.Interface(False, types, gen, shouldBeTyp.fullName, methods= methods)
 
         return r
     else:

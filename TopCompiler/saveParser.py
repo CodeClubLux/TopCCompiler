@@ -1,4 +1,5 @@
 import pickle
+
 import os
 import pprint
 import AST as Tree
@@ -50,7 +51,8 @@ def save(parser, runtimeBuild):
 
     for package in parser.structs:
         for s in parser.structs[package]:
-            #parser.structs[package][s].actualfields = list(parser.structs[package][s].actualfields.keys())
+            for i in parser.structs[package][s].actualfields:
+                i.owner = None
             parser.structs[package][s].node = 0
 
     def removeRedundantProperties(ast):
@@ -59,20 +61,49 @@ def save(parser, runtimeBuild):
             ast.owner = None
         #ast.token = None
 
-        for node in ast.nodes:
-            removeRedundantProperties(node)
+        #for node in ast.nodes:
+        #    removeRedundantProperties(node)
 
     for package in parser.specifications:
         parser.specifications[package].root = None
-        for funcName in parser.specifications[package].genericFuncs:
-            (funcStart, funcBrace, funcBody) = parser.specifications[package].genericFuncs[funcName]
+        parser.specifications[package].genericFuncs = {}
+
+
+        for funcName in parser.specifications[package].packageGenericFuncs:
+            parser.specifications[package].genericFuncs[funcName] = parser.specifications[package].packageGenericFuncs[funcName]
+            (funcStart, funcBrace, funcBody) = parser.specifications[package].packageGenericFuncs[funcName]
             removeRedundantProperties(funcStart)
             removeRedundantProperties(funcBrace)
             removeRedundantProperties(funcBody)
 
+        for funcName in parser.specifications[package].funcs:
+            parser.specifications[package].funcs[funcName] = None
+
+        for funcName in parser.specifications[package].inImports:
+            parser.specifications[package].inImports[funcName] = None
+
     pickle.dump(parser, f)
 
 import time
+
+def dontSaveGeneric(parser):
+    #return
+    threshold = 2
+
+    remove = []
+    for package in parser.specifications:
+        if len(parser.specifications[package].packageGenericFuncs) > threshold:
+            remove.append(package)
+    for package in remove:
+        print("removed", package)
+        del parser.specifications[package]
+        del parser.scope[package]
+        del parser.structs[package]
+        del parser.interfaces[package]
+
+        if package == "_global": continue
+
+    parser.alwaysRecompile = remove #.append(package) #parser.usedModules[package] = "must update self"
 
 def load(runtimeBuild):
     try:

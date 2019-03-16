@@ -1,0 +1,215 @@
+import "ecs"
+import "texture"
+import "shader"
+from "materialSystem" import all
+import "runner"
+import "draw"
+import "layermask"
+from "opengl" import all
+import "window"
+import "renderPass"
+import "input"
+import "key"
+from "math" import (Vec3, Vec2)
+import "editor"
+import "model"
+import "ui"
+
+type PickingSystem =
+    pass: PickingPass
+
+type PickingPass =
+    fbo: uint
+    width: uint
+    height: uint
+    picking_shader: ecs.ID
+    outline_shader: ecs.ID
+    picking_shader_id_location: shader.Uniform
+
+import "gizmo"
+
+def PickingSystem.update(&self, m: layermask.Layermask) =
+    if not editor.in_editor! then return
+    if context.input.mouse_captured then return
+    if not input.mouse_button_pressed key.Left then return
+    if gizmo.main_gizmo.kind.selected_axis! then return
+
+    mouse_position := context.input.mouse_position
+
+    id := -1
+
+    bindFramebuffer framebuffer, self.pass.fbo
+    readPixels (mouse_position.x cast int), ((self.pass.height - mouse_position.y) cast int), 1, 1, red_integer, _int, &id
+    bindFramebuffer framebuffer, 0
+
+    edit := editor.get_editor!
+
+    log "got id: {id}"
+    if id > 0 then
+        id -= 1
+
+        gizmo.main_gizmo.kind.deselect_axis!
+        edit.select id cast uint
+
+    if id == 0 then
+        edit.deselect!
+
+def PickingSystem.render(&self, m: layermask.Layermask) =
+    if not editor.in_editor! then return
+    if m.layer_in_mask layermask.pickable_layer then return
+
+    edit := editor.get_editor!
+
+    guard Some id := edit.selected
+    else return
+
+    for cmd := context.command_buffer.commands do //searches for draw calls for this object
+        if cmd.id != id then continue
+
+        state := box *cmd.material.state
+        state.cull = draw.Cull_Front
+
+        cmd.material = box Material{
+            name = "Outline"
+            shader = self.pass.outline_shader
+            params = []
+            state = state
+        }
+
+        cmd.submit!
+
+def PickingPass.render(&self) =
+    if not runner.in_editor! then return
+    draw.clear!
+
+    ui_ctx := ui.get_ui!
+    ui_ctx.new_frame!
+
+    render_mask := layermask.make_Layermask!
+        .enable layermask.pickable_layer
+
+    ecs.render render_mask
+
+    for i := 0..context.command_buffer.commands.length do
+        cmd := &context.command_buffer.commands[i]
+        cmd.material = box Material{
+            name = "Picking Material"
+            shader = self.picking_shader
+            params = box [
+                Param_Int self.picking_shader_id_location, cmd.id
+            ]
+            state = cmd.material.state
+        }
+
+    viewport 0, 0, self.width, self.height
+    bindFramebuffer framebuffer, self.fbo
+
+    enable depth_test
+    disable multisample
+
+    opengl.clearColor 0.0, 0.0, 0.0, 1.0
+    opengl.clear opengl.color_buffer_and_depth_buffer_bit
+
+    draw.submit_to_gpu!
+
+    disable depth_test
+    ui_ctx.render_unselectable!
+
+    enable depth_test
+    bindFramebuffer framebuffer, 0
+
+//import "model"
+import "transform"
+
+def make_PickingSystem() PickingSystem =
+    //create render texture
+    w := window.get_window!
+
+    fbo : uint = _
+    rbo : uint = _
+    render_texture := 0
+
+    opengl.genFramebuffers 1, &fbo
+    opengl.genRenderbuffers 1, &rbo
+
+    opengl.bindFramebuffer opengl.framebuffer, fbo
+    opengl.bindRenderbuffer opengl.renderbuffer, rbo
+
+    opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, w.width, w.height
+    opengl.framebufferRenderbuffer opengl.framebuffer, opengl.depth_attachment, opengl.renderbuffer, rbo
+
+    genTextures 1, &render_texture
+    bindTexture texture_2D, render_texture
+    texImage2D texture_2D, 0, opengl.r32I, w.width, w.height, 0, red_integer, _int, None
+    //texImage2D texture_2D, 0, opengl.rgb16f, w.width, w.height, 0, rgb, type_float, None
+
+    texParameteri texture_2D, texture_mag_filter, nearest
+    texParameteri texture_2D, texture_min_filter, nearest
+
+    opengl.framebufferTexture2D
+        opengl.framebuffer
+        opengl.color_attachment0
+        texture_2D
+        render_texture
+        0
+
+
+    /*
+    tex := texture.make_Texture ecs.make_ID!
+    tex.texture_id = render_texture
+    tex.filename = "RenderTexture"
+    tex.dont_serialize!
+
+    id := ecs.make_ID!
+
+    entity := ecs.make_Entity id
+    entity.layermask = entity.layermask.disable layermask.serialize_layer
+
+    trans := transform.make_Transform id
+    trans.position = Vec3{ 0, 10, 0 }
+    trans.scale = Vec3{ 10, 10, 10 }
+
+    plane := model.load_model "plane.fbx"
+
+    params := box [
+        Param_Image "material.diffuse", texture.textures.id_of tex
+        Param_Image "material.metallic", texture.textures.id_of texture.load "wood/Stylized_Wood_metallic.jpg"
+        Param_Image "material.roughness", texture.textures.id_of texture.load "wood/Stylized_Wood_roughness.jpg"
+        Param_Image "material.normal", texture.textures.id_of texture.load "wood/Stylized_Wood_normal.jpg"
+        Param_Vec2 "transformUVs", Vec2{ 1, 1 }
+    ]
+
+    cube_materials := box [
+        Material{
+            name = "DefaultMaterial"
+            shader = shader.make "shaders/pbr.vert", "shaders/pbr.frag"
+            params = params
+            state = &draw.default_state
+        }
+    ]
+
+    model_renderer := model.make_ModelRenderer id
+    model_renderer.model_id = Some model.models.id_of plane
+    model_renderer.set_materials cube_materials
+    // */
+
+    log "made picking system"
+
+    picking_shader := shader.make "shaders/pbr.vert", "shaders/picking.frag"
+
+    PickingSystem{
+        pass = PickingPass{
+            fbo = fbo
+            width = w.width
+            height = w.height
+            picking_shader = picking_shader.get_id!
+            outline_shader = (shader.make "shaders/outline.vert", "shaders/outline.frag").get_id!
+            picking_shader_id_location = picking_shader.location "id"
+        }
+    }
+
+
+picking_system := make_PickingSystem!
+
+renderPass.passes.append &picking_system.pass
+ecs.register_system &picking_system

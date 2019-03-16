@@ -1,0 +1,73 @@
+ext _ = "#include <BtWrapper.h>"
+
+import "math"
+
+type ext Compat_Quat =
+    x: float
+    y: float
+    z: float
+    w: float
+
+type ext Compat_Vec3 =
+    x: float
+    y: float
+    z: float
+
+type ext BulletWrapper =
+type ext btCollisionShape =
+type ext btRigidBody =
+
+type ext RigidBodySettings =
+    origin: Compat_Vec3
+    mass: float
+    shape: &btCollisionShape
+    id: uint
+
+    sweep_radius: float
+    lock_rotation: bool
+
+    velocity: Compat_Vec3
+
+type ext BulletWrapperTransform =
+    position: Compat_Vec3
+    rotation: Compat_Quat
+    velocity: Compat_Vec3
+
+ext make_BoxShape: |Compat_Vec3| -> &btCollisionShape = "make_BoxShape"
+ext make_SphereShape: |float| -> &btCollisionShape = "make_SphereShape"
+ext make_CapsuleShape: |float, float| -> &btCollisionShape = "make_CapsuleShape"
+ext make_PlaneShape: |Compat_Vec3| -> &btCollisionShape = "make_PlaneShape"
+ext free_collision_shape: |&btCollisionShape| -> none = "free_collision_shape"
+
+ext make_RigidBody: |&BulletWrapper, &RigidBodySettings| -> &btRigidBody = "make_RigidBody"
+ext free_RigidBody: |&BulletWrapper, &btRigidBody| -> none = "free_Rigidbody"
+ext id_of_RigidBody: |&btRigidBody| -> uint = "id_of_Rigidbody"
+ext transform_of_Rigidbody: |&btRigidBody, &BulletWrapperTransform| -> none = "transform_of_RigidBody"
+ext set_transform_of_Rigidbody: |&btRigidBody, &BulletWrapperTransform| -> none = "set_transform_of_RigidBody"
+
+ext make_BulletWrapper: || -> &BulletWrapper = "make_BulletWrapper"
+ext step_BulletWrapper: |&BulletWrapper| -> none = "step_BulletWrapper"
+ext free_BulletWrapper: |&BulletWrapper| -> none = "free_BulletWrapper"
+
+def to_Vec3(compat: Compat_Vec3) math.Vec3 =
+    Vec3{ compat.x, compat.y, compat.z }
+
+def to_Compat_Vec3(vec: math.Vec3) Compat_Vec3 =
+    tmp : Compat_Vec3 = _
+    tmp.x = vec.x
+    tmp.y = vec.y
+    tmp.z = vec.z
+
+    tmp
+
+def to_Quat(compat: Compat_Quat) math.Quat =
+    Quat{ compat.x, compat.y, compat.z, compat.w }
+
+def to_Compat_Quat(q: math.Quat) Compat_Quat =
+    tmp : Compat_Quat = _
+    tmp.x = q.x
+    tmp.y = q.y
+    tmp.z = q.z
+    tmp.w = q.w
+
+    tmp

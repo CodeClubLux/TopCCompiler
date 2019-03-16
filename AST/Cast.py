@@ -73,7 +73,8 @@ def notSpecified(self):
 def checkCast(originalType, newType, node, parser):
     if type(newType) is Types.Interface:
         if not type(originalType) is Types.Pointer:
-            node.error("Can only upcast to interface from pointer, not "+str(originalType))
+            if type(originalType) != type(newType):
+                node.error("Can only upcast to interface from pointer, not "+str(originalType))
 
 casted = {}
 

@@ -15,7 +15,7 @@ type Texture =
     filename: string
     texture_id: TextureID
 
-textures := ecs.make_Store_with_init 20, Texture{"", 0}, Some load_in_place
+textures := ecs.make_Store_with_init 50, Texture{"", 0}, Some load_in_place
 
 def make_Texture(id: ecs.ID) &Texture =
     entity := match ecs.entities.by_id id with
@@ -23,13 +23,21 @@ def make_Texture(id: ecs.ID) &Texture =
         None -> ecs.make_Entity id
 
     entity.layermask = layermask.make_Layermask!
+        .enable layermask.serialize_layer
 
     textures.make id
 
 def Texture.get_filename(&self) string =
     self.filename
 
+def Texture.dont_serialize(&self) =
+    guard Some entity := ecs.entities.by_id textures.id_of self
+    else panic "Trying to make texture not serialize, however could not find entity"
+
+    entity.layermask = entity.layermask.disable layermask.serialize_layer
+
 def load_in_place(tex: &Texture) =
+    log "loading in place {tex.filename}"
     filename := tex.filename
     real_filename := vfs.asset_path tex.filename
 
@@ -48,21 +56,24 @@ def load_in_place(tex: &Texture) =
     texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
     texParameteri texture_2D, texture_mag_filter, linear
 
-    guard Some data := stbi.load real_filename.to_c_string!, &width, &height, &nr_channels, 0
+    guard Some data := stbi.load real_filename.to_c_string!, &width, &height, &nr_channels, 3
     else panic "Could not load image {filename}"
 
-    defer stbi.image_free data
+    nr_channels = 3
 
     internal_color_format :=
         if nr_channels == 1 then red
         elif nr_channels == 2 then rg
+        elif nr_channels == 4 then rgba
         else rgb
 
     if nr_channels != 3 then
         log nr_channels
 
-    texImage2D texture_2D, 0, rgb, width, height, 0, internal_color_format, unsigned_byte, Some data
+    texImage2D texture_2D, 0, rgba, width, height, 0, internal_color_format, unsigned_byte, Some data
     generateMipmap texture_2D
+
+    stbi.image_free data
 
     tex.texture_id = texture_id
 

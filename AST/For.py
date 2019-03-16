@@ -11,6 +11,8 @@ class For(Node):
 
     def compileToC(self, codegen):
         obj = codegen.getName()
+        codegen.incrDeferred()
+        codegen.incrScope()
 
         if not self.implicit:
             typ = self.nodes[0].nodes[1].nodes[0].type
@@ -44,8 +46,6 @@ class For(Node):
             else:
                 codegen.append(f"0;{iteration} < {obj}.length; {iteration}++) {{\n")
 
-        codegen.incrDeferred()
-        codegen.incrScope()
 
         class Tmp:
             def __init__(self, typ):

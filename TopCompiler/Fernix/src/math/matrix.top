@@ -147,7 +147,7 @@ def invert(m: Mat4x4) Mat4x4 =
     invOut
 
 
-def test() =
+def test_mat() =
     view := translate Vec3{0,0,5}
     proj := perspective 110, 1.0, 0.1, 100
 

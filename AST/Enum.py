@@ -488,11 +488,17 @@ class MatchCase(Node):
                     codegen.append(f"{node_typ} {name} = ({node_typ}){tmp}.data;")
 
             elif type(node) is Tree.Operator and node.kind == "or":
-                codegen.append(tmp + "==")
-                node.nodes[0].compileToC(codegen)
+                self.checking = True
+                loop(node.nodes[0], tmp)
+                codegen.checking = True
                 codegen.append("||")
-                codegen.append(tmp + "==")
-                node.nodes[1].compileToC(codegen)
+                loop(node.nodes[1], tmp)
+
+                # codegen.append(tmp + "==")
+                # node.nodes[0].compileToC(codegen)
+                # codegen.append("")
+                # codegen.append(tmp + "==")
+                # node.nodes[1].compileToC(codegen)
                 codegen.checking = False
             else:
                 if type(node.type) in [Types.I32,Types.Float,Types.String,Types.Bool,Types.Char]:

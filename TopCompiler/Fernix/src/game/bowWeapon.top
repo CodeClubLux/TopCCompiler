@@ -1,0 +1,197 @@
+import "ecs"
+import "draw"
+from "materialSystem" import all
+from "math" import all
+from "transform" import all
+from "layermask" import Layermask
+import "model"
+import "physics"
+import "time"
+import "input"
+import "key"
+import "lister"
+
+type BowState either
+    Charging(float)
+    Reloading(float)
+    Firing(float)
+    Idle
+
+
+type Bow =
+    attached: Maybe[ecs.ID]
+    state: BowState
+    reload_time: float
+    arrow_speed: float
+
+type ArrowState either
+    Fired(float)
+    AttachedToBow
+
+type Arrow =
+    state: ArrowState
+
+bows := ecs.make_Store 1, Bow{ state = Idle, attached = None, reload_time = 1.0, arrow_speed = 30 }
+arrows := ecs.make_Store 10, Arrow{ state = AttachedToBow }
+
+type BowSystem =
+def BowSystem.render(&system, m: Layermask) =
+def BowSystem.update(&sytem, m: Layermask) =
+    for (arrow, trans, rb) := ecs.filter3 arrows, transforms, physics.rigid_bodies, m do
+            match arrow.state with
+                AttachedToBow -> //should be impossible
+                Fired duration ->
+                    duration -= time.get_delta_time!
+                    if duration <= 0 then
+                        ecs.free_entity arrows.id_of arrow
+                    else
+                        arrow.state = Fired duration
+                        trans.rotation = quat_look_rotation -rb.velocity, Vec3{0,1,0}
+
+    for (self, self_trans) := ecs.filter2 bows, transforms, m do
+        self.state = match self.state with
+            Idle ->
+                if input.mouse_button_down key.Left then
+                    Charging(0.3)
+                else
+                    Idle
+
+            Charging duration ->
+                if input.mouse_button_down key.Left then
+                    guard Some attached := self.attached
+                    else panic "No arrow attached to fire"
+
+                    guard Some local_trans := local_transforms.by_id attached
+                    else return
+
+                    if duration <= 1.5 then
+                        local_trans.position.z += time.get_delta_time! * 0.07
+                        Charging duration + time.get_delta_time!
+                    else
+                        Charging duration
+                else
+                    Firing duration * self.arrow_speed
+
+            Firing speed ->
+                guard Some attached := self.attached
+                else panic "No arrow attached to fire"
+
+                guard Some arrow := arrows.by_id attached
+                else return
+
+                guard Some local_trans := local_transforms.by_id attached
+                else return
+
+                if local_trans.position.z < (-0.5) then
+                    arrow.state = Fired 5
+
+                    log "speed = {speed}"
+
+                    local_trans.calc_global_transform!
+                    local_transforms.free_by_id local_transforms.id_of local_trans
+
+                    rb := physics.rigid_bodies.make arrows.id_of arrow
+                    rb.shape = physics.Box math.Vec3{0.1, 0.1, 0.5}
+                    rb.mass = 0.1
+
+                    rb.override_rotation = true
+                    rb.velocity = (self_trans.rotation.mul_vec3 Vec3{0,0,-speed})
+
+                    self.attached = None
+
+                    Reloading self.reload_time
+                else
+                    local_trans.position.z -= time.get_delta_time! * self.arrow_speed
+                    Firing speed
+
+            Reloading duration ->
+                duration -= time.get_delta_time!
+                if duration <= 0 then
+                    self.attached = Some make_arrow bows.id_of self
+                    Idle
+                else
+                    Reloading duration
+
+bow_system := BowSystem{}
+ecs.register_system &bow_system
+
+
+def make_Bow(id: uint) &Bow =
+    //weapon
+    bow := model.load_model "bow.fbx"
+
+    model.load_in_place bow
+
+    cube_materials := box [
+        Material{
+            name = "DefaultMaterial"
+            shader = pbr_shader.get_id!
+            params = box substance_params "wood_2", "Stylized_Wood"
+            state = &draw.default_state
+        }
+    ]
+
+    weapon_id := ecs.make_ID!
+    weapon := ecs.make_Entity weapon_id
+    weapon.layermask = (ecs.entities.by_id id).unwrap!.layermask
+
+    weapon_bow := bows.make weapon_id
+
+    weapon_name := lister.named.make weapon_id
+    weapon_name.name = "bow"
+
+    bow_transform := make_Transform weapon_id
+    bow_local_transform := make_LocalTransform weapon_id
+    bow_local_transform.owner = id
+    bow_local_transform.position = math.Vec3{0,-0.53,-2}
+    bow_local_transform.scale = math.Vec3{ 0.5, 0.5, 0.5}
+
+    bow_model_renderer := model.make_ModelRenderer weapon_id
+    bow_model_renderer.model_id = Some model.models.id_of bow
+    bow_model_renderer.set_materials cube_materials
+
+    weapon_bow.attached = Some make_arrow weapon_id
+
+    log "weapon id: {weapon_id}"
+
+    weapon_bow
+
+arrow_m := model.load_model "arrow.fbx"
+model.load_in_place arrow_m
+
+def make_arrow(weapon_id: uint) ecs.ID =
+    //arrow
+
+    new_context := *context
+    new_context.allocator = context.longterm_storage
+
+    #pushContext new_context do
+
+        cube_materials := box [ //todo fix leak
+            Material{
+                name = "DefaultMaterial"
+                shader = pbr_shader.get_id!
+                params = box substance_params "wood_2", "Stylized_Wood"
+                state = &draw.default_state
+            }
+        ]
+
+        arrow_id := ecs.make_ID!
+        arrow_entity := ecs.make_Entity arrow_id
+        arrow_entity.layermask = (ecs.entities.by_id weapon_id).unwrap!.layermask
+
+        arrow := arrows.make arrow_id
+
+        arrow_name := lister.named.make arrow_id
+        arrow_name.name = "arrow"
+
+        arrow_transform := make_Transform arrow_id
+        arrow_local_transform := make_LocalTransform arrow_id
+        arrow_local_transform.owner = weapon_id
+        arrow_local_transform.calc_global_transform!
+
+        arrow_model_renderer := model.make_ModelRenderer arrow_id
+        arrow_model_renderer.model_id = Some model.models.id_of arrow_m
+        arrow_model_renderer.set_materials cube_materials
+
+    arrow_id

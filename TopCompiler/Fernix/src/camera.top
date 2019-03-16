@@ -7,7 +7,8 @@ import "layermask"
 type Camera =
     projection_matrix: math.Mat4x4
     view_matrix: math.Mat4x4
-
+    near_plane: float
+    far_plane: float
     fov: uint
 
 cameras := ecs.make_Store 10, Camera{
@@ -15,6 +16,9 @@ cameras := ecs.make_Store 10, Camera{
     view_matrix = math.identity_mat!
 
     fov = 60
+
+    near_plane = 0.1
+    far_plane = 1000
 }
 
 def Camera.update_matrices(&self) = //@todo move to a system
@@ -24,12 +28,16 @@ def Camera.update_matrices(&self) = //@todo move to a system
     self.projection_matrix = math.perspective
         math.radians self.fov
         (w.width as float) / (w.height as float)
-        0.1
-        100.0
+        self.near_plane
+        self.far_plane
 
-    target := (entity.rotation.mul_vec3 math.Vec3{0,0,1}).norm!
+    //target := (entity.rotation.mul_vec3 math.Vec3{0,0,1}).norm!
 
-    rotate_m := math.rotate entity.rotation
+    euler := entity.rotation.to_euler!
+    euler.x = -euler.x
+    euler.y = -euler.y
+
+    rotate_m := math.invert math.rotate entity.rotation
     translate_m := math.translate -entity.position
 
     self.view_matrix = rotate_m * translate_m
@@ -39,10 +47,9 @@ def make_default_camera() &Camera =
 
     entity := ecs.entities.make id
     entity.layermask = entity.layermask.disable layermask.serialize_layer
-    entity.layermask = entity.layermask.enable layermask.editor_layer
 
     trans := transform.transforms.make id
-    trans.position = math.Vec3{ 0, 0, 1.8 }
+    trans.position = math.Vec3{ 0, 2, 1.8 }
 
     _ := (transform.transforms.by_id id).unwrap!
 
@@ -52,5 +59,44 @@ def make_default_camera() &Camera =
 
 #addToContext camera := make_default_camera!
 
-def get_camera() &Camera =
-    context.camera
+from "layermask" import all
+
+def get_camera(m: Layermask) &Camera =
+    (cameras.first_in_mask m).expect "No Active camera"
+
+type MainCameraSystem =
+def MainCameraSystem.update(&self, m: Layermask) =
+    context.camera = get_camera m
+
+import "model"
+import "shader"
+from "materialSystem" import all
+import "draw"
+from "math" import Vec3
+
+camera_gizmo := model.load_model "camera.fbx"
+model.load_in_place camera_gizmo
+
+camera_shader := shader.make "shaders/pbr.vert", "shaders/diffuse.frag"
+
+camera_materials := [
+    Material{
+        name = "DefaultMaterial"
+        shader = camera_shader.get_id!
+        params = box [
+            Param_Vec3 (camera_shader.location "material.diffuse"), Vec3{0,0,0.8}
+        ]
+        state = &draw.default_state
+    }
+]
+
+def MainCameraSystem.render(&self, m: Layermask) =
+    if (m.layer_in_mask editor_layer) or (m.layer_in_mask pickable_layer) then
+        m = layermask.make_Layermask!
+            .enable game_layer
+
+        for (cam, trans) := ecs.filter2 cameras, transform.transforms, m do
+            camera_gizmo.render_model_for trans, &camera_materials
+
+main_camera_system := MainCameraSystem{}
+ecs.register_system &main_camera_system

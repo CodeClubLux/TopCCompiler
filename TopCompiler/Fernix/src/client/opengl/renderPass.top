@@ -1,0 +1,70 @@
+import "draw"
+import "window"
+import "opengl"
+import "math"
+import "layermask"
+import "editor"
+import "ui"
+import "ecs"
+import "runner"
+import "model"
+from "materialSystem" import all
+import "shader"
+from "device" import all
+from "math" import Vec4
+
+type Pass with
+    def render()
+
+type MainPass =
+    device: Device
+
+def make_MainPass() MainPass =
+    MainPass{
+        device = Device{
+            width = 0
+            height = 0
+            multisampling = 4
+            clear_colour = Vec4{ 0, 0, 0, 1 }
+        }
+    }
+
+def MainPass.render(&self) =
+    //edit := editor.get_editor!
+    w := window.get_window!
+    ui_ctx := ui.get_ui!
+
+    mask := runner.game_mask!
+
+    self.device.width = w.width
+    self.device.height = w.height
+    self.device.bind!
+
+    draw.clear!
+
+    render_mask := layermask.make_Layermask!
+        .enable mask
+        .enable layermask.game_layer
+
+    ui_ctx.new_frame!
+
+    //editor.editor.render!
+
+    ecs.render render_mask
+
+    draw.submit_to_gpu!
+
+    ui_ctx.render!
+    w.swap_buffers!
+
+main_pass := make_MainPass!
+
+passes := [..]Pass
+passes.reserve 10
+passes.append &main_pass
+
+def render_all() =
+    i : int = passes.length - 1
+    while i >= 0 do
+        passes[i cast uint].render!
+        i -= 1

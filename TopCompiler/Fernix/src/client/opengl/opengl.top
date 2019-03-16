@@ -14,6 +14,7 @@ ext genVertexArrays: |uint, &uint| -> none = "glGenVertexArrays"
 ext bindBuffer: |uint, uint| -> none = "glBindBuffer"
 
 ext deleteShader: |uint| -> none = "glDeleteShader"
+ext deleteProgram: |uint| -> none = "glDeleteProgram"
 ext createShader: |uint| -> uint = "glCreateShader"
 ext shaderSource: |uint, uint, &&char, Maybe[&int]| -> none = "glShaderSource"
 ext compileShader: |uint| -> none = "glCompileShader"
@@ -51,6 +52,7 @@ ext genRenderbuffers: |uint, &uint| -> none = "glGenRenderbuffers"
 
 ext texture_cube_map_positive_x: uint = "GL_TEXTURE_CUBE_MAP_POSITIVE_X"
 ext rgb16f: uint = "GL_RGB16F"
+ext red_integer: uint = "GL_RED_INTEGER"
 
 ext debug_severity_low: uint = "GL_DEBUG_SEVERITY_LOW"
 
@@ -70,11 +72,14 @@ ext bindRenderbuffer: |uint, uint| -> none = "glBindRenderbuffer"
 ext renderbuffer: uint = "GL_RENDERBUFFER"
 ext renderbufferStorage: |uint, uint, uint, uint| -> none = "glRenderbufferStorage"
 ext depth_component24: uint = "GL_DEPTH_COMPONENT24"
+
 ext uniform1f: |int, float| -> none = "glUniform1f"
 
 ext rgb: uint = "GL_RGB"
 ext rg: uint = "GL_RG"
 ext red: uint = "GL_RED"
+ext rgba: uint = "GL_RGBA"
+ext nearest: uint = "GL_NEAREST"
 
 ext texture_2D: uint = "GL_TEXTURE_2D"
 ext unsigned_byte: uint = "GL_UNSIGNED_BYTE"
@@ -101,20 +106,26 @@ ext color_buffer_bit: uint = "GL_COLOR_BUFFER_BIT"
 ext drawArrays: |uint, uint, uint| -> none = "glDrawArrays"
 ext drawElements: |uint, uint, uint, uint| -> none = "glDrawElements"
 
+ext _int: uint = "GL_INT"
+ext r32I: uint = "GL_R32I"
 ext unsigned_int: uint = "GL_UNSIGNED_INT"
 
 ext depth_buffer_bit: uint = "GL_DEPTH_BUFFER_BIT"
 ext depth_test: uint = "GL_DEPTH_TEST"
 
+ext readPixels: |int, int, int, int, uint, uint, &none| -> none = "glReadPixels"
+ext drawBuffers: |uint, &uint| -> none = "glDrawBuffers"
 ext triangles: uint = "GL_TRIANGLES"
 
 ext getUniformLocation: |uint, &char| -> int = "glGetUniformLocation"
 ext uniformMatrix4fv: |int, uint, bool, &float| -> none = "glUniformMatrix4fv"
 ext uniform3fv: |int, uint, &float| -> none = "glUniform3fv"
+ext uniform2fv: |int, uint, &float| -> none = "glUniform2fv"
 ext uniform1i: |int, int| -> none = "glUniform1i"
 
 ext debug_output: uint = "GL_DEBUG_OUTPUT"
 ext enable: |uint| -> none = "glEnable"
+ext disable: |uint| -> none = "glDisable"
 
 ext depthFunc: |uint| -> none = "glDepthFunc"
 ext lequal: uint = "GL_LEQUAL"
@@ -123,3 +134,8 @@ ext always: uint = "GL_ALWAYS"
 
 ext debugMessageCallback: | |uint, uint, uint, uint, SizeT, &char| -> none, &Context| -> none = "glDebugMessageCallback"
 ext gl_true: uint = "GL_TRUE"
+
+ext cull_face: uint = "GL_CULL_FACE"
+ext cullFace: |uint| -> none = "glCullFace"
+ext back: uint = "GL_BACK"
+ext front: uint = "GL_FRONT"

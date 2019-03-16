@@ -51,14 +51,17 @@ def Buffer.read_long(&buffer) u64 =
 let float_precision = 10000000
 let double_precision = 100000000
 
+import "dict"
+
 def Buffer.write_struct(&buffer, struct_type: &StructType, ptr: &none) =
     for field := struct_type.fields do
+        if field.name == "bt_rigid_body" then continue
         buffer.write_object field.field_type, (offsetPtr ptr, field.offset)
 
 def Buffer.read_struct(&buffer, struct_type: &StructType, ptr: &none) =
     for field := struct_type.fields do
+        if field.name == "bt_rigid_body" then continue
         buffer.read_object field.field_type, (offsetPtr ptr, field.offset)
-
 
 def Buffer.write_enum(&buffer, enum_type: &EnumType, ptr: &none) =
     tag := *(offsetPtr ptr, enum_type.tag_field.offset) cast &u8

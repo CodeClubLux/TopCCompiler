@@ -13,6 +13,7 @@ type Test =
     maybe_ptr: Maybe[&int]
     maybe_int: Maybe[uint]
 
+
 log "======"
 log (get_type Maybe[uint]).tag_field.offset
 log offsetof Maybe[uint], tag
@@ -62,8 +63,8 @@ def deserialize[T]() =
     log test_r.arr_static
     log test_r.arr_both
     log test_r.arr_dyn
-    log test_r.maybe_ptr
-    log test_r.maybe_int
+    //log test_r.maybe_ptr
+    //log test_r.maybe_int
 
 serialize!
 deserialize!

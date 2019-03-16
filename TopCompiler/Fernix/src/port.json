@@ -3,8 +3,12 @@
         "name": "FernixGameEngine",
         "target": "windows",
         "version": 0,
-        "headerIncludePath": ["C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Include", "bin/c_deps/libtask"],
-        "_linkWith": [
+        "headerIncludePath": [
+            "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Include",
+            "bin/c_deps/libtask",
+            "C:\\Users\\User\\Desktop\\Game Engine\\bullet3\\src"
+        ],
+        "macos_linkWith": [
             "bin/c_deps/libtask/libtask.a",
             "/Users/luke/desktop/Game Engine/bin/libglfw3.a",
             "/Users/luke/desktop/Game Engine/bin/glad.o",
@@ -18,6 +22,7 @@
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\glad.o",
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\nuklear.o",
             "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\assimp-vc140-mt.lib",
+            "C:\\Users\\User\\Desktop\\Game Engine\\OpenGl libraries and headers\\Libs\\BtWrapper.lib",
             "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.17134.0\\um\\x64\\gdi32.lib",
             "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.17134.0\\um\\x64\\user32.lib",
             "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.17134.0\\um\\x64\\shell32.lib",

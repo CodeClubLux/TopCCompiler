@@ -1,0 +1,135 @@
+from "layermask" import all
+import "ecs"
+from "transform" import all
+from "math" import all
+import "editor"
+
+type ColliderShape either
+    Capsule(float, float) //radius then height
+    Sphere(float)
+    Box(math.Vec3)
+    Plane(math.Vec3)
+
+type RigidBody =
+    shape: ColliderShape
+    mass: float
+    velocity: Vec3
+
+    bt_rigid_body: Maybe[&btRigidBody]
+
+    override_position: bool
+    override_rotation: bool
+
+    override_velocity_x: bool
+    override_velocity_y: bool
+    override_velocity_z: bool
+
+    continous: bool
+
+type Pickable =
+    bt_rigid_body: &btRigidBody
+    last_scale: Vec3
+
+rigid_bodies := ecs.make_Store 30, RigidBody{
+    shape = Sphere 0
+    mass = 0
+    velocity = Vec3{0,0,0}
+
+    bt_rigid_body = None
+
+    override_velocity_x = false
+    override_velocity_y = false
+    override_velocity_z = false
+
+    override_rotation = false
+    override_position = false
+
+    continous = false
+}
+
+type PhysicsSystem =
+    bt_wrapper: &BulletWrapper
+
+def PhysicsSystem.render(&system, m: Layermask) =
+def PhysicsSystem.update(&system, m: Layermask) =
+    if editor.in_editor! then return
+
+    step_BulletWrapper system.bt_wrapper
+
+    for (rb, trans) := ecs.filter2 rigid_bodies, transforms, m do
+        if rb.bt_rigid_body.is_none! then
+            settings : RigidBodySettings = _
+            settings.origin = to_Compat_Vec3 trans.position
+            settings.velocity = to_Compat_Vec3 rb.velocity
+
+            settings.shape = match rb.shape with
+                Sphere r -> make_SphereShape r
+                Box size -> make_BoxShape to_Compat_Vec3 size
+                Capsule r, height -> make_CapsuleShape r, height
+                Plane norm -> make_PlaneShape to_Compat_Vec3 norm
+
+            settings.id = rigid_bodies.id_of rb
+            settings.mass = rb.mass
+            settings.lock_rotation = rb.override_rotation
+
+            if rb.continous then
+                settings.sweep_radius = match rb.shape with
+                    Sphere r -> r
+                    Box size -> math.max size.z, math.max size.x, size.y
+                    Capsule r, height -> r + height
+                    Plane -> 0 //plane is static
+
+                log settings.sweep_radius
+            else
+                settings.sweep_radius = 0
+
+            rb.bt_rigid_body = Some make_RigidBody system.bt_wrapper, &settings
+
+            log "created rigid body"
+
+        bt_rigid_body := rb.bt_rigid_body.unwrap!
+
+        //setting transforms
+        if rb.mass == 0 then continue
+
+        trans_of_rb : BulletWrapperTransform = _
+
+        transform_of_Rigidbody bt_rigid_body, &trans_of_rb
+
+        if not rb.override_position then
+            trans.position = to_Vec3 trans_of_rb.position
+        else
+            log "setting rigid body to position: {trans.position}"
+            trans_of_rb.position = to_Compat_Vec3 trans.position
+
+        if not rb.override_rotation then
+            trans.rotation = to_Quat trans_of_rb.rotation
+        else
+            trans_of_rb.rotation = to_Compat_Quat trans.rotation
+
+        //update velocity
+        if not rb.override_velocity_x then
+            rb.velocity.x = trans_of_rb.velocity.x
+        else
+            trans_of_rb.velocity.x = rb.velocity.x
+
+        if not rb.override_velocity_y then
+            rb.velocity.y = trans_of_rb.velocity.y
+        else
+            trans_of_rb.velocity.y = rb.velocity.y
+
+        if not rb.override_velocity_z then
+            rb.velocity.z = trans_of_rb.velocity.z
+        else
+            trans_of_rb.velocity.z = rb.velocity.z
+
+        set_transform_of_Rigidbody bt_rigid_body, &trans_of_rb
+
+def PhysicsSystem.free(&self) =
+    free_BulletWrapper self.bt_wrapper
+
+physics_system := PhysicsSystem{
+    bt_wrapper = make_BulletWrapper!
+}
+
+ecs.register_system &physics_system

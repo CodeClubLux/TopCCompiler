@@ -48,6 +48,8 @@ def make_vertex_buffer[T](vertices: []T, indices: []uint, vertexAttribs: []Verte
 
     opengl.bindVertexArray 0
 
+    log "created {vao}"
+
     VertexBuffer{ vao, indices.length }
 
 def VertexBuffer.bind(self) =

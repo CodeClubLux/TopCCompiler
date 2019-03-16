@@ -94,8 +94,8 @@ _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_Str
     return 1;
 }
 
-struct _global_String _global_String_op_eq(struct _global_String* s, struct _global_String* other, __Context) {
-    _global_String_op_eqByValue(*s, *other, context);
+_Bool _global_String_op_eq(struct _global_String* s, struct _global_String* other, __Context) {
+    return _global_String_op_eqByValue(*s, *other, context);
 }
 
 void _global_log(struct _global_String,__Context);

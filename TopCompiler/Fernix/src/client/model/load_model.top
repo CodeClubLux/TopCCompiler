@@ -2,7 +2,7 @@ import "assetManager"
 
 ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
 
-def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, bounding_box: &BoundingBox) Mesh =
+def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, bounding_box: &BoundingBox) Result[Mesh,string] =
     vertices := [..]Vertex
     vertices.allocator = Some context.longterm_storage
     vertices.reserve mesh.mNumVertices
@@ -23,14 +23,11 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
         tangent := indexPtr mesh.mTangents, i
         bitangent := indexPtr mesh.mBitangents, i
 
-        tex_coords := match (*indexPtr mesh.mTextureCoords, 0) with
-            Some coords ->
-                first_coords := *indexPtr coords, i
-                Vec2{ first_coords.x, first_coords.y }
+        guard Some coords := *indexPtr mesh.mTextureCoords, 0
+        else return Error "Mesh doesn't have uvs"
 
-            None ->
-                panic "Mesh doesn't have uvs"
-                Vec2{ 0, 0 }
+        first_coords := *indexPtr coords, i
+        tex_coords := Vec2{ first_coords.x, first_coords.y }
 
         normals := indexPtr mesh.mNormals, i
 
@@ -41,7 +38,6 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
             tangent = Vec3{ tangent.x, tangent.y, tangent.z }
             bitangent = Vec3{ bitangent.x, bitangent.y, bitangent.z }
         }
-
 
     indices_count := 0
     for i := 0..mesh.mNumFaces do
@@ -72,26 +68,34 @@ def process_mesh(mesh: &aiMesh, scene: &aiScene, materials: &[..]string, boundin
             materials.append name
             materials.length - 1
 
-    make_Mesh vertices, indices, material_id
+    log "========= got id: {material_id}, vertices: {mesh.mNumVertices}"
+    Ok make_Mesh vertices, indices, material_id
 
-def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh, materials: &[..]string, bounding_box: &BoundingBox) =
+def process_node(node: &aiNode, scene: &aiScene, meshes: &[..]Mesh, materials: &[..]string, bounding_box: &BoundingBox) Maybe[string] =
     meshes.reserve meshes.length + node.mNumMeshes
 
     for i := 0..node.mNumMeshes do
-        mesh := *indexPtr scene.mMeshes, i
-        meshes.append process_mesh mesh, scene, materials, bounding_box
+        mesh_id := *indexPtr node.mMeshes, i
+        log mesh_id
+        mesh := *indexPtr scene.mMeshes, mesh_id
+        match process_mesh mesh, scene, materials, bounding_box with
+            Ok x -> meshes.append x
+            Error e -> return Some e
 
     for i := 0..node.mNumChildren do
-        process_node *(indexPtr node.mChildren, i), scene, meshes, materials, bounding_box
+        if Some e := process_node *(indexPtr node.mChildren, i), scene, meshes, materials, bounding_box then
+            return Some e
 
-def load_in_place(model: &Model) =
+    None
+
+def maybe_load_in_place(model: &Model) Maybe[string] =
     real_path := vfs.asset_path model.path
     path := model.path
 
     scene := match aiImportFile real_path.to_c_string!, triangulate_and_flip with
         Some s -> s
         None ->
-            panic "Assimp could not load model, {path}"
+            panic "Assimp could not load model, {path}, real_path {real_path}"
             0 cast &aiScene
 
     meshes := [..]Mesh
@@ -100,10 +104,22 @@ def load_in_place(model: &Model) =
     materials := [..]string
     materials.allocator = Some context.longterm_storage
 
-    process_node scene.mRootNode, scene, &meshes, &materials, &model.bounding_box
+    log "loading: {real_path}"
+
+    if Some e := process_node scene.mRootNode, scene, &meshes, &materials, &model.bounding_box then
+        return Some e
+
+    log "meshes: {meshes.length}"
+    log "materials: {materials.length}"
 
     model.meshes = meshes
     model.materials = materials
+
+    None
+
+def load_in_place(model: &Model) =
+    if Some e := maybe_load_in_place model then
+        panic e
 
 def load_model(path: string) &Model =
     if Some m := assetManager.in_cache models, path then
