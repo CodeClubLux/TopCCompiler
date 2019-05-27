@@ -94,6 +94,9 @@ type EnumType =
     tag_field: Field
     size: u64
 
+def EnumType.get_tag(&self, ptr: &none) u8 =
+    *(offsetPtr ptr, self.tag_field.offset) cast &u8
+
 def EnumType.toString(&self) string =
     "{self.package}.{self.name}"
 

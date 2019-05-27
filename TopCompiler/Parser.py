@@ -100,6 +100,7 @@ ArrayType = TmpType()
 NoneType = TmpType()
 
 from .Types import *
+
 from .Lexer import *
 import AST as Tree
 from .Error import *
@@ -412,6 +413,8 @@ class Parser:  # all mutable state
         self.compiledTypes = {}
         self.generatedTypesPerPackage = {}
         self.includes = {}
+
+        self.sc = True
 
     def setArrayTypes(self):
         global StaticArray

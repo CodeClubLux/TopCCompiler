@@ -10,6 +10,7 @@ from TopCompiler import VarParser
 from TopCompiler import Types
 from TopCompiler import MethodParser
 import collections as coll
+from PostProcessing import SimplifyAst
 
 def parserMethodGen(parser, gen, struct):
     sgen = struct.generic
@@ -179,10 +180,8 @@ def funcHead(parser, decl= False, dontAdd= False, method= False, attachTyp = Fal
             selfNode = usingNode
         parser.currentNode.addNode(selfNode)
 
-
         if not parser.lookInfront().token in [")", ","]:
             Error.parseError(parser, "expecting comma not "+parser.thisToken().token)
-
 
 
     if name[0].lower() != name[0]:
@@ -279,6 +278,19 @@ def funcBody(parser, name, names, types, brace, returnType, do):
     parser.currentNode.addNode(body)
     parser.currentNode = body
 
+    if not parser.sc and not SimplifyAst.isGenericFunc(brace):
+        body.sc = False
+
+        if parser.nextToken().token == "\n":
+            Parser.callToken(parser)
+        while not Parser.isEnd(parser):
+            if parser.nextToken().token == "\n":
+                Parser.callToken(parser)
+        parser.currentNode = body.owner
+        Scope.decrScope(parser)
+        #print("should not compile", name)
+        return body
+
     for i in range(len(names)):
         n = Tree.InitArg(names[i], parser)
         n.package = parser.package
@@ -303,8 +315,16 @@ def funcBody(parser, name, names, types, brace, returnType, do):
 
 def func(parser):
     (name, names, types, header, returnType, do) = funcHead(parser)
+    parser.currentNode.nodes[-1].method = parser.currentNode.nodes[-2].method
     body = funcBody(parser, name, names, types, header, returnType, do)
     body.method = parser.currentNode.nodes[-3].method
+
+    if not body.sc:
+        if parser.package == "main":
+            print("what")
+        parser.currentNode.nodes.pop()
+        parser.currentNode.nodes.pop()
+        parser.currentNode.nodes.pop()
 
 def funcCallBody(parser, paren, onlyOneArg):
     parser.nodeBookmark.append(1)

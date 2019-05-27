@@ -412,7 +412,7 @@ class MatchCase(Node):
                         if not (type(i) is Tree.ReadVar and i.name[0].islower()):
                             if iter > 0:
                                 codegen.check.append("&&")
-                            loop(i, tmp + "[" + str(index) + "]")
+                            loop(i, tmp + ".field" + str(index) )
                             iter += 1
 
                     codegen.check.append(")")
@@ -485,14 +485,22 @@ class MatchCase(Node):
                 if type(i) is Tree.ReadVar:
                     name = codegen.createName(i.package + "_" + i.name, node.type)
                     node_typ = node.type.toCType()
-                    codegen.append(f"{node_typ} {name} = ({node_typ}){tmp}.data;")
+                    if not self.owner.guard:
+                        codegen.append(f"{node_typ} ")
+                    codegen.append(f"{name} = ({node_typ}){tmp}.data;")
 
             elif type(node) is Tree.Operator and node.kind == "or":
-                codegen.append(tmp + "==")
-                node.nodes[0].compileToC(codegen)
+                self.checking = True
+                loop(node.nodes[0], tmp)
+                codegen.checking = True
                 codegen.append("||")
-                codegen.append(tmp + "==")
-                node.nodes[1].compileToC(codegen)
+                loop(node.nodes[1], tmp)
+
+                #codegen.append(tmp + "==")
+                #node.nodes[0].compileToC(codegen)
+                #codegen.append("||")
+                #codegen.append(tmp + "==")
+                #node.nodes[1].compileToC(codegen)
                 codegen.checking = False
             else:
                 if type(node.type) in [Types.I32,Types.Float,Types.String,Types.Bool,Types.Char]:

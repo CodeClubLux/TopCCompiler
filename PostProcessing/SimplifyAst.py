@@ -135,14 +135,16 @@ def simplifyOperator(operator, iter, parser):
             return overloaded(callMethodCode(operator.nodes[0], "op_add", typ, parser, operator.unary))
         elif operator.kind == "==":
             return overloaded(callMethodCode(operator.nodes[0], "op_eq", typ, parser, operator.unary))
+        elif operator.kind == "!=":
+            return overloaded(callMethodCode(operator.nodes[0], "op_ne", typ, parser, operator.unary))
     elif operator.overload and not typ.isType(Types.I32) and not typ.isType(Types.Float) and not typ.isType(Types.Bool) and not typ.isType(Types.Char):
+        operator.name = Tree.get_overloads(operator.unary)[operator.kind]
         return overloaded(
-            callMethodCode(operator.nodes[0], operator.name[operator.name.find("_") + 1:], operator.opT, parser,
+            callMethodCode(operator.nodes[0], operator.name, operator.opT, parser,
                            operator.unary))
     else:
         operator.overload = False
         return operator
-
 
 import copy
 
@@ -205,6 +207,8 @@ class FuncSpecification:
                 opT = Types.replaceT(newAST.nodes[0].type, self.replaced)
                 if opT.isType(Types.Pointer):
                     return newAST.nodes[0]
+            elif type(newAST) is Tree.Operator:
+                newAST.opT = Types.replaceT(newAST.opT, self.replaced)
 
             return newAST
 
@@ -579,8 +583,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 package = typ.package if not typ.package == "_global" else ""
 
                 if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
-                    if name == "init":
-                        print("was")
                     r = Tree.ReadVar(name, self.type, self)
                     if not type(self.nodes[0].type) is Types.Pointer:
                         r.name += "ByValue"

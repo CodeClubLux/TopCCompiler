@@ -31,10 +31,22 @@ class Interface(Node):
 
         type_interface = "struct _global_Type"
 
+        def gen_func(meth, field):
+            s = meth.returnType.toCType()
+            s += f"(*{field})("
+
+            for (iter, i) in enumerate(meth.args):
+                s += i.toCType() + ","
+            s += "struct _global_Context*"
+            s += ")"
+            return s
+
         codegen.append(f"struct {vtable_name} {{")
         codegen.append(f"{type_interface} type;")
         for field in methods:
-            codegen.append(f"{methods[field].toCType()} method_{field};\n")
+            meth = methods[field]
+            meth_name = "method_" + field
+            codegen.append(f"{gen_func(meth, meth_name)};\n")
         codegen.append("};")
 
         type_interface = Parser.IType.toCType()
@@ -49,7 +61,7 @@ class Interface(Node):
 
         for field in methods:
             n = codegen.getName()
-            codegen.append(f", {methods[field].toCType()} {n}")
+            codegen.append(f", {gen_func(methods[field],n)}")
             method_names.append(n)
 
         codegen.append("){ \n")
@@ -81,7 +93,7 @@ class Interface(Node):
             codegen.append(f"){{\n")
             codegen.append(f"return {tmp}->vtable->method_{field}({tmp}->data")
             for i in names:
-                codegen.append(f",{n}")
+                codegen.append(f",{i}")
             codegen.append(f",{context}")
             codegen.append(");")
             codegen.append("\n};")
@@ -94,7 +106,7 @@ class Interface(Node):
             data = codegen.getName()
             codegen.append(f"return {tmp}.vtable->method_{field}({tmp}.data")
             for i in names:
-                codegen.append(f",{n}")
+                codegen.append(f",{i}")
             codegen.append(f",{context}")
             codegen.append(");")
             codegen.append("\n};")
@@ -130,3 +142,6 @@ class Interface(Node):
         
         
         """
+
+        if self.name in Types.compiledTypes and not self.name == "_global_Type":
+            del Types.compiledTypes[self.name]

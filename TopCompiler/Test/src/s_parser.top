@@ -1,0 +1,118 @@
+def error(err: string) =
+    log "Error: {err}"
+
+def append_token(lexer: &Lexer) =
+    if lexer.tok.length > 0 then
+        lexer.tokens.append lexer.tok
+        lexer.tok = ""
+
+def parse_include(lexer: &Lexer) =
+    lexer.tok = ""
+    lexer.i += 1
+    while lexer.src[lexer.i] == ` ` do
+        lexer.i += 1
+
+    if not lexer.src[lexer.i] == `"` then
+        error "Expecting \""
+
+    file := ""
+    lexer.i += 1
+    while not lexer.src[lexer.i] == `"` do
+        file += toString lexer.src[lexer.i]
+        lexer.i += 1
+
+    new_tokens := preprocess_shader lexer.include, file
+    for tok := new_tokens do
+        lexer.tokens.append tok
+
+def parse_channel(lexer: &Lexer, num: uint) =
+    lexer.tok = ""
+    while lexer.src[lexer.i] == ` ` do
+        lexer.i += 1
+
+    name := ""
+    while not lexer.src[lexer.i] == `;` do
+        name += toString lexer.src[lexer.i]
+        lexer.i += 1
+
+    lexer.tokens.append "#REPLACE_CHANNEL_{name}"
+
+type Lexer =
+    include: string
+    src: string
+    tokens: [..]string
+    tok: string
+    i: uint
+
+type ChannelType either
+    Channel_Vec3
+    Channel_Tex
+
+def specialize(src: []string, types: [](string, ChannelType)) string =
+    new_src := [..]string
+    new_src.reserve src.length
+
+    new_src.append "#version 4.4\n"
+    new_src.append "#define channel(tex, coord) channel_##tex(coord)\n"
+
+    for tok := src do
+        replace := false
+        for (name, chan_type) := types do
+            if tok == "#REPLACE_CHANNEL_{name}" then
+                replace = true
+
+                match chan_type with
+                    Channel_Vec3 ->
+                        new_src.append "uniform vec3 {name};\n"
+                        new_src.append "#define channel_{name}(tex) {name}\n"
+
+                    Channel_Tex ->
+                        new_src.append "uniform sampler2D {name};\n"
+                        new_src.append "#define channel_{name}(tex) texture({name}, tex)\n"
+
+                replace = true
+
+        if not replace then
+            new_src.append tok
+
+    new_src.join ""
+
+def preprocess_shader(include: string, file: string) []string =
+    file = include + file
+
+    guard Some f := open file, ReadFile
+    else panic "Could not read file, {file}"
+
+    defer f.free!
+
+    src := f.read!
+
+    lexer := Lexer{
+        include = include
+        src = src
+        tokens = [..]string
+        tok = ""
+        i = 0
+    }
+
+    while lexer.i < src.length do
+        if lexer.src[lexer.i] == ` ` then
+            match lexer.tok with
+                "#include" -> parse_include &lexer
+                "channel3" -> parse_channel &lexer, 3
+                "channel4" -> parse_channel &lexer, 4
+                _ ->
+                    append_token &lexer
+                    lexer.tokens.append " "
+        elif lexer.src[lexer.i] == `\n` then
+            append_token &lexer
+            lexer.tokens.append "\n"
+        else
+            lexer.tok += toString lexer.src[lexer.i]
+        lexer.i += 1
+
+    append_token &lexer
+    lexer.tokens
+
+result := preprocess_shader "src/", "shader.vert"
+log specialize result, box [("color", Channel_Vec3)]

@@ -261,6 +261,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
     try:
         opt = 0
         skip = 0
+        to_obj = False
 
         outputFile = ""
 
@@ -278,6 +279,8 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 skip = 1
             elif i == "-O1":
                 opt = 1
+            elif i == "-c":
+                to_obj = True
             else:
                 Error.error("unknown argument '" + i + "'.")
 
@@ -382,7 +385,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             #print(cache.usedModules)
 
-            lexed = Lexer.lex(target, sources, filenames, files, cache, {})
+            lexed = Lexer.lex(target, sources, filenames, files, cache, {}, global_parser)
 
             print("Lexed and parsed : " + str(Lexer.linesOfCode))
 
@@ -444,12 +447,12 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             #print(declarations.shouldCompile)
 
+            declarations.setGlobalData(compileRuntime)
+            ResolveSymbols.resolve(declarations)
+
             if opt == 3 or doc or ImportParser.shouldCompile(False, "main", declarations):
                 print("Recompiling")
 
-                declarations.setGlobalData(compileRuntime)
-
-                ResolveSymbols.resolve(declarations)
 
                 parser = Parser.Parser(lexed["main"], filenames["main"])
                 parser.package = "main"
@@ -464,6 +467,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                 parser.compiled["main"] = None
                 parser.contextFields["main"] = {}
                 parser.dev = dev
+                parser.sc = True
 
                 parsed = parser.parse()
 
@@ -497,21 +501,25 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 for i in parser.compiled:
                     parser.package = i
-                    if parser.compiled[i][0]:
+                    sc = parser.compiled[i][0]
+                    if sc or not cache:
                         SimplifyAst.resolveGeneric(parser, parser.compiled[i][1][0])
 
                 #generatedTypes = Types.genericTypes
                 #Types.genericTypes = {}
                 contextCCode = CodeGen.buildContext(parser)
 
+                """ 
                 for i in parser.compiled:
                     parser.package = i
+                    sc = parser.compiled[i][0]
                     if not parser.compiled[i][0]:
                         if cache and i in cache.generatedTypesPerPackage:
                             parser.generatedTypesPerPackage[i] = cache.generatedTypesPerPackage[i]
                             for typ in cache.generatedTypesPerPackage[i]:
                                 Types.genericTypes[typ] = None
                                 Types.inProjectTypes[typ] = None
+                """
 
                 #print(Types.genericTypes)
                 #generatedTypes.update(Types.genericTypes)
@@ -529,8 +537,10 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     dir = tmp[tmp.find("packages")+len("packages")+1:tmp.rfind("src")-1]
                     canStartWith.append(dir)
 
-                    if parser.compiled[i][0]:
-                        inc = CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt)
+                    sc = parser.compiled[i][0]
+
+                    if sc or not cache:
+                        inc = CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug, sc= sc).compile(opt=opt)
                         includes.extend(inc)
                         parser.includes[i] = inc
                     else:
@@ -543,7 +553,6 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 _linkWith = [i for (d, i) in linkWith if d in canStartWith]
                 _headerIncludePath = [i for (d, i) in headerIncludePath if d in canStartWith]
-
 
                 parser.generatedGenericTypes = Types.genericTypes
                 if compileRuntime:   #not dev and not _raise:
@@ -558,16 +567,48 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
                 timeForCodeAnalysis = time() - beforeLoad
 
-                l = CodeGen.link(compiled, outputFile, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
+                print("Code Analysis : " + str(timeForCodeAnalysis))
+
+                if False: #not compileRuntime:
+                    c = []
+
+                    for i in compiled:
+                        sc = parser.compiled[i][0]
+                        if sc:
+                            c.append(i)
+                        else:
+                            header = "lib/"+i+".h"
+                            header = os.path.abspath(header)
+                            includes.append('#include "' + header + '"\n')
+
+                    print(includes)
+
+                    prelink = CodeGen.link(c, "recompiled_" + outputFile, to_obj=True, opt=opt, dev=dev, hotswap=hotswap, debug=debug,
+                                     includes=includes, linkWith=[], headerIncludePath=_headerIncludePath,
+                                     target=target, context=contextCCode, runtimeBuild=compileRuntime)
+
+                    l = CodeGen.link([], outputFile, to_obj=True, opt=opt, dev=dev, hotswap=hotswap,
+                                     debug=debug, includes=includes, linkWith=[],
+                                     headerIncludePath=_headerIncludePath, target=target, context=contextCCode,
+                                     runtimeBuild=compileRuntime)
+
+                    if not to_obj:
+                        l = CodeGen.link([], outputFile, to_obj=to_obj, opt=opt, dev=dev, hotswap=hotswap,
+                                         debug=debug, includes=includes, linkWith=_linkWith + [outputFile+".o", "recompiled_" + outputFile+".o"],
+                                         headerIncludePath=_headerIncludePath, target=target, context=contextCCode,
+                                         runtimeBuild=compileRuntime)
+                else:
+                    l = CodeGen.link(compiled, outputFile, to_obj=to_obj, opt=opt, dev=dev, hotswap= hotswap, debug= debug, includes= includes, linkWith=_linkWith, headerIncludePath=_headerIncludePath, target=target, context=contextCCode, runtimeBuild=compileRuntime)
                 if compileRuntime:
                     saveParser.save(parser, compileRuntime)
 
-                print("Code Analysis : " + str(timeForCodeAnalysis))
                 print("\n======== recompiling =========")
                 print("Compilation took : " + str(time() - time1))
                 print("")
 
                 if run:
+                    if to_obj:
+                        Error.error("Cannot run .obj")
                     CodeGen.exec(outputFile)
 
                 didCompile = True
@@ -591,6 +632,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
             Error.error(str(e))
         else:
             print(e, file= sys.stderr)
+        exit(1)
 
     if didCompile:
         print("Compilation took : " + str(time() - time1))
@@ -599,18 +641,26 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
 import datetime
 modified_ = {}
+
+def get_time_modified(name):
+    t = os.path.getmtime("lib/" + name.replace("/", ".") + ".c")
+    return datetime.datetime.fromtimestamp(int(t))
+
 def modified(_target, files, outputfile, jsFiles=[]):
-    return True #while developing incremental compilation sucks
+    #return True #while developing incremental compilation sucks
 
     def inner():
         target = _target
         if target == "full":
             target = "node"
 
-        if not outputfile in global_parser.usedModules or not outputfile in global_parser.includes:
-            return True
-        else:
-            t = global_parser.usedModules[outputfile]
+        #if not outputfile in global_parser.usedModules or not outputfile in global_parser.includes:
+        #    return True
+        #else:
+        try:
+            t = get_time_modified(outputfile) #global_parser.usedModules[outputfile]
+        except FileNotFoundError:
+            t = datetime.datetime.fromtimestamp(0)
 
         if False and outputfile == "main": #linking is done globally not module specific
             for i in global_parser.linkWith:
@@ -624,7 +674,7 @@ def modified(_target, files, outputfile, jsFiles=[]):
         import time
         o = compiled
 
-        for i in files:
+        for i in files :
             joined = os.path.join(i[0], i[1])
             file = os.path.getmtime(joined)
             file = datetime.datetime.fromtimestamp(int(file))

@@ -261,283 +261,288 @@ uint64_t _global_StructType_get_size(struct _global_StructType* _global_self, st
 struct _global_String _global_StructType_toString(struct _global_StructType* _global_self, struct _global_Context* T);
 
 struct _global_String _global_StructType_toString(struct _global_StructType*,struct _global_Context* T);
-struct _global_String _global_EnumType_toString(struct _global_EnumType* _global_self, struct _global_Context* V);
+unsigned char _global_EnumType_get_tag(struct _global_EnumType* _global_self, void* _global_ptr, struct _global_Context* V);
+struct _global_String _global_EnumType_toString(struct _global_EnumType* _global_self, struct _global_Context* W);
 
-struct _global_String _global_EnumType_toString(struct _global_EnumType*,struct _global_Context* V);
-uint64_t _global_EnumType_get_size(struct _global_EnumType* _global_self, struct _global_Context* W);
-uint64_t _global_FuncType_get_size(struct _global_FuncType* _global_self, struct _global_Context* X);
-struct _global_String _global_InterfaceType_toString(struct _global_InterfaceType* _global_self, struct _global_Context* Y);
+struct _global_String _global_EnumType_toString(struct _global_EnumType*,struct _global_Context* W);
+uint64_t _global_EnumType_get_size(struct _global_EnumType* _global_self, struct _global_Context* X);
+uint64_t _global_FuncType_get_size(struct _global_FuncType* _global_self, struct _global_Context* Y);
+struct _global_String _global_InterfaceType_toString(struct _global_InterfaceType* _global_self, struct _global_Context* Z);
 
-struct _global_String _global_InterfaceType_toString(struct _global_InterfaceType*,struct _global_Context* Y);
-uint64_t _global_InterfaceType_get_size(struct _global_InterfaceType* _global_self, struct _global_Context* Z);
-uint64_t _global_ArrayType_get_size(struct _global_ArrayType* _global_self, struct _global_Context* bb);
-struct _global_String _global_ArrayType_toString(struct _global_ArrayType* _global_self, struct _global_Context* bc);
+struct _global_String _global_InterfaceType_toString(struct _global_InterfaceType*,struct _global_Context* Z);
+uint64_t _global_InterfaceType_get_size(struct _global_InterfaceType* _global_self, struct _global_Context* bb);
+uint64_t _global_ArrayType_get_size(struct _global_ArrayType* _global_self, struct _global_Context* bc);
+struct _global_String _global_ArrayType_toString(struct _global_ArrayType* _global_self, struct _global_Context* bd);
 
-struct _global_String _global_ArrayType_toString(struct _global_ArrayType*,struct _global_Context* bc);
-uint64_t _global_CharType_get_size(struct _global_CharType* _global_self, struct _global_Context* bd);
-struct _global_String _global_NoneType_toString(struct NoneType* _global_self, struct _global_Context* bf);
+struct _global_String _global_ArrayType_toString(struct _global_ArrayType*,struct _global_Context* bd);
+uint64_t _global_CharType_get_size(struct _global_CharType* _global_self, struct _global_Context* bf);
+struct _global_String _global_NoneType_toString(struct NoneType* _global_self, struct _global_Context* bg);
 
-struct _global_String _global_NoneType_toString(struct NoneType*,struct _global_Context* bf);
-uint64_t _global_NoneType_get_size(struct NoneType* _global_self, struct _global_Context* bg);
-void _global_log_string(struct _global_String _global_s, struct _global_Context* bh);
+struct _global_String _global_NoneType_toString(struct NoneType*,struct _global_Context* bg);
+uint64_t _global_NoneType_get_size(struct NoneType* _global_self, struct _global_Context* bh);
+void _global_log_string(struct _global_String _global_s, struct _global_Context* bj);
 
-#define _global_exit(bh,bj) exit(bh)
+#define _global_exit(bj,bk) exit(bj)
 
-#define _global_c_log(bk,bl) _global_c_log(bk)
-void _global_panic(struct _global_String _global_s, struct _global_Context* bm){;
-_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"panic: "),(_global_s),bm),_global_StringInit(0,""),bm),bm);
-_global_exit(1,bm);
+#define _global_c_log(bl,bm) _global_c_log(bl)
+void _global_panic(struct _global_String _global_s, struct _global_Context* bn){;
+_global_log_string(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(7,"panic: "),(_global_s),bn),_global_StringInit(0,""),bn),bn);
+_global_exit(1,bn);
 ;}
-void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* bm){;
+void _global_assert(_Bool _global_b, struct _global_String _global_message, struct _global_Context* bn){;
 ;
 if(!(_global_b)){;
-_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),bm),_global_StringInit(0,""),bm),bm);
+_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(18,"Assertion failed: "),(_global_message),bn),_global_StringInit(0,""),bn),bn);
 ;};
 ;}
 
-#define _global_c_memcpy(bm,bn,bp,bq) memcpy(bm,bn,bp)
+#define _global_c_memcpy(bn,bp,bq,br) memcpy(bn,bp,bq)
 
-#define _global_c_alloc(br,bs) malloc(br)
+#define _global_c_alloc(bs,bt) malloc(bs)
 
-#define _global_c_free(bt,bv) free(bt)
-struct _global_TemporaryStorage _global_temporary_storage;struct _global_TemporaryStorage _global_longterm_storage_allocator;struct _global_Malloc _global_malloc;struct _global_Allocator _global_temporary_storage_as_allocator;struct _global_Allocator_VTABLE rTemporaryStorage_VTABLE_FOR_Allocator;struct _global_Allocator _global_malloc_as_allocator;struct _global_Allocator_VTABLE rMalloc_VTABLE_FOR_Allocator;struct _global_Allocator _global_longterm_storage_as_allocator;struct _global_TemporaryStorage _global_new_TemporaryStorage(uint64_t _global_maxSize, struct _global_Context* bw){;
-;return _global_TemporaryStorageInit((uint64_t)0,(uint64_t)0,_global_c_alloc(_global_maxSize,bw),_global_maxSize);
+#define _global_c_free(bv,bw) free(bv)
+struct _global_TemporaryStorage _global_temporary_storage;struct _global_TemporaryStorage _global_longterm_storage_allocator;struct _global_Malloc _global_malloc;struct _global_Allocator _global_temporary_storage_as_allocator;struct _global_Allocator_VTABLE rTemporaryStorage_VTABLE_FOR_Allocator;struct _global_Allocator _global_malloc_as_allocator;struct _global_Allocator_VTABLE rMalloc_VTABLE_FOR_Allocator;struct _global_Allocator _global_longterm_storage_as_allocator;struct _global_TemporaryStorage _global_new_TemporaryStorage(uint64_t _global_maxSize, struct _global_Context* bx){;
+;return _global_TemporaryStorageInit((uint64_t)0,(uint64_t)0,_global_c_alloc(_global_maxSize,bx),_global_maxSize);
 ;}
-uint64_t _global_TemporaryStorage_get_occupied(struct _global_TemporaryStorage* _global_self, struct _global_Context* bw){;
+uint64_t _global_TemporaryStorage_get_occupied(struct _global_TemporaryStorage* _global_self, struct _global_Context* bx){;
 ;return (_global_self)->occupied;
 ;}
-void* _global_TemporaryStorage_alloc(struct _global_TemporaryStorage* _global_self, uint64_t _global_size, struct _global_Context* bw){;
+void* _global_TemporaryStorage_alloc(struct _global_TemporaryStorage* _global_self, uint64_t _global_size, struct _global_Context* bx){;
 ;
 uint64_t _global_occupied;_global_occupied = (_global_self)->occupied;;
-(_global_self)->occupied=(_global_self)->occupied+_global_size;;
+(_global_self)->occupied = (_global_self)->occupied+_global_size;;
 if((_global_self)->occupied>(_global_self)->highest){;
-(_global_self)->highest=(_global_self)->occupied;;
+(_global_self)->highest = (_global_self)->occupied;;
 ;};
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-(bw)->allocator=&(_global_malloc_as_allocator);;
-_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->maxSize),bw),bw),_global_StringInit(0,""),bw),bw);
+(bx)->allocator = &(_global_malloc_as_allocator);;
+_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->maxSize),bx),bx),_global_StringInit(0,""),bx),bx);
 ;};
-;return _global_offsetPtr((_global_self)->data,_global_occupied,bw);
+;return _global_offsetPtr((_global_self)->data,(int64_t)_global_occupied,bx);
 ;}
-void _global_TemporaryStorage_dealloc(struct _global_TemporaryStorage* _global_self, void* _global_p, struct _global_Context* bw){;
+void _global_TemporaryStorage_dealloc(struct _global_TemporaryStorage* _global_self, void* _global_p, struct _global_Context* bx){;
 ;
 ;}
-void _global_TemporaryStorage_reset_to(struct _global_TemporaryStorage* _global_self, uint64_t _global_occupied, struct _global_Context* bw){;
+void _global_TemporaryStorage_reset_to(struct _global_TemporaryStorage* _global_self, uint64_t _global_occupied, struct _global_Context* bx){;
 ;
-(_global_self)->occupied=_global_occupied;;
+(_global_self)->occupied = _global_occupied;;
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-(bw)->allocator=&(_global_malloc_as_allocator);;
-_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->occupied),bw),bw),_global_StringInit(0,""),bw),bw);
+(bx)->allocator = &(_global_malloc_as_allocator);;
+_global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->occupied),bx),bx),_global_StringInit(0,""),bx),bx);
 ;};
 ;}
-void* _global_Malloc_alloc(struct _global_Malloc* _global_self, uint64_t _global_size, struct _global_Context* bw){;
+void* _global_Malloc_alloc(struct _global_Malloc* _global_self, uint64_t _global_size, struct _global_Context* bx){;
 ;
-;return _global_c_alloc(_global_size,bw);
+;return _global_c_alloc(_global_size,bx);
 ;}
-void _global_Malloc_dealloc(struct _global_Malloc* _global_self, void* _global_pointer, struct _global_Context* bw){;
+void _global_Malloc_dealloc(struct _global_Malloc* _global_self, void* _global_pointer, struct _global_Context* bx){;
 ;
-_global_c_free(_global_pointer,bw);
+_global_c_free(_global_pointer,bx);
 ;}
-unsigned int _global_Malloc_get_occupied(struct _global_Malloc* _global_self, struct _global_Context* bw){;
+unsigned int _global_Malloc_get_occupied(struct _global_Malloc* _global_self, struct _global_Context* bx){;
 ;return 0;
 ;}
-void _global_Malloc_free_allocator(struct _global_Malloc* _global_self, struct _global_Context* bw){;
+void _global_Malloc_free_allocator(struct _global_Malloc* _global_self, struct _global_Context* bx){;
 ;}
-void _global_Malloc_reset_to(struct _global_Malloc* _global_self, uint64_t _global_to, struct _global_Context* bw){;
+void _global_Malloc_reset_to(struct _global_Malloc* _global_self, uint64_t _global_to, struct _global_Context* bx){;
 ;
 ;}
-void _global_free(void* _global_p, struct _global_Context* bw){;
-_global_Allocator_dealloc((bw)->allocator,_global_p,bw);
+void _global_free(void* _global_p, struct _global_Context* bx){;
+_global_Allocator_dealloc((bx)->allocator,_global_p,bx);
 ;}
-void _global_free_longterm(void* _global_p, struct _global_Context* bw){;
-_global_Allocator_dealloc((bw)->longterm_storage,_global_p,bw);
+void _global_free_longterm(void* _global_p, struct _global_Context* bx){;
+_global_Allocator_dealloc((bx)->longterm_storage,_global_p,bx);
 ;}
-void _global_TemporaryStorage_free_allocator(struct _global_TemporaryStorage* _global_self, struct _global_Context* bw){;
-_global_c_free((_global_self)->data,bw);
+void _global_TemporaryStorage_free_allocator(struct _global_TemporaryStorage* _global_self, struct _global_Context* bx){;
+_global_c_free((_global_self)->data,bx);
 ;}
 
-#define _global_char_buffer_toString(bw,bx) _runtime_char_buffer_toString(bw)
+#define _global_char_buffer_toString(bx,by) _runtime_char_buffer_toString(bx)
 
 #define _global_null_terminated '\0'
 
-#define _global_make_String(by,bz,bB) _global_StringInit(by,bz)
-struct _global_Array_Array_T _global_empty_array(struct _global_Context* bC){;return _global_Array_Array_TInit(0,0,NULL,NULL);
+#define _global_make_String(bz,bB,bC) _global_StringInit(bz,bB)
+struct _global_Array_Array_T _global_empty_array(struct _global_Context* bD){;return _global_Array_Array_TInit(0,0,NULL,NULL);
 ;}
-void _global_Range_iteratorByValue(struct _global_Range _global_self, struct _global_Context* bC){;
+void _global_Range_iteratorByValue(struct _global_Range _global_self, struct _global_Context* bD){;
 _global_RangeIteratorInit(_global_self,0);
 ;}
-static inline void _global_Range_iterator(struct _global_Range* bD,struct _global_Context* bC){
-_global_Range_iteratorByValue(*bD,bC);
-}static inline struct _global_Maybe_uint tmp_globalb(struct _global_Maybe_Maybe_T bF) {
-struct _global_Maybe_uint bD;bD.tag = bF.tag;bD.cases = *(union _global_Maybe_uint_cases*) &(bF.cases);return bD;
+static inline void _global_Range_iterator(struct _global_Range* bF,struct _global_Context* bD){
+_global_Range_iteratorByValue(*bF,bD);
+}static inline struct _global_Maybe_uint tmp_globalb(struct _global_Maybe_Maybe_T bG) {
+struct _global_Maybe_uint bF;bF.tag = bG.tag;bF.cases = *(union _global_Maybe_uint_cases*) &(bG.cases);return bF;
 }
-struct _global_Maybe_uint _global_RangeIterator_next(struct _global_RangeIterator* _global_self, struct _global_Context* bC){;
+struct _global_Maybe_uint _global_RangeIterator_next(struct _global_RangeIterator* _global_self, struct _global_Context* bD){;
 struct _global_Range* _global_range;_global_range = &(((_global_self)->range));;
 ;if((_global_self)->it<(_global_range)->end){;
 unsigned int _global_tmp;_global_tmp = (_global_self)->it;;
-(_global_self)->it=(_global_self)->it+1;;
-return _global_Some_uint(_global_tmp,bC);}
+(_global_self)->it = (_global_self)->it+1;;
+return _global_Some_uint(_global_tmp,bD);}
 else{return tmp_globalb(_global_None);};
 ;}
-struct _global_String _global_FileAcess_toStringByValue(struct _global_FileAcess _global_self, struct _global_Context* bC){;
-;struct _global_FileAcess bD =_global_self;
-if(bD.tag==0){return _global_StringInit(1,"r");}else if(bD.tag==1){return _global_StringInit(1,"w");}else if(bD.tag==2){return _global_StringInit(2,"rb");}else if(bD.tag==3){return _global_StringInit(2,"wb");};
+struct _global_String _global_FileAcess_toStringByValue(struct _global_FileAcess _global_self, struct _global_Context* bD){;
+;struct _global_FileAcess bF =_global_self;
+if(bF.tag==0){return _global_StringInit(1,"r");}else if(bF.tag==1){return _global_StringInit(1,"w");}else if(bF.tag==2){return _global_StringInit(2,"rb");}else if(bF.tag==3){return _global_StringInit(2,"wb");};
 ;}
-static inline struct _global_String _global_FileAcess_toString(struct _global_FileAcess* bF,struct _global_Context* bC){
-return _global_FileAcess_toStringByValue(*bF,bC);
+static inline struct _global_String _global_FileAcess_toString(struct _global_FileAcess* bG,struct _global_Context* bD){
+return _global_FileAcess_toStringByValue(*bG,bD);
 }
-#define _global_c_open_file(bC,bD,bF) _runtime_c_open_file(bC,bD)
+#define _global_c_open_file(bD,bF,bG) _runtime_c_open_file(bD,bF)
 
-#define _global_c_close_file(bG,bH) _runtime_c_close_file(bG)
+#define _global_c_close_file(bH,bJ) _runtime_c_close_file(bH)
 
-#define _global_c_read_file(bJ,bK,bL,bM) _runtime_read_file(bJ,bK,bL)
+#define _global_c_read_file(bK,bL,bM,bN) _runtime_read_file(bK,bL,bM)
 
-#define _global_c_write_file(bN,bP,bQ,bR) _runtime_write_file(bN,bP,bQ)
-struct _global_String _global_File_read(struct _global_File* _global_self, struct _global_Context* bS){;
-struct _global_FileAcess bT =(_global_self)->acess;if(bT.tag==0){
+#define _global_c_write_file(bP,bQ,bR,bS) _runtime_write_file(bP,bQ,bR)
+struct _global_String _global_File_read(struct _global_File* _global_self, struct _global_Context* bT){;
+struct _global_FileAcess bV =(_global_self)->acess;if(bV.tag==0){
 ;}
-else if(bT.tag==2){
+else if(bV.tag==2){
 ;}
 else if(1){
-_global_panic(_global_StringInit(40,"Trying to read from file not set to read"),bS);
+_global_panic(_global_StringInit(40,"Trying to read from file not set to read"),bT);
 ;}
 ;
-;return _global_c_read_file((_global_self)->c_file,(_global_self)->filename,bS,bS);
+;return _global_c_read_file((_global_self)->c_file,(_global_self)->filename,bT,bT);
 ;}
-void _global_File_write(struct _global_File* _global_self, struct _global_String _global_s, struct _global_Context* bS){;
+void _global_File_write(struct _global_File* _global_self, struct _global_String _global_s, struct _global_Context* bT){;
 ;
-struct _global_FileAcess bT =(_global_self)->acess;if(bT.tag==1){
+struct _global_FileAcess bV =(_global_self)->acess;if(bV.tag==1){
 ;}
-else if(bT.tag==3){
+else if(bV.tag==3){
 ;}
 else if(1){
-_global_panic(_global_StringInit(40,"Trying to write to file not set to write"),bS);
+_global_panic(_global_StringInit(40,"Trying to write to file not set to write"),bT);
 ;}
 ;
-_global_c_write_file((_global_self)->c_file,_global_s,bS,bS);
+_global_c_write_file((_global_self)->c_file,_global_s,bT,bT);
 ;}
-void _global_File_freeByValue(struct _global_File _global_self, struct _global_Context* bS){;
-_global_c_close_file((_global_self).c_file,bS);
+void _global_File_freeByValue(struct _global_File _global_self, struct _global_Context* bT){;
+_global_c_close_file((_global_self).c_file,bT);
 ;}
-static inline void _global_File_free(struct _global_File* bT,struct _global_Context* bS){
-_global_File_freeByValue(*bT,bS);
-}static inline struct _global_Maybe_File tmp_globalc(struct _global_Maybe_Maybe_T bW) {
-struct _global_Maybe_File bV;bV.tag = bW.tag;bV.cases = *(union _global_Maybe_File_cases*) &(bW.cases);return bV;
+static inline void _global_File_free(struct _global_File* bV,struct _global_Context* bT){
+_global_File_freeByValue(*bV,bT);
+}static inline struct _global_Maybe_File tmp_globalc(struct _global_Maybe_Maybe_T bX) {
+struct _global_Maybe_File bW;bW.tag = bX.tag;bW.cases = *(union _global_Maybe_File_cases*) &(bX.cases);return bW;
 }
-struct _global_Maybe_File _global_open(struct _global_String _global_filename, struct _global_FileAcess _global_acess, struct _global_Context* bS){;
+struct _global_Maybe_File _global_open(struct _global_String _global_filename, struct _global_FileAcess _global_acess, struct _global_Context* bT){;
 ;
-;struct FILE* bT =_global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,bS),bS);
-if(bT != NULL){struct FILE* _global_file = bT;
-return _global_Some_File(_global_FileInit(_global_file,_global_acess,_global_filename),bS);}else if(bT == NULL){return tmp_globalc(_global_None);};
+;struct FILE* bV =_global_c_open_file(_global_filename,_global_FileAcess_toStringByValue(_global_acess,bT),bT);
+if(bV != NULL){struct FILE* _global_file = bV;
+return _global_Some_File(_global_FileInit(_global_file,_global_acess,_global_filename),bT);}else if(bV == NULL){return tmp_globalc(_global_None);};
 ;}
 
-#define _global_set_bit_to(bS,bT,bV,bW) _global_c_set_bit_to(bS,bT,bV)
+#define _global_set_bit_to(bT,bV,bW,bX) _global_c_set_bit_to(bT,bV,bW)
 
-#define _global_is_bit_set(bX,bY,bZ) _global_c_is_bit_set(bX,bY)
+#define _global_is_bit_set(bY,bZ,cb) _global_c_is_bit_set(bY,bZ)
 
-#define _global_bit_and(cb,cc,cd) _global_c_bit_and(cb,cc)
+#define _global_bit_and(db,fb,gb) _global_c_bit_and(db,fb)
 
 #define _global_null_char '\0'
-uint64_t _global_IntType_get_size(struct IntType* _global_self, struct _global_Context* cf){;
-;return (_global_self)->size;
+uint64_t _global_IntType_get_size(struct IntType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)(_global_self)->size;
 ;}
-struct _global_String _global_IntType_toString(struct IntType* _global_self, struct _global_Context* cf){;
-;return ((_global_self)->sign ? _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"i"),_global_uint_toStringByValue(((_global_self)->size*8),cf),cf),_global_StringInit(0,""),cf):(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"u"),_global_uint_toStringByValue(((_global_self)->size*8),cf),cf),_global_StringInit(0,""),cf)));
+struct _global_String _global_IntType_toString(struct IntType* _global_self, struct _global_Context* hb){;
+;return ((_global_self)->sign ? _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"i"),_global_uint_toStringByValue(((_global_self)->size*8),hb),hb),_global_StringInit(0,""),hb):(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"u"),_global_uint_toStringByValue(((_global_self)->size*8),hb),hb),_global_StringInit(0,""),hb)));
 ;}
-static inline struct _global_String _global_IntType_toStringByValue(struct IntType cg,struct _global_Context* cf){
-return _global_IntType_toString(&cg,cf);
-}uint64_t _global_FloatType_get_size(struct FloatType* _global_self, struct _global_Context* cf){;
-;return (_global_self)->size;
+static inline struct _global_String _global_IntType_toStringByValue(struct IntType jb,struct _global_Context* hb){
+return _global_IntType_toString(&jb,hb);
+}uint64_t _global_FloatType_get_size(struct FloatType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)(_global_self)->size;
 ;}
-struct _global_String _global_FloatType_toString(struct FloatType* _global_self, struct _global_Context* cf){;
-;return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"f"),_global_uint_toStringByValue(((_global_self)->size*8),cf),cf),_global_StringInit(0,""),cf);
+struct _global_String _global_FloatType_toString(struct FloatType* _global_self, struct _global_Context* hb){;
+;return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"f"),_global_uint_toStringByValue(((_global_self)->size*8),hb),hb),_global_StringInit(0,""),hb);
 ;}
-static inline struct _global_String _global_FloatType_toStringByValue(struct FloatType cg,struct _global_Context* cf){
-return _global_FloatType_toString(&cg,cf);
-}struct _global_String _global_BoolType_toString(struct BoolType* _global_self, struct _global_Context* cf){;
+static inline struct _global_String _global_FloatType_toStringByValue(struct FloatType jb,struct _global_Context* hb){
+return _global_FloatType_toString(&jb,hb);
+}struct _global_String _global_BoolType_toString(struct BoolType* _global_self, struct _global_Context* hb){;
 ;return _global_StringInit(4,"bool");
 ;}
-static inline struct _global_String _global_BoolType_toStringByValue(struct BoolType cg,struct _global_Context* cf){
-return _global_BoolType_toString(&cg,cf);
-}uint64_t _global_BoolType_get_size(struct BoolType* _global_self, struct _global_Context* cf){;
-;return sizeof(_Bool);
+static inline struct _global_String _global_BoolType_toStringByValue(struct BoolType jb,struct _global_Context* hb){
+return _global_BoolType_toString(&jb,hb);
+}uint64_t _global_BoolType_get_size(struct BoolType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(_Bool);
 ;}
-struct _global_String _global_StringType_toString(struct StringType* _global_self, struct _global_Context* cf){;
+struct _global_String _global_StringType_toString(struct StringType* _global_self, struct _global_Context* hb){;
 ;return _global_StringInit(6,"string");
 ;}
-static inline struct _global_String _global_StringType_toStringByValue(struct StringType cg,struct _global_Context* cf){
-return _global_StringType_toString(&cg,cf);
-}uint64_t _global_StringType_get_size(struct StringType* _global_self, struct _global_Context* cf){;
-;return sizeof(struct _global_String);
+static inline struct _global_String _global_StringType_toStringByValue(struct StringType jb,struct _global_Context* hb){
+return _global_StringType_toString(&jb,hb);
+}uint64_t _global_StringType_get_size(struct StringType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(struct _global_String);
 ;}
-struct _global_String _global_AliasType_toString(struct _global_AliasType* _global_self, struct _global_Context* cf){;
-;return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),cf),_global_StringInit(1,"."),cf),((_global_self)->name),cf),_global_StringInit(0,""),cf);
+struct _global_String _global_AliasType_toString(struct _global_AliasType* _global_self, struct _global_Context* hb){;
+;return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),hb),_global_StringInit(1,"."),hb),((_global_self)->name),hb),_global_StringInit(0,""),hb);
 ;}
-static inline struct _global_String _global_AliasType_toStringByValue(struct _global_AliasType cg,struct _global_Context* cf){
-return _global_AliasType_toString(&cg,cf);
-}uint64_t _global_AliasType_get_size(struct _global_AliasType* _global_self, struct _global_Context* cf){;
-;return _global_Type_get_size(&((_global_self)->real_type),cf);
+static inline struct _global_String _global_AliasType_toStringByValue(struct _global_AliasType jb,struct _global_Context* hb){
+return _global_AliasType_toString(&jb,hb);
+}uint64_t _global_AliasType_get_size(struct _global_AliasType* _global_self, struct _global_Context* hb){;
+;return _global_Type_get_size(&((_global_self)->real_type),hb);
 ;}
-struct _global_String _global_PointerType_toString(struct _global_PointerType* _global_self, struct _global_Context* cf){;
-;return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"&"),_global_Type_toStringByValue(((_global_self)->p_type),cf),cf),_global_StringInit(0,""),cf);
+struct _global_String _global_PointerType_toString(struct _global_PointerType* _global_self, struct _global_Context* hb){;
+;return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"&"),_global_Type_toStringByValue(((_global_self)->p_type),hb),hb),_global_StringInit(0,""),hb);
 ;}
-static inline struct _global_String _global_PointerType_toStringByValue(struct _global_PointerType cg,struct _global_Context* cf){
-return _global_PointerType_toString(&cg,cf);
-}uint64_t _global_PointerType_get_size(struct _global_PointerType* _global_self, struct _global_Context* cf){;
-;return sizeof(void*);
+static inline struct _global_String _global_PointerType_toStringByValue(struct _global_PointerType jb,struct _global_Context* hb){
+return _global_PointerType_toString(&jb,hb);
+}uint64_t _global_PointerType_get_size(struct _global_PointerType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(void*);
 ;}
-uint64_t _global_StructType_get_size(struct _global_StructType* _global_self, struct _global_Context* cf){;
+uint64_t _global_StructType_get_size(struct _global_StructType* _global_self, struct _global_Context* hb){;
 ;return (_global_self)->size;
 ;}
-struct _global_String _global_StructType_toString(struct _global_StructType* _global_self, struct _global_Context* cf){;
-;return (_global_String_op_eqByValue((_global_self)->package,_global_StringInit(7,"_global"),cf) ? (_global_self)->name:(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),cf),_global_StringInit(1,"."),cf),((_global_self)->name),cf),_global_StringInit(0,""),cf)));
+struct _global_String _global_StructType_toString(struct _global_StructType* _global_self, struct _global_Context* hb){;
+;return (_global_String_op_eqByValue((_global_self)->package,_global_StringInit(7,"_global"),hb) ? (_global_self)->name:(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),hb),_global_StringInit(1,"."),hb),((_global_self)->name),hb),_global_StringInit(0,""),hb)));
 ;}
-static inline struct _global_String _global_StructType_toStringByValue(struct _global_StructType cg,struct _global_Context* cf){
-return _global_StructType_toString(&cg,cf);
-}struct _global_String _global_EnumType_toString(struct _global_EnumType* _global_self, struct _global_Context* cf){;
-;return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),cf),_global_StringInit(1,"."),cf),((_global_self)->name),cf),_global_StringInit(0,""),cf);
+static inline struct _global_String _global_StructType_toStringByValue(struct _global_StructType jb,struct _global_Context* hb){
+return _global_StructType_toString(&jb,hb);
+}unsigned char _global_EnumType_get_tag(struct _global_EnumType* _global_self, void* _global_ptr, struct _global_Context* hb){;
+;
+;return *((unsigned char*)(_global_offsetPtr(_global_ptr,(int64_t)((_global_self)->tag_field).offset,hb)));
 ;}
-static inline struct _global_String _global_EnumType_toStringByValue(struct _global_EnumType cg,struct _global_Context* cf){
-return _global_EnumType_toString(&cg,cf);
-}uint64_t _global_EnumType_get_size(struct _global_EnumType* _global_self, struct _global_Context* cf){;
+struct _global_String _global_EnumType_toString(struct _global_EnumType* _global_self, struct _global_Context* hb){;
+;return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),hb),_global_StringInit(1,"."),hb),((_global_self)->name),hb),_global_StringInit(0,""),hb);
+;}
+static inline struct _global_String _global_EnumType_toStringByValue(struct _global_EnumType jb,struct _global_Context* hb){
+return _global_EnumType_toString(&jb,hb);
+}uint64_t _global_EnumType_get_size(struct _global_EnumType* _global_self, struct _global_Context* hb){;
 ;return (_global_self)->size;
 ;}
-uint64_t _global_FuncType_get_size(struct _global_FuncType* _global_self, struct _global_Context* cf){;
-;return sizeof(pp___none);
+uint64_t _global_FuncType_get_size(struct _global_FuncType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(pp___none);
 ;}
-struct _global_String _global_InterfaceType_toString(struct _global_InterfaceType* _global_self, struct _global_Context* cf){;
-;return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),cf),_global_StringInit(1,"."),cf),((_global_self)->name),cf),_global_StringInit(0,""),cf);
+struct _global_String _global_InterfaceType_toString(struct _global_InterfaceType* _global_self, struct _global_Context* hb){;
+;return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(0,""),((_global_self)->package),hb),_global_StringInit(1,"."),hb),((_global_self)->name),hb),_global_StringInit(0,""),hb);
 ;}
-static inline struct _global_String _global_InterfaceType_toStringByValue(struct _global_InterfaceType cg,struct _global_Context* cf){
-return _global_InterfaceType_toString(&cg,cf);
-}uint64_t _global_InterfaceType_get_size(struct _global_InterfaceType* _global_self, struct _global_Context* cf){;
-;return sizeof(struct bb);
+static inline struct _global_String _global_InterfaceType_toStringByValue(struct _global_InterfaceType jb,struct _global_Context* hb){
+return _global_InterfaceType_toString(&jb,hb);
+}uint64_t _global_InterfaceType_get_size(struct _global_InterfaceType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(struct bb);
 ;}
-uint64_t _global_ArrayType_get_size(struct _global_ArrayType* _global_self, struct _global_Context* cf){;
-;struct _global_ArraySize cg =*((_global_self)->size);
-if(cg.tag==0){unsigned int _global_length = cg.cases.Static.field0;
-return _global_length*_global_Type_get_size(&((_global_self)->array_type),cf);}else if(cg.tag==1){return sizeof(struct _global_Array_none);}else if(cg.tag==2){return sizeof(struct _global_StaticArray_StaticArray_S_none);};
+uint64_t _global_ArrayType_get_size(struct _global_ArrayType* _global_self, struct _global_Context* hb){;
+;struct _global_ArraySize jb =*((_global_self)->size);
+if(jb.tag==0){unsigned int _global_length = jb.cases.Static.field0;
+return (uint64_t)_global_length*_global_Type_get_size(&((_global_self)->array_type),hb);}else if(jb.tag==1){return (uint64_t)sizeof(struct _global_Array_none);}else if(jb.tag==2){return (uint64_t)sizeof(struct _global_StaticArray_StaticArray_S_none);};
 ;}
-struct _global_String _global_ArrayType_toString(struct _global_ArrayType* _global_self, struct _global_Context* cf){;
-;struct _global_ArraySize cg =*((_global_self)->size);
-if(cg.tag==0){unsigned int _global_length = cg.cases.Static.field0;
-return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"["),_global_uint_toStringByValue((_global_length),cf),cf),_global_StringInit(1,"]"),cf),_global_Type_toStringByValue(((_global_self)->array_type),cf),cf),_global_StringInit(0,""),cf);}else if(cg.tag==1){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(4,"[..]"),_global_Type_toStringByValue(((_global_self)->array_type),cf),cf),_global_StringInit(0,""),cf);}else if(cg.tag==2){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(2,"[]"),_global_Type_toStringByValue(((_global_self)->array_type),cf),cf),_global_StringInit(0,""),cf);};
+struct _global_String _global_ArrayType_toString(struct _global_ArrayType* _global_self, struct _global_Context* hb){;
+;struct _global_ArraySize jb =*((_global_self)->size);
+if(jb.tag==0){unsigned int _global_length = jb.cases.Static.field0;
+return _global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(1,"["),_global_uint_toStringByValue((_global_length),hb),hb),_global_StringInit(1,"]"),hb),_global_Type_toStringByValue(((_global_self)->array_type),hb),hb),_global_StringInit(0,""),hb);}else if(jb.tag==1){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(4,"[..]"),_global_Type_toStringByValue(((_global_self)->array_type),hb),hb),_global_StringInit(0,""),hb);}else if(jb.tag==2){return _global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(2,"[]"),_global_Type_toStringByValue(((_global_self)->array_type),hb),hb),_global_StringInit(0,""),hb);};
 ;}
-static inline struct _global_String _global_ArrayType_toStringByValue(struct _global_ArrayType ch,struct _global_Context* cf){
-return _global_ArrayType_toString(&ch,cf);
-}uint64_t _global_CharType_get_size(struct _global_CharType* _global_self, struct _global_Context* cf){;
-;return sizeof(char);
+static inline struct _global_String _global_ArrayType_toStringByValue(struct _global_ArrayType kb,struct _global_Context* hb){
+return _global_ArrayType_toString(&kb,hb);
+}uint64_t _global_CharType_get_size(struct _global_CharType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(char);
 ;}
-struct _global_String _global_NoneType_toString(struct NoneType* _global_self, struct _global_Context* cf){;
+struct _global_String _global_NoneType_toString(struct NoneType* _global_self, struct _global_Context* hb){;
 ;return _global_StringInit(4,"none");
 ;}
-static inline struct _global_String _global_NoneType_toStringByValue(struct NoneType cg,struct _global_Context* cf){
-return _global_NoneType_toString(&cg,cf);
-}uint64_t _global_NoneType_get_size(struct NoneType* _global_self, struct _global_Context* cf){;
-;return sizeof(char);
+static inline struct _global_String _global_NoneType_toStringByValue(struct NoneType jb,struct _global_Context* hb){
+return _global_NoneType_toString(&jb,hb);
+}uint64_t _global_NoneType_get_size(struct NoneType* _global_self, struct _global_Context* hb){;
+;return (uint64_t)sizeof(char);
 ;}
-void _global_log_string(struct _global_String _global_s, struct _global_Context* cf){;
-_global_c_log(_global_String_toString(&(_global_s),cf),cf);
+void _global_log_string(struct _global_String _global_s, struct _global_Context* hb){;
+_global_c_log(_global_String_toString(&(_global_s),hb),hb);
 ;}
 
 void _globalInitTypes() { 

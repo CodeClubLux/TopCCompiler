@@ -15,7 +15,7 @@ import os
 ignore = {}
 
 def shouldCompile(decl, name, parser, mutated= ()):
-    return True #not name in parser.compiled
+    #return True #not name in parser.compiled
 
     if not decl and not name in parser.compiled and not name in mutated:
         mutated += (name,)
@@ -43,8 +43,7 @@ def shouldCompile(decl, name, parser, mutated= ()):
         return res
 
     try:
-        t = os.path.getmtime("lib/" + name.replace("/", ".") + ".c")
-        t = datetime.datetime.fromtimestamp(int(t))
+        t = topc.get_time_modified(name)
     except FileNotFoundError:
         sp = True
 
@@ -70,28 +69,30 @@ def importParser(parser, decl= False):
     name = os.path.basename(oname)
 
     if not decl:
-        if not parser.hotswap:
-            sp = shouldParse(decl, oname, parser)
-        else:
-            sp = shouldCompile(decl, oname, parser)
+        #if not parser.hotswap:
+        sp = shouldParse(decl, oname, parser)
+        #    print("should parse", sp)
+        #else:
+        sc = shouldCompile(decl, oname, parser)
 
-            outputfile = oname
-                #print("Error ", outputfile)
+        #outputfile = oname
+        #print("Error ", outputfile)
 
         if sp:
             p = Parser.Parser(parser.lexed[oname], parser.filenames[oname])
             p.package = oname
 
+            sc = True
+
             ResolveSymbols.insert(parser, p)
+
+            p.sc = sc
 
             global_target = parser.global_target
 
             p.global_target = "full"
 
-            sc = shouldCompile(decl, oname, parser)
-
-
-            p.sc = sc
+            #sc = shouldCompile(decl, oname, parser)
 
             parser.compiled[name] = None
             #parser.externFuncs[name] = []

@@ -46,7 +46,7 @@ def insertCast(ast, fromT, toT, iter, onlyToP=False):
             ast.owner.nodes[iter] = takeRef
             takeRef.addNode(ast)
             takeRef.type = Types.Pointer(ast.type)
-            takeRef.insertedCast = True
+            takeRef.insertedCast = onlyToP
 
             #insertCast(takeRef, takeRef.type, toT, iter)
             return
@@ -248,7 +248,6 @@ def castFrom(originalType, newType, node, realName, codegen):
         node.compileToC(codegen)
         codegen.append(")")
         return
-
 
     codegen.append("(" + newType.toCType() + ")")
     node.compileToC(codegen)

@@ -5,6 +5,7 @@ from time import *
 from TopCompiler import Error
 
 import PostProcessing
+
 import os
 import copy
 
@@ -22,9 +23,10 @@ hRuntimeCode = hRuntimeFile.read()
 hRuntimeFile.close()
 
 from TopCompiler import Types
+from AST import Cast
 
 class CodeGen:
-    def __init__(self, parser, order_of_modules, filename, tree, externFunctions, target, opt, debug, main=True):
+    def __init__(self, parser, order_of_modules, filename, tree, externFunctions, target, opt, debug, main=True, sc=True):
         self.tree = tree
         self.filename = filename
         self.parser = parser
@@ -46,6 +48,7 @@ class CodeGen:
         self.init_types = []
 
         self.header_parts = []
+        self.sc = sc
 
         self.debug = debug
 
@@ -203,10 +206,21 @@ class CodeGen:
         return self.contexts[-1]
 
     def compile(self, opt):
+        if not self.sc:
+            includes = Types.TmpCodegen()
+
+            for (iter, i) in enumerate(self.tree):
+                if type(i) is Tree.CreateAssign and i.extern and i.nodes[0].name == "_":
+                    i.compileToC(includes)
+
+            return "".join(includes.out_parts)
+
+        print("compiling", self.filename)
         self.contexts = ["(&_global_context)"]
 
         self.parser.package = self.filename
         self.parser.imports = self.parser.allImports[self.filename]
+
         PostProcessing.simplifyAst(self.parser, self.tree)
 
         includes = self.toCHelp()
@@ -294,7 +308,7 @@ import os
 
 
 
-def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild): #Add Option to change compiler
+def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIncludePath, target, dev, context, runtimeBuild, to_obj): #Add Option to change compiler
     print(compiled)
     topRuntime = ""
     (context, mainC) = context
@@ -356,7 +370,13 @@ def link(compiled, outputFile, includes, opt, hotswap, debug, linkWith, headerIn
     else:
         debug = ["-O" + str(opt)] #["-g",  "-gcodeview"]
 
-    clang_commands += [ "-o", "bin/" + outputFile + ".exe"] + debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value"]
+
+    if not to_obj:
+        clang_commands += ["-o", "bin/" + outputFile + ".exe"]
+    else:
+        clang_commands += ["-c", "-o", "bin/" + outputFile + ".o"]
+
+    clang_commands += debug + ["-Wno-incompatible-pointer-types", "-Wno-visibility",  "-Wno-return-type", "-Wno-unused-value", "-Wno-logical-op-parentheses"]
 
     print(" ".join(clang_commands),"\n")
     try:
@@ -392,8 +412,8 @@ def genNames(info):
         elif info.pointer != len(info.array) - 1:
 
             yield ("".join((letters[i] for i in info.array)))
-            info.pointer += 1
             info.array[info.pointer] += 1
+            # info.pointer += 1
         else:
 
             yield ("".join((letters[i] for i in info.array)))

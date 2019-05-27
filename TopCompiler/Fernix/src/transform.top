@@ -1,22 +1,59 @@
 import "ecs"
 from "math" import all
+import "time"
 
 type Transform =
     position: math.Vec3
     rotation: math.Quat
     scale: math.Vec3
 
+type ChildTransform =
+    local_position: math.Vec3
+    local_rotation: math.Vec3
+    local_scale: math.Vec3
+
+    position: math.Vec3
+    rotation: math.Quat
+    scale: math.Vec3
+
+    parent: ID
+
 transforms := ecs.make_Store 100, Transform{
     position = Vec3{ 0, 0, 0}
     rotation = Quat{ 0, 0, 0, 1}
     scale = Vec3{ 1, 1, 1}
+
+    parent = -1
 }
 
-def Transform.compute_model_matrix(&self) Mat4x4 =
+type TransformMatrix =
+    mat: Mat4x4
+    last_updated: float
+
+def Transform.update(&self, result: &TransformMatrix) =
+    last_updated := context.time.last_updated
+
+    if result.last_updated == last_updated then return //already updated
+
     trans := translate self.position
     scal := scale self.scale
     rotation := rotate self.rotation
 
-    trans * scal * rotation
+    result.mat = trans * scal * rotation
+    result.last_updated = last_updated
+
+def ChildTransform.
+
+type TransformSystem =
+    cache: Store[TransformMatrix]
+
+def TransformSystem.update(&self, m: layermask.Layermask) =
+def TransformSystem.render(&self, m: layermask.Layermask) =
+    for self := ecs.filter transforms do
+        trans := translate self.position
+        scal := scale self.scale
+        rotation := rotate self.rotation
+
+        trans * scal * rotation
 
 def make_Transform(id: ecs.ID) &Transform = transforms.make id

@@ -152,6 +152,7 @@ class Type(Node):
 
         if not self.externalStruct:
             codegen.append("struct "+self.package+"_"+self.normalName+" {\n")
+
             for i in range(len(self.fields)):
                 typ = self.args[i].toCType()
                 codegen.append(typ + " " + self.fields[i]+";\n")

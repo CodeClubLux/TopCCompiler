@@ -51,6 +51,7 @@ def resolve(self):
         for c in filenames:
             self._filename = self.filenames[c]
             if len(filenames[c]) == 0:
+                print("continue")
                 continue
 
             self.package = c
@@ -213,6 +214,7 @@ def insert(parser, p, only= False, copy= False):
     p.contextType = parser.contextType
     p.compiledTypes = parser.compiledTypes
     p.includes = parser.includes
+    #p.sc = parser.sc
 
     return p
 

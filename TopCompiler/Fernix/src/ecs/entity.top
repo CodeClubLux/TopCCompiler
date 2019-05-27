@@ -7,4 +7,3 @@ type ID is uint
 type Entity =
     enabled: bool
     layermask: Layermask
-

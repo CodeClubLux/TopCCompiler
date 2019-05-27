@@ -28,6 +28,10 @@ def save(parser, runtimeBuild):
         parser.structs["_global"] = {}
         parser.interfaces["_global"] = {}
         parser.scope["_global"] = []
+        parser.specifications["_global"].funcs = {}
+        parser.specifications["_global"].genericFuncs = {}
+        parser.specifications["_global"].packageGenericFuncs = {}
+
 
     parser._filename = None
     parser.bracketBookmark = None
@@ -52,6 +56,7 @@ def save(parser, runtimeBuild):
         for s in parser.structs[package]:
             #parser.structs[package][s].actualfields = list(parser.structs[package][s].actualfields.keys())
             parser.structs[package][s].node = 0
+            parser.structs[package][s].actualfields = []
 
     def removeRedundantProperties(ast):
         #ast._filename = None
@@ -69,6 +74,11 @@ def save(parser, runtimeBuild):
             removeRedundantProperties(funcStart)
             removeRedundantProperties(funcBrace)
             removeRedundantProperties(funcBody)
+
+    for name in parser.generatedGenericTypes:
+        parser.generatedGenericTypes[name] = None
+
+
 
     pickle.dump(parser, f)
 

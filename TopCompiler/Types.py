@@ -294,6 +294,7 @@ def genCType(header, genContents):
     if header in genericTypes:
         return header  # tmpTypes[header]
     else:
+        #genericTypes[header] = None
         genericTypes[header] = f"{header} {genContents()};\n"
         compiledTypes[header] = None
 
@@ -663,6 +664,9 @@ class Struct(Type):
         genericS = "[" + ",".join([strGen(gen[i]) for i in gen]) + "]" if len(gen) > 0 else ""
 
         self.name = fullName + genericS
+
+        #if self.name == "channel.Channel[int]":
+        #    print(id(types))
         # print(self.name)
 
     def using_types(self):
@@ -716,7 +720,7 @@ class Struct(Type):
         structType = topc.global_parser.structs[self.package][self.normalName]
         if structType.externalStruct:
             genGenericCType(self, externalStruct=True)
-            if self.normalName.startswith("atomic") or self.normalName.startswith("pthread"):
+            if self.normalName.startswith("atomic") or self.normalName.startswith("pthread") or self.normalName.startswith("LLVM") or self.normalName.startswith("__"):
                 return self.normalName
             return "struct " + self.normalName
 
@@ -965,9 +969,10 @@ class Interface(Type):
         return genInterface(self)
 
     def duckType(self, parser, other, node, mynode, iter):
-        if self.name == other.normalName and self.package == other.package:
-            if self.generic != {} and self.name == other.name:
+        if self.normalName == other.normalName and self.package == other.package:
+            if self.name == other.name:
                 return
+
             for name in self.generic:
                 a = self.generic[name]
                 try:
@@ -1187,7 +1192,7 @@ class Enum(Type):
             b = other.generic[name]
 
             if not (b.isType(T) and b.owner == (
-            self.package + "." if self.package != "_global" else "") + self.normalName):
+            self.package + "." if self.package != "_global" else "") + self.normalName) and not a.isType(T):
                 if a != b:
                     node.error(
                         "For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(
@@ -1226,7 +1231,7 @@ class Alias(Type):
         return self.typ.toCType()
 
     def duckType(self, parser, other, node, mynode, iter):
-        if other.isType(Alias):
+        if type(other) is Alias:
             self.typ.duckType(parser, other.typ, node, mynode, iter)
         else:
             self.typ.duckType(parser, other, node, mynode, iter)
@@ -1248,31 +1253,6 @@ class Alias(Type):
             return hasMethodEnum(attachTyp, parser, field, isP)
 
 All = Interface(False, {}, name="All")
-
-
-def isGeneric(t, unknown=False):
-    #if unknown: return True
-    if type(t) is FuncPointer: #return True
-        if t.generic != {}: return True
-        for i in t.args:
-            if isGeneric(i): return True
-        return isGeneric(t.returnType)
-    elif type(t) is Array:
-        return isGeneric(t.elemT)
-    elif type(t) is T:
-        return True
-    elif type(t) is Pointer:
-        return isGeneric(t.pType)
-    elif type(t) in [Interface, Struct, Alias, Enum]:
-        return len(t.remainingGen) > 0
-
-    elif type(t) is Tuple: return True
-        #for i in t.list:
-        #    if isGeneric(i):
-        #        return True
-
-    return False
-
 
 class Null(Type):
     name = "none"
@@ -1433,13 +1413,20 @@ class Pointer(Type):
         self.name = "&" + pType.name
         self.normalName = pType.normalName
 
-        if not pType.isType(Pointer):
-            self.types = pType.types
-        else:
-            self.types = {}
+        #if not pType.isType(Pointer):
+        #    self.types = pType.types
+        #else:
+        #    self.types = {}
         self.methods = pType.methods
         self.mutable = mutable
         self.package = pType.package
+
+    @property
+    def types(self):
+        if not type(self.pType) is Pointer:
+            return self.pType.types
+        else:
+            return {}
 
     def isMutable(self):
         return self.mutable
@@ -1572,7 +1559,6 @@ class Underscore(Type):
     name = "_"
     normalName = "_"
 
-
 def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
     if typ is None: return
 
@@ -1638,6 +1624,7 @@ def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
         methods = {i: replaceT(typ.methods[i], gen, acc, unknown) for i in typ.methods}
 
         c.fromObj(Interface(False, types, gen, typ.fullName, methods=methods))
+        c.remainingGen = areParts(gen, c.normalName, c.package)
         return c
     elif type(typ) is Pointer:
         newP = Pointer(replaceT(typ.pType, gen, acc, unknown), typ.mutable)
@@ -1689,6 +1676,27 @@ def replaceT(typ, gen, acc=False, unknown=False):  # with bool replaces all
     else:
         return typ
 
+def isGeneric(t, unknown=False):
+    #if unknown: return True
+    if type(t) is FuncPointer: #return True
+        if t.generic != {}: return True
+        for i in t.args:
+            if isGeneric(i): return True
+        return isGeneric(t.returnType)
+    elif type(t) is Array:
+        return isGeneric(t.elemT)
+    elif type(t) is T:
+        return True
+    elif type(t) is Pointer:
+        return isGeneric(t.pType)
+    elif type(t) in [Interface, Struct, Alias, Enum]:
+        return len(t.remainingGen) > 0
+    elif type(t) is Tuple: return True
+        #for i in t.list:
+        #    if isGeneric(i):
+        #        return True
+
+    return False
 
 from TopCompiler import topc
 import AST as Tree

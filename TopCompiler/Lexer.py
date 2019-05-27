@@ -16,13 +16,16 @@ class Token:
 
 from TopCompiler import topc
 import os
+from TopCompiler import ImportParser
 
-def lex(target, stream, filename, modifiers, hotswap, lexed):
+def lex(target, stream, filename, modifiers, hotswap, lexed, parser):
     for c in stream: #@cleanup might not need to reparse if isn't modified
-        if True: #not hotswap or (hotswap and (topc.modified(target, modifiers[c], c) or not c in hotswap.tokens[c])):
+        if True: #not hotswap or ImportParser.shouldCompile(False, c, parser):
             lexed[c] = []
             for i in range(len(stream[c])):
                 lexed[c].append(tokenize(c, filename[c][i][1], stream[c][i]))
+        #else:
+        #    lexed[c] = [[Token(0, "indent", 0, 0)]]
 
     return lexed
 
@@ -74,7 +77,7 @@ slSymbols = fastacess([
 
 mlSymbols = fastacess([
     "::",
-    ":=", "=", ":", ".", "!"
+    ":=", "=", ":", ".", "!", "?"
 ])
 
 slOperator = fastacess(["|", "^", "&"])
@@ -86,11 +89,12 @@ ml2Operators = fastacess([
     "<-", "->",
     "+=", "-=", "*=", "/=",
     "..",
-    "+"
+    "+",
+    "?e"
     ])
 
 ml1Operators = fastacess([
-    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+", ".", "!"
+    ":",  "<", ">", "-",  "=",  "*", "/", "%", "+", ".", "!", "?"
 ])
 
 def intRegex(ending):

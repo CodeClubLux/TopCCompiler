@@ -29,8 +29,8 @@ def infer(parser, tree):
             if type(n) is type(tree):
                 o_iter += 1
 
-            if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
-                continue
+            #if not sc and type(i) in [Tree.FuncStart, Tree.FuncBraceOpen, Tree.FuncBody]:
+            #    continue
 
             if type(i.owner) is Tree.For and (count == 1 if len(i.owner.nodes) > 1 else count == 0):
                 _for = i.owner
@@ -178,7 +178,7 @@ def infer(parser, tree):
                                     node.error("Object has no field "+name)
                                 recur(typ.types[name],p)
                         else:
-                            Scope.addVar(node, parser, pattern.name, Scope.Type(True, typ, i.global_target))
+                            Scope.addVar(node, parser, pattern.name, Scope.Type(False, typ, i.global_target))
                             i.nodes[0].isGlobal = Scope.isGlobal(parser, parser.package, pattern.name)
                             i.nodes[1].isGlobal = i.nodes[0].isGlobal
 
@@ -962,6 +962,9 @@ def resolveGen(shouldBeTyp, normalTyp, generics, parser, myNode, other):
     elif type(shouldBeTyp) is Types.Interface:
         types = {}
         methods = {}
+
+        if shouldBeTyp == normalTyp: return shouldBeTyp
+
         for i in shouldBeTyp.types:
             try:
                 types[i] = resolveGen(shouldBeTyp.types[i], normalTyp.types[i], generics, parser, myNode, other)

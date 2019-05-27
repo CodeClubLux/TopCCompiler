@@ -99,6 +99,7 @@ class FuncBody(Node):
         self.returnType = ""
         self.before = []
         self.method = False
+        self.sc = True
 
     def __str__(self):
         return "}"
