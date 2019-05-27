@@ -7,34 +7,67 @@ import "texture"
 import "draw"
 from "math" import Vec2
 import "runner"
+import "terrain"
 
 type ModelSettings =
     filename: string
     materials: &[]Material
     model_id: Maybe[ecs.ID]
+    aabb_collider: bool
+    preview_texture: Maybe[ecs.ID]
 
 type Prefab =
+    name: string
     children: [..]ecs.ID
     last: Maybe[ecs.ID] //a clone of this entity, to check for differences between current and previos prefab
+
+def init_ModelSetting(self: &ModelSettings) =
+    self.preview_texture = None
 
 def init_Prefab(self: &Prefab) =
     self.last = None
 
 checker_board_texture : Maybe[&texture.Texture] = None
 
-model_settings_system := ecs.make_Store 20, ModelSettings{
+model_settings_system := ecs.make_Store_with_init 20, ModelSettings{
     filename = ""
     materials = box [] as []Material
     model_id = None
-}
+    aabb_collider = false
+    preview_texture = None
+}, Some init_ModelSetting
 
 longterm_arr := [..]ecs.ID
 longterm_arr.allocator = Some context.longterm_storage
 
 prefabs := ecs.make_Store_with_init 20, Prefab{
+    name = "PREFAB"
     children = longterm_arr
     last = None
 }, Some init_Prefab
+
+
+def make_default_prefabs() =
+    id := ecs.make_ID!
+    e := ecs.entities.make id
+    e.layermask = layermask.make_Layermask!.enable layermask.prefab_layer
+
+    t := transform.transforms.make id
+
+    p := prefabs.make id
+    p.name = "Empty Transform"
+
+def make_default_terrain_prefabs() =
+    id := ecs.make_ID!
+    e := ecs.entities.make id
+    e.layermask = layermask.make_Layermask!.enable layermask.prefab_layer
+
+    t := transform.transforms.make id
+
+    c := terrain.control_points.make id
+
+    p := prefabs.make id
+    p.name = "Control Point"
 
 def ModelSettings.load(&self) =
     checker_board := match checker_board_texture with
@@ -68,7 +101,6 @@ def ModelSettings.load(&self) =
     //pbr_shader := shader.make "shaders/pbr.vert", "shaders/pbr.frag"
 
     for mat_name := m.materials do
-        log "got materials: {mat_name}"
         longterm_context := *context
         longterm_context.allocator = context.longterm_storage
 
@@ -95,21 +127,20 @@ def ModelSettings.load(&self) =
 //    for i := 0..self.materials.length do
 //        self.materials[i].init!
 
-import "transform"
 
-def make_ModelSetting(id: ecs.ID) &ModelSettings =
-    entity := match ecs.entities.by_id id with
-        Some comp -> comp
-        None -> ecs.make_Entity id
-
+def make_ModelSetting(id: ecs.ID, filename: string) &ModelSettings =
+    entity := ecs.make_Entity id
     entity.layermask = layermask.make_Layermask!
         .enable layermask.editor_layer
         .enable layermask.serialize_layer
 
-    _ := prefabs.make id
+    pre := prefabs.make id
+    pre.name = filename
     _ := transform.make_Transform id
 
-    model_settings_system.make id
+    set := model_settings_system.make id
+    set.filename = filename
+    set
 
 def update_prefab(current_prefab: &none, past_prefab: &none, apply_to: &none, kind: Type) =
     match kind with
@@ -135,13 +166,185 @@ def update_prefab(current_prefab: &none, past_prefab: &none, apply_to: &none, ki
 
         _ ->
 
+
+import "physics"
+import "culling"
+import "transform"
+import "draw"
+from "frameBuffer" import all
+import "camera"
+import "transform"
+from "opengl" import all
+import "math"
+import "debugDraw"
+import "ibl"
+import "renderPass"
+import "window"
+
 type PrefabSystem =
+    preview_tex: texture.Texture
+    preview_buffer: Framebuffer
+
+def make_PrefabSystem() PrefabSystem =
+    tex: texture.Texture = _
+    color_attachment := make_Attachment &tex
+
+    settings := FramebufferSettings{
+        color_attachments = box [color_attachment]
+        depth_attachment = None
+        width = 512
+        height = 512
+        multi = 0
+        depth_buffer = DepthComponent24
+    }
+
+    PrefabSystem{
+        preview_buffer = make_Framebuffer &settings
+        preview_tex = tex
+    }
+
+type PreviewPass =
+def PreviewPass.set_shader_params(&self, _shader: &shader.Shader) =
+    ibl.get_skybox!.set_ibl_params_for _shader
+
+def PreviewPass.render(&self) =
 
 def PrefabSystem.render(&self, m: layermask.Layermask) =
-def PrefabSystem.update(&self, m: layermask.Layermask) = //creating a new id, leaks memory
     if not runner.in_editor! then return
 
-    for prefab := ecs.filter prefabs, m do
+    id := ecs.make_ID!
+    e := ecs.entities.make id
+    e.layermask = e.layermask.disable layermask.serialize_layer
+    new_cam_trans := transform.transforms.make id
+    new_cam := camera.cameras.make id
+
+    defer ecs.free_entity id
+
+    id = ecs.make_ID!
+    e = ecs.entities.make id
+    e.layermask = e.layermask.disable layermask.serialize_layer
+    model_renderer_trans := transform.transforms.make id
+
+    defer ecs.free_entity id
+
+    preview_pass := PreviewPass{}
+
+    w := *context.window
+    w.width = 512
+    w.height = 512
+
+    new_context := *context
+    new_context.command_buffer = draw.make_CommandBuffer!
+    new_context.camera = new_cam
+    new_context.current_pass = &preview_pass
+    new_context.window = &w
+
+    #pushContext new_context do
+        for setting := ecs.filter model_settings_system, m do
+            if setting.preview_texture.is_none! then
+                log "in preview texture"
+                guard Some model_id := setting.model_id
+                else continue
+
+                guard Some mesh := model.models.by_id model_id
+                else continue
+
+                if Some t := transform.transforms.by_id model_settings_system.id_of setting then
+                    log "set transform"
+                    log t.position
+                    log t.rotation
+                    log t.scale
+
+                    (*model_renderer_trans) = (*t)
+
+
+                new_context.command_buffer.commands.clear!
+
+                self.preview_buffer.bind!
+                self.preview_buffer.clear_color math.Vec4{0,0,0,1}
+                self.preview_buffer.clear_depth math.Vec4{0,0,0,1}
+
+                trans_m := model_renderer_trans.compute_model_matrix!
+
+                model_aabb := culling.make_AABB!
+
+                for sub_mesh := mesh.meshes do
+                    aabb := sub_mesh.aabb
+                    aabb = aabb.apply &trans_m
+                    model_aabb.update_aabb &aabb
+
+                max_z := math.max model_aabb.max.y, model_aabb.max.z * 1.2
+                //min_z := math.min model_aabb.min.y, model_aabb.min.z
+
+                //max_z = math.max max_z, math.abs min_z
+
+                new_cam_trans.rotation = math.quat_from_euler math.Vec3{0,0,math.radians 180}
+                new_cam_trans.position.z = max_z * 1.2
+                new_cam_trans.position.y = model_aabb.min.y * 0.3 + model_aabb.max.y * 0.7
+
+                new_cam.fov = 60
+                new_cam.update_matrices!
+
+                mesh.render_model_for id, model_renderer_trans, *setting.materials
+
+                draw.submit_to_gpu!
+
+                texture_id : uint = _
+                genTextures 1, &texture_id
+                bindTexture texture_2D, texture_id
+
+                log "generated texture: {texture_id}"
+
+                texParameteri texture_2D, texture_wrap_s, repeat
+                texParameteri texture_2D, texture_wrap_t, repeat
+                texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
+                texParameteri texture_2D, texture_mag_filter, linear
+
+                texImage2D texture_2D, 0, rgba, self.preview_buffer.width, self.preview_buffer.height, 0, rgb, unsigned_byte, None
+                copyTexSubImage2D texture_2D, 0, 0, 0, 0, 0, self.preview_buffer.width, self.preview_buffer.height
+                generateMipmap texture_2D
+
+                bindTexture texture_2D, 0
+
+                tex_id := ecs.make_ID!
+                e = ecs.entities.make tex_id
+                e.layermask = e.layermask.disable layermask.serialize_layer
+
+                tex := texture.textures.make tex_id
+                tex.filename = "asset preview"
+                tex.texture_id = texture_id
+
+                setting.preview_texture = Some tex_id
+
+                log "created assets: {texture_id}"
+
+                self.preview_buffer.unbind!
+
+def PrefabSystem.update(&self, m: layermask.Layermask) =
+    if not runner.in_editor! then return
+
+    //generate colliders for model settings with aabb activated
+    for setting := ecs.filter model_settings_system, layermask.any_layer do
+        id := model_settings_system.id_of setting
+
+        if setting.aabb_collider then
+            if (physics.rigid_bodies.by_id id).is_none! then
+                guard Some model_id := setting.model_id
+                else continue
+
+                guard Some mod := model.models.by_id model_id
+                else continue
+
+                aabb := culling.make_AABB!
+
+                for c := 0..mod.meshes.length do
+                    aabb.update_aabb &mod.meshes[c].aabb
+
+                rb := physics.rigid_bodies.make id
+                rb.shape = physics.Box aabb.max
+
+    for prefab := ecs.filter prefabs, layermask.any_layer do
+
         prefab_id := prefabs.id_of prefab
 
         last_id :=
@@ -153,9 +356,13 @@ def PrefabSystem.update(&self, m: layermask.Layermask) = //creating a new id, le
                 entity.layermask = entity.layermask.disable layermask.serialize_layer
                 new_id
 
+        delete_children := [..]uint
+
         for id := prefab.children do
             guard Some e := ecs.entities.by_id id
-            else continue
+            else
+                delete_children.append i
+                continue
 
             for store := ecs.component_types do
 
@@ -181,6 +388,7 @@ def PrefabSystem.update(&self, m: layermask.Layermask) = //creating a new id, le
 
                 some_child := store.get_by_id id
 
+
                 if Some last_comp := store.get_by_id last_id then
                     last_prefab_data := last_comp.get_pointer_to_data!
 
@@ -192,10 +400,16 @@ def PrefabSystem.update(&self, m: layermask.Layermask) = //creating a new id, le
                     x := store.make id
                     memcpy x, comp.get_pointer_to_data!, comp_type.get_size! cast uint
 
+        assert delete_children.length < 2, "Can only delete one prefab child"
+        for pos := delete_children do //todo only works with one
+            prefab.children[pos] = prefab.children[prefab.children.length - 1]
+            _ := prefab.children.pop!
+
         ecs.free_entity last_id
         last_id = ecs.clone prefab_id
         prefab.last = Some last_id // updated last prefab
         ((ecs.entities.by_id last_id).unwrap!).enabled = false
 
-prefab_system := PrefabSystem{}
+prefab_system := make_PrefabSystem!
 ecs.register_system &prefab_system
+

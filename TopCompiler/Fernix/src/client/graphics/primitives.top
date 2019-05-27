@@ -3,13 +3,55 @@ import "opengl"
 import "buffer"
 from "materialSystem" import all
 import "shader"
+import "ecs"
+from "math" import all
+import "layermask"
+import "culling"
 
 cube := model.load_model "cube.fbx"
 sphere := model.load_model "sphere.fbx"
-plane := model.load_model "plane.fbx"
+//plane := model.load_model "plane.fbx"
 
-log "plane: {plane.meshes[0].vertices.length}"
-log "plane id: {plane.meshes[0].buffer.vao}"
+def make_plane() &model.Model =
+    id := ecs.make_ID!
+
+    e := ecs.make_Entity id
+    e.layermask = e.layermask.disable layermask.serialize_layer
+
+    local_plane := model.models.make id
+    local_plane.path = "plane.fbx"
+
+    vertices := [
+        (Vec3{1, 1, 0}, Vec2{1,1})
+        (Vec3{1, -1, 0}, Vec2{1,0})
+        (Vec3{-1, -1, 0}, Vec2{0,0})
+        (Vec3{-1, 1, 0}, Vec2{0,1})
+    ]
+
+    indices := [
+        0, 1, 3
+        1, 2, 3
+    ]
+
+    new_vertices := [..]model.Vertex
+    new_vertices.reserve vertices.length
+
+    for (position, tex_coord) := vertices do
+        new_vertices.append model.Vertex{
+            position = position
+            tex_coord = tex_coord
+            normal = Vec3{0,0,-1}
+            tangent = Vec3{0,0,0}
+            bitangent = Vec3{0,0,0}
+        }
+
+    local_plane.meshes = box [
+        model.make_Mesh new_vertices, (box indices), culling.make_AABB!, 0
+    ]
+
+    local_plane
+
+plane := make_plane!
 
 def render_cube() =
     self := cube.meshes[0]
@@ -22,6 +64,7 @@ def render_sphere() =
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0
+
 
 def render_quad() =
     self := plane.meshes[0]

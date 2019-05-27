@@ -2,6 +2,23 @@ import "ecs"
 from "materialSystem" import (material_by_name)
 from "transform" import all
 from "layermask" import Layermask
+import "culling"
+
+type MultiMeshDrawCommand =
+    id: uint
+    mesh: &Mesh
+    material: &materialSystem.Material
+    trans: [..]Mat4x4
+    aabbs: [..]Maybe[culling.AABB]
+
+def MultiMeshDrawCommand.append(using &self, t: &Transform) =
+    model_m := t.compute_model_matrix!
+    trans.append model_m
+    aabbs.append Some mesh.aabb.apply &model_m
+
+def MultiMeshDrawCommand.submit(&self) =
+    cmd := draw.make_DrawMultiCommand self.id, self.trans, self.aabbs, &self.mesh.buffer, self.material
+    cmd.submit!
 
 //Model Renderer
 type ModelRenderer =
@@ -34,7 +51,7 @@ def ModelRendererSystem.render(&system, m: Layermask) =
 
         assert model.materials.length == self.materials.length, "Material length is not the same for model and model renderer"
 
-        model.render_model_for trans, *self.materials
+        model.render_model_for (transforms.id_of trans), trans, *self.materials
 
 model_renderer_system := ModelRendererSystem{}
 ecs.register_system &model_renderer_system

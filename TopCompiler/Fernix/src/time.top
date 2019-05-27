@@ -1,33 +1,26 @@
-/*ext _ = "#include<time.h>"
+#if {"headless": true}
+
+ext _ = "#include<time.h>"
+
+type Clock_t is i64
+
+ext clock_gettime: || -> Clock_t = "clock"
+ext clocks_per_sec: Clock_t = "CLOCKS_PER_SEC"
 
 def get_time() f64 =
-    spec : timespec = _
+    clock_gettime! / clocks_per_sec
 
-    clock_gettime clock_realtime, &spec
-    spec.tv_nsec / 1000_000_000.0
-
-type ext timespec =
-    tv_nsec: u64
-
-ext clock_gettime: |uint, &timespec| -> none = "clock_gettime"
-ext clock_realtime: uint = "CLOCK_REALTIME"
-
-def get_time() f64 =
-    spec : timespec = _
-
-    clock_gettime clock_realtime, &spec
-    spec.tv_nsec / 1000_000_000.0
-
-*/
-
+#endif
+#if {"headless": false}
 import "glfwWrapper"
+
+def get_time() f64 =
+    glfwWrapper.getTime!
+#endif
 
 type Time =
     last_frame: f64
     delta_time: f64
-
-def get_time() f64 =
-    glfwWrapper.getTime!
 
 #addToContext time := box Time{
     last_frame = 0

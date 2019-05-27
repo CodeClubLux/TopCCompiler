@@ -7,8 +7,10 @@ def panic(s: string) none =
     exit 1
 
 def assert(b: bool, message: string) =
+    #if {"release": false}
     if not b then
         panic "Assertion failed: {message}"
+    #endif
 
 def toString[T: Stringer](s: T) string =
     s.toString!

@@ -1,3 +1,5 @@
-for (a,b) := [(10,20)] do
-    a += 30
-    log a
+#if {"render_backend": "Opengl"}
+log "hello world"
+#endif
+
+log "bye"

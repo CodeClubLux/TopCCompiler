@@ -10,6 +10,9 @@ import "window"
 import "vfs"
 import "transform"
 import "events"
+import "window"
+import "texture"
+import "debugDraw"
 
 type ModelAssetTabEvents either
     SelectedModel(uint)
@@ -55,8 +58,7 @@ def ModelAssetTab.update(&self) =
             if (file.ends_with ".fbx") or file.ends_with ".obj" then
                 id := ecs.make_ID!
 
-                model_setting := make_ModelSetting id
-                model_setting.filename = file
+                model_setting := make_ModelSetting id, file
 
                 model_setting.load!
 
@@ -82,20 +84,42 @@ def ModelAssetTab.update(&self) =
 
         prefab.children.append id
 
-def ModelAssetTab.render_ui(&self, w: &ui.Window) =
+def ModelAssetTab.render_ui(&self, position: ui.Position) =
+    editor_tab_width := 0.6
+    editor_tab_height := 0.3
+
+    w := ui.window "Place"
+    w.style.width = ui.Perc editor_tab_width
+    w.style.height = ui.Perc editor_tab_height
+    w.position = position
+
     inp := ui.input w, 50, &self.filter
     inp.style.width = ui.Perc 1
 
-    model_settings := model_settings_system.get_all_active!
+    for model_setting := prefabs.get_all_active! do
+        id := prefabs.id_of model_setting
 
-    for model_setting := model_settings do
-        id := model_settings_system.id_of model_setting
-
-        if not model_setting.filename.starts_with self.filter then continue
+        if not model_setting.name.starts_with self.filter then continue
 
         selected := id == self.selected_id
 
-        button := ui.button w, model_setting.filename
-        button.style.width = ui.Perc 1
-        button.selected = selected
-        button.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, SelectedModel id
+
+        panel := ui.group w, model_setting.name
+        panel.style.width = ui.Px 328
+        panel.style.height = ui.Px 405
+
+        if Some setting := model_settings_system.by_id id then
+            guard Some preview_id := setting.preview_texture
+            else continue
+
+            img := ui.image panel, preview_id
+            img.style.width = ui.Px 328
+            img.style.height = ui.Px 328
+            img.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, SelectedModel id
+            img.selected = selected
+        else
+            img := ui.button panel, "select"
+            img.style.width = ui.Px 328
+            img.style.height = ui.Px 328
+            img.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, SelectedModel id
+            img.selected = selected

@@ -7,7 +7,6 @@ import "key"
 import "math"
 from "layermask" import Layermask
 from "transform" import all
-import "editor"
 
 type Flyover =
     mouse_sensitivity: float

@@ -1,0 +1,94 @@
+import "ecs"
+from "materialSystem" import all
+import "shader"
+from "math" import all
+from "transform" import all
+from "layermask" import all
+import "draw"
+import "culling"
+import "model"
+import "time"
+
+type TrailRenderer =
+    time: float
+    time_till_delete: float
+    material: Material
+    positions: [..]Vec3
+    width: float
+
+flat_shader := shader.make "shaders/pbr.vert", "shaders/gizmo.frag"
+
+heap_array := [..]Vec3
+heap_array.allocator = Some context.longterm_storage
+
+trail_renderers := ecs.make_Store 10, TrailRenderer{
+    material = Material{
+        name = "DefaultMaterial"
+        shader = flat_shader.get_id!
+        params = box [
+            Param_Vec3 (flat_shader.location "color"), Vec3{ 1, 1, 1}
+        ]
+        state = &draw.default_state
+    }
+    positions = heap_array
+    time = 0.25
+    time_till_delete = 0
+    width = 0.025
+}
+
+type TrailRendererSystem =
+def TrailRendererSystem.update(&system, m: Layermask) =
+    /*for (trail, trans) := ecs.filter2 trail_renderers, transforms, m do
+        if trail.positions.length == 0 then
+            trail.time_till_delete = trail.time
+
+        if trail.time_till_delete <= 0 then
+            trail.positions.shift 1
+        trail.positions.append trans.position
+        trail.time_till_delete -= time.get_delta_time!
+    */
+
+plane_m := model.load_model "plane.fbx"
+
+def TrailRendererSystem.render(&system, m: Layermask) =
+    for (trail, trail_trans) := ecs.filter2 trail_renderers, transforms, m do
+        //update trail
+        if trail.positions.length == 0 then
+            log "first position in trail"
+            log trail_trans.position
+            trail.time_till_delete = trail.time
+
+        if trail.time_till_delete <= 0 then
+            trail.positions.shift 1
+        trail.positions.append trail_trans.position
+        trail.time_till_delete -= time.get_delta_time!
+
+        //render trail
+        trans := [..]math.Mat4x4
+        aabbs := [..]Maybe[culling.AABB]
+
+        if trail.positions.length == 0 then continue
+
+        for c := 0..trail.positions.length - 1 do
+            pos := (trail.positions[c] + trail.positions[c + 1]).scale 1.0/2
+            rot := trail.positions[c + 1] - trail.positions[c]
+
+            width := trail.width
+            //width *= i / (trail.positions.length - 2.0)
+
+            current_trans := Transform{
+                position = pos
+                scale = Vec3{width,rot.len!,0}
+                rotation = (quat_look_rotation rot, Vec3{0,1,0}) * (quat_from_euler Vec3{(radians 90), 0, 0})
+            }
+
+            current_trans_m := current_trans.compute_model_matrix!
+
+            trans.append current_trans_m
+            aabbs.append Some plane_m.meshes[0].aabb.apply &current_trans_m
+
+        cmd := draw.make_DrawMultiCommand (trail_renderers.id_of trail), trans, aabbs, &plane_m.meshes[0].buffer, &trail.material
+        cmd.submit!
+
+trail_renderer_system := TrailRendererSystem{}
+ecs.register_system &trail_renderer_system

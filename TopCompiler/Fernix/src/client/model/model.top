@@ -28,6 +28,9 @@ type Model =
     bounding_box: BoundingBox
 
 def init_model(self: &Model) =
+    log "loading model ========================="
+    log self.path
+
     for i := 0..self.meshes.length do
         self.meshes[i].submit!
 
@@ -48,7 +51,9 @@ def make_Model(id: ecs.ID) &Model =
 def Model.get_filename(&self) string =
     self.path
 
-def Model.render_model_for(&self, trans: &transform.Transform, materials: []Material) =
+def Model.render_model_for(&self, id: ecs.ID, trans: &Transform, materials: []Material) =
+    model_matrix := trans.compute_model_matrix!
+
     for i := 0..self.meshes.length do
         mesh := &self.meshes[i]
-        mesh.render trans, materials
+        mesh.render id, &model_matrix, materials

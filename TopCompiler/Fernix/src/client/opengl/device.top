@@ -4,7 +4,6 @@ import "opengl"
 type Device =
     width: uint
     height: uint
-    multisampling: uint
     clear_colour: Vec4
 
 def Device.bind(&self) =

@@ -1,6 +1,8 @@
 import "ecs"
 import "math"
+#if {"headless": false}
 import "window"
+#endif
 import "transform"
 import "layermask"
 
@@ -18,9 +20,10 @@ cameras := ecs.make_Store 10, Camera{
     fov = 60
 
     near_plane = 0.1
-    far_plane = 1000
+    far_plane = 600
 }
 
+#if {"headless": false}
 def Camera.update_matrices(&self) = //@todo move to a system
     w := window.get_window!
     entity := (transform.transforms.by_id cameras.id_of self).unwrap!
@@ -41,23 +44,28 @@ def Camera.update_matrices(&self) = //@todo move to a system
     translate_m := math.translate -entity.position
 
     self.view_matrix = rotate_m * translate_m
+#endif
 
 def make_default_camera() &Camera =
     id := ecs.make_ID!
 
     entity := ecs.entities.make id
-    entity.layermask = entity.layermask.disable layermask.serialize_layer
+    //entity.layermask = entity.layermask.disable layermask.serialize_layer
 
     trans := transform.transforms.make id
     trans.position = math.Vec3{ 0, 2, 1.8 }
 
     _ := (transform.transforms.by_id id).unwrap!
 
-    log "made camera : {id}"
-
     cameras.make id
 
-#addToContext camera := make_default_camera!
+
+def find_default_camera() &Camera =
+    match cameras.get_active! with
+        Some x -> x
+        None -> make_default_camera!
+
+#addToContext camera := find_default_camera!
 
 from "layermask" import all
 
@@ -68,6 +76,7 @@ type MainCameraSystem =
 def MainCameraSystem.update(&self, m: Layermask) =
     context.camera = get_camera m
 
+#if {"editor": true}
 import "model"
 import "shader"
 from "materialSystem" import all
@@ -96,7 +105,9 @@ def MainCameraSystem.render(&self, m: Layermask) =
             .enable game_layer
 
         for (cam, trans) := ecs.filter2 cameras, transform.transforms, m do
-            camera_gizmo.render_model_for trans, &camera_materials
+            camera_gizmo.render_model_for (cameras.id_of cam), trans, &camera_materials
 
 main_camera_system := MainCameraSystem{}
 ecs.register_system &main_camera_system
+
+#endif

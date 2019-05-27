@@ -1,15 +1,18 @@
 import "window"
 import "vfs"
 import "math"
+import "input"
+import "texture"
+
+let max_vertex_buffer = 512 * 1024
+let max_element_buffer = 128 * 1024
 
 def make_ui() &UI =
     log "making ui"
-    let max_vertex_buffer = 512 * 1024
-    let max_element_buffer = 128 * 1024
 
     w := window.get_window!
 
-    nk_ptr := nk_glfw3_init w.window_ptr.unwrap!, nk_glfw3_install_callbacks, max_vertex_buffer, max_element_buffer
+    nk_ptr := nk_glfw3_init w.window_ptr.unwrap!, nk_glfw3_install_callbacks
 
     atlas : &nk_font_atlas = _
     nk_glfw3_font_stash_begin &atlas
@@ -28,9 +31,11 @@ def UI.render(&self) =
     for w := self.windows do
         w.render!
 
-    nk_glfw3_render nk_anti_aliasing_on
+    nk_glfw3_render nk_anti_aliasing_on, max_vertex_buffer, max_element_buffer
 
 def UI.render_unselectable(&self) =
+    input.get_input!.activate!
+
     for w := self.windows do
         w.render_unselectable!
 
@@ -42,6 +47,7 @@ def UI.free(&self) =
 
 ext nk_window_options: uint = "NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE|NK_WINDOW_BORDER"
 ext nk_group_options: uint = "NK_WINDOW_TITLE"
+ext nk_group_closed_options: uint = "NK_WINDOW_TITLE|NK_WINDOW_MINIMIZABLE"
 
 type Block =
     width: uint
@@ -69,6 +75,12 @@ def Size.calculate(&self, real_size: uint, auto: uint) uint =
         Px x -> math.min x, real_size
         Perc x -> (real_size * x) cast uint
         Auto -> auto
+
+def Position.calculate(self) Vec2 =
+    match self with
+        Absolute x, y -> Vec2{ x, y }
+        AbsolutePerc x, y -> Vec2{ window.get_window!.width * x, window.get_window!.height * y}
+        Relative -> Vec2{0, 0}
 
 def Size.toString(&self) string =
     match *self with
@@ -133,10 +145,12 @@ def calculate_layout(rows: &[..]Row, owner_block: &Block, element: &UIElement) =
     newline := false
     block := match *element with
         Element_Label l -> l.style.calculate_block owner_block, (calculate_text_width l.text, &l.style), (calculate_text_height &l.style)
+        Element_Checkbox l -> l.style.calculate_block owner_block, (calculate_text_width l.text, &l.style), (calculate_text_height &l.style)
         Element_Button l -> l.style.calculate_block owner_block, (calculate_text_width l.text, &l.style), (calculate_text_height &l.style)
         Element_Propertyf l -> l.style.calculate_block owner_block, default_property_width, (calculate_text_height &l.style)
         Element_Propertyu l ->  l.style.calculate_block owner_block, default_property_width, (calculate_text_height &l.style)
         Element_Input l -> l.style.calculate_block owner_block, default_input_width, (calculate_text_height &l.style)
+        Element_Image l -> l.style.calculate_block owner_block, 0, 0
         Element_NewLine ->
             newline = true
             Block{ 0, 0, Vec2{0,0}, Vec2{0,0}}
@@ -171,15 +185,23 @@ def calculate_layout(rows: &[..]Row, owner_block: &Block, element: &UIElement) =
 
 def UIElement.render(&self, width: uint, height: uint) =
     match *self with
+        Element_Checkbox l -> l.render!
         Element_Label l -> l.render!
         Element_Button l -> l.render!
         Element_Propertyf l -> l.render!
         Element_Propertyu l -> l.render!
         Element_Input l -> l.render!
         Element_NewLine ->
+        Element_Image l -> l.render!
         Element_Group g ->
             ui := get_ui!
-            if nk_group_begin ui.nk_ptr, g.title.to_c_string!, nk_group_options then
+
+            options := if g.closable then nk_group_closed_options else nk_group_options
+
+            val := nk_group_begin ui.nk_ptr, g.title.to_c_string!, options
+            if val == 1 then
+                //_ := nk_group_begin ui.nk_ptr, g.title.to_c_string!, options
+
                 g.style.width = Px width
                 g.style.height = Px height
 
@@ -192,10 +214,11 @@ def UIElement.render(&self, width: uint, height: uint) =
                     row.render block.width, block.height
 
                 nk_group_end ui.nk_ptr
+            elif val == nk_window_minimized then
+                if Some ev := g.ev_handler then
+                    ev.handle Closed
 
 import "window"
-
-
 
 def Window.calculate_layout(&self, window_block: &Block, default_width: uint, default_height: uint, block: &Block) []Row =
     rows := [..]Row
@@ -236,7 +259,7 @@ import "math"
 
 unselectable_shader := shader.make "shaders/screenspace.vert", "shaders/unselectable.frag"
 
-def Window.render_unselectable(&self) = //todo create function
+def Window.render_unselectable(&self) =
     w := window.get_window!
 
     window_block := Block{
@@ -249,9 +272,15 @@ def Window.render_unselectable(&self) = //todo create function
     //layouting
     block := self.style.calculate_block &window_block, 100, 100
 
-    position := match self.position with
-        Absolute x, y -> Vec2{ x, y }
-        Relative -> Vec2{0, 0}
+    position := self.position.calculate!
+
+    mouse_pos := input.get_input!.mouse_position
+
+    corner := position + Vec2{block.width, block.height}
+
+
+    if not input.get_input!.mouse_captured and mouse_pos.x >= position.x and mouse_pos.y >= position.y and mouse_pos.x <= corner.x and mouse_pos.y <= corner.y then
+        input.get_input!.deactivate!
 
     scale_m := math.scale math.Vec3{
         block.width / w.width
@@ -298,13 +327,35 @@ def Button.render(&options) =
     ui := get_ui!
     selected := options.selected cast int
 
-    if nk_selectable_label ui.nk_ptr, options.text.to_c_string!, nk_text_left, &selected then
+    text :=
+        if (char_buffer_toString options.text.to_c_string!).length == 0 then " ".to_c_string!
+        else options.text.to_c_string!
+
+    if nk_selectable_label ui.nk_ptr, text, nk_text_left, &selected then
         guard Some ev_handler := options.ev_handler
         else return
 
         //ev_handler as int
 
         ev_handler.handle Pressed
+
+def Image.render(&options) =
+    ui := get_ui!
+
+    guard Some tex := texture.textures.by_id options.tex_id
+    else return
+
+    handle := nk_image_id tex.texture_id as int
+
+    match options.ev_handler with
+        Some ev ->
+            selected := options.selected cast int
+
+            if nk_selectable_image_label ui.nk_ptr, handle, "#".to_c_string!, 0, &selected then
+                ev.handle Pressed
+
+        None -> _nk_image ui.nk_ptr, handle
+
 
 def Propertyf.render(&options) =
     ui := get_ui!
@@ -317,6 +368,12 @@ def Propertyu.render(&options) =
 
     field_with_id := "#{options.text}"
     *options.value = (nk_propertyi ui.nk_ptr, field_with_id.to_c_string!, options.min, *options.value, options.max, options.step, options.inc_per_pixel) cast uint
+
+def Checkbox.render(&options) =
+    ui := get_ui!
+
+    res := nk_check_label ui.nk_ptr, options.text.to_c_string!, (not *options.value) cast int
+    *options.value = (not (res cast bool))
 /*
 def group_begin(options: GroupOptions) bool =
     ui := get_ui!
@@ -363,9 +420,7 @@ def Input.render(&options) = //will leak
 def Window.begin(&self, size: Vec2) bool =
     ui := get_ui!
 
-    position := match self.position with
-        Absolute x, y -> Vec2{ x, y }
-        Relative -> Vec2{0, 0}
+    position := self.position.calculate!
 
     c_title := self.title.to_c_string!
     window_rect := nk_make_rect position.x, position.y, size.x, size.y

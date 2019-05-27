@@ -44,10 +44,19 @@ def make_Store_with_init[T](max_number: uint, default: T, init: Maybe[|&T| -> no
 
     self
 
+def Store[T].get_all_active_component_ids(&self) []ID =
+    components := self.get_all_active!
+
+    ids := [..]ID
+    ids.reserve components.length
+    for obj := components do
+        ids.append self.id_of obj
+    ids
+
 def make_Store[T](max_number: uint, default: T) &Store[T] =
     make_Store_with_init max_number, default, None as Maybe[|&T| -> none]
 
-entities := make_Store 100, Entity{
+entities := make_Store 200, Entity{
     enabled = true
     layermask = make_Layermask!
         .enable game_layer
@@ -184,6 +193,12 @@ def Store[T].id_of(&self, comp: &T) ID =
 
     id
 
+def id_of[T](comp: &T) ID =
+    guard Active _, id := *(comp cast &Slot[T])
+    else panic "Cannot retrieve id: used after free!"
+
+    id
+
 import "sBuffer"
 import "dict"
 
@@ -275,7 +290,8 @@ def Store[T].serialize(&self) =
 def Store[T].deserialize(&self) =
     //return
 
-    guard Some f := vfs.open_file "save_files/{get_type T}.tsf", ReadBFile
+    log "deserializing {get_type T} ==========================="
+    guard Some f := vfs.open_file "save_files\\{get_type T}.tsf", ReadBFile
     else
         log "Could not read save_files\\{get_type T}"
         return
@@ -314,10 +330,16 @@ def Store[T].deserialize(&self) =
                     log "skipping field as it no longer exists: {field.name}, {skip}, {field.kind}, {sizeof string}"
                     continue
 
-                if not current_field.field_type.toString! == field.kind then
+                occupied := context.allocator.get_occupied!
+                type_as_string := current_field.field_type.toString!
+
+                if not type_as_string == field.kind or field.name == "instanced_version" then
                     _ := read_buffer.pointer_to_n_bytes skip
                     log "skipping field because its of a different type: {field.name}"
+                    context.allocator.reset_to occupied
                     continue //field is of different type
+
+                context.allocator.reset_to occupied
 
                 //log "skip is: {skip}"
                 //log "current field: {field.name}: {current_field.field_type}"

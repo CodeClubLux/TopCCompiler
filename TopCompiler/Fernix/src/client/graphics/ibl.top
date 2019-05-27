@@ -11,6 +11,7 @@ import "runner"
 import "ecs"
 from "materialSystem" import all
 import "layermask"
+import "culling"
 
 skybox_shader := shader.make "shaders/skybox.vert", "shaders/skybox.frag"
 
@@ -30,6 +31,9 @@ skyboxes := ecs.make_Store 1, default_skybox
 type SkyboxSystem =
 def SkyboxSystem.update(&self, m: layermask.Layermask) =
 def SkyboxSystem.render(&system, m: layermask.Layermask) =
+    identity_mat := math.identity_mat!
+    aabb : Maybe[culling.AABB] = None
+
     for self := ecs.filter skyboxes, m do
         mat := box Material{
             name = "skybox_shader"
@@ -40,7 +44,7 @@ def SkyboxSystem.render(&system, m: layermask.Layermask) =
             state = &skybox_state
         }
 
-        cmd := draw.make_DrawCommand (skyboxes.id_of self), None, &primitives.cube.meshes[0].buffer, mat
+        cmd := draw.make_DrawCommand (skyboxes.id_of self), &identity_mat, &aabb, &primitives.cube.meshes[0].buffer, mat
         cmd.submit!
 
 skybox_system := SkyboxSystem{}
@@ -49,14 +53,16 @@ ecs.register_system &skybox_system
 //brdf_LUT_texture2 := texture.load "ibl_brdf_lut.png"
 
 def Skybox.set_ibl_params_for(&self, s: &shader.Shader) =
-    self.irradiance_cubemap.bind_to 0
-    s.set_int s.irradianceMap, 0
+    bind_to := [draw.next_texture_index!, draw.next_texture_index!, draw.next_texture_index!]
 
-    self.prefilter_cubemap.bind_to 1
-    s.set_int s.prefilterMap, 1
+    self.irradiance_cubemap.bind_to bind_to[0]
+    s.set_int s.irradianceMap, bind_to[0]
 
-    self.brdf_LUT.bind_to 2
-    s.set_int s.brdfLUT, 2
+    self.prefilter_cubemap.bind_to bind_to[1]
+    s.set_int s.prefilterMap, bind_to[1]
+
+    self.brdf_LUT.bind_to bind_to[2]
+    s.set_int s.brdfLUT, bind_to[2]
 
 //Skybox system
 

@@ -1,0 +1,111 @@
+//precomputed Lighting
+import "lister"
+import "ecs"
+from "layermask" import Layermask
+import "model"
+import "input"
+from "math" import all
+import "model"
+import "key"
+from "transform" import all
+import "shader"
+from "materialSystem" import all
+import "draw"
+import "culling"
+
+type Sample =
+    position: Vec3
+    density: float
+
+type Lightmapper =
+    sample_density: float
+    range: float
+    sample_points: [..]Sample
+    show_samples: bool
+
+lightmapper_settings := ecs.make_Store 1, Lightmapper{
+    sample_density = 1.0
+    range = 100.0
+    sample_points = []
+    show_samples = true
+}
+
+lightmap_settings := get_lightmapper!
+
+def get_lightmapper() &Lightmapper =
+    match lightmapper_settings.get_active! with
+        Some x -> x
+        None ->
+            id := ecs.make_ID!
+            e := ecs.make_Entity id
+            l := lister.named.make id
+            l.name = "Lightmapper Settings"
+            lightmapper_settings.make id
+
+sphere_m := model.load_model "sphere.fbx"
+
+type LightmapperSystem =
+def LightmapperSystem.update(&system, m: Layermask) =
+    self := lightmap_settings
+
+    if self.show_samples and input.key_pressed key.from_char `B` then
+        self.calc_sample_points m
+
+probe_visual_shader := shader.make "shaders/pbr.vert", "shaders/diffuse.frag"
+probe_mats := [Material{
+    name = "DefaultMaterial"
+    shader = probe_visual_shader.get_id!
+    params = box [
+        Param_Vec3 (probe_visual_shader.location "material.diffuse"), Vec3{0,0,0.8}
+    ]
+    state = &draw.default_state
+}]
+
+def LightmapperSystem.render(&system, m: Layermask) =
+    self := lightmap_settings
+
+    if self.show_samples then
+        trans := [..]math.Mat4x4
+        aabbs := [..]Maybe[culling.AABB]
+
+        for sample := self.sample_points do
+            current_trans := Transform{
+                position = sample.position
+                scale = Vec3{1,1,1}.scale 1.0 / sample.density
+                rotation = identity_quat!
+            }
+
+            current_trans_m := current_trans.compute_model_matrix!
+
+            trans.append current_trans_m
+            aabbs.append Some sphere_m.meshes[0].aabb.apply &current_trans_m
+
+        cmd := draw.make_DrawMultiCommand (lightmapper_settings.id_of self), trans, aabbs, &sphere_m.meshes[0].buffer, &probe_mats[0]
+        cmd.submit!
+
+
+def Lightmapper.calc_sample_points(&self, m: Layermask) =
+    self.sample_points.free!
+
+    samples := [..]Sample
+    samples.allocator = Some &malloc_as_allocator
+
+    a := -self.range
+    while a < self.range do
+        b := 0.0
+        while b < self.range do
+            c := -self.range
+            while c < self.range do
+                samples.append Sample{
+                    density = 1
+                    position = Vec3{a,b,c}
+                }
+
+                c += self.sample_density
+            b += self.sample_density
+        a += self.sample_density
+
+    self.sample_points = samples
+
+lightmapper_system := LightmapperSystem{}
+ecs.register_system &lightmapper_system

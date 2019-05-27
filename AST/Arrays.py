@@ -102,11 +102,12 @@ class ArrRead(Node):
         return ".[]"
 
     def compileToC(self, codegen): #ignore will be handled by simplify ast
-        method = SimplifyAst.getMethod("op_get")
+        #method = SimplifyAst.getMethod("op_get")
+        codegen.append("(")
         self.nodes[0].compileToC(codegen)
-        codegen.append(".get(")
+        codegen.append(")->data[")
         self.nodes[1].compileToC(codegen)
-        codegen.append(")")
+        codegen.append("]")
 
     def validate(self, parser): pass
 

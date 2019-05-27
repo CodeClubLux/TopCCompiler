@@ -1,0 +1,193 @@
+from "opengl" import all
+import "texture"
+from "math" import Vec4
+
+type Framebuffer =
+    fbo: uint
+    rbo: uint
+    width: uint
+    height: uint
+
+type DepthBufferSettings either
+    DepthComponent24
+
+type InternalColorFormat either
+    Rgb16f
+    DepthComponent24Format
+
+def InternalColorFormat.to_opengl(self) uint =
+    match self with
+        Rgb16f -> rgb16f
+        DepthComponent24Format -> depth_component24
+
+type ColorFormat either
+    Rgb or DepthComponentFormat
+
+def ColorFormat.to_opengl(self) uint =
+    match self with
+        Rgb -> rgb
+        DepthComponentFormat -> depth_component
+
+type TexelType either
+    Float_Texel
+
+def TexelType.to_opengl(self) uint =
+    match self with
+        Float_Texel -> type_float
+
+type Filter either
+    Nearest
+    Linear
+
+def Filter.to_opengl(self) uint =
+    match self with
+        Nearest -> nearest
+        Linear -> linear
+
+type Wrap either
+    ClampToBorder
+    Repeat
+
+def Wrap.to_opengl(self) uint =
+    match self with
+        ClampToBorder -> clamp_to_border
+        Repeat -> repeat
+
+type AttachmentSettings =
+    tex: &texture.Texture
+    internal_format: InternalColorFormat
+    external_format: ColorFormat
+    texel_type: TexelType
+    min_filter: Filter
+    mag_filter: Filter
+    wrap_s: Wrap
+    wrap_t: Wrap
+
+type BufferType either ColorBufferBit or DepthBufferBit
+
+def BufferType.to_opengl(self) uint =
+    match self with
+        ColorBufferBit -> color_buffer_bit
+        DepthBufferBit -> depth_buffer_bit
+
+def make_Attachment(tex: &texture.Texture) AttachmentSettings =
+    AttachmentSettings{
+        tex
+        Rgb16f
+        Rgb
+        Float_Texel
+        Nearest
+        Nearest
+        ClampToBorder
+        ClampToBorder
+    }
+
+type FramebufferSettings =
+    width: uint
+    height: uint
+    depth_buffer: DepthBufferSettings
+    depth_attachment: Maybe[AttachmentSettings]
+    color_attachments: []AttachmentSettings
+    multi: uint
+
+def add_multi_attachment(width: uint, height: uint, self: AttachmentSettings, gl_attach: uint, multi: uint) =
+    multi_sampling_tex: uint = _
+    genTextures 1, &multi_sampling_tex
+
+    bindTexture texture_2D_multisample, multi_sampling_tex
+    texImage2DMultisample texture_2D_multisample, multi, self.internal_format.to_opengl!, width, height, true
+    bindTexture texture_2D_multisample, 0
+
+    framebufferTexture2D
+        framebuffer
+        gl_attach
+        texture_2D_multisample
+        multi_sampling_tex
+        0
+
+def add_multi_depth_attachment(width: uint, height: uint, self: AttachmentSettings, depth_buffer: DepthBufferSettings, multi: uint) =
+    self.internal_format = DepthComponent24Format
+    self.external_format = DepthComponentFormat
+    add_multi_attachment width, height, self, depth_attachment, multi
+
+def add_attachment(width: uint, height: uint, self: AttachmentSettings, gl_attach: uint) =
+    tex: uint = _
+    genTextures 1, &tex
+
+    bindTexture texture_2D, tex
+    texImage2D texture_2D, 0, self.internal_format.to_opengl!, width, height, 0, self.external_format.to_opengl!, self.texel_type.to_opengl!, None
+
+    texParameteri texture_2D, texture_min_filter, self.min_filter.to_opengl!
+    texParameteri texture_2D, texture_mag_filter, self.mag_filter.to_opengl!
+    texParameteri texture_2D, texture_wrap_s, self.wrap_s.to_opengl!
+    texParameteri texture_2D, texture_wrap_t, self.wrap_t.to_opengl!
+
+    self.tex.texture_id = tex
+    self.tex.filename = ""
+
+    framebufferTexture2D
+        framebuffer
+        gl_attach
+        texture_2D
+        tex
+        0
+
+def add_depth_attachment(width: uint, height: uint, self: AttachmentSettings, depth_buffer: DepthBufferSettings) =
+    self.internal_format = DepthComponent24Format
+    self.external_format = DepthComponentFormat
+    add_attachment width, height, self, depth_attachment
+
+def make_Framebuffer(settings: &FramebufferSettings) Framebuffer =
+    fbo: uint = _
+    rbo: uint = _
+
+    genFramebuffers 1, &fbo
+    genRenderbuffers 1, &rbo
+
+    bindFramebuffer framebuffer, fbo
+    bindRenderbuffer renderbuffer, rbo
+
+    match settings.depth_buffer with
+        DepthComponent24 ->
+            if settings.multi > 0 then
+                opengl.renderbufferStorageMultisample renderbuffer, settings.multi, depth_component24, settings.width, settings.height
+            else
+                opengl.renderbufferStorage renderbuffer, depth_component24, settings.width, settings.height
+
+            opengl.framebufferRenderbuffer framebuffer, depth_attachment, renderbuffer, fbo
+
+    for attach := settings.color_attachments do
+        if settings.multi > 0 then
+            add_multi_attachment settings.width, settings.height, attach, color_attachment0 + i, settings.multi
+        else
+            add_attachment settings.width, settings.height, attach, color_attachment0 + i
+
+    if Some attach := settings.depth_attachment then
+        if settings.multi > 0 then
+            add_multi_depth_attachment settings.width, settings.height, attach, settings.depth_buffer, settings.multi
+        else
+            add_depth_attachment settings.width, settings.height, attach, settings.depth_buffer
+
+    bindFramebuffer framebuffer, 0
+    bindRenderbuffer renderbuffer, 0
+
+    Framebuffer{ fbo, rbo, settings.width, settings.height }
+
+def Framebuffer.blit_to(&self, dest: &Framebuffer, mask: BufferType) =
+    blitNamedFramebuffer self.fbo, dest.fbo, 0, 0, self.width, self.height, 0, 0, dest.width, dest.height, mask.to_opengl!, nearest
+
+def Framebuffer.bind(&self) =
+    viewport 0, 0, self.width, self.height
+    bindFramebuffer framebuffer, self.fbo
+
+def Framebuffer.clear_color(&self, color: Vec4) =
+    clearColor color.x, color.y, color.z, color.w
+    clear color_buffer_bit
+
+def Framebuffer.clear_depth(&self, color: Vec4) =
+    clearColor color.x, color.y, color.z, color.w
+    clear depth_buffer_bit
+
+def Framebuffer.unbind(&self) =
+    bindFramebuffer framebuffer, 0
+

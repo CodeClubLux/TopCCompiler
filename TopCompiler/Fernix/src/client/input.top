@@ -23,6 +23,8 @@ type Input =
     mouse_button_down: [3]bool
     last_mouse_button_down: [3]bool
 
+    active: bool
+
 def window_cursor_pos_callback(mouse_position: Vec2) =
     self := get_input!
 
@@ -61,7 +63,12 @@ def window_key_callback(_key: Key, action: KeyAction) =
     self.keys.insert _key, action
     //todo delete key from last frame map if the key was released
 
+def is_active() bool =
+    get_input!.active
+
 def key_down(_key: Key) bool =
+    if not is_active! then return false
+
     window
         .get_window!
         .key_down _key
@@ -73,10 +80,14 @@ def mouse_button_down(button: MouseButton) bool =
 
 def mouse_button_pressed(button: MouseButton) bool =
     inp := get_input!
+    if not inp.active then return false
+
     (not inp.last_mouse_button_down[button.tag]) and mouse_button_down button
 
 def key_pressed(_key: Key) bool =
     self := get_input!
+    if not self.active then return false
+
     if not self.last_frame_keys.contains _key then
         return key_down _key
 
@@ -101,11 +112,15 @@ def clear() =
     self.last_mouse_button_down = self.mouse_button_down
 
 def get_vertical_axis() float =
+    if not is_active! then return 0
+
     if key_down key.from_char `W` then 1
     elif key_down key.from_char `S` then -1
     else 0
 
 def get_horizontal_axis() float =
+    if not is_active! then return 0
+
     if key_down key.from_char `D` then 1
     elif key_down key.from_char `A` then -1
     else 0
@@ -123,6 +138,12 @@ def update_inputs() =
         mouse_button_down Right
         mouse_button_down Left
     ]
+
+def Input.activate(&self) =
+    self.active = true
+
+def Input.deactivate(&self) =
+    self.active = false
 
 def make_Input() Input =
     w := window.get_window!
@@ -148,6 +169,8 @@ def make_Input() Input =
 
         mouse_button_down = [3: false]
         last_mouse_button_down = [3: false]
+
+        active = true
     }
 
 #addToContext input := box make_Input!

@@ -1,8 +1,15 @@
 import "ecs"
 import "math"
-from "layermask" import Layermask
+from "layermask" import all
 from "transform" import transforms
 import "math"
+#if {"headless": false}
+import "draw"
+import "model"
+import "shader"
+from "materialSystem" import all
+#endif
+from "math" import Vec3
 
 type DirLight =
     direction: math.Vec3
@@ -23,10 +30,35 @@ def make_DirLight(id: ecs.ID) &DirLight = dir_lights.make id
 def get_dir_light() &DirLight =
     dir_lights.get_active!.unwrap!
 
+#if {"headless": false}
+light_gizmo := model.load_model "editor/dirLight.fbx"
+light_shader := shader.make "shaders/pbr.vert", "shaders/diffuse.frag"
+
+light_materials := [
+    Material{
+        name = "DefaultMaterial"
+        shader = light_shader.get_id!
+        params = box [
+            Param_Vec3 (light_shader.location "material.diffuse"), Vec3{0,0.8,0.8}
+        ]
+        state = &draw.default_state
+    }
+]
+#endif
+
 type DirLightSystem =
 def DirLightSystem.render(&self, m: Layermask) =
     for (light, trans) := ecs.filter2 dir_lights, transforms, m do
         light.direction = trans.rotation.mul_vec3 math.Vec3{0,-1,0}
+
+    #if {"headless": false}
+    if (m.layer_in_mask editor_layer) or (m.layer_in_mask pickable_layer) then
+        m = layermask.make_Layermask!
+            .enable game_layer
+
+        for (cam, trans) := ecs.filter2 dir_lights, transform.transforms, m do
+            light_gizmo.render_model_for (dir_lights.id_of cam), trans, &light_materials
+    #endif
 
 def DirLightSystem.update(&self, m: Layermask) =
 

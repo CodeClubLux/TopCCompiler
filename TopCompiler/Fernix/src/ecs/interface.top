@@ -8,6 +8,7 @@ type ComponentStore with
     def get_by_id(ID) Maybe[Component]
     def serialize()
     def deserialize()
+    def get_all_active_component_ids() []ID
 
 type System with
     def render(Layermask)
@@ -17,3 +18,9 @@ type Component with
 
 component_types := [..]ComponentStore
 systems := [..]System
+
+def get_store(typ_str: string) Maybe[ComponentStore] =
+    for comp_store := component_types do
+        if comp_store.get_component_type!.toString! == typ_str then return Some comp_store
+
+    None

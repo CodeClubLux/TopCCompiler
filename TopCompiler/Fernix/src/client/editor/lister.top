@@ -26,12 +26,12 @@ def make_Lister() Lister =
         ui_mesg_queue = events.make_MesgQueue::[ListerEvents] 3
     }
 
-def Lister.render_name(&self, w: &ui.Window, name: &NameHierachy, indent: string) =
+def Lister.render_name(&self, w: &ui.Window, name: &NameHierachy, indent: string, filter: string) =
     edit := editor.get_editor!
 
     id := name.id
 
-    if not name.name.starts_with self.filter then return
+    if not name.name.starts_with filter then return
 
     selected := match edit.selected with
         Some s -> id == s
@@ -45,7 +45,7 @@ def Lister.render_name(&self, w: &ui.Window, name: &NameHierachy, indent: string
     new_indent := indent + "    "
 
     for child := name.children do
-        self.render_name w, child, new_indent
+        self.render_name w, child, new_indent, filter
 
 def name_with_id(selected: ecs.ID) string =
     match named.by_id selected with
@@ -107,9 +107,7 @@ def Lister.render(&self) =
     inp := ui.input w, 50, filter
     inp.style.width = ui.Perc 1
 
-    hierarchy_named := self.get_hierachy!
-
-    active_named := named.get_all_active!
+    //active_named := named.get_all_active!
 
     if (*filter).starts_with "#" then
         splice := (*filter).slice 1, filter.length
@@ -127,9 +125,27 @@ def Lister.render(&self) =
             None -> false
 
         button.ev_handler = Some events.dispatch &self.ui_mesg_queue, ui.Pressed, Selected id cast ecs.ID
+    elif (*filter).starts_with ":" then
+        name := (*filter).slice 1, filter.length
+
+        log "name of type: {name}"
+        guard Some store := ecs.get_store name
+        else return
+
+
+        for id := store.get_all_active_component_ids! do
+            log id
+            field := NameHierachy{
+                name = name_with_id id
+                children = []
+                id = id
+            }
+            self.render_name w, &field, "", ""
     else
+        hierarchy_named := self.get_hierachy!
+
         for name := hierarchy_named do
-            self.render_name w, name, ""
+            self.render_name w, name, "", self.filter
 
 def Lister.update(&self) =
     for mesg := self.ui_mesg_queue.messages do

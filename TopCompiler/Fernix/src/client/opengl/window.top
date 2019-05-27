@@ -2,6 +2,8 @@ import "opengl"
 from "glfwWrapper" import all
 from "math" import Vec2
 from "key" import (Key, KeyAction, MouseButton)
+from "nuklearWrapper" import all
+import "vfs"
 
 def framebuffer_size_callback(window_ptr: &GLFWwindow, width: int, height: int) =
     context = (glfwGetWindowUserPointer window_ptr) cast &Context
@@ -22,6 +24,8 @@ type Window =
     cursor_pos_callback: Maybe[|Vec2| -> none]
     key_callback: Maybe[|Key, KeyAction| -> none]
     dropped_filepaths: []string
+
+    shadow_resolution: uint
 
 def error_callback(error: int, description: &char) =
     log char_buffer_toString description
@@ -63,7 +67,8 @@ def Window.init(&self) =
         panic "Failed to initialize GLAD!"
 
     //debugging opengl
-    opengl.enable opengl.debug_output
+    //opengl.enable opengl.debug_output
+    opengl.enable opengl.debug_output_synchronous //GL_DEBUG_OUTPUT_SYNCHRONOUS
     opengl.debugMessageCallback gl_error_callback, context
 
     log "initialized opengl"
@@ -153,33 +158,109 @@ def Window.mouse_button_down(&self, button: MouseButton) bool =
 
     (glfwGetMouseButton self.window_ptr.unwrap!, glfw_mouse_button) == glfw_press
 
+ext nk_window_options: uint = "NK_WINDOW_SCALABLE|NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE|NK_WINDOW_BORDER"
+
+#addToContext window := 0 cast &Window
+
 def make_Window() &Window =
-    w := box Window{
+    popup := Window{
         title = "Fernix"
         vSync = true
         full_screen = false
-        width = 3840
-        height = 2160
+        width = 500
+        height = 500
         window_ptr = None
         cursor_pos_callback = None
         key_callback = None
         dropped_filepaths = []
+        shadow_resolution = 4096
+    }
+
+    popup.init!
+
+    glfwSetInputMode popup.window_ptr.unwrap!, glfw_cursor, glfw_cursor_normal
+
+    let max_vertex_buffer = 512 * 1024
+    let max_element_buffer = 128 * 1024
+
+    nk_ptr := nk_glfw3_init popup.window_ptr.unwrap!, nk_glfw3_install_callbacks
+
+    atlas : &nk_font_atlas = _
+    nk_glfw3_font_stash_begin &atlas
+    segoe := nk_font_atlas_add_from_file atlas, (vfs.asset_path "fonts/segoeui.ttf").to_c_string!, 40, None
+    nk_glfw3_font_stash_end!
+    nk_style_set_font nk_ptr, &segoe.handle
+
+    width := 3840.0
+    height := 2160.0
+    vSync := true
+    fullscreen := false
+    shadow_resolution := 4096.0
+
+    context.window = &popup
+
+    while not popup.should_close! do
+        popup.update_inputs!
+        nk_glfw3_new_frame!
+
+        window_rect := nk_make_rect 0, 0, 500, 500
+
+        if nk_begin nk_ptr, "Settings".to_c_string!, window_rect, nk_window_options then
+            ratios := [1.0]
+
+            nk_layout_row nk_ptr, nk_dynamic, 40, ratios.length, ratios.data
+            width = nk_propertyf nk_ptr, "#width".to_c_string!, 0, width, 4000, 100, 0.1
+
+            nk_layout_row nk_ptr, nk_dynamic, 40, ratios.length, ratios.data
+            height = nk_propertyf nk_ptr, "#height".to_c_string!, 0, height, 4000, 100, 0.1
+
+            nk_layout_row nk_ptr, nk_dynamic, 40, ratios.length, ratios.data
+            shadow_resolution = nk_propertyf nk_ptr, "#shadow resolution".to_c_string!, 0, shadow_resolution, 5000, 100, 0.1
+
+            nk_layout_row nk_ptr, nk_dynamic, 40, ratios.length, ratios.data
+            vSync = not vSync
+            vSync = (nk_check_label nk_ptr, "vSync".to_c_string!, vSync cast int) cast bool
+            vSync = not vSync
+
+            nk_layout_row nk_ptr, nk_dynamic, 40, ratios.length, ratios.data
+            fullscreen = not fullscreen
+            fullscreen = (nk_check_label nk_ptr, "fullscreen".to_c_string!, fullscreen  cast int) cast bool
+            fullscreen = not fullscreen
+
+        nk_end nk_ptr
+
+        nk_glfw3_render nk_anti_aliasing_on, max_vertex_buffer, max_element_buffer
+
+        popup.swap_buffers!
+
+    nk_glfw3_shutdown!
+    popup.close!
+
+    w := box Window{
+        title = "Fernix"
+        vSync = vSync
+        full_screen = fullscreen
+        width = width cast uint
+        height = height cast uint
+        window_ptr = None
+        cursor_pos_callback = None
+        key_callback = None
+        dropped_filepaths = []
+        shadow_resolution = shadow_resolution cast uint
     }
 
     w.init!
 
     w
 
-#addToContext window := make_Window!
+context.window = make_Window!
 
 def get_window() &Window =
     context.window
 
 //debugging
 def gl_error_callback(source: uint, typ: uint, id: uint, severity: int, length: SizeT, message: &char) =
-    defer context.allocator.reset_to context.allocator.get_occupied!
+    //defer context.allocator.reset_to context.allocator.get_occupied!
 
-    return
-
-    log "=========== memory usage: {context.longterm_storage.get_occupied!}"
+    //log "=========== memory usage: {context.longterm_storage.get_occupied!}"
     log char_buffer_toString message

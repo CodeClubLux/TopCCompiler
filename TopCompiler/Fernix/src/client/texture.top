@@ -55,6 +55,7 @@ def load_in_place(tex: &Texture) =
     texParameteri texture_2D, texture_wrap_t, repeat
     texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
     texParameteri texture_2D, texture_mag_filter, linear
+    texParameterf texture_2D, texture_max_anisotropy_ext, 16
 
     guard Some data := stbi.load real_filename.to_c_string!, &width, &height, &nr_channels, 3
     else panic "Could not load image {filename}"
@@ -77,7 +78,7 @@ def load_in_place(tex: &Texture) =
 
     tex.texture_id = texture_id
 
-def load(filename: string) &Texture =
+def load(filename: string) &Texture = //todo potential bug, does not create entity
     if Some texture := assetManager.in_cache textures, filename then
         return texture
 
@@ -89,6 +90,7 @@ def load(filename: string) &Texture =
     texture
 
 def Texture.bind_to(self, num: uint) =
+    //log num
     activeTexture texture0 + num
     bindTexture opengl.texture_2D, self.texture_id
 
@@ -96,6 +98,8 @@ type Cubemap =
     id: uint
 
 def Cubemap.bind_to(self, num: uint) =
+    //log num
+
     activeTexture texture0 + num
     bindTexture opengl.texture_cube_map, self.id
 

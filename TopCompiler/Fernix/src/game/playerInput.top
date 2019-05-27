@@ -1,0 +1,78 @@
+from "layermask" import all
+from "math" import Vec2
+import "input"
+import "ecs"
+import "lister"
+import "key"
+
+type PlayerInput =
+    yaw: float
+    pitch: float
+    vertical_axis: float
+    horizontal_axis: float
+    mouse_sensitivity: float
+    shift: bool
+    space: bool
+    holding_mouse_left: bool
+
+
+player_inputs := ecs.make_Store 1, PlayerInput{
+    yaw = 0
+    pitch = 0
+    vertical_axis = 0
+    horizontal_axis = 0
+    mouse_sensitivity = 0.5
+    shift = false
+    space = false
+    holding_mouse_left = false
+}
+
+def make_PlayerInput() &PlayerInput =
+    id := ecs.make_ID!
+    e := ecs.make_Entity id
+    e.layermask = e.layermask.disable layermask.serialize_layer
+
+    l := lister.named.make id
+    l.name = "Player Input"
+    player_inputs.make id
+
+player_input := make_PlayerInput!
+
+def get_player_input() &PlayerInput =
+    player_input
+
+type PlayerInputSystem =
+def PlayerInputSystem.render(&system, m: Layermask) =
+def PlayerInputSystem.update(&system, m: Layermask) =
+    #if {"headless": false}
+    for self := ecs.filter player_inputs, m do 
+        input.capture_mouse true
+    
+        mouse_offset := context.input.mouse_offset.scale self.mouse_sensitivity / 100
+    
+        yaw := -mouse_offset.x + self.yaw
+        pitch := mouse_offset.y + self.pitch
+    
+        if pitch > 89 then
+            pitch = 89
+        if pitch < (-89) then
+            pitch = -89
+        if yaw > 360 then
+            yaw -= 360
+        if yaw < (-360) then
+            yaw += 360
+    
+        self.pitch = pitch
+        self.yaw = yaw
+    
+        self.vertical_axis = input.get_vertical_axis!
+        self.horizontal_axis = input.get_horizontal_axis!
+    
+        self.shift = input.key_down key.lshift
+        self.space = input.key_pressed key.from_char ` `
+
+        self.holding_mouse_left = input.mouse_button_down key.Left
+    #endif
+
+player_input_system := PlayerInputSystem{}
+ecs.register_system &player_input_system

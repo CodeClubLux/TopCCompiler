@@ -1,90 +1,78 @@
 import "ecs"
 import "camera"
-import "input"
+import "playerInput"
 from "time" import (get_delta_time)
 import "camera"
 import "key"
 from "math" import all
 from "layermask" import Layermask
 from "transform" import all
-import "editor"
+import "physics"
+
+#if {"headless": false}
 import "physics"
 import "model"
 from "materialSystem" import all
 import "draw"
 import "shader"
-
+import "ui"
+import "window"
+#endif
 
 type FPSController =
-    mouse_sensitivity: float
     movement_speed: float
-    yaw: float
-    pitch: float
-
-    body_id: ecs.ID
-
-def FPSController.get_velocity(using &self) float =
-    if input.key_down key.lshift then movement_speed * 2
-    else movement_speed
+    roll_speed: float
+    roll_duration: float
+    roll_cooldown: float
+    roll_cooldown_time: float
+    roll_blend: float
 
 def FPSController.update(using &self, entity: &LocalTransform) =
     //movement
-    guard Some rb := physics.rigid_bodies.by_id body_id
+    guard Some rb := physics.rigid_bodies.by_id entity.owner //body_id
     else panic "Could not find rigid body"
 
-    //guard Some body_transform := transforms.by_id body_id
-    //else panic "could not find body_transform"
+    player_input := playerInput.get_player_input!
+
+    (pitch, yaw) := (player_input.pitch, player_input.yaw)
 
     facing_rotation := math.quat_from_euler math.Vec3{0, (radians yaw), 0}
     forward := (facing_rotation.mul_vec3 math.Vec3{0,0,-1}).norm!
     right := (facing_rotation.mul_vec3 math.Vec3{1,0,0}).norm!
 
-    vertical_axis := input.get_vertical_axis!
-    horizontal_axis := input.get_horizontal_axis!
+    roll_cooldown -= time.get_delta_time!
 
-    vec := forward.scale vertical_axis * self.get_velocity!
-    vec += right.scale horizontal_axis * self.get_velocity!
+    if playerInput.get_player_input!.shift and roll_cooldown <= 0 then
+        roll_cooldown = roll_cooldown_time
+        roll_blend = 1
+
+    vel := (roll_speed * roll_blend) + (movement_speed * (1.0 - roll_blend))
+
+    roll_blend -= time.get_delta_time! / roll_duration
+    roll_blend = max 0.0, roll_blend
+
+    vec := forward.scale player_input.vertical_axis * vel
+    vec += right.scale player_input.horizontal_axis * vel
 
     rb.velocity.x = vec.x
     rb.velocity.z = vec.z
 
-    if input.key_pressed key.from_char ` ` then
+    if player_input.space then
         rb.override_velocity_y = true
         rb.velocity.y = 5
     else
         rb.override_velocity_y = false
 
-    //rb.velocity.y = 0
-
-    //mouse look
-    mouse_offset := context.input.mouse_offset.scale mouse_sensitivity
-
-    input.capture_mouse true
-
-    yaw = -mouse_offset.x + yaw
-    pitch = (mouse_offset.y) + pitch
-
-    if pitch > 89 then
-        pitch = 89
-    if pitch < (-89) then
-        pitch = -89
-    if yaw > 360 then
-        yaw -= 360
-    if yaw < (-360) then
-        yaw += 360
-
     orientation := math.quat_from_euler math.Vec3{(radians pitch), (radians yaw), 0}
-
     entity.rotation = orientation
 
-    //entity.position = body_transform.position
-
 fpsControllers := ecs.make_Store 5, FPSController{
-    mouse_sensitivity = 0.01
     movement_speed = 6
-    yaw = 0
-    pitch = 0
-    body_id = 0
+    roll_speed = 12
+    roll_cooldown = 0
+    roll_cooldown_time = 5
+    roll_duration = 1
+    roll_blend = 0
 }
 
 type FPSControllerSystem =
@@ -125,7 +113,7 @@ def make_FPSController(id: ecs.ID) &FPSController =
     *trans = (*curr_trans)
 
     fp_controller := (fpsControllers.make id)
-    fp_controller.body_id = body_id
+    //fp_controller.body_id = body_id
 
     child_transform := make_LocalTransform id
     child_transform.owner = body_id

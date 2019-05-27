@@ -14,6 +14,7 @@ from "math" import (Vec3, Vec2)
 import "editor"
 import "model"
 import "ui"
+import "input"
 
 type PickingSystem =
     pass: PickingPass
@@ -77,6 +78,8 @@ def PickingSystem.render(&self, m: layermask.Layermask) =
         }
 
         cmd.submit!
+
+def PickingPass.set_shader_params(&self, s: &shader.Shader) =
 
 def PickingPass.render(&self) =
     if not runner.in_editor! then return

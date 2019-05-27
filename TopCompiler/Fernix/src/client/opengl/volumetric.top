@@ -1,0 +1,147 @@
+import "shadow"
+import "lights"
+import "texture"
+from "opengl" import all
+from "math" import all
+import "shader"
+import "window"
+from "transform" import all
+import "primitives"
+import "camera"
+from "frameBuffer" import all
+
+volume_shader := shader.make "shaders/screenspace.vert", "shaders/volumetric.frag"
+upsample_shader := shader.make "shaders/screenspace.vert", "shaders/volumetric_upsample.frag"
+
+type FogMap =
+    framebuffer: Framebuffer
+    fogMap: texture.Texture
+
+type VolumetricPass =
+    depth_prepass: texture.Texture
+    calc_fog: FogMap
+    //upsampled: FogMap
+
+def make_FogMap(width: uint, height: uint) FogMap =
+    tex : texture.Texture = _
+
+    color_attachment := make_Attachment &tex
+    color_attachment.min_filter = Nearest
+    color_attachment.mag_filter = Nearest
+    color_attachment.wrap_s = ClampToBorder
+    color_attachment.wrap_t = ClampToBorder
+
+    color_attachments := [color_attachment]
+
+    settings := FramebufferSettings{
+        width = width
+        height = height
+        depth_buffer = DepthComponent24
+        depth_attachment = None
+        color_attachments = &color_attachments
+        multi = 0
+    }
+
+    frame := make_Framebuffer &settings
+
+    FogMap{
+        framebuffer = frame
+        fogMap = tex
+    }
+
+def make_VolumetricPass(depthPrepass: texture.Texture) VolumetricPass =
+    w := window.get_window!
+
+    VolumetricPass{
+        depth_prepass = depthPrepass
+        calc_fog = make_FogMap w.width / 2, w.height / 2
+    }
+
+def VolumetricPass.clear(&self) =
+    self.calc_fog.framebuffer.bind!
+    self.calc_fog.framebuffer.clear_color Vec4{1, 1, 1, 1}
+    self.calc_fog.framebuffer.unbind!
+
+type ShadowParams =
+    depthMap: &texture.Texture
+    in_range: Vec2
+    to_light: &Mat4x4
+    to_world: &Mat4x4
+
+def VolumetricPass.render_with_cascade(&self, depthMap: &texture.Texture, in_range: Vec2, to_light: &Mat4x4, to_world: &Mat4x4, cascade: uint) =
+    volume_shader.bind!
+
+    self.calc_fog.framebuffer.bind!
+
+    disable depth_test
+    enable blend
+
+    blendFunc one, one
+
+    dir_light := lights.get_dir_light!
+    guard Some dir_light_trans := transforms.by_id lights.dir_lights.id_of dir_light
+    else return
+
+    self.depth_prepass.bind_to 0
+    volume_shader.set_int (volume_shader.uniform_location "depthPrepass"), 0
+
+    depthMap.bind_to 1
+    volume_shader.set_int (volume_shader.uniform_location "depthMap"), 1
+
+    guard Some cam_trans := transforms.by_id camera.cameras.id_of context.camera
+    else return
+
+    tmp := to_world.mul_vec4 Vec4{0,0,-1,1}
+    tmp = tmp.scale 1/tmp.w
+
+    volume_shader.set_vec3 (volume_shader.uniform_location "camPosition"), &cam_trans.position
+
+    volume_shader.set_vec3 (volume_shader.uniform_location "sunColor"), &dir_light.color
+    volume_shader.set_vec3 (volume_shader.uniform_location "sunDirection"), &dir_light.direction
+    volume_shader.set_vec3 (volume_shader.uniform_location "sunPosition"), &dir_light_trans.position
+
+    volume_shader.set_float (volume_shader.uniform_location "gCascadeEndClipSpace[0]"), in_range.x
+    volume_shader.set_float (volume_shader.uniform_location "gCascadeEndClipSpace[1]"), in_range.y
+
+    volume_shader.set_mat4x4 (volume_shader.uniform_location "toLight"), to_light
+    volume_shader.set_mat4x4 (volume_shader.uniform_location "toWorld"), to_world
+
+    volume_shader.set_int (volume_shader.uniform_location "cascadeLevel"), cascade
+    volume_shader.set_float (volume_shader.uniform_location "endCascade"), context.camera.far_plane
+
+    ident := math.identity_mat!
+    volume_shader.set_mat4x4 (volume_shader.uniform_location "model"), &ident
+
+    primitives.render_quad!
+
+    disable blend
+    enable depth_test
+
+    self.calc_fog.framebuffer.unbind!
+
+def VolumetricPass.render_upsampled(&self, current_frame: &texture.Texture) =
+    volumetricMap := self.calc_fog.fogMap
+
+    upsample_shader.bind!
+
+    disable depth_test
+
+    //blendFunc dst_color, one_minus_src_alpha //GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA)
+    //blendFunc one, dst_color //, one //, dst_color //, zero
+    //blendFunc one, one
+
+    upsample_shader.set_int (upsample_shader.uniform_location "depthPrepass"), 0
+    self.depth_prepass.bind_to 0
+
+    upsample_shader.set_int (upsample_shader.uniform_location "volumetricMap"), 1
+    volumetricMap.bind_to 1
+
+    upsample_shader.set_int (upsample_shader.uniform_location "frameMap"), 2
+    current_frame.bind_to 2
+
+    ident := math.identity_mat!
+    upsample_shader.set_mat4x4 (upsample_shader.uniform_location "model"), &ident
+
+    primitives.render_quad!
+
+    enable depth_test

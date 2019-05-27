@@ -20,3 +20,11 @@ let game_layer = 1
 let editor_layer = 2
 let serialize_layer = 3
 let pickable_layer = 4
+let prefab_layer = 5
+
+let any_layer = make_Layermask!
+    .enable game_layer
+    .enable editor_layer
+    .enable serialize_layer
+    .enable pickable_layer
+    .enable prefab_layer

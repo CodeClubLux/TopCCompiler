@@ -2,7 +2,8 @@ from "layermask" import all
 import "ecs"
 from "transform" import all
 from "math" import all
-import "editor"
+import "runner"
+import "time"
 
 type ColliderShape either
     Capsule(float, float) //radius then height
@@ -52,9 +53,9 @@ type PhysicsSystem =
 
 def PhysicsSystem.render(&system, m: Layermask) =
 def PhysicsSystem.update(&system, m: Layermask) =
-    if editor.in_editor! then return
+    if runner.in_editor! then return
 
-    step_BulletWrapper system.bt_wrapper
+    step_BulletWrapper system.bt_wrapper, time.get_delta_time!
 
     for (rb, trans) := ecs.filter2 rigid_bodies, transforms, m do
         if rb.bt_rigid_body.is_none! then
@@ -63,9 +64,9 @@ def PhysicsSystem.update(&system, m: Layermask) =
             settings.velocity = to_Compat_Vec3 rb.velocity
 
             settings.shape = match rb.shape with
-                Sphere r -> make_SphereShape r
-                Box size -> make_BoxShape to_Compat_Vec3 size
-                Capsule r, height -> make_CapsuleShape r, height
+                Sphere r -> make_SphereShape r * trans.scale.x
+                Box size -> make_BoxShape to_Compat_Vec3 size * trans.scale
+                Capsule r, height -> make_CapsuleShape r, height * trans.scale.y
                 Plane norm -> make_PlaneShape to_Compat_Vec3 norm
 
             settings.id = rigid_bodies.id_of rb
@@ -75,8 +76,8 @@ def PhysicsSystem.update(&system, m: Layermask) =
             if rb.continous then
                 settings.sweep_radius = match rb.shape with
                     Sphere r -> r
-                    Box size -> math.max size.z, math.max size.x, size.y
-                    Capsule r, height -> r + height
+                    Box size -> math.max size.z * trans.scale.z, math.max size.x * trans.scale.x, size.y * trans.scale.z
+                    Capsule r, height -> r + height * trans.scale.y
                     Plane -> 0 //plane is static
 
                 log settings.sweep_radius
@@ -86,6 +87,7 @@ def PhysicsSystem.update(&system, m: Layermask) =
             rb.bt_rigid_body = Some make_RigidBody system.bt_wrapper, &settings
 
             log "created rigid body"
+            log rb.override_rotation
 
         bt_rigid_body := rb.bt_rigid_body.unwrap!
 
@@ -131,5 +133,8 @@ def PhysicsSystem.free(&self) =
 physics_system := PhysicsSystem{
     bt_wrapper = make_BulletWrapper!
 }
+
+def btRigidBody.free(&self) =
+    free_RigidBody physics_system.bt_wrapper, self
 
 ecs.register_system &physics_system

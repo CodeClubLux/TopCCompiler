@@ -30,6 +30,7 @@
         ],
         "tags": {
             "render_backend": "OpenGL",
+            "platform": "windows",
             "headless": false,
             "editor": true
         }

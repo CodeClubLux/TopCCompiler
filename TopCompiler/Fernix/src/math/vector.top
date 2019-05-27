@@ -81,11 +81,17 @@ def Vec4.toString(self) string =
 def Vec3.toString(self) string =
     "Vec3({self.x}, {self.y}, {self.z})"
 
+def Vec2.toString(self) string =
+    "Vec2({self.x}, {self.y})"
+
 def Vec3.dot(self, other: Vec3) float =
     (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
 
 def Vec4.dot(self, other: Vec4) float =
     (self.x * other.x) + (self.y * other.y) + (self.z * other.z) + (self.w * other.w)
+
+def Vec2.len(self) float =
+    sqrt self.x^2 + self.y^2
 
 def Vec3.len(self) float =
     sqrt self.x^2 + self.y^2 + self.z^2
@@ -157,3 +163,7 @@ def vec4_from_array(arr: &[4]float) Vec4 =
         arr[3]
     }
 
+def Vec4.to_vec3(&self) Vec3 =
+    Vec3{
+        self.x, self.y, self.z
+    }

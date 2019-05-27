@@ -31,7 +31,7 @@ def fill_array[T](numTimes: uint, elem: T) Array[T] =
 
 def Array[T].op_get(&self, index: uint) &T =
     assert index < self.length, "Out of bounds"
-    indexPtr self.data.unwrap!, index
+    indexPtr self.data cast &T, index
 
 def Array[T].shorten(&self, num: uint) =
     self.length -= num
@@ -58,6 +58,16 @@ def Array[T].pop(&self) T =
     tmp := self[self.length - 1]
     self.length -= 1
     tmp
+
+def Array[T].shift(&self, num: uint) =
+    assert self.length >= num, "Shifted more than length of array"
+
+    i := 0
+    while i < self.length - num do
+        self[i] = self[i + num]
+        i += 1
+
+    self.length -= num
 
 def Array[T].reserve(&self, newSize: uint) =
     allocator := self.allocator.default context.allocator
@@ -89,7 +99,7 @@ def Array[T].append(&self, value: T) =
         else
             self.reserve self.capacity * 2
 
-    *(indexPtr self.data.unwrap!, self.length) = value
+    *(indexPtr self.data cast &T, self.length) = value
     self.length = newLength
 
 def Array[T: Stringer].join(&self, delimiter: string) string =

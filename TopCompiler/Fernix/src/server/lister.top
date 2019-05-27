@@ -1,0 +1,8 @@
+import "ecs"
+
+type Name =
+    name: string
+
+named := ecs.make_Store::[Name] 20, Name{
+    "entity"
+}

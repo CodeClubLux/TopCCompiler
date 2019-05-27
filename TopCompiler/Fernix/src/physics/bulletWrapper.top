@@ -40,13 +40,13 @@ ext make_PlaneShape: |Compat_Vec3| -> &btCollisionShape = "make_PlaneShape"
 ext free_collision_shape: |&btCollisionShape| -> none = "free_collision_shape"
 
 ext make_RigidBody: |&BulletWrapper, &RigidBodySettings| -> &btRigidBody = "make_RigidBody"
-ext free_RigidBody: |&BulletWrapper, &btRigidBody| -> none = "free_Rigidbody"
+ext free_RigidBody: |&BulletWrapper, &btRigidBody| -> none = "free_RigidBody"
 ext id_of_RigidBody: |&btRigidBody| -> uint = "id_of_Rigidbody"
 ext transform_of_Rigidbody: |&btRigidBody, &BulletWrapperTransform| -> none = "transform_of_RigidBody"
 ext set_transform_of_Rigidbody: |&btRigidBody, &BulletWrapperTransform| -> none = "set_transform_of_RigidBody"
 
 ext make_BulletWrapper: || -> &BulletWrapper = "make_BulletWrapper"
-ext step_BulletWrapper: |&BulletWrapper| -> none = "step_BulletWrapper"
+ext step_BulletWrapper: |&BulletWrapper, f64| -> none = "step_BulletWrapper"
 ext free_BulletWrapper: |&BulletWrapper| -> none = "free_BulletWrapper"
 
 def to_Vec3(compat: Compat_Vec3) math.Vec3 =

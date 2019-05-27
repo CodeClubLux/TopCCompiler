@@ -1,4 +1,3 @@
-#version 440 core
 out vec4 FragColor;
 
 in vec2 TexCoords;
@@ -44,6 +43,14 @@ vec3 normal;
 float metallic;
 float roughness;
 float ao;
+uniform sampler2D displacement;
+uniform vec2 displacement_scale;
+uniform vec2 displacement_offset;
+
+uniform sampler2D shadowMaskMap;
+
+uniform float window_height;
+uniform float window_width;
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
@@ -159,12 +166,14 @@ void main()
 
     vec3 viewDir = normalize(viewPos - FragPos);
 
-	albedo     = texture(material.diffuse,TexCoords).rgb; //vec3(0.1); // mix(vec3(0,1,0), vec3(0.4, 0.4, 0.4), texture(material.diffuse,TexCoords).r);
+	albedo     = vec3(0,1,0); //texture(material.diffuse,TexCoords).rgb; //vec3(0.1); // mix(vec3(0,1,0), vec3(0.4, 0.4, 0.4), texture(material.diffuse,TexCoords).r);
 
     normal     = norm; //getNormalFromNormalMap();
     metallic  = texture(material.metallic, TexCoords).r;
     roughness = texture(material.roughness, TexCoords).r;
     ao        = 1;
+
+    float shadow = texture(shadowMaskMap, vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height)).r;
 
 	vec3 Lo = vec3(0.0);
 	vec3 WorldPos = FragPos;
@@ -197,12 +206,14 @@ void main()
 	vec2 envBRDF  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
 	vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
-	vec3 ambient = (kD * diffuse + specular);
+	vec3 ambient = (kD * diffuse + specular) * (1.0 - (0.6 *shadow));
 
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
+    //vec3(texture(displacement, (TexCoords * displacement_scale) + displacement_offset).x)
     FragColor = vec4(color, 1);
+    //FragColor = vec4(N, 1);
 }

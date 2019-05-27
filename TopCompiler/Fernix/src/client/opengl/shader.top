@@ -12,6 +12,7 @@ type Shader =
     //core shader properties
     irradianceMap: int
     prefilterMap: int
+    shadowMaskMap: int
     brdfLUT: int
     model: int
     projection: int
@@ -23,7 +24,14 @@ type Shader =
     v_time_modified: i64
     f_time_modified: i64
 
-shaders := ecs.make_Store_with_init 20, Shader{"", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Some load_in_place
+    supports_instancing: bool
+    instanced: bool
+    instanced_version: Maybe[&Shader]
+
+    window_width: int
+    window_height: int
+
+shaders := ecs.make_Store_with_init 40, Shader{"", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, None, 0, 0}, Some load_in_place
 
 def Shader.free(self) =
     opengl.deleteProgram self.id
@@ -57,45 +65,73 @@ def load_in_place_with_err(self: &Shader) Maybe[string] =
     vfilename := self.v_filename
     ffilename := self.f_filename
 
-    vshader_f := (read_shader_file vfilename).expect "Could not read vertex file"
-    fshader_f := (read_shader_file ffilename).expect "Could not read fragment file"
+    new_context := *context
+    new_context.allocator = &malloc_as_allocator
 
-    defer vshader_f.free!
-    defer fshader_f.free!
+    #pushContext new_context do
+        guard Some vshader_f := read_shader_file vfilename
+        else return Some "Could not read vertex file: {vfilename}"
 
-    vshader_source := vshader_f.read!
-    fshader_source := fshader_f.read!
+        guard Some fshader_f := read_shader_file ffilename
+        else return Some "Could not read fragment file: {ffilename}"
 
-    defer context.allocator.reset_to context.allocator.get_occupied!
+        //log "==================================================================="
+        //log vfilename
+        //log self.instanced
 
-    //vertex shader
-    sucess : int = 0
-    info_log := (alloc 512 * sizeof char) cast &char
-    defer free info_log
+        isInstanced :=
+            if self.instanced then "#version 440 core\n#define IS_INSTANCED\n#line 0\n"
+            else "#version 440 core\n#line 0\n"
 
-    guard Ok vertex_shader := make_shader vfilename, vshader_source, opengl.vertex_shader, info_log
-    elif Error e then return Some e
+        vshader_source := vshader_f.read!
+        defer free vshader_source.to_c_string!
 
-    guard Ok fragment_shader := make_shader ffilename, fshader_source, opengl.fragment_shader, info_log
-    elif Error e2 then return Some e2
+        vshader_source = isInstanced + vshader_source
+        defer free vshader_source.to_c_string!
 
-    id := opengl.createProgram!
+        fshader_source := fshader_f.read!
+        defer free fshader_source.to_c_string!
 
-    opengl.attachShader id, vertex_shader
-    opengl.attachShader id, fragment_shader
+        fshader_source = isInstanced + fshader_source
+        defer free fshader_source.to_c_string!
 
-    opengl.linkProgram id
+        vshader_f.free!
+        fshader_f.free!
 
-    opengl.getPromgramiv id, opengl.link_status, &sucess
+        //log vshader_source
 
-    if sucess == 0 then
-        opengl.getProgramInfoLog id, 512, None, info_log
-        panic "({vfilename}) Shader linkage: {char_buffer_toString info_log}"
+        //defer context.allocator.reset_to context.allocator.get_occupied!
 
-    opengl.deleteShader vertex_shader
-    opengl.deleteShader fragment_shader
+        //vertex shader
+        sucess : int = 0
+        info_log := (alloc 512 * sizeof char) cast &char
+        defer free info_log
 
-    self.id = id
+        guard Ok vertex_shader := make_shader vfilename, vshader_source, opengl.vertex_shader, info_log
+        elif Error e then return Some e
+
+        guard Ok fragment_shader := make_shader ffilename, fshader_source, opengl.fragment_shader, info_log
+        elif Error e2 then return Some e2
+
+        id := opengl.createProgram!
+
+        opengl.attachShader id, vertex_shader
+        opengl.attachShader id, fragment_shader
+
+        opengl.linkProgram id
+
+        opengl.getPromgramiv id, opengl.link_status, &sucess
+
+        if sucess == 0 then
+            opengl.getProgramInfoLog id, 512, None, info_log
+            panic "({vfilename}) Shader linkage: {char_buffer_toString info_log}"
+
+        opengl.deleteShader vertex_shader
+        opengl.deleteShader fragment_shader
+
+        self.id = id
+
+
 
     self.irradianceMap = self.uniform_location "irradianceMap"
     self.prefilterMap = self.uniform_location "prefilterMap"
@@ -107,12 +143,30 @@ def load_in_place_with_err(self: &Shader) Maybe[string] =
     self.dirLight_direction = self.uniform_location "dirLight.direction"
     self.dirLight_color = self.uniform_location "dirLight.color"
 
+    self.shadowMaskMap = self.uniform_location "shadowMaskMap"
+    self.window_width = self.uniform_location "window_width"
+    self.window_height = self.uniform_location "window_height"
+
     self.v_time_modified = vfs.time_modified self.v_filename
     self.f_time_modified = vfs.time_modified self.f_filename
+
+    if self.supports_instancing and not self.instanced then
+        s := box_longterm *self
+        s.instanced = true
+
+        if Some err := load_in_place_with_err s then
+            return Some err
+
+        s.instanced_version = None
+        self.instanced_version = Some s
 
     None
 
 def load_in_place(self: &Shader) =
+    if self.v_filename == "shaders/pbr.vert" then
+        self.instanced = false
+        self.supports_instancing = true
+
     if Some e := load_in_place_with_err self then
         panic e
 
@@ -123,6 +177,8 @@ def make(vfilename: string, ffilename: string) &Shader =
     id := ecs.make_ID!
     _ := ecs.make_Entity id
     s := shaders.make id //Shader{ vfilename, ffilename, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+    if vfilename == "shaders/pbr.vert" then
+        s.supports_instancing = true
     s.v_filename = vfilename
     s.f_filename = ffilename
     load_in_place s
@@ -142,7 +198,7 @@ type Uniform =
     id: int
 
 def Shader.location(&self, name: string) Uniform =
-    Uniform{ name, opengl.getUniformLocation self.id, name.to_c_string! }
+    Uniform{ name, opengl.getUniformLocation self.id, name.to_c_string!}
 
 def Shader.uniform_location(&self, name: string) int =
     opengl.getUniformLocation self.id, name.to_c_string!

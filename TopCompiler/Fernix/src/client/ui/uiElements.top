@@ -1,14 +1,17 @@
 from "math" import Vec2
 from "events" import all
+import "ecs"
 
 type UIElement either
     Element_Label(&Label)
+    Element_Checkbox(&Checkbox)
     Element_Button(&Button)
     Element_Propertyf(&Propertyf)
     Element_Propertyu(&Propertyu)
     Element_Input(&Input)
     Element_NewLine
     Element_Group(&Window)
+    Element_Image(&Image)
 
 def UIElement.toString(&self) string =
     enum_type := get_type UIElement
@@ -22,6 +25,7 @@ type Size either
 type Position either
     Absolute(uint, uint)
     Relative
+    AbsolutePerc(float, float)
 
 type BoxSize =
     right: Size
@@ -43,12 +47,15 @@ type Window =
     style: Style
     position: Position
     children: [..]UIElement
+    closable: bool
+    ev_handler: Maybe[events.EventHandler[Event]]
 
 def Window.add_child(&self, child: UIElement) =
     self.children.append child
 
 type Event either
     Pressed
+    Closed
 
 def Event.op_eq(self, other: Event) bool =
     self.tag == other.tag
@@ -65,6 +72,8 @@ def window(title: string) &Window =
         }
         position = Absolute 0, 0
         children = []
+        closable = false
+        ev_handler = None
     }
     ui.windows.append self
     self
@@ -80,6 +89,8 @@ def group[T: Container](w: &T, title: string) &Window =
         }
         position = Relative
         children = []
+        closable = false
+        ev_handler = None
     }
     w.add_child Element_Group self
     self
@@ -111,6 +122,9 @@ type Button =
     style: Style
 
 def button[T: Container](w: &T, text: string) &Button =
+    if text.length == 1 and *text.to_c_string! == null_terminated then
+        panic "how is this possible"
+
     self := box Button{
         text = text
         selected = false
@@ -167,6 +181,21 @@ def propertyu[T: Container](w: &T, text: string, value: &uint) &Propertyu =
     w.add_child Element_Propertyu self
     self
 
+type Checkbox =
+    text: string
+    value: &bool
+    style: Style
+
+def checkbox[T: Container](w: &T, text: string, value: &bool) &Checkbox =
+    self := box Checkbox{
+        text = text
+        value = value
+        style = default_style
+    }
+
+    w.add_child Element_Checkbox self
+    self
+
 type Input =
     max_length: uint
     value: &string
@@ -184,3 +213,20 @@ def input[T: Container](w: &T, max_length: uint, value: &string) &Input =
 
 def new_line[T: Container](w: &T) =
     w.add_child Element_NewLine
+
+type Image =
+    tex_id: ecs.ID
+    style: Style
+    ev_handler: Maybe[events.EventHandler[Event]]
+    selected: bool
+
+def image[T: Container](w: &T, tex_id: ecs.ID) &Image =
+    self := box Image{
+        tex_id = tex_id
+        style = default_style
+        ev_handler = None
+        selected = false
+    }
+
+    w.add_child Element_Image self
+    self

@@ -83,7 +83,7 @@ def guardExpr(parser):
         Error.parseError(parser, "Guard block requires exit statement")
 
     exit_condition = else_block.nodes[-1]
-    if not (type(exit_condition) in [Tree.Continue, Tree.Return] or (type(exit_condition) is Tree.FuncCall and exit_condition.nodes[0].name == "panic")):
+    if not (type(exit_condition) in [Tree.Continue, Tree.Return, Tree.Break] or (type(exit_condition) is Tree.FuncCall and exit_condition.nodes[0].name == "panic")):
         Error.parseError(parser, "Guard block requires exit statement")
 
     parser.currentNode = m.owner

@@ -446,7 +446,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 simplify(i, it, deleteQueue)
         if type(ast) is Tree.Operator:
             ast = simplifyOperator(ast, iter, parser)
-        elif type(ast) is Tree.ArrRead:
+        elif type(ast) is Tree.ArrRead and not (type(ast.nodes[0].type) is Types.Pointer and type(ast.nodes[0].type.pType) is Types.Array) and not type(ast.nodes[0].type) is Types.Array:
             ast = simplifyArrRead(ast, iter, parser)
             ast = ast.nodes[0]
             iter = 0

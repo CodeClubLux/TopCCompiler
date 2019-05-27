@@ -10,7 +10,7 @@ ext _ = "#define NK_INCLUDE_DEFAULT_FONT"
 ext _ = "#define NK_KEYSTATE_BASED_INPUT"
 
 ext _ = "#include <nuklear.h>"
-ext _ = "#include <nuklear_glfw_gl4.h>"
+ext _ = "#include <nuklear_glfw_gl4.h>" //actually glfw_3
 
 type ext nk_context =
 type ext nk_colorf =
@@ -24,12 +24,12 @@ type ext nk_font =
 
 type ext nk_text_edit =
 
-ext nk_glfw3_init: |&GLFWwindow, uint, int, int| -> &nk_context = "nk_glfw3_init"
+ext nk_glfw3_init: |&GLFWwindow, int| -> &nk_context = "nk_glfw3_init"
 ext nk_glfw3_shutdown: || -> none = "nk_glfw3_shutdown"
 ext nk_glfw3_font_stash_begin: |&&nk_font_atlas| -> none = "nk_glfw3_font_stash_begin"
 ext nk_glfw3_font_stash_end: || -> none = "nk_glfw3_font_stash_end"
 ext nk_glfw3_new_frame: || -> none = "nk_glfw3_new_frame"
-ext nk_glfw3_render: |uint| -> none = "nk_glfw3_render"
+ext nk_glfw3_render: |uint, int, int| -> none = "nk_glfw3_render"
 
 ext nk_glfw3_device_destroy: || -> none = "nk_glfw3_device_destroy"
 ext nk_glfw3_device_create: || -> none = "nk_glfw3_device_create"
@@ -37,6 +37,8 @@ ext nk_glfw3_device_create: || -> none = "nk_glfw3_device_create"
 ext nk_char_callback: |&GLFWwindow, uint| -> none = "nk_char_callback"
 ext nk_glfw3_scroll_callback: |&GLFWwindow, f64, f64| -> none = "nk_glfw3_scroll_callback"
 ext nk_glfw3_mouse_button_callback: |&GLFWwindow, int, int, int| -> none = "nk_glfw3_mouse_button_callback"
+
+ext nk_window_minimized: int = "NK_WINDOW_MINIMIZED"
 
 ext nk_glfw3_default: uint = "NK_GLFW3_DEFAULT"
 ext nk_glfw3_install_callbacks: uint = "NK_GLFW3_INSTALL_CALLBACKS"
@@ -49,19 +51,25 @@ ext nk_font_atlas_add_default: |&nk_font_atlas, float, Maybe[&nk_font_config]| -
 ext nk_style_set_font: |&nk_context, &nk_user_font| -> none = "nk_style_set_font"
 ext nk_font_atlas_add_from_file: |&nk_font_atlas, &char, float, Maybe[&nk_font_config]| -> &nk_font = "nk_font_atlas_add_from_file"
 
+ext nk_check_label: |&nk_context, &char, int| -> int = "nk_check_label"
 //ext nk_propertyd: |&nk_context, &char, f64, float, float, float, float| -> float = "nk_propertyd"
 ext nk_propertyf: |&nk_context, &char, float, float, float, float, float| -> float = "nk_propertyf"
 ext nk_propertyi: |&nk_context, &char, int, int, int, int, float| -> int = "nk_propertyi"
 //ext nk_group_begin_titled: |&nk_context, &char, &char, uint| -> bool = "nk_group_begin_titled"
-ext nk_group_begin: |&nk_context, &char, uint| -> bool = "nk_group_begin"
+ext nk_group_begin: |&nk_context, &char, uint| -> int = "nk_group_begin"
 
 ext nk_group_end: |&nk_context| -> none = "nk_group_end"
+
+ext nk_window_is_closed: |&nk_context, &char| -> int = "nk_window_is_closed"
+ext nk_window_closed: int = "NK_WINDOW_CLOSED"
 
 ext nk_begin: |&nk_context, &char, nk_rect, uint| -> bool = "nk_begin"
 ext nk_label: |&nk_context, &char, uint| -> none = "nk_label"
 ext nk_selectable_label: |&nk_context, &char, uint, &int| -> bool = "nk_selectable_label"
 ext nk_make_rect: |float, float, float, float| -> nk_rect = "nk_rect"
 ext nk_end: |&nk_context| -> none = "nk_end"
+
+ext nk_selectable_image_label: |&nk_context, nk_image, &char, uint, &int| -> bool = "nk_selectable_image_label"
 
 ext nk_text_left: uint = "NK_TEXT_LEFT"
 
@@ -74,3 +82,6 @@ ext nk_dynamic: uint = "NK_DYNAMIC"
 ext nk_edit_simple: uint = "NK_EDIT_SIMPLE"
 
 ext nk_edit_string_zero_terminated: |&nk_context, uint, &char, int, Maybe[&none]| -> none = "nk_edit_string_zero_terminated"
+
+ext nk_image_id: |int| -> nk_image = "nk_image_id"
+ext _nk_image: |&nk_context, nk_image| -> none = "nk_image"

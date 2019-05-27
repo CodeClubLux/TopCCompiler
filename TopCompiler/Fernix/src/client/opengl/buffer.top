@@ -48,13 +48,12 @@ def make_vertex_buffer[T](vertices: []T, indices: []uint, vertexAttribs: []Verte
 
     opengl.bindVertexArray 0
 
-    log "created {vao}"
-
     VertexBuffer{ vao, indices.length }
 
 def VertexBuffer.bind(self) =
     opengl.bindVertexArray self.vao
 
+/*
 type FrameBuffer =
     fbo: uint
     rbo: uint
@@ -75,3 +74,4 @@ def make_frame_buffer(width: uint, height: uint) =
 
 def FrameBuffer.bind(&self) =
     opengl.bindFramebuffer opengl.framebuffer, self.fbo
+*/

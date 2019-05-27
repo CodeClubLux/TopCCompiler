@@ -19,6 +19,10 @@ from "transform" import all
 import "physics"
 import "fpsController"
 import "bowWeapon"
+import "modelSettings"
+
+modelSettings.make_default_prefabs!
+modelSettings.make_default_terrain_prefabs!
 
 // /*
 wet_street_params := substance_params "wet_street", "Pebble_Wet_street"
@@ -86,8 +90,8 @@ make_floor!
 make_cube!
 // */
 
-fps_controller := fpsController.make_FPSController camera.cameras.id_of context.camera //in game
-_ := bowWeapon.make_Bow camera.cameras.id_of context.camera
+//fps_controller := fpsController.make_FPSController camera.cameras.id_of context.camera //in game
+//_ := bowWeapon.make_Bow camera.cameras.id_of context.camera
 
 //editor.editor.select cube_entity.id
 
@@ -113,7 +117,7 @@ log m.materials
 log "==================================================================="
 */
 
-//model.load_in_place model.load_model "bow.fbx"
+model.load_in_place model.load_model "plane.fbx"
 
 skybox := ibl.make_Skybox ecs.make_ID!, "LA_Downtown_Helipad_GoldenHour_3k.hdr"
 

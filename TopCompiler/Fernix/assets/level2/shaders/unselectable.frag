@@ -1,5 +1,3 @@
-#version 440 core
-
 out int FragColor;
 
 

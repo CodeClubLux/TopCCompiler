@@ -298,6 +298,7 @@ Parser.exprToken["."] = index
 Parser.exprType["dotS"] = lambda parser, token: index(parser, unary=True)
 
 def offsetsToList(offsets):
+    #print(offsets)
     array = [0] * len(offsets)
     for key in offsets:
         array[offsets[key]] = key

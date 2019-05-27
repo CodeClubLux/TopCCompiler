@@ -1,0 +1,18 @@
+import "net"
+
+type Server =
+    conn: &net.Conn
+
+def start_game() Server =
+    ip := "2001:7e8:c949:b800:99ce:aa62:bbcc:2523"
+    port := "8080"
+
+    guard Some conn := net.make_Conn net.Server, ip, port
+    else panic "Server could not connect to port"
+
+    Server{
+        conn = conn
+    }
+
+def Server.close(&self) =
+    self.conn.close!

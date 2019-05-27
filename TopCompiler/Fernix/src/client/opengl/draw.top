@@ -30,7 +30,7 @@ draw_over := default_state{
     order = draw_last
 }
 
-from "math" import Vec4
+from "math" import (Vec4, Mat4x4)
 import "buffer"
 import "ecs"
 import "shader"
@@ -39,6 +39,7 @@ import "runner"
 import "opengl"
 from "materialSystem" import Material
 import "transform"
+from "culling" import all
 
 type DrawCommand =
     id: ecs.ID
@@ -46,7 +47,8 @@ type DrawCommand =
     buffer: &buffer.VertexBuffer
 
     material: &Material
-    transform: Maybe[&transform.Transform]
+    transform_m: []Mat4x4
+    aabb: []Maybe[AABB]
 
 def DrawCommand.toString(&self) string =
     "DrawCommand"
@@ -55,11 +57,13 @@ def DrawCommand.calc_sort_key(&self) = //pack all state into 64 bit key
     self.key = (self.material.state.order * 68719476736) + (self.material.state.depth_func.tag * 4294967298) + (self.material.state.cull.tag * 4294967296) + (self.buffer.vao * 65536) + (self.material.shader)
 
 type CommandBuffer =
+    current_texture_index: uint
     commands: [..]DrawCommand
 
 def make_CommandBuffer() &CommandBuffer =
     box CommandBuffer{
         commands = [..]DrawCommand
+        current_texture_index = 0
     }
 
 #addToContext command_buffer := make_CommandBuffer!
@@ -67,12 +71,26 @@ def make_CommandBuffer() &CommandBuffer =
 def clear() =
     command_buffer := context.command_buffer
     command_buffer.commands = [..]DrawCommand
+    command_buffer.commands.reserve 500
 
-def make_DrawCommand(id: ecs.ID, trans: Maybe[&transform.Transform], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
+def make_DrawCommand(id: ecs.ID, trans: &Mat4x4, aabb: &Maybe[AABB], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
     cmd := DrawCommand{
         id = id
-        transform = trans
+        transform_m = box [*trans]
         buffer = buff
+        aabb = box [*aabb]
+        material = material
+        key = 0
+    }
+    cmd.calc_sort_key!
+    cmd
+
+def make_DrawMultiCommand(id: ecs.ID, trans: []Mat4x4, aabb: []Maybe[AABB], buff: &buffer.VertexBuffer, material: &Material) DrawCommand =
+    cmd := DrawCommand{
+        id = id
+        transform_m = trans
+        buffer = buff
+        aabb = aabb
         material = material
         key = 0
     }
@@ -83,42 +101,29 @@ def DrawCommand.submit(&draw_command) =
     cmd_buffer := &context.command_buffer.commands
     cmd_buffer.append *draw_command
 
+ext _ = "#include <stdlib.h>"
+ext c_qsort: |&none, SizeT, SizeT, |&none, &none| -> none| -> none = "qsort"
+
+def c_qsort_cmp(cmd1: &DrawCommand, cmd2: &DrawCommand) int =
+    if cmd1.key > cmd2.key then 1
+    elif cmd1.key == cmd2.key then 0
+    else -1
+
 def quick_sort(cmds: []DrawCommand) []DrawCommand =
-    less := [..]DrawCommand
-    equal := [..]DrawCommand
-    greater := [..]DrawCommand
+    c_qsort cmds.data, cmds.length, sizeof DrawCommand, c_qsort_cmp cast |&none, &none| -> none
+    cmds
 
-    if cmds.length > 1 then
-        pivot := cmds[0].key
-        for x := cmds do
-            if x.key < pivot then
-                less.append x
-            if x.key == pivot then
-                equal.append x
-            if x.key > pivot then
-                greater.append x
-
-        new_less := quick_sort less
-        new_greater := quick_sort greater
-
-        //less + equal +
-        sorted_cmds := [..]DrawCommand
-        for x := new_less do
-            sorted_cmds.append x
-        for x := equal do
-            sorted_cmds.append x
-        for x := new_greater do
-            sorted_cmds.append x
-
-        sorted_cmds
-    else
-        cmds
+def next_texture_index() uint =
+    context.command_buffer.current_texture_index += 1
+    context.command_buffer.current_texture_index - 1
 
 def set_params(self: &Material) =
     params := &self.params
 
     guard Some s := shader.shaders.by_id self.shader
     else return
+
+    previous_num_tex_index := context.command_buffer.current_texture_index
 
     for i := 0..params.length do
         match params[i] with
@@ -135,15 +140,22 @@ def set_params(self: &Material) =
                 guard Some tex := texture.textures.by_id tex_id
                 else continue
 
-                tex.bind_to i+3
-                s.set_int field.id, i + 3
+                index := next_texture_index!
+                tex.bind_to index
+                s.set_int field.id, index
 
             Param_Int field, value ->
                 s.set_int field.id, value
 
+            Param_Float field, value ->
+                s.set_float field.id, value
+
             Param_Cubemap field, tex ->
-                tex.bind_to i+3
-                s.set_int field.id, i+3
+                index := next_texture_index!
+                tex.bind_to index
+                s.set_int field.id, index
+
+    context.command_buffer.current_texture_index = previous_num_tex_index
 
 def update_mat(self: &Material) =
     params := &self.params
@@ -153,19 +165,37 @@ def update_mat(self: &Material) =
 
     for i := 0..params.length do
         params[i] = match params[i] with
-            Param_Vec3 field, vector -> materialSystem.Param_Vec3 (s.location field.name), vector
-            Param_Vec2 field, vector -> materialSystem.Param_Vec2 (s.location field.name), vector
-            Param_Mat4x4 field, matrix -> materialSystem.Param_Mat4x4 (s.location field.name), matrix
-            Param_Image field, tex_id -> materialSystem.Param_Image (s.location field.name), tex_id
-            Param_Int field, value -> materialSystem.Param_Int (s.location field.name), value
-            Param_Cubemap field, tex -> materialSystem.Param_Cubemap (s.location field.name), tex
+            Param_Vec3 field, vector ->
+                materialSystem.Param_Vec3 (s.location field.name), vector
+            Param_Vec2 field, vector ->
+                materialSystem.Param_Vec2 (s.location field.name), vector
+            Param_Mat4x4 field, matrix ->
+                materialSystem.Param_Mat4x4 (s.location field.name), matrix
+            Param_Image field, tex_id ->
+                materialSystem.Param_Image (s.location field.name), tex_id
+            Param_Int field, value ->
+                materialSystem.Param_Int (s.location field.name), value
+            Param_Float field, value ->
+                materialSystem.Param_Float (s.location field.name), value
+            Param_Cubemap field, tex ->
+                materialSystem.Param_Cubemap (s.location field.name), tex
 
-
-def switch_shader(shad_id: ecs.ID) =
+def switch_shader(shad_id: ecs.ID, instanced: bool) =
     guard Some shad := shader.shaders.by_id shad_id
-    else return
+    else
+        log "could not find switched version"
+        return
+
+    if instanced then
+        guard Some instanced_shad := shad.instanced_version
+        else
+            log "could not find instanced version"
+            return
+
+        shad = instanced_shad
 
     shad.bind!
+    context.command_buffer.current_texture_index = 0
     runner.set_shader_scene_params shad
 
 def DepthFunc.bind(self) =
@@ -183,18 +213,106 @@ def Cull.bind(self) =
             opengl.enable opengl.cull_face
             opengl.cullFace opengl.front
 
+first := true
+
+def set_first() =
+    first = false
+
+ext memcmp: |&none, &none, SizeT| -> uint = "memcmp"
+
+def mat_eq(mat1: &materialSystem.Material, mat2: &materialSystem.Material) bool =
+    //(mat1 cast u64) == (mat2 cast u64)
+    (memcmp mat1, mat2, sizeof materialSystem.Material) == 0
+
+def can_instance(cmds: []DrawCommand, i: uint) uint =
+    count := 1
+    while true do
+        if i + 1 < cmds.length then
+            last_cmd := &cmds[i]
+            cmd := &cmds[i + 1]
+
+            mat := cmd.material
+            last_mat := last_cmd.material
+
+            if count == 0 then
+                guard Some s := shader.shaders.by_id last_cmd.material.shader
+                else
+                    log "did not instanced version ============================================================"
+                    break
+
+                guard Some instanced_version := s.instanced_version
+                else
+                    log s.v_filename
+                    log s.f_filename
+                    log "did not instanced version ============================================================"
+                    break
+
+            same_material := true // mat_eq cmd.material, last_cmd.material //(memcmp &cmd.material, &last_cmd.material, sizeof materialSystem.Material) == 0
+            if last_cmd.material.shader == cmd.material.shader and last_cmd.buffer.vao == cmd.buffer.vao and last_mat.state.depth_func.tag == mat.state.depth_func.tag and last_mat.state.cull.tag == mat.state.cull.tag and mat.state.clear_depth_buffer == last_mat.state.clear_depth_buffer and same_material then
+                count += 1
+            else
+                break
+
+        else break
+        i += 1
+
+    count
+
+def instanced_shader(cmd: &DrawCommand) bool =
+    guard Some s := shader.shaders.by_id cmd.material.shader
+    else return false
+
+    guard Some instanced_version := s.instanced_version
+    else return false
+
+    true
+
+size_hash_map := 20
+instanced_buffers := [size_hash_map: [..](u64, uint)]
+
+def get_instance_buffer(looking_for: u64) Maybe[uint] =
+    for (key, buff) := instanced_buffers[(looking_for % size_hash_map) cast uint] do
+        if key == looking_for then
+            return Some buff
+
+    None
+
+def set_instance_buffer(key: u64, buff: uint) =
+    index := (key % size_hash_map) cast uint
+
+    for (set_key, set_buff) := instanced_buffers[index] do
+        if set_key == key then
+            instanced_buffers[index][i] = (key, buff)
+            return
+
+    instanced_buffers[index].allocator = Some context.longterm_storage
+    instanced_buffers[index].append (key, buff)
+
 def submit_to_gpu() =
-    not_sorted_cmds := context.command_buffer.commands
+    not_sorted_cmds := purge context.command_buffer.commands
     cmds := quick_sort not_sorted_cmds
     bind_count := 0
 
     hotreload := runner.in_editor!
 
-    for cmd := cmds do
+    if first then
+        hotreload = true
+
+    hotreload = true
+
+    i := 0
+
+    last_was_instanced := false
+
+    while i < cmds.length do
+        cmd := &cmds[i]
         mat := cmd.material
 
+        num_instanceable := cmd.transform_m.length
+        instanced := cmd.transform_m.length > 1 and instanced_shader cmd
+
         if i == 0 then
-            switch_shader mat.shader
+            switch_shader mat.shader, instanced
             cmd.buffer.bind!
             mat.state.depth_func.bind!
             mat.state.cull.bind!
@@ -209,8 +327,9 @@ def submit_to_gpu() =
             last_cmd := cmds[i - 1]
             last_mat := last_cmd.material
 
-            if last_cmd.material.shader != cmd.material.shader then
-                switch_shader mat.shader
+            if last_cmd.material.shader != cmd.material.shader or last_was_instanced != instanced then
+                switch_shader mat.shader, instanced
+
             if last_cmd.buffer.vao != cmd.buffer.vao then
                 cmd.buffer.bind!
             if last_mat.state.depth_func.tag != mat.state.depth_func.tag then
@@ -221,18 +340,65 @@ def submit_to_gpu() =
             if mat.state.clear_depth_buffer and not last_mat.state.clear_depth_buffer then
                 opengl.clear opengl.depth_buffer_bit
 
-            if mat cast u64 != last_mat cast u64 then
+            if (not mat_eq mat, last_mat) or last_was_instanced != instanced then
                 if hotreload then
                     update_mat mat
                 set_params mat
 
-        match cmd.transform with
-            Some trans ->
-                transformation_matrix := trans.compute_model_matrix!
-                guard Some s := shader.shaders.by_id mat.shader
-                else continue
+        if instanced then //instanced path
+            vao := cmd.buffer.vao
 
-                s.set_mat4x4 s.model, &transformation_matrix
-            None ->
+            instance_buffer := match get_instance_buffer cmd.key with //@todo one buffer for all will work
+                Some x -> x
+                None ->
+                    log "creating new buffer"
+                    buff: uint = _
+                    opengl.genBuffers 1, &buff
 
-        opengl.drawElements opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0
+                    cmd.buffer.bind!
+
+                    max_instanced := 1000
+
+                    opengl.bindBuffer opengl.array_buffer, buff
+                    opengl.bufferData opengl.array_buffer, max_instanced * sizeof math.Mat4x4, 0 cast &none, opengl.dynamic_draw
+
+                    // set attribute pointers for matrix (4 times vec4)
+                    for attrib := 0..4 do
+                        opengl.enableVertexAttribArray 5 + attrib
+                        opengl.vertexAttribPointer 5 + attrib, 4, opengl.type_float, false, (sizeof math.Mat4x4), (attrib * 4 * sizeof float) cast &none
+
+                    for attrib := 0..4 do
+                        opengl.vertexAttribDivisor 5 + attrib, 1
+
+                    set_instance_buffer cmd.key, buff
+
+                    buff
+
+            transforms := [..]math.Mat4x4
+            transforms.reserve num_instanceable
+
+            for c := 0..cmd.transform_m.length do
+                m := cmd.transform_m[c]
+                m = (&m).transpose!
+
+                transforms.append m
+
+            log "instanced: {transforms.length}"
+
+            opengl.bindBuffer opengl.array_buffer, instance_buffer
+            opengl.bufferSubData opengl.array_buffer, 0, transforms.length * sizeof math.Mat4x4, transforms.data cast &none
+
+            opengl.drawElementsInstanced opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0, num_instanceable
+
+        else
+            //match cmd.transform with
+            //    Some trans ->
+            //       transformation_matrix := trans.compute_model_matrix!
+            guard Some s := shader.shaders.by_id mat.shader
+            else continue
+
+            s.set_mat4x4 s.model, &cmd.transform_m[0]
+            opengl.drawElements opengl.triangles, cmd.buffer.length, opengl.unsigned_int, 0
+
+        last_was_instanced = instanced
+        i += 1

@@ -1,0 +1,214 @@
+import "ecs"
+import "model"
+from "layermask" import all
+from "materialSystem" import all
+from "math" import all
+import "culling"
+from "transform" import all
+import "draw"
+import "shader"
+import "editor"
+import "primitives"
+import "texture"
+import "input"
+import "key"
+from "opengl" import all
+
+type TerrainControlPoint =
+
+type Terrain =
+    width: uint
+    height: uint
+    size_of_block: uint
+    show_control_points: bool
+    heightmap: Maybe[ecs.ID]
+    heightmap_points: [..]float
+
+def init_terrain(self: &Terrain) =
+    self.heightmap = None
+
+control_points := ecs.make_Store 100, TerrainControlPoint{}
+
+terrain_heightmap_longterm := [..]float
+terrain_heightmap_longterm.allocator = Some context.longterm_storage
+
+terrains := ecs.make_Store_with_init 3, Terrain{
+    width = 6
+    height = 6
+    size_of_block = 10
+    show_control_points = false
+    heightmap = None
+    heightmap_points = terrain_heightmap_longterm
+}, Some init_terrain
+
+subdivided_plane := model.load_model "subdivided_plane32.fbx"
+model.load_in_place subdivided_plane
+
+subdivided_plane.meshes[0].aabb.max.y = 1
+
+flat_shader := shader.make "shaders/gizmo.vert", "shaders/gizmo.frag"
+terrain_shader := shader.make "shaders/terrain.vert", "shaders/terrain.frag"
+
+control_point_material := [materialSystem.Material{
+    name = "DefaultMaterial"
+    shader = flat_shader.get_id!
+    state = &draw.draw_over
+    params = box [
+        materialSystem.Param_Vec3 (flat_shader.location "color"), Vec3{1,1,0}
+    ]
+}]
+
+type TerrainSystem =
+def TerrainSystem.update(&system, m: Layermask) =
+    for (self, self_trans) := ecs.filter2 terrains, transforms, make_Layermask!.enable game_layer do //todo add editor layermask
+        width_quads := 32 * self.width //number of quads horizontally
+        height_quads := 32 * self.height //number of quads vertically
+
+        heightmap_tex := match self.heightmap with
+            Some id -> (texture.textures.by_id id).expect "texture to heightmap is somehow gone"
+            None ->
+                id := ecs.make_ID!
+                self.heightmap = Some id
+
+                e := ecs.make_Entity id
+                e.layermask = e.layermask.disable layermask.serialize_layer
+
+                tex := texture.textures.make id
+                tex.filename = "Heightmap"
+
+                texture_id : uint = _
+
+                genTextures 1, &texture_id
+                bindTexture opengl.texture_2D, texture_id
+
+                texParameteri texture_2D, texture_wrap_s, clamp_to_edge
+                texParameteri texture_2D, texture_wrap_t, clamp_to_edge
+                texParameteri texture_2D, texture_min_filter, linear_mipmap_linear
+                texParameteri texture_2D, texture_mag_filter, linear
+                texParameterf texture_2D, texture_max_anisotropy_ext, 16
+
+                log "loading terrain"
+                log self.heightmap_points.length
+
+                if self.heightmap_points.length == 0 then
+                    texImage2D texture_2D, 0, red, width_quads, height_quads, 0, red, type_float, None
+                else
+                    log "setting texture"
+                    texImage2D texture_2D, 0, red, width_quads, height_quads, 0, red, type_float, Some self.heightmap_points.data cast &Byte
+                    generateMipmap texture_2D
+
+                bindTexture opengl.texture_2D, 0
+
+                log "terrain heightmap: {texture_id}"
+
+                tex.texture_id = texture_id
+                tex
+
+        if not editor.in_editor! then return
+        if not input.key_pressed key.from_char `B` then continue
+        if not self.show_control_points then continue
+
+        log "rebuilding control points"
+        control_points_filtered := ecs.filter2 control_points, transforms, make_Layermask!.enable game_layer
+
+        heightmap := &self.heightmap_points
+        heightmap.clear!
+
+        heightmap.reserve width_quads * height_quads
+
+        size_per_quad := self.size_of_block / 32
+
+        radius := 50
+
+        for h := 0..height_quads do
+            for w := 0..width_quads do
+                heightmap.append 0
+
+                for (control_point, control_point_trans) := control_points_filtered do
+                    pos := Vec2{w, (height_quads - h) + self.size_of_block}
+                    p := Vec2{control_point_trans.position.x - self_trans.position.x, control_point_trans.position.z - self_trans.position.z}
+                    p = p.scale 1.0 / size_per_quad
+
+                    log "({p.x cast int}, {p.y cast int})"
+
+                    dist := (p - pos).len!
+                    weight := math.max (1.0 / (dist * dist) - 1.0 / (radius * radius)), 0.0
+
+                    heightmap[heightmap.length - 1] += weight * (control_point_trans.position.y - (self_trans.position.y + heightmap[heightmap.length - 1]))
+
+                    if dist < 10 then
+                        log "========"
+                        log "filtered: {control_points_filtered.length}, size per quad: {size_per_quad}"
+                        log "weight: {weight}"
+                        log "distance: {dist}"
+                        log "height from zero: {control_point_trans.position.y - self_trans.position.y}"
+                        log "height {control_point_trans.position.y - (self_trans.position.y + heightmap[heightmap.length - 1])}"
+                        log "interpolated height {heightmap[heightmap.length - 1]}"
+
+        bindTexture texture_2D, heightmap_tex.texture_id
+        texImage2D texture_2D, 0, red, width_quads, height_quads, 0, red, type_float, Some heightmap.data cast &Byte
+        generateMipmap texture_2D
+
+def TerrainSystem.render(&system, m: Layermask) =
+    for (self, self_trans) := ecs.filter2 terrains, transforms, any_layer do
+        /*cmd := model.MultiMeshDrawCommand{ todo instancing
+            id = terrains.id_of self
+            mesh = &subdivided_plane.meshes[0]
+            material = &materialSystem.default_material
+            trans = [..]Mat4x4
+            aabbs = [..]Maybe[culling.AABB]
+        }
+        */
+
+        guard Some displacement_tex := self.heightmap
+        else continue
+
+        guard Some tex := texture.textures.by_id displacement_tex
+        else continue
+
+
+        for w := 0..self.width do
+            for h := 0..self.height do
+
+                t := Transform{
+                    position = self_trans.position + Vec3{w * self.size_of_block,0, h * self.size_of_block}
+                    scale = Vec3{self.size_of_block, self.size_of_block, self.size_of_block}
+                    rotation = identity_quat!
+                }
+
+                mat := box [
+                    Material{
+                        name = "DefaultMaterial"
+                        shader = terrain_shader.get_id!
+                        state = &draw.default_state
+                        params = box [
+                            Param_Image (terrain_shader.location "material.diffuse"), texture.textures.id_of texture.load "wood/Stylized_Wood_basecolor.jpg"
+                            Param_Image (terrain_shader.location "material.metallic"), texture.textures.id_of texture.load "wood/Stylized_Wood_metallic.jpg"
+                            Param_Image (terrain_shader.location "material.roughness"), texture.textures.id_of texture.load "wood/Stylized_Wood_roughness.jpg"
+                            Param_Image (terrain_shader.location "material.normal"), texture.textures.id_of texture.load "wood/Stylized_Wood_normal.jpg"
+                            Param_Vec2 (terrain_shader.location "transformUVs"), math.Vec2{ 100, 100 }
+
+                            Param_Image (terrain_shader.location "displacement"), displacement_tex
+                            Param_Vec2 (terrain_shader.location "displacement_offset"), math.Vec2{1.0 / self.width * w, 1.0 / self.height * h}
+                            Param_Vec2 (terrain_shader.location "displacement_scale"), math.Vec2{1.0 / self.width, 1.0 / self.height}
+                        ]
+                    }
+                ]
+
+                subdivided_plane.render_model_for (terrains.id_of self), &t, mat
+
+        //cmd.submit!
+
+        if Some selected := editor.get_editor!.selected then
+            if not (control_points.by_id selected).is_none! then
+                self.show_control_points = true
+
+        if self.show_control_points then
+            for (control_point, trans) := ecs.filter2 control_points, transforms, m do
+                primitives.cube.render_model_for (control_points.id_of control_point), trans, &control_point_material
+
+        break //only supports one terrain
+
+
+terrain_system := TerrainSystem{}
+ecs.register_system &terrain_system

@@ -8,6 +8,7 @@ ext asin: |float| -> float = "asinf"
 ext ceil: |float| -> float = "ceilf"
 ext copysign: |float, float| -> float = "copysignf"
 ext acos: |float| -> float = "acosf"
+ext floor: |float| -> float = "floorf"
 
 let pi = 3.14159265
 
@@ -48,3 +49,10 @@ def string_to_int(s: string) Maybe[int] =
         total += val * 10 ^ (s.length - i - 1)
 
     Some total
+
+ext _ = "#include <float.h>"
+ext flt_max: float = "FLT_MAX"
+ext flt_min: float = "FLT_MIN"
+
+ext fmod: |float, float| -> float = "fmod"
+ext round: |float| -> float = "roundf"

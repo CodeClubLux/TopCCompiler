@@ -1,0 +1,11 @@
+import "ecs"
+
+type Player =
+    health: float
+    team: uint
+
+players := ecs.make_Store 12, Player{
+    health = 200
+    team = 0
+}
+

@@ -1,0 +1,451 @@
+import "draw"
+import "window"
+import "math"
+import "layermask"
+import "editor"
+import "ecs"
+import "runner"
+import "model"
+from "materialSystem" import all
+import "shader"
+from "device" import all
+from "math" import all
+from "renderPass" import all
+from "opengl" import all
+import "camera"
+import "lights"
+import "transform"
+import "texture"
+import "primitives"
+from "volumetric" import all
+from "frameBuffer" import all
+
+//code from http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
+type ShadowPass =
+    depthPrepass: texture.Texture
+    deffered_map_cascade: DepthMap
+    shadow_mask: ShadowMask
+    ping_pong_shadow_mask: ShadowMask
+    volumetric: VolumetricPass
+    //depth_map_cascades: [4]DepthMap
+
+def ShadowPass.set_shader_params(&self, s: &shader.Shader) =
+def ShadowPass.set_shadow_params(&self, s: &shader.Shader) =
+    self.shadow_mask.set_shadow_params s
+
+type DepthMap =
+    depthMap: uint
+    depthMapFBO: uint
+    width: uint
+    height: uint
+    cam: &camera.Camera
+
+def DepthMap.set_shader_params(&self, s: &shader.Shader) =
+
+depth_shader := (shader.make "shaders/pbr.vert", "shaders/depth.frag").get_id!
+shadow_mask_shader := shader.make "shaders/screenspace.vert", "shaders/shadowMask.frag"
+blur_shader := shader.make "shaders/screenspace.vert", "shaders/blur.frag"
+
+type ShadowMask =
+    shadowMaskMap: uint
+    shadowMaskMapFBO: uint
+
+def ShadowMask.set_shadow_params(&self, s: &shader.Shader) =
+    tex := texture.Texture{"",self.shadowMaskMap}
+
+    bind_to := draw.next_texture_index!
+    tex.bind_to bind_to
+    s.set_int s.shadowMaskMap, bind_to
+
+def make_ShadowMask() ShadowMask =
+    width := window.get_window!.width
+    height := window.get_window!.height
+
+    log "shadow mask: {width}, {height}"
+
+    tex: texture.Texture = _
+    color_attachment := make_Attachment &tex
+    color_attachment.mag_filter = Linear
+    color_attachment.min_filter = Linear
+    color_attachment.wrap_s = Repeat
+    color_attachment.wrap_t = Repeat
+
+    color_attachments := [color_attachment]
+
+    settings := FramebufferSettings{
+        width = width
+        height = height
+        color_attachments = &color_attachments
+        depth_attachment = None
+        depth_buffer = DepthComponent24
+        multi = 0
+    }
+
+    frame := make_Framebuffer &settings
+
+    ShadowMask{ tex.texture_id, frame.fbo }
+
+def make_DepthMap(width: uint, height: uint) DepthMap =
+    depthMap : texture.Texture = _
+    attachment := make_Attachment &depthMap
+
+    settings := FramebufferSettings{
+        width = width
+        height = height
+        color_attachments = []
+        depth_attachment = Some attachment
+        depth_buffer = DepthComponent24
+        multi = 0
+    }
+
+    frame := make_Framebuffer &settings
+
+    id := ecs.make_ID!
+
+    e := ecs.make_Entity id
+    e.layermask = layermask.make_Layermask!
+    e.enabled = false
+
+    _ := transform.transforms.make id
+
+    DepthMap{ depthMap.texture_id, frame.fbo, width, height, camera.cameras.make id }
+
+def make_ShadowPass(depthPrepass: texture.Texture) ShadowPass =
+    w := window.get_window!
+
+    /*depth_maps : [4]DepthMap = _
+    for i := 0..depth_maps.length do
+        depth_maps[i] = make_DepthMap 4096, 4096
+    */
+
+    ShadowPass{
+        depthPrepass = depthPrepass
+        deffered_map_cascade = make_DepthMap w.shadow_resolution, w.shadow_resolution
+        shadow_mask = make_ShadowMask!
+        ping_pong_shadow_mask = make_ShadowMask!
+        volumetric = make_VolumetricPass depthPrepass
+    }
+
+type OrthoProjInfo =
+    endClipSpace: float
+    toLight: Mat4x4
+    toWorld: Mat4x4
+    r: float
+    l: float
+    b: float
+    t: float
+    f: float
+    n: float
+    snap_matrix: Mat4x4
+
+def calc_ortho_proj(cam: &camera.Camera, light_m: &Mat4x4, width: float, height: float) [4]OrthoProjInfo=
+    w := window.get_window!
+
+    cam_m := cam.view_matrix
+    cam_inv_m := math.invert cam_m
+    proj_m := cam.projection_matrix
+
+    m_cascadeEnd := [
+        cam.near_plane
+        20
+        90
+        150
+        cam.far_plane
+    ]
+
+    m_shadowOrthoProjInfo : [4]OrthoProjInfo = _
+
+    for i := 0..4 do
+        proj := math.perspective
+            radians cam.fov
+            w.width / w.height
+            m_cascadeEnd[i]
+            m_cascadeEnd[i + 1]
+
+        frust_to_world := (invert proj * cam.view_matrix)
+
+        farFrustumCorners := [
+            Vec4{1,1,1,1}
+            Vec4{-1,1,1,1}
+            Vec4{1,-1,1,1}
+            Vec4{-1,-1,1,1}
+            Vec4{0,0,1,1} //centroid
+        ]
+
+        for j := 0..5 do
+            vW := (&frust_to_world).mul_vec4 farFrustumCorners[j]
+            vW = vW.scale 1/vW.w
+
+            farFrustumCorners[j] = light_m.mul_vec4 vW
+
+        radius : float = 0
+
+        for j := 0..4 do
+            a := Vec3{farFrustumCorners[j].x, farFrustumCorners[j].y, farFrustumCorners[j].z}
+            b := Vec3{farFrustumCorners[4].x, farFrustumCorners[4].y, farFrustumCorners[4].z}
+            radius = math.max radius, (a - b).len!
+
+        radius = math.ceil radius
+
+        texel_size := 1.0 / width
+
+        centroid := farFrustumCorners[4]
+
+        minX := centroid.x - radius//math.flt_max
+        maxX := centroid.x + radius //-math.flt_max
+        minY := centroid.y - radius//math.flt_max
+        maxY := centroid.y + radius //-math.flt_max
+        minZ := 1.0 // centroid.z - radius//math.flt_max
+        maxZ := 200.0 //centroid.z + radius //-math.flt_max
+
+        diagonal_length := radius * 2.0
+
+        worldsUnitsPerTexel := diagonal_length / width
+
+        minX /= worldsUnitsPerTexel
+        minY /= worldsUnitsPerTexel
+        minZ /= worldsUnitsPerTexel
+
+        minX = math.floor minX
+        minY = math.floor minY
+        minZ = math.floor minZ
+
+        minX *= worldsUnitsPerTexel
+        minY *= worldsUnitsPerTexel
+        minZ *= worldsUnitsPerTexel
+
+        maxX /= worldsUnitsPerTexel
+        maxY /= worldsUnitsPerTexel
+        maxZ /= worldsUnitsPerTexel
+
+        maxX = math.floor maxX
+        maxY = math.floor maxY
+        maxZ = math.floor maxZ
+
+        maxX *= worldsUnitsPerTexel
+        maxY *= worldsUnitsPerTexel
+        maxZ *= worldsUnitsPerTexel
+
+        ptOriginShadow := Vec4{0,0,0,1}
+        light_projection_matrix := math.ortho minX, maxX, minY, maxY, 1, 200
+
+        light_pv := light_projection_matrix * (*light_m)
+        ptOriginShadow = (&light_pv).mul_vec4 ptOriginShadow
+
+        texCoordX := ptOriginShadow.x * 0.5 * width
+        texCoordY := ptOriginShadow.y * 0.5 * height
+
+        texCoordRoundedX := math.round texCoordX
+        texCoordRoundedY := math.round texCoordY
+
+        dx := texCoordRoundedX - texCoordX
+        dy := texCoordRoundedY - texCoordY
+
+        dx /= (0.5 * width)
+        dy /= (0.5 * height)
+
+        m_shadowOrthoProjInfo[i].l = minX
+        m_shadowOrthoProjInfo[i].r = maxX
+        m_shadowOrthoProjInfo[i].t = maxY
+        m_shadowOrthoProjInfo[i].b = minY
+        m_shadowOrthoProjInfo[i].n = minZ
+        m_shadowOrthoProjInfo[i].f = maxZ
+
+        endClipSpace := ((&cam.projection_matrix).mul_vec4 Vec4{0,0,-m_cascadeEnd[i + 1],1.0})
+        endClipSpace = endClipSpace.scale 1.0 / endClipSpace.w
+
+        //log m_cascadeEnd[i + 1]
+
+        m_shadowOrthoProjInfo[i].endClipSpace = endClipSpace.z
+
+        //log m_shadowOrthoProjInfo[i].endClipSpace
+
+        //m_shadowOrthoProjInfo[i].snap_matrix = math.translate Vec3{dx, dy, 0}
+
+        light_projection_matrix = math.ortho m_shadowOrthoProjInfo[i].l, m_shadowOrthoProjInfo[i].r, m_shadowOrthoProjInfo[i].b, m_shadowOrthoProjInfo[i].t, m_shadowOrthoProjInfo[i].n, m_shadowOrthoProjInfo[i].f
+
+        m_shadowOrthoProjInfo[i].toWorld = (invert cam.projection_matrix * cam.view_matrix)
+
+        tmp := (&m_shadowOrthoProjInfo[i].toWorld).mul_vec4 Vec4{0,0,0,1}
+        tmp = tmp.scale 1.0/tmp.w
+
+        m_shadowOrthoProjInfo[i].toLight = (light_projection_matrix * (*light_m))
+
+    m_shadowOrthoProjInfo
+
+terrain_shader := shader.make "shaders/terrain.vert", "shaders/depth.frag"
+
+def DepthMap.render(&self) =
+def DepthMap.render_maps(&self, projection_matrix: Mat4x4, view_matrix: Mat4x4) =
+    new_commands := [..]draw.DrawCommand
+    new_commands.reserve context.command_buffer.commands.length
+
+    for cmd := context.command_buffer.commands do //makes copy of command
+        guard Some shad := shader.shaders.by_id cmd.material.shader
+        else continue
+
+        if shad.v_filename == "shaders/skybox.vert" then continue
+
+        if shad.v_filename == "shaders/terrain.vert" then
+            cmd.material = box *cmd.material
+            cmd.material.shader = terrain_shader.get_id!
+        elif shad.f_filename == "shaders\\tree.frag" then
+        else
+            cmd.material = box Material{
+                name = "Shadow material"
+                shader = depth_shader
+                params = []
+                state = &draw.default_state
+            }
+
+        cmd.calc_sort_key!
+        new_commands.append cmd
+
+    new_context := *context
+    new_command_buffer := *new_context.command_buffer
+    new_command_buffer.commands = new_commands
+
+    new_context.command_buffer = &new_command_buffer
+
+    self.cam.projection_matrix = projection_matrix
+    self.cam.view_matrix = view_matrix
+
+    new_context.camera = self.cam
+
+    viewport 0, 0, self.width, self.height
+    bindFramebuffer framebuffer, self.depthMapFBO
+
+    enable depth_test
+
+    clearColor 0.0, 0.0, 0.0, 1.0
+    clear depth_buffer_bit
+
+    #pushContext new_context do
+        set_current_pass self
+        draw.submit_to_gpu!
+
+    bindFramebuffer framebuffer, 0
+
+def ShadowPass.render(&self) =
+    w := window.get_window!
+
+    dir_light := lights.get_dir_light!
+    dir_light_id := lights.dir_lights.id_of dir_light
+
+    guard Some dir_light_trans := transform.transforms.by_id dir_light_id
+    else return
+
+    view_matrix := (math.translate -dir_light_trans.position) * (math.rotate dir_light_trans.rotation)
+
+    width := self.deffered_map_cascade.width
+    height := self.deffered_map_cascade.height
+
+    info := calc_ortho_proj context.camera, &view_matrix, width, height
+
+    viewport 0, 0, w.width, w.height
+    bindFramebuffer framebuffer, self.shadow_mask.shadowMaskMapFBO
+    clearColor 0.0, 0.0, 0.0, 1.0
+    clear color_buffer_bit
+
+    last_clip_space := -1.0
+
+    shadow_map := texture.Texture{"", self.deffered_map_cascade.depthMap}
+
+    self.volumetric.clear!
+
+    m_cascadeEnd := [
+        context.camera.near_plane
+        20
+        90
+        150
+        context.camera.far_plane
+    ]
+
+    for i := 0..4 do
+        //render depth map
+        proj_info := &info[i]
+        projection_matrix :=  math.ortho proj_info.l, proj_info.r, proj_info.b, proj_info.t, proj_info.n, proj_info.f
+        self.deffered_map_cascade.render_maps projection_matrix, view_matrix
+
+        viewport 0, 0, w.width, w.height
+        bindFramebuffer framebuffer, self.shadow_mask.shadowMaskMapFBO
+
+        disable depth_test
+
+        shadow_mask_shader.bind!
+
+        //render shadow mask
+        self.depthPrepass.bind_to 0
+        shadow_mask_shader.set_int (shadow_mask_shader.uniform_location "depthPrepass"), 0
+
+        shadow_map.bind_to 1
+        shadow_mask_shader.set_int (shadow_mask_shader.uniform_location "depthMap"), 1
+
+        shadow_mask_shader.set_float (shadow_mask_shader.uniform_location "gCascadeEndClipSpace[0]"), last_clip_space
+        shadow_mask_shader.set_float (shadow_mask_shader.uniform_location "gCascadeEndClipSpace[1]"), info[i].endClipSpace
+        shadow_mask_shader.set_mat4x4 (shadow_mask_shader.uniform_location "toLight"), &info[i].toLight
+        shadow_mask_shader.set_mat4x4 (shadow_mask_shader.uniform_location "toWorld"), &info[i].toWorld
+
+        ident_matrix := math.identity_mat!
+        shadow_mask_shader.set_mat4x4 (shadow_mask_shader.uniform_location "model"), &ident_matrix
+
+        shadow_mask_shader.set_int (shadow_mask_shader.uniform_location "cascadeLevel"), i
+
+        in_range := Vec2{ last_clip_space, info[i].endClipSpace}
+
+        last_clip_space = info[i].endClipSpace
+
+        primitives.render_quad!
+
+        enable depth_test
+
+        bindFramebuffer framebuffer, 0
+
+        //compute volumetric scattering for cascade
+        self.volumetric.render_with_cascade &shadow_map, in_range, &info[i].toLight, &info[i].toWorld, i
+
+    //render blur
+    horizontal := true
+    first_iteration := true
+    
+    disable depth_test
+
+    amount := 4
+    for i := 0..amount do
+        viewport 0, 0, w.width, w.height
+        bindFramebuffer framebuffer,
+            if not horizontal then
+                self.shadow_mask.shadowMaskMapFBO
+            else
+                self.ping_pong_shadow_mask.shadowMaskMapFBO
+
+        blur_shader.bind!
+
+        bind_to :=
+            if first_iteration then
+                self.shadow_mask.shadowMaskMap
+            else
+                if horizontal then self.shadow_mask.shadowMaskMap
+                else self.ping_pong_shadow_mask.shadowMaskMap
+
+        tex := texture.Texture{"", bind_to}
+        tex.bind_to 0
+
+        blur_shader.set_int (blur_shader.uniform_location "image"), 0
+        blur_shader.set_int (blur_shader.uniform_location "horizontal"), horizontal cast int
+
+        m := math.identity_mat!
+        blur_shader.set_mat4x4 (blur_shader.uniform_location "model"), &m
+
+        primitives.render_quad!
+
+        horizontal = not horizontal
+
+        if first_iteration then
+            first_iteration = false
+
+    bindFramebuffer framebuffer, 0
+    enable depth_test
+
+
+

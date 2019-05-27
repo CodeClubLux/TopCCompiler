@@ -11,14 +11,7 @@ type Param either
     Param_Image(shader.Uniform, ecs.ID)
     Param_Cubemap(shader.Uniform, texture.Cubemap)
     Param_Int(shader.Uniform, int)
-
-/*
-def Param.toString(&self) string =
-    match *self with
-        Param_Vec3 name, v -> "{name}: Vec"
-        Param_Image name, tex -> "{name}: {tex.filename}"
-        _ -> ""
-*/
+    Param_Float(shader.Uniform, float)
 
 type Material =
     name: string
@@ -28,7 +21,7 @@ type Material =
 
 pbr_shader := shader.make "shaders/pbr.vert", "shaders/pbr.frag"
 
-all_materials := ecs.make_Store 20, Material{
+default_material := Material{
     "default"
     shader = pbr_shader.get_id!
     params = box substance_params "wood_2", "Stylized_Wood"

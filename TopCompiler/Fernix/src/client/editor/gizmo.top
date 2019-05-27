@@ -89,8 +89,8 @@ type Ray =
     t: float
 
 //constants
-let flt_min = 0.001
-let flt_max = 10000.0
+//let flt_min = 0.001
+//let flt_max = 10000.0
 
 type Closest_Point_Result =
     distance: float
@@ -199,13 +199,6 @@ def handle_gizmo_intersection(position: Vec3, axis: Axis, gizmo_scale: Vec3, vec
         translation_model_materials[0].params[0] = Param_Vec3 color_location, Vec3{1,0,0}
         translation_model_materials[1].params[0] = Param_Vec3 color_location, Vec3{0,1,0}
         translation_model_materials[2].params[0] = Param_Vec3 color_location, Vec3{0,0,1}
-
-        log "===="
-        log greatest_distance
-        log "================"
-        log i_right.distance
-        log i_up.distance
-        log i_forward.distance
 
         if d1 < d2 and d1 < d3 and d1 < greatest_distance then
             translation_model_materials[2].params[0] = Param_Vec3 color_location, Vec3{1,1,0}
@@ -349,7 +342,6 @@ def GizmoSystem.update(&system, m: layermask.Layermask) =
                 model_renderer.model_id = None
 
         if Some local := local_transforms.by_id target_id then
-            log "local calc global transform"
             local.calc_global_transform!
 
         model_renderer_entity.scale = s_multiplier.scale scale_of_gizmo (cam_transform.position - model_renderer_entity.position)

@@ -48,7 +48,8 @@ def Buffer.read_long(&buffer) u64 =
     ptr := (buffer.pointer_to_n_bytes 8) cast &u64
     u64_to_local *ptr
 
-let float_precision = 10000000
+let new_float_precision = 10000
+let float_precision = new_float_precision //10000000
 let double_precision = 100000000
 
 import "dict"
@@ -134,7 +135,7 @@ def Buffer.read_pointer(&buffer, pointer_type: &PointerType, ptr: &none) =
 
 def Buffer.write_float(&buffer, float_type: &FloatType, ptr: &none) =
     if float_type.size == 4 then
-        i := (*(ptr cast &float) * float_precision) cast i32
+        i := (*(ptr cast &float) * new_float_precision) cast i32
         buffer.write_integer *((&i) cast &u32)
     else
         i := (*(ptr cast &f64) * double_precision) cast i64

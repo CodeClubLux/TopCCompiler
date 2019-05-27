@@ -15,6 +15,10 @@ from "transform" import (transforms, local_transform_system)
 import "draw"
 import "renderPass"
 import "physics"
+import "shadow"
+
+def get_camera() &camera.Camera =
+    context.camera
 
 def set_shader_scene_params(_shader: &shader.Shader) =
     cam := context.camera //camera.get_camera!
@@ -29,8 +33,10 @@ def set_shader_scene_params(_shader: &shader.Shader) =
     _shader.set_vec3 _shader.dirLight_direction, &dir_light.direction
     _shader.set_vec3 _shader.dirLight_color, &dir_light.color
 
-    ibl.get_skybox!
-        .set_ibl_params_for _shader
+    _shader.set_float _shader.window_width, window.get_window!.width
+    _shader.set_float _shader.window_height, window.get_window!.height
+
+    context.current_pass.set_shader_params _shader
 
 import "ui"
 
@@ -59,6 +65,8 @@ def init() =
         //update all systems
         //@todo move these systems into the entity component system
 
+        time.update_delta_time!
+
         mask := game_mask!
         render_mask := layermask.make_Layermask!
             .enable mask
@@ -67,7 +75,6 @@ def init() =
         input.clear!
         input.update_inputs!
 
-        time.update_delta_time!
         ecs.update layermask.make_Layermask!.enable mask
 
         local_transform_system.update_transforms render_mask
@@ -78,6 +85,4 @@ def init() =
 
         //render scene
         renderPass.render_all!
-
-        //renderPass.render_all!
 

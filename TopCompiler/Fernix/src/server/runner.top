@@ -1,20 +1,19 @@
-import "window"
-import "shader"
 import "math"
-import "texture"
 import "ecs"
 import "camera"
-import "lights"
 import "input"
 import "time"
 import "layermask"
+import "server"
+import "task"
 
-def set_shader_scene_params(_shader: shader.Shader) =
+task.create_blocking_threads 1
 
 def init() =
     defer context.allocator.free_allocator!
 
-    ecs.serialize!
+    net_handle := server.start_game!
+    defer net_handle.close!
 
     while true do
         defer context.allocator.reset_to context.allocator.get_occupied!
@@ -28,3 +27,6 @@ def init() =
 
         time.update_delta_time!
         ecs.update layermask.make_Layermask!.enable mask
+
+def in_editor() bool =
+    false

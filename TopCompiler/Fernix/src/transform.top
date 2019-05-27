@@ -18,7 +18,7 @@ def Transform.compute_model_matrix(&self) Mat4x4 =
     scal := scale self.scale
     rotation := rotate self.rotation
 
-    trans * scal * rotation
+    trans * rotation * scal
 
 def make_Transform(id: ecs.ID) &Transform = transforms.make id
 

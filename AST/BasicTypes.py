@@ -69,7 +69,9 @@ class String(Node):
 
     def compileToC(self, codegen):
         stringified = self.toString()
-        length = len(stringified) - 2 - stringified.count(r"\\")
+        length = len(stringified) - 2 - stringified.count(r"\n") - stringified.count(r"\\")
+        #print(stringified.count(r"\n"))
+        #print(stringified)
         codegen.append(f"_global_StringInit({length},{stringified})")
 
     def validate(self, parser): pass

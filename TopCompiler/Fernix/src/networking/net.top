@@ -1,0 +1,44 @@
+ext _ = "#define SWRAP_IMPLEMENTATION"
+ext _ = "#include <swrap/swrap.h>"
+
+ext swrapInit: || -> none = "swrapInit"
+ext swrapSocket: |int, int, char, &char, &char| -> int = "swrapSocket"
+ext swrapUDP: int = "SWRAP_UDP"
+ext swrapBind: int = "SWRAP_BIND"
+ext swrapConnect: int = "SWRAP_CONNECT"
+ext swrapDefault: char = "SWRAP_DEFAULT"
+ext swrapClose: |int| -> none = "swrapClose"
+ext swrapTerminate: || -> none = "swrapTerminate"
+
+
+type Mode either
+    Server or Client
+
+type Conn =
+    mode: Mode
+    id: uint
+
+def Conn.run(&self) = //listens for new messages
+    while true do
+
+
+def make_Conn(mode: Mode, host: string, port: string) Maybe[&Conn] =
+    m := match mode with
+        Server -> swrapBind
+        Client -> swrapConnect
+
+    swrapInit!
+    result := swrapSocket swrapUDP, m, swrapDefault, host.to_c_string!, port.to_c_string!
+
+    if result == -1 then None
+    else
+        conn := box Conn{
+            mode = mode
+            id = result cast uint
+        }
+        //task.create task.LargeStack, conn
+        Some conn
+
+def Conn.close(&self) =
+    swrapClose self.id
+    swrapTerminate!

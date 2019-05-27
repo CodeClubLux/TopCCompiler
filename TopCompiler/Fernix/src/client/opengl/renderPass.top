@@ -12,25 +12,78 @@ from "materialSystem" import all
 import "shader"
 from "device" import all
 from "math" import Vec4
+import "shadow"
+import "ibl"
+import "texture"
+from "frameBuffer" import all
+import "precomputed"
 
 type Pass with
     def render()
+    def set_shader_params(&shader.Shader)
 
 type MainPass =
     device: Device
+    shadow_pass: shadow.ShadowPass
+    depth_prepass: shadow.DepthMap
+
+    multi_frame_map: texture.Texture
+    frame_map: texture.Texture
+
+    multi_current_frame: Framebuffer //multi sampled main frame, anti aliasing
+    current_frame: Framebuffer  //the texture of the frame before compositing
 
 def make_MainPass() MainPass =
-    MainPass{
-        device = Device{
-            width = 0
-            height = 0
-            multisampling = 4
-            clear_colour = Vec4{ 0, 0, 0, 1 }
-        }
+    w := window.get_window!
+    depth_prepass := shadow.make_DepthMap w.width, w.height
+
+    frame_map: texture.Texture = _
+    attachment := make_Attachment &frame_map
+
+    frame := make_Framebuffer box FramebufferSettings{
+        width = w.width
+        height = w.height
+        depth_buffer = DepthComponent24
+        depth_attachment = None
+        color_attachments = box [attachment]
+        multi = 0
     }
 
+    multi_frame_map: texture.Texture = _
+    multi_attachment := make_Attachment &multi_frame_map
+
+    multi_frame := make_Framebuffer box FramebufferSettings{
+        width = w.width
+        height = w.height
+        depth_buffer = DepthComponent24
+        depth_attachment = None
+        color_attachments = box [multi_attachment]
+        multi = 8
+    }
+
+    MainPass{
+        device = Device{
+            width = w.width
+            height = w.height
+            clear_colour = Vec4{ 0, 0, 0, 1 }
+        }
+        shadow_pass = shadow.make_ShadowPass texture.Texture{"", depth_prepass.depthMap}
+        depth_prepass = depth_prepass
+
+        frame_map = frame_map
+        current_frame = frame
+
+        multi_frame_map = multi_frame_map
+        multi_current_frame = multi_frame
+    }
+
+def MainPass.set_shader_params(&self, _shader: &shader.Shader) =
+    ibl.get_skybox!
+        .set_ibl_params_for _shader
+
+    self.shadow_pass.set_shadow_params _shader
+
 def MainPass.render(&self) =
-    //edit := editor.get_editor!
     w := window.get_window!
     ui_ctx := ui.get_ui!
 
@@ -38,7 +91,6 @@ def MainPass.render(&self) =
 
     self.device.width = w.width
     self.device.height = w.height
-    self.device.bind!
 
     draw.clear!
 
@@ -48,14 +100,35 @@ def MainPass.render(&self) =
 
     ui_ctx.new_frame!
 
-    //editor.editor.render!
-
     ecs.render render_mask
+
+    self.depth_prepass.render_maps context.camera.projection_matrix, context.camera.view_matrix
+
+    self.shadow_pass.render!
+
+    //render scene to texture
+    opengl.enable opengl.multisample
+
+    self.multi_current_frame.bind!
+    self.multi_current_frame.clear_color Vec4{0,0,0,1}
+    self.multi_current_frame.clear_depth Vec4{0,0,0,1}
+
+    //opengl.blitNamedFramebuffer self.depth_prepass.depthMapFBO, self.current_frame.fbo, 0, 0, 0, 0, w.width, w.height, w.width, w.height, opengl.depth_buffer_bit, opengl.nearest
 
     draw.submit_to_gpu!
 
+    self.multi_current_frame.unbind!
+    self.multi_current_frame.blit_to &self.current_frame, ColorBufferBit
+    self.multi_current_frame.blit_to &self.current_frame, DepthBufferBit
+
+    //compositing
+    self.device.bind!
+    self.shadow_pass.volumetric.render_upsampled &self.frame_map
+
     ui_ctx.render!
     w.swap_buffers!
+
+    draw.set_first!
 
 main_pass := make_MainPass!
 
@@ -63,8 +136,17 @@ passes := [..]Pass
 passes.reserve 10
 passes.append &main_pass
 
+#addToContext current_pass: Pass = passes[0]
+
+def set_current_pass(pass: Pass) =
+    context.current_pass = pass
+
 def render_all() =
     i : int = passes.length - 1
     while i >= 0 do
-        passes[i cast uint].render!
-        i -= 1
+        new_context := *context
+        new_context.current_pass = passes[i cast uint]
+
+        #pushContext new_context do
+            passes[i cast uint].render!
+            i -= 1

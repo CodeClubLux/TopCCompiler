@@ -1,0 +1,17 @@
+import "shader"
+import "primitives"
+import "texture"
+import "math"
+
+debug_shader := shader.make "shaders/screenspace.vert", "shaders/debugTexture.frag"
+
+def draw_texture(tex: &texture.Texture) =
+    mat := math.identity_mat!
+    debug_shader.bind!
+
+    debug_shader.set_mat4x4 (debug_shader.uniform_location "model"), &mat
+
+    tex.bind_to 0
+    debug_shader.set_int (debug_shader.uniform_location "tex"), 0
+
+    primitives.render_quad!

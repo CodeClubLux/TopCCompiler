@@ -1,10 +1,11 @@
 #define __Context struct _global_Context* context
 #define alloc _global_Allocator_alloc
 
-struct _global_String _global_StringInit(unsigned int length, char* data) {
+static inline struct _global_String _global_StringInit(unsigned int length, char* data) {
     struct _global_String s;
     s.data = data;
     s.length = length;
+
     return s;
 };
 struct _global_String _global_String_toStringByValue(struct _global_String s,__Context) {
@@ -265,9 +266,7 @@ void _global_c_log(struct _global_String s) {
     fflush(stdout);
 };
 
-static inline void* _global_offsetPtr(void* ptr, int offset, __Context) {
-    return ((char*)ptr) + offset;
-};
+#define _global_offsetPtr(ptr, offset, __Context) ((char*)ptr) + offset
 
 struct _global_String _global_console_input(struct _global_String text, __Context) {
     char string[40];

@@ -1,5 +1,6 @@
 import "sync"
 from "queue" import all
+import "threads"
 
 ext _ = '#include "c_deps/fiber.h"'
 
@@ -19,7 +20,7 @@ type Fiber =
     next: &Fiber
 
 type ThreadInfo = //todo handle cleanup
-    id: uint
+    id: threads.ThreadHandle
     running: &Fiber
     primary_t: &fiber_t
 
@@ -120,7 +121,7 @@ def make_ThreadInfo(num_fibers: uint, num_fat_fibers: uint, main: bool) &ThreadI
     last_fiber.next = first_fiber //create repeating execution loop
 
     box_longterm ThreadInfo{
-        id = 0
+        id = threads.make_ThreadHandle!
         running = last_fiber
         primary_t = primary_fiber
     }
@@ -139,17 +140,11 @@ def create(kind: TaskKind, task: Task) =
         LargeStack ->
             scheduler.big_fiber_queue.enqueue task
 
-ext _ = "#include <pthread.h>"
-
-type ext pthread_t =
-
-ext pthread_create: |&pthread_t, Maybe[&none], |&none| -> none, &none| -> none = "pthread_create"
-
 type ThreadInfoArgs =
     num_fibers: uint
     num_fat_fibers: uint
     context: &none
-    id: uint
+    id: threads.ThreadHandle
 
 def init_thread(c_arg: &none) =
     //log "init thread"
@@ -174,27 +169,25 @@ def init_thread(c_arg: &none) =
 
 def create_worker_threads(num: uint) =
     for i := 0..num do
-        thread_id : pthread_t = _
         args := box ThreadInfoArgs{
             num_fibers = 10
             num_fat_fibers = 0
             context = context
-            id = thread_id cast uint
+            id = threads.make_ThreadHandle!
         }
 
-        pthread_create &thread_id, None, init_thread, args
+        threads.create &args.id, init_thread, args
 
 def create_blocking_threads(num: uint) =
     for i := 0..num do
-        thread_id : pthread_t = _
         args := box ThreadInfoArgs{
             num_fibers = 0
             num_fat_fibers = 1
             context = context
-            id = thread_id cast uint
+            id = threads.make_ThreadHandle!
         }
 
-        pthread_create &thread_id, None, init_thread, args
+        threads.create &args.id, init_thread, args
 
 let worker_thread_count = 7
 

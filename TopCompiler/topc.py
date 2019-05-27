@@ -385,7 +385,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             #print(cache.usedModules)
 
-            lexed = Lexer.lex(target, sources, filenames, files, cache, {})
+            lexed = Lexer.lex(target, sources, filenames, files, cache, {}, tags)
 
             print("Lexed and parsed : " + str(Lexer.linesOfCode))
 

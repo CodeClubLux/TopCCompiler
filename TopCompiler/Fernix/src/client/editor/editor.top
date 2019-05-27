@@ -16,6 +16,7 @@ import "gizmo"
 import "picking"
 import "events"
 from "lister" import (Lister, make_Lister)
+import "terrain"
 
 type DroppableField =
     ptr: &none
@@ -24,8 +25,10 @@ type DroppableField =
 
 type EditorEvents either
     SelectedField(DroppableField)
+    SwitchCase(&none, &EnumType, u8)
     AddComponent(ecs.ID, ecs.ComponentStore)
     InGame(bool)
+    DeleteComponent(ecs.ID, ecs.ComponentStore)
 
 type Editor =
     in_editor: bool
@@ -81,14 +84,7 @@ def Editor.render(&self, m: layermask.Layermask) =
 
     render_properties!
 
-    w := window.get_window!
-
-    panel := ui.window "Models"
-    panel.style.width = ui.Perc self.model_tab_width
-    panel.style.height = ui.Perc self.asset_tab_height
-    panel.position = ui.Absolute (w.width * self.editor_tab_width) cast uint, (w.height * (1 - self.asset_tab_height)) cast uint
-
-    self.asset_tab.render_ui panel
+    self.asset_tab.render_ui ui.AbsolutePerc self.editor_tab_width, 1 - self.asset_tab_height
 
     self.lister.render!
 

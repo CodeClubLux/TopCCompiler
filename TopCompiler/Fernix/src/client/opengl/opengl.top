@@ -32,7 +32,25 @@ ext texture_cube_map: uint = "GL_TEXTURE_CUBE_MAP"
 ext texture_cube_map_seamless: uint = "GL_TEXTURE_CUBE_MAP_SEAMLESS"
 ext clamp_to_edge: uint = "GL_CLAMP_TO_EDGE"
 ext framebufferRenderbuffer: |uint, uint, uint, uint| -> none = "glFramebufferRenderbuffer"
+
+ext copyTexSubImage2D: |uint, int, int, int, int, int, int, int| -> none = "glCopyTexSubImage2D"
+
 ext depth_attachment: uint = "GL_DEPTH_ATTACHMENT"
+
+ext vertexAttribDivisor: |uint, uint| -> none = "glVertexAttribDivisor"
+ext stream_draw: uint = "GL_STREAM_DRAW"
+ext dynamic_draw: uint = "GL_DYNAMIC_DRAW"
+
+ext src_alpha: uint = "GL_SRC_ALPHA"
+ext one_minus_src_alpha: uint = "GL_ONE_MINUS_SRC_ALPHA"
+
+ext dst_color: uint = "GL_DST_COLOR"
+ext zero: uint = "GL_ZERO"
+
+ext texture_border_color: uint = "GL_TEXTURE_BORDER_COLOR"
+ext texParameterfv: |uint, uint, &float| -> none = "glTexParameterfv"
+
+ext blitNamedFramebuffer: |int, int, int, int, int, int, int, int, int, int, int, int| -> none = "glBlitNamedFramebuffer"
 
 ext multisample: uint = "GL_MULTISAMPLE"
 
@@ -47,11 +65,18 @@ ext framebufferTexture2D: |uint, uint, uint, uint, uint| -> none = "glFramebuffe
 ext color_attachment0: uint = "GL_COLOR_ATTACHMENT0"
 ext color_buffer_and_depth_buffer_bit: uint = "GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT"
 
+ext blend: uint = "GL_BLEND"
+
+ext one: uint = "GL_ONE"
+
+ext blendFunc: |uint, uint| -> none = "glBlendFunc"
+
 ext genFramebuffers: |uint, &uint| -> none = "glGenFramebuffers"
 ext genRenderbuffers: |uint, &uint| -> none = "glGenRenderbuffers"
 
 ext texture_cube_map_positive_x: uint = "GL_TEXTURE_CUBE_MAP_POSITIVE_X"
 ext rgb16f: uint = "GL_RGB16F"
+ext r16: uint = "GL_R16"
 ext red_integer: uint = "GL_RED_INTEGER"
 
 ext debug_severity_low: uint = "GL_DEBUG_SEVERITY_LOW"
@@ -59,6 +84,11 @@ ext debug_severity_low: uint = "GL_DEBUG_SEVERITY_LOW"
 ext genTextures: |uint, &uint| -> none = "glGenTextures"
 ext bindTexture: |uint, uint| -> none = "glBindTexture"
 ext texParameteri: |uint, uint, uint| -> none = "glTexParameteri"
+ext texParameterf: |uint, uint, float| -> none = "glTexParameterf"
+
+ext texture_max_anisotropy_ext: uint = "GL_TEXTURE_MAX_ANISOTROPY_EXT"
+
+ext debug_output_synchronous: uint = "GL_DEBUG_OUTPUT_SYNCHRONOUS"
 
 ext repeat: uint = "GL_REPEAT"
 ext texture_wrap_s: uint = "GL_TEXTURE_WRAP_S"
@@ -67,11 +97,15 @@ ext texture_min_filter: uint = "GL_TEXTURE_MIN_FILTER"
 ext texture_mag_filter: uint = "GL_TEXTURE_MAG_FILTER"
 ext linear: uint = "GL_LINEAR"
 ext texImage2D: |uint, uint, uint, int, int, uint, uint, uint, Maybe[&Byte]| -> none = "glTexImage2D"
+ext texImage2DMultisample: |uint, uint, uint, int, int, bool| -> none = "glTexImage2DMultisample"
+
 ext generateMipmap: |uint| -> none = "glGenerateMipmap"
 ext bindRenderbuffer: |uint, uint| -> none = "glBindRenderbuffer"
 ext renderbuffer: uint = "GL_RENDERBUFFER"
 ext renderbufferStorage: |uint, uint, uint, uint| -> none = "glRenderbufferStorage"
+ext renderbufferStorageMultisample: |uint, uint, uint, uint, uint| -> none = "glRenderbufferStorageMultisample"
 ext depth_component24: uint = "GL_DEPTH_COMPONENT24"
+ext depth_component: uint = "GL_DEPTH_COMPONENT"
 
 ext uniform1f: |int, float| -> none = "glUniform1f"
 
@@ -82,6 +116,7 @@ ext rgba: uint = "GL_RGBA"
 ext nearest: uint = "GL_NEAREST"
 
 ext texture_2D: uint = "GL_TEXTURE_2D"
+ext texture_2D_multisample: uint = "GL_TEXTURE_2D_MULTISAMPLE"
 ext unsigned_byte: uint = "GL_UNSIGNED_BYTE"
 
 ext compile_status: uint = "GL_COMPILE_STATUS"
@@ -91,9 +126,17 @@ ext fragment_shader: uint = "GL_FRAGMENT_SHADER"
 ext link_status: uint = "GL_LINK_STATUS"
 
 ext bufferData: |uint, uint, &none, uint| -> none = "glBufferData"
+ext bufferSubData: |uint, uint, uint, &none| -> none = "glBufferSubData"
+
+ext drawElementsInstanced: |uint, uint, uint, uint, uint| -> none = "glDrawElementsInstanced"
 
 ext type_float: uint = "GL_FLOAT"
 ext type_int: uint = "GL_INT"
+
+ext _none: uint = "GL_NONE"
+
+ext drawBuffer: |uint| -> none = "glDrawBuffer"
+ext readBuffer: |uint| -> none = "glReadBuffer"
 
 ext array_buffer: uint = "GL_ARRAY_BUFFER"
 ext element_array_buffer: uint = "GL_ELEMENT_ARRAY_BUFFER"
@@ -109,6 +152,8 @@ ext drawElements: |uint, uint, uint, uint| -> none = "glDrawElements"
 ext _int: uint = "GL_INT"
 ext r32I: uint = "GL_R32I"
 ext unsigned_int: uint = "GL_UNSIGNED_INT"
+
+ext read_buffer: uint = "GL_READ_BUFFER"
 
 ext depth_buffer_bit: uint = "GL_DEPTH_BUFFER_BIT"
 ext depth_test: uint = "GL_DEPTH_TEST"
@@ -126,6 +171,8 @@ ext uniform1i: |int, int| -> none = "glUniform1i"
 ext debug_output: uint = "GL_DEBUG_OUTPUT"
 ext enable: |uint| -> none = "glEnable"
 ext disable: |uint| -> none = "glDisable"
+
+ext clamp_to_border: uint = "GL_CLAMP_TO_BORDER"
 
 ext depthFunc: |uint| -> none = "glDepthFunc"
 ext lequal: uint = "GL_LEQUAL"

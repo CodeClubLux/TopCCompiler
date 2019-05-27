@@ -1,4 +1,3 @@
-#version 440 core
 out vec4 FragColor;
 
 in vec2 TexCoords;
@@ -9,6 +8,11 @@ in mat3 TBN;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D   brdfLUT;
+
+uniform sampler2D shadowMaskMap;
+
+uniform float window_height;
+uniform float window_width;
 
 uniform vec3 viewPos;
 
@@ -130,7 +134,7 @@ vec3 CalcPointLight(PointLight light, vec3 N, vec3 WorldPos, vec3 V)
 	vec3 H = normalize(V + L);
 
 	float wrap = 0.3;
-    float wrap_diffuse = max(0, (dot(H, V) + wrap) / (1 + wrap));
+    float wrap_diffuse = dot(H, V); // max(0, (dot(H, V) + wrap) / (1 + wrap));
 
 	float distance    = length(light.position - WorldPos);
     float attenuation = 1.0 / (distance * distance);
@@ -174,10 +178,12 @@ void main()
 
 	albedo = pow(vec3(0.038501, 0.223639, 0.044645), vec3(2.2));
 
-    if ((true_color.r + true_color.g + true_color.b) > 2.5) {
+    if (true_color.r > 0.7) {
         discard;
-        albedo = vec3(1,1,1);
     }
+
+    float shadow = texture(shadowMaskMap, vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height)).r;
+
 
     normal     = norm; //getNormalFromNormalMap();
     metallic  = texture(material.metallic, TexCoords).r;
@@ -218,7 +224,7 @@ void main()
 	vec2 envBRDF  = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
 	vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 
-	vec3 ambient = (kD * diffuse + specular);
+	vec3 ambient = (kD * diffuse + specular) * (1.0 - shadow);
 
     vec3 color = ambient + Lo;
 

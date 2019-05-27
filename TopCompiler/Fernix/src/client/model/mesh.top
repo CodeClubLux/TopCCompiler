@@ -4,6 +4,7 @@ import "ecs"
 import "opengl"
 import "draw"
 import "transform"
+from "culling" import all
 
 type Vertex =
     position: Vec3
@@ -16,6 +17,7 @@ type Mesh =
     buffer: buffer.VertexBuffer
     vertices: []Vertex
     indices: []uint
+    aabb: AABB
     material_id: uint
 
 def Mesh.submit(&mesh) =
@@ -27,10 +29,13 @@ def Mesh.submit(&mesh) =
         buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, bitangent}
     ]
 
-    log "vertices: {mesh.indices.length}"
+    mesh.aabb = make_AABB!
+    for v := mesh.vertices do
+        mesh.aabb.update v.position
+
     mesh.buffer = buffer.make_vertex_buffer mesh.vertices, mesh.indices, &attributes
 
-def make_Mesh(vertices: []Vertex, indices: []uint, material_id: uint) Mesh =
+def make_Mesh(vertices: []Vertex, indices: []uint, aabb: AABB, material_id: uint) Mesh =
     attributes := [
         buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, position }
         buffer.VertexAttrib{ 3, buffer.Float, offsetof Vertex, normal }
@@ -43,11 +48,14 @@ def make_Mesh(vertices: []Vertex, indices: []uint, material_id: uint) Mesh =
         buffer = buffer.make_vertex_buffer vertices, indices, &attributes
         vertices = vertices
         indices = indices
+        aabb = aabb
         material_id = material_id
     }
 
-def Mesh.render(&self, trans: &transform.Transform, materials: []Material) =
+def Mesh.render(&self, id: ecs.ID, model: &Mat4x4, materials: []Material) =
     material := &materials[self.material_id]
-    id := transform.transforms.id_of trans
-    cmd := draw.make_DrawCommand id, (Some trans), &self.buffer, material
+
+    aabb := Some self.aabb.apply model
+
+    cmd := draw.make_DrawCommand id, model, &aabb, &self.buffer, material
     cmd.submit!

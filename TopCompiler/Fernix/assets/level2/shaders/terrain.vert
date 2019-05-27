@@ -1,4 +1,3 @@
-#version 440 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoords;
@@ -25,20 +24,22 @@ struct Material {
 };
 
 uniform Material material;
+uniform sampler2D displacement;
+uniform vec2 displacement_offset;
+uniform vec2 displacement_scale;
 
 void main()
 {
-    if (transformUVs.x == 0 && transformUVs.y == 0) {
-        TexCoords = aTexCoords;
-    } else {
-        TexCoords = vec2(aTexCoords.x * transformUVs.x, aTexCoords.y * transformUVs.y);
-    }
+    //TexCoords = vec2(aTexCoords.x, aTexCoords.y);
+    TexCoords = vec2(aTexCoords.x * transformUVs.x, aTexCoords.y * transformUVs.y);
 
-    float height = texture(material.diffuse, TexCoords).x;
+    vec2 displacement_tex = aTexCoords * displacement_scale + vec2(displacement_offset.x, displacement_offset.y);
+    float height = texture(displacement, displacement_tex).x;
 
     gl_Position = projection * view * model * vec4(aPos + vec3(0,height,0), 1.0);
 
-	vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
+
+    vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
 	vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));
 
 	// re-orthogonalize T with respect to N

@@ -1,0 +1,68 @@
+import "ecs"
+from "math" import all
+from "key" import all
+
+//Handles all state related to input
+type Input =
+    mouse_position: Vec2
+    mouse_offset: Vec2
+    scroll_offset: float
+    keys_down: [..]bool
+    key_actions: KeyActionMap
+    mouse_button_down: [3]bool
+    mouse_button_actions: [3]KeyAction
+
+def key_down(_key: Key) bool =
+    inp := get_input!
+    inp.keys_down[_key]
+
+def mouse_button_down(button: MouseButton) bool =
+    inp := get_input!
+    inp.mouse_button_down[button.tag]
+
+def mouse_button_pressed(button: MouseButton) bool =
+    inp := get_input!
+    inp.mouse_button_actions[button.tag] == Pressed
+
+def key_pressed(_key: Key) bool =
+    self := get_input!
+    self.key_actions[_key] == Pressed
+
+def clear() =
+
+def get_vertical_axis() float =
+    if key_down key.from_char `W` then 1
+    elif key_down key.from_char `S` then -1
+    else 0
+
+def get_horizontal_axis() float =
+    if key_down key.from_char `D` then 1
+    elif key_down key.from_char `A` then -1
+    else 0
+
+def update_inputs() =
+
+def make_Input() Input =
+    num_keys := 256
+    keys := [num_keys: false]
+
+    Input{
+        mouse_position = Vec2{0,0}
+        mouse_offset = Vec2{0,0}
+
+        scroll_offset = 0.0
+
+        keys_down = keys
+        key_actions = make_KeyActionMap!
+
+        mouse_button_down = [3: false]
+        mouse_button_actions = [3: Released]
+    }
+
+#addToContext input := box make_Input!
+
+def get_input() &Input =
+    context.input
+
+
+
