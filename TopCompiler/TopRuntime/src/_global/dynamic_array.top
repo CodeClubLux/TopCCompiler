@@ -5,6 +5,7 @@ type Array[T] =
     allocator: Maybe[&Allocator]
     data: Maybe[&T]
 
+
 def empty_array() Array[_] =
     Array{
         capacity = 0
@@ -34,9 +35,11 @@ def Array[T].op_get(&self, index: uint) &T =
     indexPtr self.data cast &T, index
 
 def Array[T].shorten(&self, num: uint) =
+    if (self.length cast int) - num  < 0 then
+        panic "Shorten out of bounds"
+
     self.length -= num
-    if self.length < 0 then
-        panic "shorten out of bounds"
+
 
 def Array[T].slice(&self, start: uint, end: uint) []T =
     assert start < self.length, "Start out of bounds"

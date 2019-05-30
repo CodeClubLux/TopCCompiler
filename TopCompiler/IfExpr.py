@@ -139,5 +139,65 @@ def elifExpr(parser, canHaveElse=False):
         parser.currentNode = parser.currentNode.nodes[-1]
         ifBody(parser)
 
+import copy
+
+def return_some_error(parser, case_name = "Some"):
+    prev = parser.currentNode
+
+    m = Tree.Match(parser)
+    parser.currentNode.addNode(m)
+    parser.currentNode = m
+
+
+    while not (Parser.isEnd(parser)):
+        parser.nextToken()
+        Parser.callToken(parser)
+
+    #ExprParser.endExpr(parser, -2)
+    parser.currentNode = m.owner
+
+    case = Tree.MatchCase(parser)
+    m.addNode(case)
+
+    r = Tree.ReadVar("Some", True, parser)
+    r.package = "_global"
+
+    f = Tree.FuncCall(parser)
+    f.addNode(r)
+
+    case.addNode(f)
+
+    r = Tree.ReadVar("_x", False, parser)
+    r.package = parser.package
+
+    f.addNode(r)
+
+    block = Tree.Block(parser)
+    m.addNode(block)
+
+    ret = Tree.Return(parser)
+    block.addNode(ret)
+
+    f2 = Tree.FuncCall(parser)
+
+    some = Tree.ReadVar(case_name, True, parser)
+    some.package = "_global"
+
+    f2.addNode(copy.copy(some))
+    f2.addNode(copy.copy(r))
+
+    ret.addNode(f2)
+
+    case = Tree.MatchCase(parser)
+    m.addNode(case)
+
+    case.addNode(Tree.Under(parser))
+
+    m.addNode(Tree.Block(parser))
+
+    parser.currentNode = prev
+
 Parser.exprToken["if"] = ifExpr
 Parser.exprToken["elif"] = elifExpr
+Parser.exprToken["?"] = return_some_error
+Parser.exprToken["?e"] = lambda p: return_some_error(p, case_name="Error")

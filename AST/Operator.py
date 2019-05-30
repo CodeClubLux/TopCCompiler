@@ -180,33 +180,7 @@ def checkOperator(self, parser):
             i.error("Can only dereference a pointer")
 
         if not i.opT.name in ops:
-            if unary:
-               overloads = {
-                    "+": "unary_add",
-                    "-": "unary_sub",
-                    "*": "unary_mul",
-                    "/": "unary_div",
-                    "^": "unary_pow",
-                    "!=": "unary_ne",
-                    "==": "unary_eq",
-                    "not": "unary_not",
-                   "<-": "unary_read",
-                }
-            else:
-                overloads = {
-                    "+": "op_add",
-                    "-": "op_sub",
-                    "*": "op_mul",
-                    "/": "op_div",
-                    "^": "op_pow",
-                    "%": "op_mod",
-                    "!=": "op_ne",
-                    "==": "op_eq",
-                    "<": "op_lt",
-                    ">": "op_gt",
-                    "or": "op_or",
-                    "<-": "op_set",
-                }
+            overloads = get_overloads(unary)
 
             if len(i.nodes) == 0:
                 i.interface = True
@@ -238,3 +212,32 @@ def checkOperator(self, parser):
             i.error("Operator " + i.kind + ", cannot operate on type " + str(i.nodes[0].type))
         if i.unary and type(i.type) is Types.I32 and i.type.unsigned and i.kind == "-":
             i.type = Types.I32(size=i.type.size, unsigned=False)
+
+def get_overloads(unary):
+    if unary:
+        return {
+            "+": "unary_add",
+            "-": "unary_sub",
+            "*": "unary_mul",
+            "/": "unary_div",
+            "^": "unary_pow",
+            "!=": "unary_ne",
+            "==": "unary_eq",
+            "not": "unary_not",
+            "<-": "unary_read",
+        }
+    else:
+        return {
+            "+": "op_add",
+            "-": "op_sub",
+            "*": "op_mul",
+            "/": "op_div",
+            "^": "op_pow",
+            "%": "op_mod",
+            "!=": "op_ne",
+            "==": "op_eq",
+            "<": "op_lt",
+            ">": "op_gt",
+            "or": "op_or",
+            "<-": "op_set",
+        }

@@ -5,7 +5,6 @@ static inline struct _global_String _global_StringInit(unsigned int length, char
     struct _global_String s;
     s.data = data;
     s.length = length;
-
     return s;
 };
 struct _global_String _global_String_toStringByValue(struct _global_String s,__Context) {
@@ -97,6 +96,10 @@ _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_Str
 
 _Bool _global_String_op_eq(struct _global_String* s, struct _global_String* other, __Context) {
     return _global_String_op_eqByValue(*s, *other, context);
+}
+
+_Bool _global_String_op_neByValue(struct _global_String s, struct _global_String o, __Context) {
+    return !_global_String_op_eqByValue(s,o,context);
 }
 
 void _global_log(struct _global_String,__Context);

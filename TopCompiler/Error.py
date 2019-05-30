@@ -41,6 +41,10 @@ def errorAst(message, package, filename, token):
     except KeyError:
         o = os.path.basename(filename)
         o = o[0:o.find(".")]
+
+        if o == "":
+            o = package
+
         try:
             s = topc.filenames_sources[package][o]
         except:

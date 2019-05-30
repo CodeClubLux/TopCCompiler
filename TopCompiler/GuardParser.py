@@ -7,6 +7,8 @@ from TopCompiler import IfExpr
 import AST as Tree
 
 def guardExpr(parser):
+    ExprParser.endExpr(parser, -1)
+
     parser.nodeBookmark.append(0)
 
     place = Tree.PlaceHolder(parser)
@@ -22,7 +24,12 @@ def guardExpr(parser):
 
     while True:
         parser.nextToken()
-        Parser.callToken(parser)
+        if parser.thisToken().token == ":=":
+            assign = True
+            ExprParser.endExpr(parser, -1)
+        else:
+
+            Parser.callToken(parser)
         b = parser.thisToken()
         if b.token == ":=":
             assign = True
@@ -34,7 +41,6 @@ def guardExpr(parser):
             break
 
     if len(m.nodes) != 2:
-        print(m.nodes)
         Error.parseError(parser, "Expecting singular expression, not " + str(len(m.nodes)-1))
     if not assign:
         Error.parseError(parser, "Expecting :=")
@@ -46,6 +52,7 @@ def guardExpr(parser):
 
     create = m.nodes[0]
     assign = m.nodes[1]
+
     m.nodes[0] = assign
     m.nodes[0].owner = m
     del m.nodes[1]
@@ -88,4 +95,6 @@ def guardExpr(parser):
 
     parser.currentNode = m.owner
 
+
 Parser.exprToken["guard"] = guardExpr
+

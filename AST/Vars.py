@@ -154,6 +154,24 @@ class Assign(Node):
             #self.nodes[1].compileToC(codegen)
             return
 
+        def gen(tmp, p):
+            if type(p) is Tree.Tuple:
+                for (index, i) in enumerate(p):
+                    gen(tmp + ".field" + str(index), i)
+            elif type(p) is Tree.InitStruct:
+                for i in p:
+                    if type(i) is Tree.Assign:
+                        gen(tmp + "." + i.nodes[0].name, i.nodes[1])
+                    else:
+                        gen(tmp + "." + i.name, i)
+            elif type(p) is Tree.ReadVar:
+                if not self.isGlobal:
+                    name = codegen.readName(self.package + "_" + p.name)
+                else:
+                    name = self.package + "_" + p.name
+
+                codegen.append(name + "=" + tmp + ";")
+
         if type(self.owner) is Tree.InitStruct:
             self.nodes[1].compileToC(codegen)
             return
@@ -192,31 +210,26 @@ class Assign(Node):
             if not type(self.name) is str:
                 pattern = self.name
 
-                def gen(tmp, p):
-                    if type(p) is Tree.Tuple:
-                        for (index, i) in enumerate(p):
-                            gen(tmp + ".field" + str(index), i)
-                    elif type(p) is Tree.InitStruct:
-                        for i in p:
-                            if type(i) is Tree.Assign:
-                                gen(tmp+"."+i.nodes[0].name, i.nodes[1])
-                            else:
-                                gen(tmp + "."+i.name, i)
-                    elif type(p) is Tree.ReadVar:
-                        if not self.isGlobal:
-                            name = codegen.readName(self.package + "_" + p.name)
-                        else:
-                            name = self.package+"_"+p.name
-
-                        codegen.append(name + "=" + tmp + ";")
-
                 gen(name, pattern)
                 return
         else:
-            self.nodes[0].compileToC(codegen)
-            codegen.append("=")
-            self.nodes[1].compileToC(codegen)
-            codegen.append(";")
+            if not type(self.nodes[0]) is Tree.Tuple:
+                self.nodes[0].compileToC(codegen)
+                codegen.append(" = ")
+                self.nodes[1].compileToC(codegen)
+                codegen.append(";")
+            else:
+                tmp = codegen.getName()
+                codegen.append(self.nodes[0].type.toCType())
+                codegen.append(f" {tmp}  = ")
+                self.nodes[1].compileToC(codegen)
+                codegen.append(";\n")
+                gen(tmp,self.nodes[0])
+
+            #self.nodes[0].compileToC(codegen)
+            #codegen.append("=")
+            #self.nodes[1].compileToC(codegen)
+            #codegen.append(";")
 
     def validate(self, parser):
         node = self

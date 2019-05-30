@@ -166,6 +166,10 @@ def typeParser(parser, decl= False):
         meth = parser.structs[parser.package][name].methods
         _types = parser.structs[parser.package][name]._types
 
+        #if name == "Channel":
+        #    print("Channel make")
+        #    print(id(_types))
+
         parser.structs[parser.package][name] = Struct(name, args, fields, gen, typ, parser.package)
         tmp =  parser.structs[parser.package][name]._types
         parser.structs[parser.package][name].methods = meth

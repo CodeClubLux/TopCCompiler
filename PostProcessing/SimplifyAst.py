@@ -46,9 +46,6 @@ def callMethodCode(node, name, typ, parser, unary):
     #if type(typ) in [Types.Struct, Types.Alias, Types.Enum]:
     var.replaced = typ.remainingGen
 
-    if var.name == "events.Dispatch.A_op_eq":
-        print("hey")
-
     return var
 
 
@@ -138,14 +135,16 @@ def simplifyOperator(operator, iter, parser):
             return overloaded(callMethodCode(operator.nodes[0], "op_add", typ, parser, operator.unary))
         elif operator.kind == "==":
             return overloaded(callMethodCode(operator.nodes[0], "op_eq", typ, parser, operator.unary))
+        elif operator.kind == "!=":
+            return overloaded(callMethodCode(operator.nodes[0], "op_ne", typ, parser, operator.unary))
     elif operator.overload and not typ.isType(Types.I32) and not typ.isType(Types.Float) and not typ.isType(Types.Bool) and not typ.isType(Types.Char):
+        operator.name = Tree.get_overloads(operator.unary)[operator.kind]
         return overloaded(
-            callMethodCode(operator.nodes[0], operator.name[operator.name.find("_") + 1:], operator.nodes[0].type, parser,
+            callMethodCode(operator.nodes[0], operator.name, operator.opT, parser,
                            operator.unary))
     else:
         operator.overload = False
         return operator
-
 
 import copy
 
@@ -205,12 +204,11 @@ class FuncSpecification:
                 newAST.replaced = {name: Types.replaceT(newAST.replaced[name], self.replaced) for name in
                                    newAST.replaced}
             elif type(newAST) is Tree.Operator and newAST.kind == "&" and newAST.insertedCast:
-                self.opT = Types.replaceT(newAST.nodes[0].type, self.replaced)
-                if self.opT.isType(Types.Pointer):
+                opT = Types.replaceT(newAST.nodes[0].type, self.replaced)
+                if opT.isType(Types.Pointer):
                     return newAST.nodes[0]
-            #elif type(newAST) is Tree.Operator:
-            #    self.opT = Types.replaceT(newAST.opT, self.replaced)
-
+            elif type(newAST) is Tree.Operator:
+                newAST.opT = Types.replaceT(newAST.opT, self.replaced)
 
             return newAST
 
@@ -266,6 +264,7 @@ def multiple_replace(rep_dict):
 sanitize = multiple_replace(
     {" ": "_", "[": "_", "]": "_", "|": "p", "->": "_", "&": "r", ",": "c", "{": "b", "}": "b", ".": "_", ":": "_", "(": "p", ")": "p"})
 
+
 def stringify(typ):
     # return typ
     # if type(typ) is Types.T:
@@ -280,7 +279,6 @@ def toUniqueID(package, funcName, replaced):
     if joinedKeys == "":
         return package + "_" + funcName
     else:
-        r = package + "_" + funcName + "_" + sanitize(joinedKeys)
         return package + "_" + funcName + "_" + sanitize(joinedKeys)
 
 
@@ -318,7 +316,6 @@ class Specifications:
             self.funcs[id] = FuncSpecification(id, funcStart, funcBrace, funcBody, replaced)
             self.funcsToBeProcessed[id] = self.funcs[id]
             # print("adding specification", id)
-
         return id
 
     def addGenericFunc(self, package, name, funcStart, funcBrace, funcBody):
@@ -421,7 +418,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
         specifications.packageGenericFuncs = specifications.genericFuncs
 
         for name in ["_global"] + list(parser.compiled):
-            if not name in parser.specifications: continue
             spec = parser.specifications[name]
             for i in spec.packageGenericFuncs:
                 genericFuncs[i] = spec.genericFuncs[i]
@@ -446,7 +442,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 simplify(i, it, deleteQueue)
         if type(ast) is Tree.Operator:
             ast = simplifyOperator(ast, iter, parser)
-        elif type(ast) is Tree.ArrRead and not (type(ast.nodes[0].type) is Types.Pointer and type(ast.nodes[0].type.pType) is Types.Array) and not type(ast.nodes[0].type) is Types.Array:
+        elif type(ast) is Tree.ArrRead:
             ast = simplifyArrRead(ast, iter, parser)
             ast = ast.nodes[0]
             iter = 0
@@ -540,9 +536,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
 
         elif type(ast) is Tree.FuncCall and type(ast.nodes[0]) is Tree.ReadVar and not ast.nodes[0].name == "indexPtr" and ast.nodes[0].isGlobal:
             readVar = ast.nodes[0]
-            prev_name = readVar.name
-            branch = 0
-
             if readVar.replaced:  # for method calls
                 if readVar.name.endswith("ByValue"):
                     newName = specifications.addSpecification(readVar.package, readVar.name[:-7],
@@ -556,16 +549,7 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             elif readVar.type.generic and Tree.funcIsCase(ast):
                 newName = toUniqueID(readVar.package, readVar.name, ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]
-            elif readVar.type.generic and len(ast.replaced) > 0:
-                func = readVar.type
-                args = func.args
-
-                #if len(args) > 0 and type(args[0]) is Types.Pointer and type(args[0].pType) is Types.Interface:
-                #    print(func.args)
-                #    #and type(func.args[0]) is Types.Interface:
-                #    print(ast.nodes[1].type)
-                #    func.args[0].toCType()
-
+            elif readVar.type.generic:
                 newName = specifications.addSpecification(readVar.package, readVar.name, ast.replaced)
                 readVar.name = splitPackageAndName(newName)[1]  # remove package which will be added later
             # elif type(ast) is Tree.Cast and type(ast.nodes[0]) is Tree.InitStruct and ast.fromT in [Types.Enum, Types.Struct] and Tree.Cast.notSpecified(ast.fromT):  @cleanup add optimization
@@ -573,16 +557,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
             #    ast.nodes[0].constructor = ast.toT
             readVar.replaced = {}
             ast.replaced = {}
-
-            if False: #readVar.name == "EventHandler_handle_events_EventHandler_events_EventHandler_E_":
-                return
-                print(readVar._filename)
-                readVar.error("How is this possible")
-                print("=======")
-                print(prev_name)
-                print(branch)
-                print(ast.replaced)
-                print("got it")
         elif type(ast) is Tree.Field and ast.method:
             typ = ast.nodes[0].type
             struct = typ
@@ -609,8 +583,6 @@ def simplifyAst(parser, ast, specifications=None, dontGen=False):
                 package = typ.package if not typ.package == "_global" else ""
 
                 if type(i.owner) is Tree.FuncCall and i.owner.nodes[0] == i:
-                    if name == "init":
-                        print("was")
                     r = Tree.ReadVar(name, self.type, self)
                     if not type(self.nodes[0].type) is Types.Pointer:
                         r.name += "ByValue"

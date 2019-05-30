@@ -14,19 +14,10 @@ import os
 
 ignore = {}
 
-def shouldCompile(decl, name, parser, mutated= (), dependency=False):
-    return not name in parser.compiled
-    #print(parser.alwaysRecompile)
-
-    if not dependency and name in parser.alwaysRecompile and not decl:
-        if name in parser.compiled:
-            return not parser.compiled[name][0]
-
-        return True
+def shouldCompile(decl, name, parser, mutated= ()):
+    #return True #not name in parser.compiled
 
     if not decl and not name in parser.compiled and not name in mutated:
-
-
         mutated += (name,)
 
         if name in ignore:
@@ -39,7 +30,7 @@ def shouldCompile(decl, name, parser, mutated= (), dependency=False):
             return True
 
         for i in parser.allImports[name]:
-            if shouldCompile(decl, i, parser, mutated, dependency=True):
+            if shouldCompile(decl, i, parser, mutated):
                 parser.shouldCompile[name] = True
                 return True
 
@@ -52,8 +43,7 @@ def shouldCompile(decl, name, parser, mutated= (), dependency=False):
         return res
 
     try:
-        t = os.path.getmtime("lib/" + name.replace("/", ".") + ".c")
-        t = datetime.datetime.fromtimestamp(int(t))
+        t = topc.get_time_modified(name)
     except FileNotFoundError:
         sp = True
 
@@ -78,30 +68,31 @@ def importParser(parser, decl= False):
 
     name = os.path.basename(oname)
 
-
     if not decl:
-        if not parser.hotswap:
-            sp = shouldParse(decl, oname, parser)
-        else:
-            sp = shouldCompile(decl, oname, parser)
+        #if not parser.hotswap:
+        sp = shouldParse(decl, oname, parser)
+        #    print("should parse", sp)
+        #else:
+        sc = shouldCompile(decl, oname, parser)
 
-            outputfile = oname
-                #print("Error ", outputfile)
+        #outputfile = oname
+        #print("Error ", outputfile)
 
         if sp:
             p = Parser.Parser(parser.lexed[oname], parser.filenames[oname])
             p.package = oname
 
+            sc = True
+
             ResolveSymbols.insert(parser, p)
+
+            p.sc = sc
 
             global_target = parser.global_target
 
             p.global_target = "full"
 
-            sc = shouldCompile(decl, oname, parser)
-
-
-            p.sc = sc
+            #sc = shouldCompile(decl, oname, parser)
 
             parser.compiled[name] = None
             #parser.externFuncs[name] = []
@@ -120,10 +111,7 @@ def importParser(parser, decl= False):
         else:
             if not name in parser.compiled:
                 def loop(name):
-                    #if name in parser.alwaysRecompile:
                     parser.compiled[name] = (False,)
-                    #return
-
                     parser.currentNode.addNode(Tree.InitPack(name, parser))
 
                     #print("not recompiling", name)
@@ -131,8 +119,7 @@ def importParser(parser, decl= False):
 
                     for imports in parser.allImports[name]:
                         if not imports in parser.compiled:
-                            parser.compiled[imports] = (False,)
-                            #parser.compiled[imports] = (False,) #Assumption is correct as package has to be recompiled when it's dependencies change
+                            parser.compiled[imports] = (False,) #Assumption is correct as package has to be recompiled when it's dependencies change
                             parser.currentNode.addNode(Tree.InitPack(imports, parser))
 
                             loop(imports)

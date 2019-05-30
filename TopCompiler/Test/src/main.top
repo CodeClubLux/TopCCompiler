@@ -1,5 +1,98 @@
-#if {"render_backend": "Opengl"}
-log "hello world"
-#endif
+ext _ = "#include <stdlib.h>"
+ext atoi: |&char| -> int = "atoi"
 
-log "bye"
+type TokenType either
+    Int
+    Operator
+    End
+    Paren
+
+type Token =
+    value: string
+    kind: TokenType
+    lbp: int
+
+tokens := [
+    Token{"(", Paren, 0}
+    Token{"10", Int, 0}
+    Token{"+", Operator, 10}
+    Token{"6", Int, 0}
+    Token{")", Paren, 0}
+    Token{"*", Operator, 20}
+    Token{"5", Int, 0}
+    Token{"", End, 0}
+]
+
+i := 0
+
+def peek() Token =
+    tokens[i + 1]
+
+def next() Token =
+    i += 1
+    tokens[i]
+
+def current() Token = tokens[i]
+
+def Token.nud(token) int =
+    match token.kind with
+        Operator ->
+            panic "Unexpected +"
+            0
+
+        Paren ->
+            if token.value == "(" then
+                expr := parse 0
+                advance ")"
+                expr
+
+            else
+                panic "Unexpected )"
+                0
+
+        Int -> atoi token.value.to_c_string!
+        End ->
+            panic "EOF"
+            0
+
+def Token.led(token, left: int) int =
+    match token.kind with
+        Operator ->
+            match token.value with
+                "+" -> left + parse 10
+                "*" -> left * parse 20
+                _ ->
+                    panic "Unknown operator: {token.value}"
+                    0
+
+        End ->
+            panic "EOF"
+            0
+
+        Paren ->
+            panic "Unexpected {token.value}"
+            0
+
+        Int ->
+            panic "Unexpected number"
+            0
+
+token := current!
+
+def advance(expect: string) =
+    if token.value != expect then
+        panic "Expected: {expect}"
+    token = next!
+
+def parse(rbp: int) int =
+    t := current!
+    token = next!
+    left := t.nud!
+    while rbp < token.lbp do
+        t = token
+        token = next!
+        left = t.led left
+
+    left
+
+log parse 0
