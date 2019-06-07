@@ -26,6 +26,7 @@ type Bow =
     state: BowState
     reload_time: float
     arrow_speed: float
+    arrow_prefab: ecs.ID
 
 type ArrowState either
     Fired(float)
@@ -34,7 +35,7 @@ type ArrowState either
 type Arrow =
     state: ArrowState
 
-bows := ecs.make_Store 1, Bow{ state = Idle, attached = None, reload_time = 1.0, arrow_speed = 30 }
+bows := ecs.make_Store 10, Bow{ state = Idle, attached = None, reload_time = 1.0, arrow_speed = 30, arrow_prefab = 0 }
 arrows := ecs.make_Store 10, Arrow{ state = AttachedToBow }
 
 type BowSystem =
@@ -182,39 +183,24 @@ arrow_m := model.load_model "arrow.fbx"
 
 def make_arrow(weapon_id: uint) ecs.ID =
     //arrow
+    guard Some bow := bows.by_id weapon_id
+    else panic "Could not find bow"
 
     new_context := *context
     new_context.allocator = context.longterm_storage
 
-    #pushContext new_context do
-        arrow_id := ecs.make_ID!
-        arrow_entity := ecs.make_Entity arrow_id
-        arrow_entity.layermask = (ecs.entities.by_id weapon_id).unwrap!.layermask
+    arrow_id := ecs.clone bow.arrow_prefab
 
-        arrow := arrows.make arrow_id
+    guard Some arrow_entity := ecs.entities.by_id arrow_id
+    else panic "Could not find arrow entity"
 
-        arrow_name := lister.named.make arrow_id
-        arrow_name.name = "arrow"
+    arrow_entity.layermask = (ecs.entities.by_id weapon_id).unwrap!.layermask
 
-        arrow_transform := make_Transform arrow_id
-        arrow_local_transform := make_LocalTransform arrow_id
+    arrow_local_transform := match local_transforms.by_id arrow_id with
+        Some x -> x
+        None -> None
 
-        arrow_local_transform.owner = weapon_id
-        arrow_local_transform.calc_global_transform!
-
-        #if {"headless": false}
-        cube_materials := box [ //todo fix leak
-            Material{
-                name = "DefaultMaterial"
-                shader = pbr_shader.get_id!
-                params = box substance_params "wood_2", "Stylized_Wood"
-                state = &draw.default_state
-            }
-        ]
-
-        arrow_model_renderer := model.make_ModelRenderer arrow_id
-        arrow_model_renderer.model_id = Some model.models.id_of arrow_m
-        arrow_model_renderer.set_materials cube_materials
-        #endif
+    arrow_local_transform.owner = weapon_id
+    arrow_local_transform.calc_global_transform!
 
     arrow_id

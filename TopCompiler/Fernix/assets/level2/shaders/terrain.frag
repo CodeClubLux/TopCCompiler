@@ -213,7 +213,10 @@ void main()
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
-    //vec3(texture(displacement, (TexCoords * displacement_scale) + displacement_offset).x)
+    //vec2 d_scale = vec2(1.0 / 12.0);
+
+    vec2 displacement_tex = (vec2(TexCoords.x, TexCoords.y) * displacement_scale) + vec2(displacement_offset.x, displacement_offset.y);
     FragColor = vec4(color, 1);
+    //FragColor = vec4(color, 1);
     //FragColor = vec4(N, 1);
 }

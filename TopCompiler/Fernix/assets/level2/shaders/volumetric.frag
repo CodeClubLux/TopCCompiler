@@ -92,6 +92,7 @@ void main()
 
     vec3 accumFog = 0.0f.xxx;
 
+
     for (int i = 0; i < NB_STEPS; i++)
     {
         if (gCascadeEndClipSpace[0] <= currentDepth && currentDepth <= gCascadeEndClipSpace[1] && currentDepth != 1.0) {
@@ -106,8 +107,9 @@ void main()
     }
     accumFog /= NB_STEPS;
 
-    float depthFromCamera = length(endRayPosition - camPosition);
+    float depthFromCamera = length(currentPosition - camPosition);
     accumFog *= depthFromCamera * (200.0 / endCascade);
+    accumFog += vec3(0.6, 0.6, 1) * 0.0001 * depthFromCamera;
 
     FragColor = vec4(accumFog, 1.0);
     //FragColor = vec4(vec3(fragDepth) * 0.3, 1.0);

@@ -134,7 +134,7 @@ vec3 CalcPointLight(PointLight light, vec3 N, vec3 WorldPos, vec3 V)
 	vec3 H = normalize(V + L);
 
 	float wrap = 0.3;
-    float wrap_diffuse = dot(H, V); // max(0, (dot(H, V) + wrap) / (1 + wrap));
+    float wrap_diffuse = max(0, (dot(H, V) + wrap) / (1 + wrap));
 
 	float distance    = length(light.position - WorldPos);
     float attenuation = 1.0 / (distance * distance);
@@ -170,20 +170,21 @@ void main()
 	norm = vec3(0,1,0); //normalize(norm * 2.0 - 1.0);
 	norm = normalize(TBN * norm);
 
+
     vec3 viewDir = normalize(viewPos - FragPos);
 
     vec3 true_color = texture(material.diffuse, TexCoords).rgb;
 
 	albedo     = texture(material.diffuse, TexCoords).rgb;
 
-	albedo = pow(vec3(0.038501, 0.223639, 0.044645), vec3(2.2));
+	albedo = pow(vec3(0.038501, 0.223639, 0.044645), vec3(2.0));
 
-    if (true_color.r > 0.7) {
+    if ((true_color.r + true_color.g + true_color.b) < 2) {
+    } else {
         discard;
     }
 
-    float shadow = texture(shadowMaskMap, vec2(gl_FragCoord.x / window_width, gl_FragCoord.y / window_height)).r;
-
+    float shadow = 0;
 
     normal     = norm; //getNormalFromNormalMap();
     metallic  = texture(material.metallic, TexCoords).r;
@@ -227,9 +228,6 @@ void main()
 	vec3 ambient = (kD * diffuse + specular) * (1.0 - shadow);
 
     vec3 color = ambient + Lo;
-
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
 
     FragColor = vec4(color, 1);
 }

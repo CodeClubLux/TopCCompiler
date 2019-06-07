@@ -15,6 +15,7 @@ import "key"
 from "opengl" import all
 
 type TerrainControlPoint =
+    radius: float
 
 type Terrain =
     width: uint
@@ -23,11 +24,12 @@ type Terrain =
     show_control_points: bool
     heightmap: Maybe[ecs.ID]
     heightmap_points: [..]float
+    max_height: float
 
 def init_terrain(self: &Terrain) =
     self.heightmap = None
 
-control_points := ecs.make_Store 100, TerrainControlPoint{}
+control_points := ecs.make_Store 100, TerrainControlPoint{ radius = 50}
 
 terrain_heightmap_longterm := [..]float
 terrain_heightmap_longterm.allocator = Some context.longterm_storage
@@ -35,16 +37,24 @@ terrain_heightmap_longterm.allocator = Some context.longterm_storage
 terrains := ecs.make_Store_with_init 3, Terrain{
     width = 6
     height = 6
+    max_height = 50
     size_of_block = 10
     show_control_points = false
     heightmap = None
     heightmap_points = terrain_heightmap_longterm
 }, Some init_terrain
 
-subdivided_plane := model.load_model "subdivided_plane32.fbx"
-model.load_in_place subdivided_plane
+def load_subdivided(num: uint) &model.Model =
+    subdivided_plane := model.load_model "subdivided_plane{num}.fbx"
+    model.load_in_place subdivided_plane
 
-subdivided_plane.meshes[0].aabb.max.y = 1
+    subdivided_plane.meshes[0].aabb.max.y = 1
+
+    subdivided_plane
+
+subdivided_plane32 := load_subdivided 32
+subdivided_plane16 := load_subdivided 16
+subdivided_plane8 := load_subdivided 8
 
 flat_shader := shader.make "shaders/gizmo.vert", "shaders/gizmo.frag"
 terrain_shader := shader.make "shaders/terrain.vert", "shaders/terrain.frag"
@@ -118,23 +128,24 @@ def TerrainSystem.update(&system, m: Layermask) =
 
         size_per_quad := self.size_of_block / 32
 
-        radius := 50
-
         for h := 0..height_quads do
             for w := 0..width_quads do
-                heightmap.append 0
+                height := 0.0
+                total_weight := 0.1
 
                 for (control_point, control_point_trans) := control_points_filtered do
-                    pos := Vec2{w, (height_quads - h) + self.size_of_block}
+                    pos := Vec2{w, h}
                     p := Vec2{control_point_trans.position.x - self_trans.position.x, control_point_trans.position.z - self_trans.position.z}
                     p = p.scale 1.0 / size_per_quad
 
-                    log "({p.x cast int}, {p.y cast int})"
-
+                    radius := control_point.radius
                     dist := (p - pos).len!
-                    weight := math.max (1.0 / (dist * dist) - 1.0 / (radius * radius)), 0.0
 
-                    heightmap[heightmap.length - 1] += weight * (control_point_trans.position.y - (self_trans.position.y + heightmap[heightmap.length - 1]))
+                    weight := (math.max 0.0, ((radius - dist) / radius)) ^ 1.3
+                    total_weight += weight
+
+                    height += weight * (control_point_trans.position.y - (height))
+                    //total_weight += weight
 
                     if dist < 10 then
                         log "========"
@@ -142,11 +153,15 @@ def TerrainSystem.update(&system, m: Layermask) =
                         log "weight: {weight}"
                         log "distance: {dist}"
                         log "height from zero: {control_point_trans.position.y - self_trans.position.y}"
-                        log "height {control_point_trans.position.y - (self_trans.position.y + heightmap[heightmap.length - 1])}"
-                        log "interpolated height {heightmap[heightmap.length - 1]}"
+                        log "height {control_point_trans.position.y - (self_trans.position.y + height)}"
+                        log "interpolated height {height}"
+
+                height = height / total_weight / self.max_height
+                heightmap.append height
 
         bindTexture texture_2D, heightmap_tex.texture_id
-        texImage2D texture_2D, 0, red, width_quads, height_quads, 0, red, type_float, Some heightmap.data cast &Byte
+        log "rebuilt terrain points"
+        texSubImage2D texture_2D, 0, 0, 0, width_quads, height_quads, red, type_float, Some heightmap.data cast &Byte
         generateMipmap texture_2D
 
 def TerrainSystem.render(&system, m: Layermask) =
@@ -166,12 +181,15 @@ def TerrainSystem.render(&system, m: Layermask) =
         guard Some tex := texture.textures.by_id displacement_tex
         else continue
 
+        lod0 := 0
+        lod1 := 0
+        lod2 := 0
 
         for w := 0..self.width do
             for h := 0..self.height do
 
                 t := Transform{
-                    position = self_trans.position + Vec3{w * self.size_of_block,0, h * self.size_of_block}
+                    position = self_trans.position + Vec3{w * self.size_of_block,0, (h + 1.0) * self.size_of_block}
                     scale = Vec3{self.size_of_block, self.size_of_block, self.size_of_block}
                     rotation = identity_quat!
                 }
@@ -191,19 +209,32 @@ def TerrainSystem.render(&system, m: Layermask) =
                             Param_Image (terrain_shader.location "displacement"), displacement_tex
                             Param_Vec2 (terrain_shader.location "displacement_offset"), math.Vec2{1.0 / self.width * w, 1.0 / self.height * h}
                             Param_Vec2 (terrain_shader.location "displacement_scale"), math.Vec2{1.0 / self.width, 1.0 / self.height}
+                            Param_Float (terrain_shader.location "max_height"), self.max_height
                         ]
                     }
                 ]
 
-                subdivided_plane.render_model_for (terrains.id_of self), &t, mat
+                dist := (t.position - self_trans.position).len!
+
+                if dist < 50 then
+                    subdivided_plane32.render_model_for (terrains.id_of self), &t, mat
+                    lod0 += 1
+                elif dist < 100 then
+                    subdivided_plane16.render_model_for (terrains.id_of self), &t, mat
+                    lod1 += 1
+                else
+                    subdivided_plane8.render_model_for (terrains.id_of self), &t, mat
+                    lod2 += 1
 
         //cmd.submit!
+
+        log "rendering: {lod0}, {lod1}, {lod2}"
 
         if Some selected := editor.get_editor!.selected then
             if not (control_points.by_id selected).is_none! then
                 self.show_control_points = true
 
-        if self.show_control_points then
+        if self.show_control_points and editor.in_editor! then
             for (control_point, trans) := ecs.filter2 control_points, transforms, m do
                 primitives.cube.render_model_for (control_points.id_of control_point), trans, &control_point_material
 

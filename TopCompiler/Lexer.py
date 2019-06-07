@@ -1,5 +1,6 @@
 import collections
 from TopCompiler import Error
+import json
 
 class Token:
     def __init__(self,token,type,line,column):
@@ -18,12 +19,12 @@ from TopCompiler import topc
 import os
 from TopCompiler import ImportParser
 
-def lex(target, stream, filename, modifiers, hotswap, lexed, parser):
+def lex(target, stream, filename, modifiers, hotswap, lexed, tags):
     for c in stream: #@cleanup might not need to reparse if isn't modified
         if True: #not hotswap or ImportParser.shouldCompile(False, c, parser):
             lexed[c] = []
             for i in range(len(stream[c])):
-                lexed[c].append(tokenize(c, filename[c][i][1], stream[c][i]))
+                lexed[c].append(tokenize(c, filename[c][i][1], stream[c][i], tags))
         #else:
         #    lexed[c] = [[Token(0, "indent", 0, 0)]]
 
@@ -196,7 +197,7 @@ class LexerState:
 
 linesOfCode = 0
 
-def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
+def tokenize(package, filename, s, tags, spos= 0, sline= 0, scolumn= 0):
     def notBack(iter):
         if iter == 0: return True
         if state.s[iter - 1] != "\\": return True
@@ -214,9 +215,26 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
 
     lenOfS = len(s)
 
+    in_if = 0
+
     while state.iter < lenOfS:
         t = state.s[state.iter]
         completed = True
+
+        if in_if > 0:
+            if t == " " or t == "\n":
+                if t == "\n":
+                    state.line += 1
+                state.tok = ""
+            else:
+                state.tok += t
+            if state.tok == "#endif":
+                in_if = False
+                state.tok = ""
+                state.iter += 1
+
+            state.iter += 1
+            continue
 
         if t == '"' and notBack(state.iter) and not (state.inComment or state.inChar or state.inCommentLine):
             state.inString = not state.inString
@@ -375,6 +393,35 @@ def tokenize(package, filename, s, spos= 0, sline= 0, scolumn= 0):
 
         state.iter += 1
         state.column += 1
+
+        if state.tok == "#if":
+            state.iter += 1
+            state.tok = ""
+            while state.s[state.iter] != "\n" and state.iter < len(state.s):
+                state.tok += state.s[state.iter]
+                state.iter += 1
+
+            try:
+                expects = json.loads(state.tok)
+            except e:
+                Error.error(filename, e)
+
+            should_keep = True
+            for key in expects:
+                if not key in tags: Error.error(filename, ", unknown tag " + key)
+                if expects[key] != tags[key]:
+                    should_keep = False
+                    break
+
+            state.tok = ""
+
+            if not should_keep:
+                in_if = 1
+
+        if state.tok == "#endif":
+            state.tok = ""
+            in_if = 0
+
 
         #print("'" + state.tok + "'", state.inString, state.inCommentLine, state.inComment, state.inChar)
 

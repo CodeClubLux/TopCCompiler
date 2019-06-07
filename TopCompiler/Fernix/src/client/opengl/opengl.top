@@ -97,6 +97,8 @@ ext texture_min_filter: uint = "GL_TEXTURE_MIN_FILTER"
 ext texture_mag_filter: uint = "GL_TEXTURE_MAG_FILTER"
 ext linear: uint = "GL_LINEAR"
 ext texImage2D: |uint, uint, uint, int, int, uint, uint, uint, Maybe[&Byte]| -> none = "glTexImage2D"
+ext texSubImage2D: |uint, uint, uint, uint, uint, uint, uint, uint, Maybe[&Byte]| -> none = "glTexSubImage2D"
+
 ext texImage2DMultisample: |uint, uint, uint, int, int, bool| -> none = "glTexImage2DMultisample"
 
 ext generateMipmap: |uint| -> none = "glGenerateMipmap"

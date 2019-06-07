@@ -213,7 +213,7 @@ class Assign(Node):
                 gen(name, pattern)
                 return
         else:
-            if not type(self.nodes[0]) is Tree.Tuple:
+            if not (type(self.nodes[0]) is Tree.Tuple and len(self.nodes[0].nodes) > 1):
                 self.nodes[0].compileToC(codegen)
                 codegen.append(" = ")
                 self.nodes[1].compileToC(codegen)

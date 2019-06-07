@@ -4,6 +4,7 @@ from "math" import Vec2
 from "key" import (Key, KeyAction, MouseButton)
 from "nuklearWrapper" import all
 import "vfs"
+import "sBuffer"
 
 def framebuffer_size_callback(window_ptr: &GLFWwindow, width: int, height: int) =
     context = (glfwGetWindowUserPointer window_ptr) cast &Context
@@ -197,6 +198,17 @@ def make_Window() &Window =
     fullscreen := false
     shadow_resolution := 4096.0
 
+    if Some f := vfs.open_file "save_files/graphics_settings.tsf", ReadFile then
+        read_buffer := sBuffer.make_read_Buffer f.read!
+
+        read_buffer.read_object (get_type float), &width
+        read_buffer.read_object (get_type float), &height
+        read_buffer.read_object (get_type bool), &vSync
+        read_buffer.read_object (get_type bool), &fullscreen
+        read_buffer.read_object (get_type bool), &shadow_resolution
+
+        f.free!
+
     context.window = &popup
 
     while not popup.should_close! do
@@ -235,6 +247,21 @@ def make_Window() &Window =
 
     nk_glfw3_shutdown!
     popup.close!
+
+    if Some f := vfs.open_file "save_files/graphics_settings.tsf", WriteFile then
+        read_buffer := sBuffer.make_write_Buffer 100
+
+        read_buffer.write_object (get_type float), &width
+        read_buffer.write_object (get_type float), &height
+        read_buffer.write_object (get_type bool), &vSync
+        read_buffer.write_object (get_type bool), &fullscreen
+        read_buffer.write_object (get_type bool), &shadow_resolution
+
+        f.write read_buffer.string_buffer!
+
+        f.free!
+
+
 
     w := box Window{
         title = "Fernix"

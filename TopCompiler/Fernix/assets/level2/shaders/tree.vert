@@ -18,11 +18,7 @@ uniform vec2 transformUVs;
 
 void main()
 {
-    if (transformUVs.x == 0 && transformUVs.y == 0) {
-        TexCoords = vec2(-aTexCoords.x * 0.96 - 0.04 , aTexCoords.y);
-    } else {
-        TexCoords = vec2(aTexCoords.x * transformUVs.x, aTexCoords.y * transformUVs.y);
-    }
+    TexCoords = vec2(-aTexCoords.x * 0.96 - 0.04 , aTexCoords.y);
 
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 

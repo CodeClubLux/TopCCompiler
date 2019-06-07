@@ -57,6 +57,9 @@ type NameHierachy =
     children: [..]&NameHierachy
     id: ecs.ID
 
+def NameHierachy.toString(&self) string =
+    "{self.name} : {self.id}"
+
 def insert_in(names: &[..]Maybe[&NameHierachy], id: uint, name: &NameHierachy) =
     if id >= names.length then
         for i := 0..(id - names.length + 1) do
@@ -66,7 +69,8 @@ def insert_in(names: &[..]Maybe[&NameHierachy], id: uint, name: &NameHierachy) =
 
 def get_id(names: []Maybe[&NameHierachy], id: uint) Maybe[&NameHierachy] =
     if names.length <= id then None
-    else names[id]
+    else
+        names[id]
 
 def Lister.get_hierachy(&self) []&NameHierachy =
     names := [..]Maybe[&NameHierachy]
@@ -83,10 +87,9 @@ def Lister.get_hierachy(&self) []&NameHierachy =
         hierachy := names[id].unwrap!
 
         if Some local := local_transforms.by_id id then
-            if Some owner_named := get_id names, local.owner then
-                owner_named.children.append hierachy
-            else
-                top.append hierachy
+            match get_id names, local.owner with
+                Some owner_named -> owner_named.children.append hierachy
+                None -> top.append hierachy
         else
             top.append hierachy
 

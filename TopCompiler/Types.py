@@ -392,7 +392,6 @@ def parseGeneric(parser, typ):
 
     return replace
 
-
 class Type:
     name = "type"
     normalName = ""
@@ -1196,12 +1195,11 @@ class Enum(Type):
             b = other.generic[name]
 
             if not (b.isType(T) and b.owner == (
-            self.package + "." if self.package != "_global" else "") + self.normalName):
+            self.package + "." if self.package != "_global" else "") + self.normalName) and not (a.isType(T) and b.isType(T)):
                 if a != b:
                     node.error(
                         "For generic parameter " + name + ": " + "Expecting type " + str(a) + ", but got type " + str(
                             b))
-
 
 class Alias(Type):
     def __init__(self, package, name, typ, generic):

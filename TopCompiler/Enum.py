@@ -134,14 +134,17 @@ def checkCase(parser, case, typ, first=False):
             node = case.nodes[iter]
             checkCase(parser, node, typ.elemT)
     elif type(case) is Tree.Operator and case.kind == "or" and not case.curry and not case.partial:
+        for n in case.nodes:
+            checkCase(parser, n, typ)
+
         typT = case.nodes[0].type
         if typT != case.nodes[1].type:
             case.nodes[1].error("expecting type to be "+str(typ)+" and not "+str(case.nodes[1]))
 
         if typT != typ:
             case.error("expecting result of or, to be of type "+str(typ)+" not "+str(typT))
-        case.type = Types.Bool()
-        case.opT = Types.Bool()
+        case.type = typ
+        case.opT = typ
     elif type(case) in [Tree.String, Tree.Int, Tree.Float, Tree.Bool, Tree.Char]:
         if case.type != typ:
             case.error("expecting type "+str(case.type)+", not "+str(typ))
@@ -157,32 +160,43 @@ def checkCase(parser, case, typ, first=False):
         case.error("unknown pattern")
 
 def missingPattern(typ, match):
-    under = False
-    const = []
+    class Context:
+        under = False
+        const = []
+
+    context = Context()
+
     for iter in range(1, len(match.nodes), 2):
         m = match.nodes[iter].nodes[0]
-        
-        if type(m) is Tree.Under:
-            under = True
 
-            if iter != len(match.nodes)-2:
-                m.error("_ must be the last pattern")
-            return
-        elif type(m) in [Tree.FuncCall, Tree.ReadVar]:
-            if type(m) is Tree.FuncCall:
-                name = m.nodes[0].name
-            else:
-                name = m.name
+        def loop(m):
+            if type(m) is Tree.Under:
+                context.under = True
 
-            if name in const:
-                m.error("Duplicate pattern")
+                if iter != len(match.nodes)-2:
+                    m.error("_ must be the last pattern")
 
-            const.append(name)
+            elif type(m) in [Tree.FuncCall, Tree.ReadVar]:
+                if type(m) is Tree.FuncCall:
+                    name = m.nodes[0].name
+                else:
+                    name = m.name
 
-    if not typ.isType(Types.Enum) and not under:
+                if name in context.const:
+                    m.error("Duplicate pattern")
+
+                context.const.append(name)
+            elif type(m) is Tree.Operator and m.kind == "or":
+                for n in m:
+                    loop(n)
+
+        loop(m)
+        if context.under: return
+
+    if not typ.isType(Types.Enum) and not context.under:
         match.error("missing _ case to match all possibilities")
-    elif len(const) < len(typ.const):
-        match.error("missing pattern "+", ".join([i for i in typ.const if not i in const]))
+    elif len(context.const) < len(typ.const):
+        match.error("missing pattern "+", ".join([i for i in typ.const if not i in context.const]))
 
 def match(parser):
     t = parser.thisToken()

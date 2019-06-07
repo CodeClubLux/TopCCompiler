@@ -40,7 +40,7 @@ model_settings_system := ecs.make_Store_with_init 20, ModelSettings{
 longterm_arr := [..]ecs.ID
 longterm_arr.allocator = Some context.longterm_storage
 
-prefabs := ecs.make_Store_with_init 20, Prefab{
+prefabs := ecs.make_Store_with_init 40, Prefab{
     name = "PREFAB"
     children = longterm_arr
     last = None
@@ -86,6 +86,8 @@ def ModelSettings.load(&self) =
             break
 
     m := model.load_model self.filename
+    model.load_in_place m
+
     if exists then
         model.load_in_place m //make sure to update
         ecs.free_entity model_settings_system.id_of self
@@ -180,6 +182,7 @@ import "debugDraw"
 import "ibl"
 import "renderPass"
 import "window"
+import "runner"
 
 type PrefabSystem =
     preview_tex: texture.Texture
@@ -285,6 +288,8 @@ def PrefabSystem.render(&self, m: layermask.Layermask) =
                 new_cam.fov = 60
                 new_cam.update_matrices!
 
+                log model_renderer_trans.rotation
+
                 mesh.render_model_for id, model_renderer_trans, *setting.materials
 
                 draw.submit_to_gpu!
@@ -344,7 +349,6 @@ def PrefabSystem.update(&self, m: layermask.Layermask) =
                 rb.shape = physics.Box aabb.max
 
     for prefab := ecs.filter prefabs, layermask.any_layer do
-
         prefab_id := prefabs.id_of prefab
 
         last_id :=
@@ -358,10 +362,11 @@ def PrefabSystem.update(&self, m: layermask.Layermask) =
 
         delete_children := [..]uint
 
+        count := 0
         for id := prefab.children do
             guard Some e := ecs.entities.by_id id
             else
-                delete_children.append i
+                delete_children.append count
                 continue
 
             for store := ecs.component_types do
@@ -400,6 +405,8 @@ def PrefabSystem.update(&self, m: layermask.Layermask) =
                     x := store.make id
                     memcpy x, comp.get_pointer_to_data!, comp_type.get_size! cast uint
 
+            count += 1
+
         assert delete_children.length < 2, "Can only delete one prefab child"
         for pos := delete_children do //todo only works with one
             prefab.children[pos] = prefab.children[prefab.children.length - 1]
@@ -409,6 +416,7 @@ def PrefabSystem.update(&self, m: layermask.Layermask) =
         last_id = ecs.clone prefab_id
         prefab.last = Some last_id // updated last prefab
         ((ecs.entities.by_id last_id).unwrap!).enabled = false
+
 
 prefab_system := make_PrefabSystem!
 ecs.register_system &prefab_system

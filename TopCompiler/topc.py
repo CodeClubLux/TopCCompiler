@@ -385,7 +385,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
 
             #print(cache.usedModules)
 
-            lexed = Lexer.lex(target, sources, filenames, files, cache, {}, global_parser)
+            lexed = Lexer.lex(target, sources, filenames, files, cache, {}, tags)
 
             print("Lexed and parsed : " + str(Lexer.linesOfCode))
 
@@ -540,7 +540,7 @@ def start(run= False, _raise=False, dev= False, doc= False, init= False, _hotswa
                     sc = parser.compiled[i][0]
 
                     if sc or not cache:
-                        inc = CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug, sc= sc).compile(opt=opt)
+                        inc = CodeGen.CodeGen(parser, order_of_modules, i, parser.compiled[i][1][0], parser.compiled[i][1][1], target, opt, debug= debug).compile(opt=opt)
                         includes.extend(inc)
                         parser.includes[i] = inc
                     else:
@@ -647,7 +647,7 @@ def get_time_modified(name):
     return datetime.datetime.fromtimestamp(int(t))
 
 def modified(_target, files, outputfile, jsFiles=[]):
-    #return True #while developing incremental compilation sucks
+    return True #while developing incremental compilation sucks
 
     def inner():
         target = _target

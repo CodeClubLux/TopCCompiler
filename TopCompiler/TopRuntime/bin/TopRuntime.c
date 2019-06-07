@@ -272,7 +272,6 @@ static inline struct _global_String _global_StringInit(unsigned int length, char
     struct _global_String s;
     s.data = data;
     s.length = length;
-
     return s;
 };
 struct _global_String _global_String_toStringByValue(struct _global_String s,__Context) {
@@ -364,6 +363,10 @@ _Bool _global_String_op_eqByValue(struct _global_String self, struct _global_Str
 
 _Bool _global_String_op_eq(struct _global_String* s, struct _global_String* other, __Context) {
     return _global_String_op_eqByValue(*s, *other, context);
+}
+
+_Bool _global_String_op_neByValue(struct _global_String s, struct _global_String o, __Context) {
+    return !_global_String_op_eqByValue(s,o,context);
 }
 
 void _global_log(struct _global_String,__Context);
@@ -1013,12 +1016,12 @@ uint64_t _global_TemporaryStorage_get_occupied(struct _global_TemporaryStorage* 
 void* _global_TemporaryStorage_alloc(struct _global_TemporaryStorage* _global_self, uint64_t _global_size, struct _global_Context* bx){;
 ;
 uint64_t _global_occupied;_global_occupied = (_global_self)->occupied;;
-(_global_self)->occupied=(_global_self)->occupied+_global_size;;
+(_global_self)->occupied = (_global_self)->occupied+_global_size;;
 if((_global_self)->occupied>(_global_self)->highest){;
-(_global_self)->highest=(_global_self)->occupied;;
+(_global_self)->highest = (_global_self)->occupied;;
 ;};
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-(bx)->allocator=&(_global_malloc_as_allocator);;
+(bx)->allocator = &(_global_malloc_as_allocator);;
 _global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->maxSize),bx),bx),_global_StringInit(0,""),bx),bx);
 ;};
 ;return _global_offsetPtr((_global_self)->data,(int64_t)_global_occupied,bx);
@@ -1028,9 +1031,9 @@ void _global_TemporaryStorage_dealloc(struct _global_TemporaryStorage* _global_s
 ;}
 void _global_TemporaryStorage_reset_to(struct _global_TemporaryStorage* _global_self, uint64_t _global_occupied, struct _global_Context* bx){;
 ;
-(_global_self)->occupied=_global_occupied;;
+(_global_self)->occupied = _global_occupied;;
 if((_global_self)->occupied>=(_global_self)->maxSize){;
-(bx)->allocator=&(_global_malloc_as_allocator);;
+(bx)->allocator = &(_global_malloc_as_allocator);;
 _global_panic(_global_String_op_addByValue(_global_String_op_addByValue(_global_StringInit(48,"ERROR: used more tempory memory than available: "),_global_u64_toStringByValue(((_global_self)->occupied),bx),bx),_global_StringInit(0,""),bx),bx);
 ;};
 ;}
@@ -1079,7 +1082,7 @@ struct _global_Maybe_uint _global_RangeIterator_next(struct _global_RangeIterato
 struct _global_Range* _global_range;_global_range = &(((_global_self)->range));;
 ;if((_global_self)->it<(_global_range)->end){;
 unsigned int _global_tmp;_global_tmp = (_global_self)->it;;
-(_global_self)->it=(_global_self)->it+1;;
+(_global_self)->it = (_global_self)->it+1;;
 return _global_Some_uint(_global_tmp,bD);}
 else{return tmp_globalb(_global_None);};
 ;}
@@ -1759,7 +1762,7 @@ void _globalInit() {
 ;
 ;
 _global_temporary_storage = _global_new_TemporaryStorage((uint64_t)10000000,(&_global_context));;
-_global_longterm_storage_allocator = _global_new_TemporaryStorage((uint64_t)100000000,(&_global_context));;
+_global_longterm_storage_allocator = _global_new_TemporaryStorage((uint64_t)1000000000,(&_global_context));;
 _global_malloc = _global_MallocInit();;
 _global_temporary_storage_as_allocator = _global_AllocatorFromStruct(&(_global_temporary_storage),&rTemporaryStorage_VTABLE_FOR_Allocator,_global_TypeFromStruct(_global_TemporaryStorage_get_type(NULL,(&_global_context)),&rStructType_VTABLE_FOR_Type,rStructType_VTABLE_FOR_Type.type, &_global_StructType_toString, &_global_StructType_get_size), &_global_TemporaryStorage_get_occupied, &_global_TemporaryStorage_alloc, &_global_TemporaryStorage_dealloc, &_global_TemporaryStorage_reset_to, &_global_TemporaryStorage_free_allocator);;
 _global_malloc_as_allocator = _global_AllocatorFromStruct(&(_global_malloc),&rMalloc_VTABLE_FOR_Allocator,_global_TypeFromStruct(_global_Malloc_get_type(NULL,(&_global_context)),&rStructType_VTABLE_FOR_Type,rStructType_VTABLE_FOR_Type.type, &_global_StructType_toString, &_global_StructType_get_size), &_global_Malloc_get_occupied, &_global_Malloc_alloc, &_global_Malloc_dealloc, &_global_Malloc_reset_to, &_global_Malloc_free_allocator);;

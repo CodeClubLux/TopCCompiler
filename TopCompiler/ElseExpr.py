@@ -6,6 +6,7 @@ from TopCompiler import ExprParser
 from TopCompiler import Error
 from TopCompiler import Scope
 from TopCompiler import IfExpr
+import types
 
 def iterForIf(ifNode):
     i = 0
@@ -22,7 +23,6 @@ def checkIf(parser, i):
     for iter in i.nodes[3:][::2]:
         try:
             thisTyp = iter.type
-
             typ.duckType(parser, thisTyp, iter, i, 0)
         except EOFError as e:
             try:

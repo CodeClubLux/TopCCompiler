@@ -1,0 +1,17 @@
+import "ecs"
+import ""
+
+type World =
+    entities: ecs.Store[]
+    
+    cameras: ecs.Store[]
+
+
+type API =
+    world: &World
+
+type UpdateParams =
+    layermask: Layermask
+
+type RenderParams =
+    layermask: Layermask

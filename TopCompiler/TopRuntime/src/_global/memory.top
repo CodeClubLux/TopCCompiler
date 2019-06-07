@@ -16,7 +16,7 @@ type Allocator with
     def free_allocator()
 
 temporary_storage := new_TemporaryStorage 10_000_000
-longterm_storage_allocator := new_TemporaryStorage 100_000_000
+longterm_storage_allocator := new_TemporaryStorage 1000_000_000
 malloc := Malloc{}
 
 temporary_storage_as_allocator := &temporary_storage as Allocator

@@ -8,11 +8,13 @@ import "ecs"
 import "layermask"
 import "window"
 import "vfs"
-import "transform"
+from "transform" import all
 import "events"
 import "window"
 import "texture"
 import "debugDraw"
+import "camera"
+from "math" import Vec3
 
 type ModelAssetTabEvents either
     SelectedModel(uint)
@@ -81,6 +83,13 @@ def ModelAssetTab.update(&self) =
 
         guard Some prefab := prefabs.by_id (self.selected_id cast uint)
         else return
+
+        if Some trans := transforms.by_id (self.selected_id cast uint) then
+            cam := camera.get_camera layermask.make_Layermask!.enable layermask.editor_layer
+            if Some cam_trans := transforms.by_id camera.cameras.id_of cam then
+                new_trans := transforms.make id
+                *new_trans = (*trans)
+                new_trans.position = cam_trans.position + (cam_trans.rotation.mul_vec3 Vec3{0,0,-10})
 
         prefab.children.append id
 

@@ -28,13 +28,16 @@ uniform sampler2D displacement;
 uniform vec2 displacement_offset;
 uniform vec2 displacement_scale;
 
+uniform float max_height;
+
 void main()
 {
-    //TexCoords = vec2(aTexCoords.x, aTexCoords.y);
-    TexCoords = vec2(aTexCoords.x * transformUVs.x, aTexCoords.y * transformUVs.y);
+    TexCoords = vec2(aTexCoords.x, aTexCoords.y);
+    //TexCoords = vec2(aTexCoords.x * transformUVs.x, aTexCoords.y * transformUVs.y);
 
-    vec2 displacement_tex = aTexCoords * displacement_scale + vec2(displacement_offset.x, displacement_offset.y);
+    vec2 displacement_tex = (vec2(aTexCoords.y, 1.0 - aTexCoords.x) * displacement_scale) + vec2(displacement_offset.x, displacement_offset.y);
     float height = texture(displacement, displacement_tex).x;
+    height *= max_height / 30.0f;
 
     gl_Position = projection * view * model * vec4(aPos + vec3(0,height,0), 1.0);
 
