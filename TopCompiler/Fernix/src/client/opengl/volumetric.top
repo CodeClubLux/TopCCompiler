@@ -9,9 +9,8 @@ from "transform" import all
 import "primitives"
 import "camera"
 from "frameBuffer" import all
-
-volume_shader := shader.make "shaders/screenspace.vert", "shaders/volumetric.frag"
-upsample_shader := shader.make "shaders/screenspace.vert", "shaders/volumetric_upsample.frag"
+import "ecs"
+from "layermask" import all
 
 type FogMap =
     framebuffer: Framebuffer
@@ -20,6 +19,8 @@ type FogMap =
 type VolumetricPass =
     depth_prepass: texture.Texture
     calc_fog: FogMap
+    volume_shader: &shader.Shader
+    upsample_shader: &shader.Shader
     //upsampled: FogMap
 
 def make_FogMap(width: uint, height: uint) FogMap =
@@ -49,12 +50,15 @@ def make_FogMap(width: uint, height: uint) FogMap =
         fogMap = tex
     }
 
-def make_VolumetricPass(depthPrepass: texture.Texture) VolumetricPass =
-    w := window.get_window!
+def make_VolumetricPass(depthPrepass: texture.Texture, world: &ecs.World, params: &ecs.RenderParams) VolumetricPass =
+    volume_shader := shader.make world, "shaders/screenspace.vert", "shaders/volumetric.frag"
+    upsample_shader := shader.make world, "shaders/screenspace.vert", "shaders/volumetric_upsample.frag"
 
     VolumetricPass{
         depth_prepass = depthPrepass
-        calc_fog = make_FogMap w.width / 2, w.height / 2
+        calc_fog = make_FogMap params.width / 2, params.height / 2
+        volume_shader = volume_shader
+        upsample_shader = upsample_shader
     }
 
 def VolumetricPass.clear(&self) =
@@ -68,7 +72,7 @@ type ShadowParams =
     to_light: &Mat4x4
     to_world: &Mat4x4
 
-def VolumetricPass.render_with_cascade(&self, depthMap: &texture.Texture, in_range: Vec2, to_light: &Mat4x4, to_world: &Mat4x4, cascade: uint) =
+def VolumetricPass.render_with_cascade(using &self, world: &ecs.World, params: &ecs.RenderParams, depthMap: &texture.Texture, in_range: Vec2, to_light: &Mat4x4, to_world: &Mat4x4, cascade: uint) =
     volume_shader.bind!
 
     self.calc_fog.framebuffer.bind!
@@ -78,8 +82,10 @@ def VolumetricPass.render_with_cascade(&self, depthMap: &texture.Texture, in_ran
 
     blendFunc one, one
 
-    dir_light := lights.get_dir_light!
-    guard Some dir_light_trans := transforms.by_id lights.dir_lights.id_of dir_light
+    dir_light := lights.get_dir_light world
+    main_camera := camera.get_camera world, make_Layermask!.enable game_layer
+
+    guard Some dir_light_trans := world.transform.by_id ecs.id_of dir_light
     else return
 
     self.depth_prepass.bind_to 0
@@ -88,7 +94,7 @@ def VolumetricPass.render_with_cascade(&self, depthMap: &texture.Texture, in_ran
     depthMap.bind_to 1
     volume_shader.set_int (volume_shader.uniform_location "depthMap"), 1
 
-    guard Some cam_trans := transforms.by_id camera.cameras.id_of context.camera
+    guard Some cam_trans := world.transform.by_id ecs.id_of main_camera
     else return
 
     tmp := to_world.mul_vec4 Vec4{0,0,-1,1}
@@ -107,19 +113,19 @@ def VolumetricPass.render_with_cascade(&self, depthMap: &texture.Texture, in_ran
     volume_shader.set_mat4x4 (volume_shader.uniform_location "toWorld"), to_world
 
     volume_shader.set_int (volume_shader.uniform_location "cascadeLevel"), cascade
-    volume_shader.set_float (volume_shader.uniform_location "endCascade"), context.camera.far_plane
+    volume_shader.set_float (volume_shader.uniform_location "endCascade"), main_camera.far_plane
 
     ident := math.identity_mat!
     volume_shader.set_mat4x4 (volume_shader.uniform_location "model"), &ident
 
-    primitives.render_quad!
+    primitives.render_quad params
 
     disable blend
     enable depth_test
 
     self.calc_fog.framebuffer.unbind!
 
-def VolumetricPass.render_upsampled(&self, current_frame: &texture.Texture) =
+def VolumetricPass.render_upsampled(using &self, params: &ecs.RenderParams, current_frame: &texture.Texture) =
     volumetricMap := self.calc_fog.fogMap
 
     upsample_shader.bind!
@@ -142,6 +148,6 @@ def VolumetricPass.render_upsampled(&self, current_frame: &texture.Texture) =
     ident := math.identity_mat!
     upsample_shader.set_mat4x4 (upsample_shader.uniform_location "model"), &ident
 
-    primitives.render_quad!
+    primitives.render_quad params
 
     enable depth_test

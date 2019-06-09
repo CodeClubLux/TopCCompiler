@@ -19,28 +19,15 @@ type Material =
     params: []Param
     state: &draw.State
 
-pbr_shader := shader.make "shaders/pbr.vert", "shaders/pbr.frag"
+def make_DefaultMaterial(world: &ecs.World) Material =
+    pbr_shader := shader.make world, "shaders/pbr.vert", "shaders/pbr.frag"
 
-default_material := Material{
-    "default"
-    shader = pbr_shader.get_id!
-    params = box substance_params "wood_2", "Stylized_Wood"
-    state = box draw.State{
-        cull = draw.Cull_None
-        depth_func = draw.DepthFunc_Lequal
-        order = 0
-        clear_depth_buffer = false
+    Material{
+        name = "default"
+        shader = ecs.id_of pbr_shader
+        params = box substance_params world, pbr_shader, "wood_2", "Stylized_Wood"
+        state = &draw.default_state
     }
-}
-
-/*
-def Material.init(&self) =
-    log "initializing material"
-    log self.shader.v_filename
-    //log self.params
-
-    self.shader.load_in_place!
-*/
 
 def material_by_name(materials: []Material, name: string) Maybe[&Material] =
     for i := 0..materials.length do
@@ -51,11 +38,11 @@ def material_by_name(materials: []Material, name: string) Maybe[&Material] =
 
     None
 
-def substance_params(folder: string, name: string) [5]Param =
+def substance_params(world: &ecs.World, shad: &shader.Shader, folder: string, name: string) [5]Param =
     [
-        Param_Image (pbr_shader.location "material.diffuse"), texture.textures.id_of texture.load "{folder}/{name}_basecolor.jpg"
-        Param_Image (pbr_shader.location "material.metallic"), texture.textures.id_of texture.load "{folder}/{name}_metallic.jpg"
-        Param_Image (pbr_shader.location "material.roughness"), texture.textures.id_of texture.load "{folder}/{name}_roughness.jpg"
-        Param_Image (pbr_shader.location "material.normal"), texture.textures.id_of texture.load "{folder}/{name}_normal.jpg"
-        Param_Vec2 (pbr_shader.location "transformUVs"), math.Vec2{ 100, 100 }
+        Param_Image (shad.location "material.diffuse"), ecs.id_of texture.load world, "{folder}/{name}_basecolor.jpg"
+        Param_Image (shad.location "material.metallic"), ecs.id_of texture.load world, "{folder}/{name}_metallic.jpg"
+        Param_Image (shad.location "material.roughness"), ecs.id_of texture.load world, "{folder}/{name}_roughness.jpg"
+        Param_Image (shad.location "material.normal"), ecs.id_of texture.load world, "{folder}/{name}_normal.jpg"
+        Param_Vec2 (shad.location "transformUVs"), math.Vec2{ 100, 100 }
     ]

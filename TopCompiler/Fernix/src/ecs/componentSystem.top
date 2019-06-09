@@ -2,19 +2,15 @@ type Slot[T] either
     Free(Maybe[&Slot[T]])
     Active(T, ID)
 
-type Pair[A,B] =
-    a: A
-    b: B
-
 type Store[T] =
     default_with: T
     id_to_obj: [..]Maybe[&T]
     components: []Slot[T]
     free_node: Maybe[&Slot[T]]
     max_number: uint
-    init: Maybe[|&T| -> none]
+    init: Maybe[|&World, &T| -> none]
 
-def make_Store_with_init[T](max_number: uint, default: T, init: Maybe[|&T| -> none]) &Store[T] =
+def make_Store_with_init[T](max_number: uint, default: T, init: Maybe[|&World, &T| -> none]) Store[T] =
     assert max_number > 0, "Minimum number of elements has to be bigger than 0"
 
     id_to_key := [..]Maybe[&T]
@@ -29,7 +25,7 @@ def make_Store_with_init[T](max_number: uint, default: T, init: Maybe[|&T| -> no
     for i := 0..max_number - 1 do
         slots[i] = Free Some &slots[i+1]
 
-    self := box Store{
+    Store{
         default_with = default
         id_to_obj = id_to_key
         free_node = Some &slots[0]
@@ -38,14 +34,9 @@ def make_Store_with_init[T](max_number: uint, default: T, init: Maybe[|&T| -> no
         init = init
     }
 
-    self.deserialize!
-
-    component_types.append self
-
-    self
-
-def Store[T].get_all_active_component_ids(&self) []ID =
-    components := self.get_all_active!
+def Store[T].get_all_active_component_ids(&self, world: &World) []ID =
+    components := self.get_all_active world
+    defer free components.data
 
     ids := [..]ID
     ids.reserve components.length
@@ -53,16 +44,8 @@ def Store[T].get_all_active_component_ids(&self) []ID =
         ids.append self.id_of obj
     ids
 
-def make_Store[T](max_number: uint, default: T) &Store[T] =
-    make_Store_with_init max_number, default, None as Maybe[|&T| -> none]
-
-entities := make_Store 200, Entity{
-    enabled = true
-    layermask = make_Layermask!
-        .enable game_layer
-        .enable serialize_layer
-        .enable pickable_layer
-}
+def make_Store[T](max_number: uint, default: T) Store[T] =
+    make_Store_with_init max_number, default, None as Maybe[|&World, &T| -> none]
 
 def Store[T].get_component_type(&self) Type = get_type T
 
@@ -117,75 +100,57 @@ def Store[T].add_component(&self, id: ID, comp: T) &T =
 def Store[T].make(&self, id: ID) &T =
     self.add_component id, self.default_with
 
-def Store[T].get_all_active(&self) []&T =
+def Store[T].get_all_active(&self, world: &World) []&T =
     active_components := [..]&T
 
     for slot := self.components do
-        guard Some active_comp := self.index_active i
+        guard Some (active_comp, _) := self.index_active world, i
         else continue
 
-        active_components.append active_comp.a
+        active_components.append active_comp
 
     active_components
 
-def Store[T].mask_components(&self, layer_mask: Layermask) []&T =
+def Store[T].mask_components(&self, world: &World, layer_mask: Layermask) []&T =
     components := [..]&T
 
     for slot := self.components do
-        guard Some active_comp := self.index_active i
+        guard Some (active_comp, e) := self.index_active world, i
         else continue
 
-        if not active_comp.b.layermask.mask layer_mask then
-            components.append active_comp.a
+        if not e.layermask.mask layer_mask then
+            components.append active_comp
 
     components
 
-def Store[T].index_active(&self, i: uint) Maybe[Pair[&T, &Entity]] =
+def Store[T].index_active(&self, world: &World, i: uint) Maybe[(&T, &Entity)] =
     guard Active _, id := self.components[i]
     else return None
 
     comp := (&self.components[i]) cast &T
-    guard Some entity := entities.by_id id
+    guard Some entity := world.entity.by_id id
     else return None
 
     if not entity.enabled then return None
 
-    Some Pair{comp, entity}
+    Some (comp, entity)
 
-def Store[T].get_active(&self) Maybe[&T] =
+def Store[T].get_active(&self, world: &World) Maybe[&T] =
     for slot := self.components do
-        if Some active_comp := self.index_active i then
-            return Some active_comp.a
+        if Some (active_comp, _) := self.index_active world, i then
+            return Some active_comp
 
     None
 
-def Store[T].first_in_mask(&self, m: Layermask) Maybe[&T] =
+def Store[T].first_in_mask(&self, world: &World, m: Layermask) Maybe[&T] =
     for slot := self.components do
-        guard Some active_comp := self.index_active i
+        guard Some (active_comp, e) := self.index_active world, i
         else continue
 
-        if not active_comp.b.layermask.mask m then
-            return Some active_comp.a
+        if not e.layermask.mask m then
+            return Some active_comp
 
     None
-
-/*
-def Store[T].render(&self, layer_mask: Layer) =
-    for i := 0..self.components.length do
-        guard Some comp := self.index_active i
-        else continue
-
-        if not mask comp.b.layermask, layer_mask then
-            comp.render!
-
-def Store[T].update(&self, layer_mask: Layermask) =
-    for i := 0..self.components.length do
-        guard Some comp := self.index_active i
-        else continue
-
-        if not mask comp.get_entity!.layermask, layer_mask then
-            comp.update!
-*/
 
 def Store[T].id_of(&self, comp: &T) ID =
     guard Active _, id := *(comp cast &Slot[T])
@@ -245,7 +210,7 @@ def get_struct_type[T]() &StructType =
 
 import "vfs"
 
-def Store[T].serialize(&self) =
+def Store[T].serialize(&self, world: &World) =
     new_context := *context
     new_context.allocator = new_context.longterm_storage
 
@@ -258,7 +223,7 @@ def Store[T].serialize(&self) =
         serialize_layermask := make_Layermask!
             .enable layermask.serialize_layer
 
-        comps := self.mask_components serialize_layermask //will not serialize unactive components
+        comps := self.mask_components world, serialize_layermask //will not serialize unactive components
 
         write_buffer := (sBuffer.make_write_Buffer 30_000_000)
         write_buffer.write_integer comps.length
@@ -287,7 +252,7 @@ def Store[T].serialize(&self) =
         f.write write_buffer.string_buffer!
         f.free!
 
-def Store[T].deserialize(&self) =
+def Store[T].deserialize(&self, world: &World) =
     //return
 
     log "deserializing {get_type T} ==========================="
@@ -316,7 +281,7 @@ def Store[T].deserialize(&self) =
         for i := 0..num do
             comp : T = self.default_with
             id := read_buffer.read_integer!
-            skip_ID id
+            world.skip_ID id
 
             for field := last_component_type_info.fields do
                 if field.name == "bt_rigid_body" then continue
@@ -351,35 +316,10 @@ def Store[T].deserialize(&self) =
             guard Some init := self.init
             else continue
 
-            init ptr
+            init world, ptr
 
-def render(layer_mask: Layermask) =
-    for system := systems do
-        system.render layer_mask
-
-def update(layer_mask: Layermask) =
-    for system := systems do
-        system.update layer_mask
-
-def serialize() =
-    for i := 0..component_types.length do
-        component_types[i].serialize!
-
-def components_by_id(id: ID) [..]Component =
-    components := [..]Component
-
-    for system := component_types do
-        match system.get_by_id id with
-            Some comp -> components.append comp
-            _ ->
-
-    components
-
-def register_system(s: System) =
-    systems.append s
-
-def filter2[A, B](store_a: &Store[A], store_b: &Store[B], lm: Layermask) [](&A, &B) =
-    components_a := store_a.mask_components lm
+def filter2[A, B](world: &World, store_a: &Store[A], store_b: &Store[B], lm: Layermask) [](&A, &B) =
+    components_a := store_a.mask_components world, lm
     zipped := [..](&A, &B)
 
     for comp := components_a do
@@ -388,8 +328,8 @@ def filter2[A, B](store_a: &Store[A], store_b: &Store[B], lm: Layermask) [](&A, 
 
     zipped
 
-def filter3[A,B,C](store_a: &Store[A], store_b: &Store[B], store_c: &Store[C], lm: Layermask) [](&A, &B, &C) =
-    components_a := store_a.mask_components lm
+def filter3[A,B,C](world: &World, store_a: &Store[A], store_b: &Store[B], store_c: &Store[C], lm: Layermask) [](&A, &B, &C) =
+    components_a := store_a.mask_components world, lm
     zipped := [..](&A, &B, &C)
 
     for comp := components_a do
@@ -405,5 +345,5 @@ def filter3[A,B,C](store_a: &Store[A], store_b: &Store[B], store_c: &Store[C], l
 
     zipped
 
-def filter[A](store: &Store[A], lm: Layermask) []&A =
-    store.mask_components lm
+def filter[A](world: &World, store: &Store[A], lm: Layermask) []&A =
+    store.mask_components world, lm

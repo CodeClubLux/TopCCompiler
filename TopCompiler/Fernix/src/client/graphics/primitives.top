@@ -8,17 +8,24 @@ from "math" import all
 import "layermask"
 import "culling"
 
-cube := model.load_model "cube.fbx"
-sphere := model.load_model "sphere.fbx"
-//plane := model.load_model "plane.fbx"
+type Primitives =
+    cube: &model.Model
+    sphere: &model.Model
+    plane: &model.Model
 
-def make_plane() &model.Model =
-    id := ecs.make_ID!
+def make_Primitives(world: &ecs.World) Primitives =
+    Primitives{
+        cube = model.load_model world, "cube.fbx"
+        sphere = model.load_model world, "sphere.fbx"
+        plane = make_plane world
+    }
 
-    e := ecs.make_Entity id
+def make_plane(world: &ecs.World) &model.Model =
+    (id, e) := world.make_Entity!
+
     e.layermask = e.layermask.disable layermask.serialize_layer
 
-    local_plane := model.models.make id
+    local_plane := world.model.make id
     local_plane.path = "plane.fbx"
 
     vertices := [
@@ -51,23 +58,20 @@ def make_plane() &model.Model =
 
     local_plane
 
-plane := make_plane!
-
-def render_cube() =
-    self := cube.meshes[0]
+def render_cube(params: &ecs.RenderParams) =
+    self := params.primitives.cube.meshes[0]
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0
 
-def render_sphere() =
-    self := sphere.meshes[0]
+def render_sphere(params: &ecs.RenderParams) =
+    self := params.primitives.sphere.meshes[0]
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0
 
-
-def render_quad() =
-    self := plane.meshes[0]
+def render_quad(params: &ecs.RenderParams) =
+    self := params.primitives.plane.meshes[0]
 
     self.buffer.bind!
     opengl.drawElements opengl.triangles, self.indices.length, opengl.unsigned_int, 0

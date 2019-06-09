@@ -83,6 +83,9 @@ def make_floor() =
     model_renderer.model_id = Some model.models.id_of plane
     model_renderer.set_materials &cube_materials
 
+def main() =
+
+main!
 
 /*
 make_floor_collider!

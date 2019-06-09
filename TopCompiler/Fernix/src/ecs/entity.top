@@ -7,3 +7,12 @@ type ID is uint
 type Entity =
     enabled: bool
     layermask: Layermask
+
+def make_EntityStore() Store[Entity] =
+    make_Store 200, Entity{
+        enabled = true
+        layermask = make_Layermask!
+            .enable game_layer
+            .enable serialize_layer
+            .enable pickable_layer
+    }

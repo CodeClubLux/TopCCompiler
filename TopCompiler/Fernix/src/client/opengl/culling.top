@@ -1,6 +1,7 @@
 from "draw" import DrawCommand
 import "runner"
 from "math" import all
+import "ecs"
 
 type AABB =
     min: Vec3
@@ -66,12 +67,10 @@ def extract_planes(o_mat: &Mat4x4) [6]Vec4 =
 
     planes
 
-def purge(commands: []DrawCommand) []DrawCommand =
+def purge(commands: []DrawCommand, params: &ecs.RenderParams) []DrawCommand =
     survived_purge := [..]DrawCommand
 
-    cam := runner.get_camera!
-
-    proj_view := cam.projection_matrix * cam.view_matrix
+    proj_view := params.proj_matrix * params.view_matrix
 
     frustumPlanes := extract_planes &proj_view
 

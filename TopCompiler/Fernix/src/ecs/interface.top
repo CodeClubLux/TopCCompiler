@@ -6,13 +6,13 @@ type ComponentStore with
     def make(ID) &none
     def free_by_id(ID)
     def get_by_id(ID) Maybe[Component]
-    def serialize()
-    def deserialize()
-    def get_all_active_component_ids() []ID
+    def serialize(&World)
+    def deserialize(&World)
+    def get_all_active_component_ids(&World) []ID
 
 type System with
-    def render(Layermask)
-    def update(Layermask)
+    def render(&World, &RenderParams)
+    def update(&World, &UpdateParams)
 
 type Component with
 

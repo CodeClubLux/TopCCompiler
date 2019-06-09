@@ -13,8 +13,6 @@ from "materialSystem" import all
 import "layermask"
 import "culling"
 
-skybox_shader := shader.make "shaders/skybox.vert", "shaders/skybox.frag"
-
 type Skybox =
     env_cubemap: texture.Cubemap
     irradiance_cubemap: texture.Cubemap
@@ -25,30 +23,35 @@ skybox_state := draw.default_state{
     order = draw.draw_skybox
 }
 
-default_skybox : Skybox = _
-skyboxes := ecs.make_Store 1, default_skybox
+def make_SkyboxStore() ecs.Store[Skybox] =
+    default_skybox : Skybox = _
+    zero_out &default_skybox
+
+    ecs.make_Store 1, default_skybox
 
 type SkyboxSystem =
-def SkyboxSystem.update(&self, m: layermask.Layermask) =
-def SkyboxSystem.render(&system, m: layermask.Layermask) =
+    skybox_shader: &shader.Shader
+
+def make_SkyboxSystem(world: &ecs.World) =
+    SkyboxSystem{ shader.make world, "shaders/skybox.vert", "shaders/skybow.frag"}
+
+def SkyboxSystem.update(&system, world: &ecs.World, params: &ecs.UpdateParams) =
+def SkyboxSystem.render(using &system, world: &ecs.World, params: &ecs.RenderParams) =
     identity_mat := math.identity_mat!
     aabb : Maybe[culling.AABB] = None
 
-    for self := ecs.filter skyboxes, m do
+    for self := ecs.filter world, &world.skybox, params.layermask do
         mat := box Material{
             name = "skybox_shader"
-            shader = skybox_shader.get_id!
+            shader = ecs.id_of skybox_shader
             params = box [
                 Param_Cubemap (skybox_shader.location "environmentMap"), self.env_cubemap
             ]
             state = &skybox_state
         }
 
-        cmd := draw.make_DrawCommand (skyboxes.id_of self), &identity_mat, &aabb, &primitives.cube.meshes[0].buffer, mat
+        cmd := draw.make_DrawCommand (ecs.id_of self), &identity_mat, &aabb, &params.primitives.cube.meshes[0].buffer, mat
         cmd.submit!
-
-skybox_system := SkyboxSystem{}
-ecs.register_system &skybox_system
 
 //brdf_LUT_texture2 := texture.load "ibl_brdf_lut.png"
 
@@ -65,20 +68,15 @@ def Skybox.set_ibl_params_for(&self, s: &shader.Shader) =
     s.set_int s.brdfLUT, bind_to[2]
 
 //Skybox system
-
-def make_default_Skybox(id: ecs.ID) &Skybox =
-    make_Skybox id, "Tropical_Beach_3k.hdr"
-
-def get_skybox() &Skybox =
-    skyboxes
-        .get_active!
+def get_skybox(world: &ecs.World) &Skybox =
+    (world.skybox.get_active world)
         .unwrap!
 
-def make_Skybox(id: ecs.ID, name: string) &Skybox =
+def make_Skybox(world: &ecs.World, params: &ecs.RenderParams, id: ecs.ID, name: string) &Skybox =
     log "========= making skybox ==========="
     opengl.enable opengl.texture_cube_map_seamless
 
-    equirectangular_to_cubemap_shader := shader.make "shaders/eToCubemap.vert", "shaders/eToCubemap.frag"
+    equirectangular_to_cubemap_shader := shader.make world, "shaders/eToCubemap.vert", "shaders/eToCubemap.frag"
 
     capture_FBO : uint = _
     capture_RBO : uint = _
@@ -91,7 +89,7 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
     opengl.renderbufferStorage opengl.renderbuffer, opengl.depth_component24, 2048, 2048
     opengl.framebufferRenderbuffer opengl.framebuffer, opengl.depth_attachment, opengl.renderbuffer, capture_RBO
 
-    hdr_texture := texture.load name
+    hdr_texture := texture.load world, name
 
     env_cubemap: uint = _
     opengl.genTextures 1, &env_cubemap
@@ -152,14 +150,14 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
             0
 
         opengl.clear opengl.color_buffer_and_depth_buffer_bit
-        primitives.render_cube!
+        primitives.render_cube params
 
     opengl.bindFramebuffer opengl.framebuffer, 0
 
     opengl.bindTexture opengl.texture_cube_map, env_cubemap
     opengl.generateMipmap opengl.texture_cube_map
 
-    irradiance_shader := shader.make "shaders/irradiance.vert", "shaders/irradiance.frag"
+    irradiance_shader := shader.make world, "shaders/irradiance.vert", "shaders/irradiance.frag"
 
     irradiance_map : uint = _
 
@@ -211,7 +209,7 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
             0
 
         opengl.clear opengl.color_buffer_and_depth_buffer_bit
-        primitives.render_cube!
+        primitives.render_cube params
 
     opengl.bindFramebuffer opengl.framebuffer, 0
 
@@ -235,7 +233,7 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
 
     opengl.generateMipmap opengl.texture_cube_map
 
-    prefilter_shader := shader.make "shaders/prefilter.vert", "shaders/prefilter.frag"
+    prefilter_shader := shader.make world, "shaders/prefilter.vert", "shaders/prefilter.frag"
 
     prefilter_shader.bind!
     prefilter_shader.set_int (prefilter_shader.uniform_location "environmentMap"), 0
@@ -273,11 +271,11 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
                 mip
 
             opengl.clear opengl.color_buffer_and_depth_buffer_bit
-            primitives.render_cube!
+            primitives.render_cube params
 
     opengl.bindFramebuffer opengl.framebuffer, 0
 
-    brdf_shader := shader.make "shaders/brdf_convultion.vert", "shaders/brdf_convultion.frag"
+    brdf_shader := shader.make world, "shaders/brdf_convultion.vert", "shaders/brdf_convultion.frag"
 
     brdf_LUT_texture : uint = _
     opengl.genTextures 1, &brdf_LUT_texture
@@ -297,25 +295,25 @@ def make_Skybox(id: ecs.ID, name: string) &Skybox =
     opengl.viewport 0, 0, 512, 512
     brdf_shader.bind!
     opengl.clear opengl.color_buffer_and_depth_buffer_bit
-    primitives.render_quad!
+    primitives.render_quad params
 
     opengl.bindFramebuffer opengl.framebuffer, 0
     opengl.bindTexture opengl.texture_2D, 0
     opengl.bindTexture opengl.texture_cube_map, 0
 
-    entity := match ecs.entities.by_id id with
+    entity := match world.entity.by_id id with
         Some e -> e
-        None -> ecs.make_Entity id
+        None -> world.entity.make id
 
     entity.layermask = entity.layermask.disable layermask.serialize_layer
     entity.layermask = entity.layermask.disable layermask.pickable_layer
 
-    brdf_LUT_as_texture := texture.make_Texture ecs.make_ID!
+    brdf_LUT_as_texture := texture.make_Texture world, world.make_ID!
     brdf_LUT_as_texture.filename = "brdf_LUT"
     brdf_LUT_as_texture.texture_id = brdf_LUT_texture
-    brdf_LUT_as_texture.dont_serialize!
+    brdf_LUT_as_texture.dont_serialize world
 
-    skyboxes.add_component id, Skybox{
+    world.skybox.add_component id, Skybox{
         env_cubemap = texture.Cubemap{ env_cubemap }
         irradiance_cubemap = texture.Cubemap{ irradiance_map }
         prefilter_cubemap = texture.Cubemap{ prefilter_map }

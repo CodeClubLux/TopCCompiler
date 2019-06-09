@@ -31,7 +31,8 @@ type Shader =
     window_width: int
     window_height: int
 
-shaders := ecs.make_Store_with_init 40, Shader{"", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, None, 0, 0}, Some load_in_place
+def make_ShaderStore() ecs.Store[Shader] =
+    ecs.make_Store_with_init 40, Shader{"", "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, None, 0, 0}, Some load_in_place
 
 def Shader.free(self) =
     opengl.deleteProgram self.id
@@ -162,7 +163,7 @@ def load_in_place_with_err(self: &Shader) Maybe[string] =
 
     None
 
-def load_in_place(self: &Shader) =
+def load_in_place(world: &ecs.World, self: &Shader) =
     if self.v_filename == "shaders/pbr.vert" then
         self.instanced = false
         self.supports_instancing = true
@@ -170,18 +171,17 @@ def load_in_place(self: &Shader) =
     if Some e := load_in_place_with_err self then
         panic e
 
-def make(vfilename: string, ffilename: string) &Shader =
-    if Some s := assetManager.in_cache shaders, vfilename + ffilename then
+def make(world: &ecs.World, vfilename: string, ffilename: string) &Shader =
+    if Some s := assetManager.in_cache &world.shader, world, vfilename + ffilename then
         return s
 
-    id := ecs.make_ID!
-    _ := ecs.make_Entity id
-    s := shaders.make id //Shader{ vfilename, ffilename, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+    (id, _) := world.make_Entity!
+    s := world.shader.make id //Shader{ vfilename, ffilename, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     if vfilename == "shaders/pbr.vert" then
         s.supports_instancing = true
     s.v_filename = vfilename
     s.f_filename = ffilename
-    load_in_place s
+    load_in_place world, s
     s
 
 def Shader.get_filename(&self) string =
@@ -189,9 +189,6 @@ def Shader.get_filename(&self) string =
 
 def Shader.bind(&self) =
     opengl.useProgram self.id
-
-def Shader.get_id(&self) ecs.ID =
-    shaders.id_of self
 
 type Uniform =
     name: string
@@ -221,13 +218,15 @@ def Shader.set_float(&self, loc: int, value: float) =
 from "layermask" import Layermask
 
 type ShaderReloadSystem =
-def ShaderReloadSystem.render(&self, m: Layermask) =
-def ShaderReloadSystem.update(&self, m: Layermask) =
+def ShaderReloadSystem.render(&self, world: &ecs.World, params: &ecs.RenderParams) =
+def ShaderReloadSystem.update(&self, world: &ecs.World, params: &ecs.UpdateParams) =
+    m := params.layermask
+
     if not m.layer_in_mask layermask.editor_layer then return
 
     m = m.enable layermask.game_layer
 
-    for shad := ecs.filter shaders, m do
+    for shad := ecs.filter world, &world.shader, m do
         v_time_modified := vfs.time_modified shad.v_filename
         f_time_modified := vfs.time_modified shad.f_filename
 
@@ -241,6 +240,3 @@ def ShaderReloadSystem.update(&self, m: Layermask) =
                 shad.f_time_modified = f_time_modified //avoid printing errors a billion times
             else
                 opengl.deleteProgram previous
-
-shader_reload_system := ShaderReloadSystem{}
-ecs.register_system &shader_reload_system

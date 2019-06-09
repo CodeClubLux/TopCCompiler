@@ -1,7 +1,6 @@
 import "ecs"
 import "math"
 from "layermask" import all
-from "transform" import transforms
 import "math"
 #if {"headless": false}
 import "draw"
@@ -15,40 +14,46 @@ type DirLight =
     direction: math.Vec3
     color: math.Vec3
 
-dir_lights := ecs.make_Store 1, DirLight{
-    math.Vec3{ 0, -1, -1 }.norm!
-    math.Vec3{ 1, 1, 1 }
-}
-
-if dir_lights.get_active!.is_none! then
-    tmp_id := ecs.make_ID!
-    _ := ecs.make_Entity tmp_id
-    _ := make_DirLight tmp_id
-
-def make_DirLight(id: ecs.ID) &DirLight = dir_lights.make id
-
-def get_dir_light() &DirLight =
-    dir_lights.get_active!.unwrap!
-
-#if {"headless": false}
-light_gizmo := model.load_model "editor/dirLight.fbx"
-light_shader := shader.make "shaders/pbr.vert", "shaders/diffuse.frag"
-
-light_materials := [
-    Material{
-        name = "DefaultMaterial"
-        shader = light_shader.get_id!
-        params = box [
-            Param_Vec3 (light_shader.location "material.diffuse"), Vec3{0,0.8,0.8}
-        ]
-        state = &draw.default_state
+def make_DirLightStore() ecs.Store[DirLight] =
+    ecs.make_Store 1, DirLight{
+        math.Vec3{ 0, -1, -1 }.norm!
+        math.Vec3{ 1, 1, 1 }
     }
-]
-#endif
+
+def make_default_DirLight(world: &ecs.World) &DirLight =
+    (id, e) := world.make_Entity!
+    world.dir_light.make id
+
+def get_dir_light(world: &ecs.World) &DirLight =
+    (world.dir_light.get_active world).unwrap!
 
 type DirLightSystem =
-def DirLightSystem.render(&self, m: Layermask) =
-    for (light, trans) := ecs.filter2 dir_lights, transforms, m do
+    light_gizmo: &model.Model
+    light_shader: &shader.Shader
+    light_materials: [1]Material
+
+def make_DirLightSystem(world: &ecs.World) DirLightSystem =
+    light_gizmo := model.load_model world, "editor/dirLight.fbx"
+    light_shader := shader.make world, "shaders/pbr.vert", "shaders/diffuse.frag"
+
+    light_materials := [
+        Material{
+            name = "DefaultMaterial"
+            shader = ecs.id_of light_shader
+            params = box [
+                Param_Vec3 (light_shader.location "material.diffuse"), Vec3{0,0.8,0.8}
+            ]
+            state = &draw.default_state
+        }
+    ]
+
+    DirLightSystem{light_gizmo, light_shader, light_materials}
+
+def DirLightSystem.render(using &self, world: &ecs.World, params: &ecs.RenderParams) =
+    m := params.layermask
+    params.dir_light = get_dir_light world
+
+    for (light, trans) := ecs.filter2 world, &world.dir_light, &world.transform, m do
         light.direction = trans.rotation.mul_vec3 math.Vec3{0,-1,0}
 
     #if {"headless": false}
@@ -56,11 +61,8 @@ def DirLightSystem.render(&self, m: Layermask) =
         m = layermask.make_Layermask!
             .enable game_layer
 
-        for (cam, trans) := ecs.filter2 dir_lights, transform.transforms, m do
-            light_gizmo.render_model_for (dir_lights.id_of cam), trans, &light_materials
+        for (cam, trans) := ecs.filter2 world, &world.dir_light, &world.transform, m do
+            light_gizmo.render_model_for (ecs.id_of cam), trans, &light_materials
     #endif
 
-def DirLightSystem.update(&self, m: Layermask) =
-
-dirLight_system := DirLightSystem{}
-ecs.register_system &dirLight_system
+def DirLightSystem.update(&self, world: &ecs.World, params: &ecs.UpdateParams) =

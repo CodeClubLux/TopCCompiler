@@ -22,6 +22,9 @@ from "frameBuffer" import all
 
 //code from http://ogldev.atspace.co.uk/www/tutorial49/tutorial49.html
 type ShadowPass =
+    depth_shader: &shader.Shader
+    shadow_mask_shader: &shader.Shader
+    blur_shader: &shader.Shader
     depthPrepass: texture.Texture
     deffered_map_cascade: DepthMap
     shadow_mask: ShadowMask
@@ -41,10 +44,6 @@ type DepthMap =
     cam: &camera.Camera
 
 def DepthMap.set_shader_params(&self, s: &shader.Shader) =
-
-depth_shader := (shader.make "shaders/pbr.vert", "shaders/depth.frag").get_id!
-shadow_mask_shader := shader.make "shaders/screenspace.vert", "shaders/shadowMask.frag"
-blur_shader := shader.make "shaders/screenspace.vert", "shaders/blur.frag"
 
 type ShadowMask =
     shadowMaskMap: uint
@@ -110,8 +109,12 @@ def make_DepthMap(width: uint, height: uint) DepthMap =
 
     DepthMap{ depthMap.texture_id, frame.fbo, width, height, camera.cameras.make id }
 
-def make_ShadowPass(depthPrepass: texture.Texture) ShadowPass =
+def make_ShadowPass(depthPrepass: texture.Texture, world: &ecs.World, ) ShadowPass =
     w := window.get_window!
+
+    depth_shader := (shader.make "shaders/pbr.vert", "shaders/depth.frag").get_id!
+    shadow_mask_shader := shader.make "shaders/screenspace.vert", "shaders/shadowMask.frag"
+    blur_shader := shader.make "shaders/screenspace.vert", "shaders/blur.frag"
 
     /*depth_maps : [4]DepthMap = _
     for i := 0..depth_maps.length do

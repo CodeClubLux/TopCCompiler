@@ -51,13 +51,13 @@ rigid_bodies := ecs.make_Store 30, RigidBody{
 type PhysicsSystem =
     bt_wrapper: &BulletWrapper
 
-def PhysicsSystem.render(&system, m: Layermask) =
-def PhysicsSystem.update(&system, m: Layermask) =
+def PhysicsSystem.render(&system, world: &ecs.World, params: &ecs.RenderParams) =
+def PhysicsSystem.update(&system, world: &ecs.World, params: &ecs.UpdateParams) =
     if runner.in_editor! then return
 
     step_BulletWrapper system.bt_wrapper, time.get_delta_time!
 
-    for (rb, trans) := ecs.filter2 rigid_bodies, transforms, m do
+    for (rb, trans) := ecs.filter2 world, &world.rigid_body, &world.transform, params.layermask do
         if rb.bt_rigid_body.is_none! then
             settings : RigidBodySettings = _
             settings.origin = to_Compat_Vec3 trans.position
@@ -130,11 +130,10 @@ def PhysicsSystem.update(&system, m: Layermask) =
 def PhysicsSystem.free(&self) =
     free_BulletWrapper self.bt_wrapper
 
-physics_system := PhysicsSystem{
-    bt_wrapper = make_BulletWrapper!
-}
+def make_PhysicsSystem() =
+    PhysicsSystem{
+        bt_wrapper = make_BulletWrapper!
+    }
 
-def btRigidBody.free(&self) =
-    free_RigidBody physics_system.bt_wrapper, self
-
-ecs.register_system &physics_system
+def btRigidBody.free(&self, system: &PhysicsSystem) =
+    free_RigidBody system.bt_wrapper, self

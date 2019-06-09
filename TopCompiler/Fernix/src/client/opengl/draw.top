@@ -117,10 +117,10 @@ def next_texture_index() uint =
     context.command_buffer.current_texture_index += 1
     context.command_buffer.current_texture_index - 1
 
-def set_params(self: &Material) =
+def set_params(world: &ecs.World, self: &Material) =
     params := &self.params
 
-    guard Some s := shader.shaders.by_id self.shader
+    guard Some s := world.shader.by_id self.shader
     else return
 
     previous_num_tex_index := context.command_buffer.current_texture_index
@@ -137,7 +137,7 @@ def set_params(self: &Material) =
                 s.set_mat4x4 field.id, &matrix
 
             Param_Image field, tex_id ->
-                guard Some tex := texture.textures.by_id tex_id
+                guard Some tex := world.texture.by_id tex_id
                 else continue
 
                 index := next_texture_index!
@@ -157,10 +157,10 @@ def set_params(self: &Material) =
 
     context.command_buffer.current_texture_index = previous_num_tex_index
 
-def update_mat(self: &Material) =
+def update_mat(world: &ecs.World, self: &Material) =
     params := &self.params
 
-    guard Some s := shader.shaders.by_id self.shader
+    guard Some s := world.shader.by_id self.shader
     else return
 
     for i := 0..params.length do
@@ -180,8 +180,8 @@ def update_mat(self: &Material) =
             Param_Cubemap field, tex ->
                 materialSystem.Param_Cubemap (s.location field.name), tex
 
-def switch_shader(shad_id: ecs.ID, instanced: bool) =
-    guard Some shad := shader.shaders.by_id shad_id
+def switch_shader(world: &ecs.World, shad_id: ecs.ID, instanced: bool) =
+    guard Some shad := world.shader.by_id shad_id
     else
         log "could not find switched version"
         return
@@ -224,7 +224,7 @@ def mat_eq(mat1: &materialSystem.Material, mat2: &materialSystem.Material) bool 
     //(mat1 cast u64) == (mat2 cast u64)
     (memcmp mat1, mat2, sizeof materialSystem.Material) == 0
 
-def can_instance(cmds: []DrawCommand, i: uint) uint =
+def can_instance(world: &ecs.World, cmds: []DrawCommand, i: uint) uint =
     count := 1
     while true do
         if i + 1 < cmds.length then
@@ -235,7 +235,7 @@ def can_instance(cmds: []DrawCommand, i: uint) uint =
             last_mat := last_cmd.material
 
             if count == 0 then
-                guard Some s := shader.shaders.by_id last_cmd.material.shader
+                guard Some s := world.shader.by_id last_cmd.material.shader
                 else
                     log "did not instanced version ============================================================"
                     break
@@ -258,8 +258,8 @@ def can_instance(cmds: []DrawCommand, i: uint) uint =
 
     count
 
-def instanced_shader(cmd: &DrawCommand) bool =
-    guard Some s := shader.shaders.by_id cmd.material.shader
+def instanced_shader(world: &ecs.World, cmd: &DrawCommand) bool =
+    guard Some s := world.shader.by_id cmd.material.shader
     else return false
 
     guard Some instanced_version := s.instanced_version
@@ -288,8 +288,8 @@ def set_instance_buffer(key: u64, buff: uint) =
     instanced_buffers[index].allocator = Some context.longterm_storage
     instanced_buffers[index].append (key, buff)
 
-def submit_to_gpu() =
-    not_sorted_cmds := purge context.command_buffer.commands
+def submit_to_gpu(world: &ecs.World, params: &ecs.RenderParams) =
+    not_sorted_cmds := purge context.command_buffer.commands, params
     cmds := quick_sort not_sorted_cmds
     bind_count := 0
 
@@ -309,10 +309,10 @@ def submit_to_gpu() =
         mat := cmd.material
 
         num_instanceable := cmd.transform_m.length
-        instanced := cmd.transform_m.length > 1 and instanced_shader cmd
+        instanced := cmd.transform_m.length > 1 and instanced_shader world, cmd
 
         if i == 0 then
-            switch_shader mat.shader, instanced
+            switch_shader world, mat.shader, instanced
             cmd.buffer.bind!
             mat.state.depth_func.bind!
             mat.state.cull.bind!
@@ -321,14 +321,14 @@ def submit_to_gpu() =
                 opengl.clear opengl.depth_buffer_bit
 
             if hotreload then
-                update_mat mat
-            set_params mat
+                update_mat world, mat
+            set_params world, mat
         else
             last_cmd := cmds[i - 1]
             last_mat := last_cmd.material
 
             if last_cmd.material.shader != cmd.material.shader or last_was_instanced != instanced then
-                switch_shader mat.shader, instanced
+                switch_shader world, mat.shader, instanced
 
             if last_cmd.buffer.vao != cmd.buffer.vao then
                 cmd.buffer.bind!
@@ -342,8 +342,8 @@ def submit_to_gpu() =
 
             if (not mat_eq mat, last_mat) or last_was_instanced != instanced then
                 if hotreload then
-                    update_mat mat
-                set_params mat
+                    update_mat world, mat
+                set_params world, mat
 
         if instanced then //instanced path
             vao := cmd.buffer.vao
@@ -394,7 +394,7 @@ def submit_to_gpu() =
             //match cmd.transform with
             //    Some trans ->
             //       transformation_matrix := trans.compute_model_matrix!
-            guard Some s := shader.shaders.by_id mat.shader
+            guard Some s := world.shader.by_id mat.shader
             else continue
 
             s.set_mat4x4 s.model, &cmd.transform_m[0]

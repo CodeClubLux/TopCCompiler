@@ -3,6 +3,10 @@ import "vfs"
 import "math"
 import "input"
 import "texture"
+import "shader"
+import "primitives"
+import "math"
+import "ecs"
 
 let max_vertex_buffer = 512 * 1024
 let max_element_buffer = 128 * 1024
@@ -25,19 +29,19 @@ def make_ui() &UI =
         windows = [..]&Window
     }
 
-def UI.render(&self) =
+def UI.render(&self, world: &ecs.World, params: &ecs.RenderParams) =
     nk_glfw3_new_frame!
 
     for w := self.windows do
-        w.render!
+        w.render world, params
 
     nk_glfw3_render nk_anti_aliasing_on, max_vertex_buffer, max_element_buffer
 
-def UI.render_unselectable(&self) =
+def UI.render_unselectable(&self, world: &ecs.World, params: &ecs.RenderParams) =
     input.get_input!.activate!
 
     for w := self.windows do
-        w.render_unselectable!
+        w.render_unselectable world, params
 
 def UI.new_frame(&self) =
     self.windows = []
@@ -61,14 +65,14 @@ type Row =
     ratios: [..]float
     elements: [..]&UIElement
 
-def Row.render(&self, width: uint, height: uint) =
+def Row.render(&self, width: uint, height: uint, world: &ecs.World, params: &ecs.RenderParams) =
     ui := get_ui!
 
     if self.ratios.length > 0 then
         nk_layout_row ui.nk_ptr, nk_dynamic, self.height, self.ratios.length, self.ratios.data.unwrap!
 
     for elem := self.elements do
-        elem.render (self.width * self.ratios[i]) cast uint, self.height
+        elem.render (self.width * self.ratios[i]) cast uint, self.height, world, params
 
 def Size.calculate(&self, real_size: uint, auto: uint) uint =
     match *self with
@@ -183,7 +187,7 @@ def calculate_layout(rows: &[..]Row, owner_block: &Block, element: &UIElement) =
     current_row.elements.append element
     current_row.height = math.max block.height, current_row.height
 
-def UIElement.render(&self, width: uint, height: uint) =
+def UIElement.render(&self, width: uint, height: uint, world: &ecs.World, params: &ecs.RenderParams) =
     match *self with
         Element_Checkbox l -> l.render!
         Element_Label l -> l.render!
@@ -192,7 +196,7 @@ def UIElement.render(&self, width: uint, height: uint) =
         Element_Propertyu l -> l.render!
         Element_Input l -> l.render!
         Element_NewLine ->
-        Element_Image l -> l.render!
+        Element_Image l -> l.render world, params
         Element_Group g ->
             ui := get_ui!
 
@@ -211,7 +215,7 @@ def UIElement.render(&self, width: uint, height: uint) =
                 rows := g.calculate_layout &empty_block, width, height, &block
 
                 for row := rows do
-                    row.render block.width, block.height
+                    row.render block.width, block.height, world, params
 
                 nk_group_end ui.nk_ptr
             elif val == nk_window_minimized then
@@ -230,12 +234,10 @@ def Window.calculate_layout(&self, window_block: &Block, default_width: uint, de
 
     rows
 
-def Window.render(&self) =
-    w := window.get_window!
-
+def Window.render(&self, world: &ecs.World, params: &ecs.RenderParams) =
     window_block := Block{
-        width = w.width cast uint
-        height = w.height cast uint
+        width = params.width cast uint
+        height = params.height cast uint
         margin_top_left = Vec2{0,0}
         margin_bottom_right = Vec2{0,0}
     }
@@ -248,23 +250,17 @@ def Window.render(&self) =
     if self.begin Vec2{ block.width, block.height} then
         //rendering
         for row := rows do
-            row.render row.width, row.height
+            row.render row.width, row.height, world, params
 
     //destroy window
     self.end!
 
-import "shader"
-import "primitives"
-import "math"
-
-unselectable_shader := shader.make "shaders/screenspace.vert", "shaders/unselectable.frag"
-
-def Window.render_unselectable(&self) =
-    w := window.get_window!
+def Window.render_unselectable(&self, world: &ecs.World, params: &ecs.RenderParams) =
+    unselectable_shader := shader.make world, "shaders/screenspace.vert", "shaders/unselectable.frag"
 
     window_block := Block{
-        width = w.width cast uint
-        height = w.height cast uint
+        width = params.width
+        height = params.height
         margin_top_left = Vec2{0,0}
         margin_bottom_right = Vec2{0,0}
     }
@@ -283,14 +279,14 @@ def Window.render_unselectable(&self) =
         input.get_input!.deactivate!
 
     scale_m := math.scale math.Vec3{
-        block.width / w.width
-        block.height / w.height
+        block.width / params.width
+        block.height / params.height
         0
     }
 
     origin := math.Vec3{
-        (w.width/2.0) - block.width/2.0
-        (w.height/2.0) - block.height/2.0
+        (params.width/2.0) - block.width/2.0
+        (params.height/2.0) - block.height/2.0
         0
     }
 
@@ -303,8 +299,8 @@ def Window.render_unselectable(&self) =
     //log "position = {position.x}, {position.y}"
 
     norm := math.Vec3{
-        translate_by.x / (w.width/(2))
-        translate_by.y / (w.height/(-2))
+        translate_by.x / (params.width/(2))
+        translate_by.y / (params.height/(-2))
         0
     }
     trans_m := math.translate norm
@@ -317,7 +313,7 @@ def Window.render_unselectable(&self) =
 
     unselectable_shader.bind!
     unselectable_shader.set_mat4x4 (unselectable_shader.uniform_location "model"), &model //todo cache location
-    primitives.render_quad!
+    primitives.render_quad params
 
 def Label.render(&options) =
     ui := get_ui!
@@ -339,10 +335,10 @@ def Button.render(&options) =
 
         ev_handler.handle Pressed
 
-def Image.render(&options) =
+def Image.render(&options, world: &ecs.World, params: &ecs.RenderParams) =
     ui := get_ui!
 
-    guard Some tex := texture.textures.by_id options.tex_id
+    guard Some tex := world.texture.by_id options.tex_id
     else return
 
     handle := nk_image_id tex.texture_id as int

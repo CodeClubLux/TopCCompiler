@@ -7,11 +7,12 @@ type Transform =
     rotation: math.Quat
     scale: math.Vec3
 
-transforms := ecs.make_Store 100, Transform{
-    position = Vec3{ 0, 0, 0}
-    rotation = quat_from_euler Vec3{0, 0, 0}
-    scale = Vec3{ 1, 1, 1}
-}
+def make_TransformStore() ecs.Store[Transform] =
+    ecs.make_Store 100, Transform{
+        position = Vec3{ 0, 0, 0}
+        rotation = quat_from_euler Vec3{0, 0, 0}
+        scale = Vec3{ 1, 1, 1}
+    }
 
 def Transform.compute_model_matrix(&self) Mat4x4 =
     trans := translate self.position
@@ -20,31 +21,28 @@ def Transform.compute_model_matrix(&self) Mat4x4 =
 
     trans * rotation * scal
 
-def make_Transform(id: ecs.ID) &Transform = transforms.make id
-
 type LocalTransform =
     position: math.Vec3
     rotation: math.Quat
     scale: math.Vec3
     owner: ecs.ID
 
-local_transforms := ecs.make_Store 100, LocalTransform{
-    position = Vec3{ 0, 0, 0}
-    rotation = quat_from_euler Vec3{0,0,0}
-    scale = Vec3{ 1, 1, 1}
-    owner = 0
-}
+def make_LocalTransformStore() ecs.Store[LocalTransform] =
+    ecs.make_Store 100, LocalTransform{
+        position = Vec3{ 0, 0, 0}
+        rotation = quat_from_euler Vec3{0,0,0}
+        scale = Vec3{ 1, 1, 1}
+        owner = 0
+    }
 
-def make_LocalTransform(id: ecs.ID) &LocalTransform = local_transforms.make id
+def LocalTransform.calc_global_transform(&self, world: &ecs.World) =
+    if Some owner_local_trans := world.local_transform.by_id self.owner then
+        owner_local_trans.calc_global_transform world
 
-def LocalTransform.calc_global_transform(&self) =
-    if Some owner_local_trans := local_transforms.by_id self.owner then
-        owner_local_trans.calc_global_transform!
-
-    guard Some owner_trans := transforms.by_id self.owner
+    guard Some owner_trans := world.transform.by_id self.owner
     else return //panic "Owner of local body: {self.owner} is missing transform"
 
-    guard Some trans := transforms.by_id local_transforms.id_of self
+    guard Some trans := world.transform.by_id ecs.id_of self
     else return //panic "Local body: {local_transforms.id_of self} is missing transform"
 
     trans.scale = owner_trans.scale * self.scale
@@ -53,11 +51,8 @@ def LocalTransform.calc_global_transform(&self) =
     trans.position = owner_trans.position + position
 
 type LocalTransformSystem =
-def LocalTransformSystem.update(&self, m: Layermask) =
-def LocalTransformSystem.render(&self, m: Layermask) =
-def LocalTransformSystem.update_transforms(&self, m: Layermask) =
-    for (trans, local) := ecs.filter2 transforms, local_transforms, m do
-        local.calc_global_transform!
+def LocalTransformSystem.update(&self, world: &ecs.World, params: &ecs.UpdateParams) =
+    for (trans, local) := ecs.filter2 world, &world.transform, &world.local_transform, params.layermask do
+        local.calc_global_transform world
 
-local_transform_system := LocalTransformSystem{}
-ecs.register_system &local_transform_system
+def LocalTransformSystem.render(&self, world: &ecs.World, params: &ecs.RenderParams) =

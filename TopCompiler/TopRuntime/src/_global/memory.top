@@ -4,9 +4,16 @@ ext _ = '#include <string.h>'
 ext c_memcpy: |&none, &none, SizeT| -> none = 'memcpy'
 ext c_alloc: |SizeT| -> &none = 'malloc'
 ext c_free: |&none| -> none = 'free'
+ext c_memset: |&none, Byte, SizeT| -> none = "memset"
 
 def memcpy[T](target: &T, destination: &T, length: uint) =
     c_memcpy target, destination, length * sizeof T
+
+def memset[T](target: &T, value: Byte, length: uint) =
+    c_memset target, value, length * sizeof T
+
+def zero_out[T](target: &T) =
+    memset target, 0 cast u8, 1
 
 type Allocator with
     def get_occupied() SizeT

@@ -15,28 +15,29 @@ type Texture =
     filename: string
     texture_id: TextureID
 
-textures := ecs.make_Store_with_init 50, Texture{"", 0}, Some load_in_place
+def make_TextureStore() ecs.Store[Texture] =
+    ecs.make_Store_with_init 50, Texture{"", 0}, Some load_in_place
 
-def make_Texture(id: ecs.ID) &Texture =
-    entity := match ecs.entities.by_id id with
+def make_Texture(world: &ecs.World, id: ecs.ID) &Texture =
+    entity := match world.entity.by_id id with
         Some x -> x
-        None -> ecs.make_Entity id
+        None -> world.entity.make id
 
     entity.layermask = layermask.make_Layermask!
         .enable layermask.serialize_layer
 
-    textures.make id
+    world.texture.make id
 
 def Texture.get_filename(&self) string =
     self.filename
 
-def Texture.dont_serialize(&self) =
-    guard Some entity := ecs.entities.by_id textures.id_of self
+def Texture.dont_serialize(&self, world: &ecs.World) =
+    guard Some entity := world.entity.by_id ecs.id_of self
     else panic "Trying to make texture not serialize, however could not find entity"
 
     entity.layermask = entity.layermask.disable layermask.serialize_layer
 
-def load_in_place(tex: &Texture) =
+def load_in_place(world: &ecs.World, tex: &Texture) =
     log "loading in place {tex.filename}"
     filename := tex.filename
     real_filename := vfs.asset_path tex.filename
@@ -78,14 +79,14 @@ def load_in_place(tex: &Texture) =
 
     tex.texture_id = texture_id
 
-def load(filename: string) &Texture = //todo potential bug, does not create entity
-    if Some texture := assetManager.in_cache textures, filename then
+def load(world: &ecs.World, filename: string) &Texture =
+    if Some texture := assetManager.in_cache &world.texture, world, filename then
         return texture
 
-    texture := make_Texture ecs.make_ID!
+    texture := make_Texture world, world.make_ID!
     texture.filename = filename
 
-    load_in_place texture
+    load_in_place world, texture
 
     texture
 

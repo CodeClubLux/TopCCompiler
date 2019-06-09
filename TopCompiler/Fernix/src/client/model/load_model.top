@@ -1,4 +1,5 @@
 import "assetManager"
+import "ecs"
 
 ext triangulate_and_flip: uint = "aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace"
 
@@ -107,25 +108,22 @@ def maybe_load_in_place(model: &Model) Maybe[string] =
     if Some e := process_node scene.mRootNode, scene, &meshes, &materials, &model.bounding_box then
         return Some e
 
-    log "meshes: {meshes.length}"
-    log "materials: {materials.length}"
-
     model.meshes = meshes
     model.materials = materials
 
     None
 
-def load_in_place(model: &Model) =
+def load_in_place(world: &ecs.World, model: &Model) =
     if Some e := maybe_load_in_place model then
         panic e
 
-def load_model(path: string) &Model =
-    if Some m := assetManager.in_cache models, path then
+def load_model(world: &ecs.World, path: string) &Model =
+    if Some m := assetManager.in_cache &world.model, world, path then
         return m
 
-    model := make_Model ecs.make_ID!
+    model := make_Model world, world.make_ID!
     model.path = path
 
-    load_in_place model
+    load_in_place world, model
 
     model

@@ -1,3 +1,4 @@
+/*
 import "shader"
 import "primitives"
 import "texture"
@@ -15,3 +16,4 @@ def draw_texture(tex: &texture.Texture) =
     debug_shader.set_int (debug_shader.uniform_location "tex"), 0
 
     primitives.render_quad!
+*/

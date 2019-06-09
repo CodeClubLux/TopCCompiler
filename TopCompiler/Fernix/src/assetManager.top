@@ -3,8 +3,9 @@ import "ecs"
 type Cacher with
     def get_filename() string
 
-def in_cache[T: Cacher](store: &ecs.Store[T], filename: string) Maybe[&T] =
-    items := store.get_all_active!
+def in_cache[T: Cacher](store: &ecs.Store[T], world: &ecs.World, filename: string) Maybe[&T] =
+    items := store.get_all_active world
+    defer free items.data
 
     for item := items do
         if item.get_filename! == filename then

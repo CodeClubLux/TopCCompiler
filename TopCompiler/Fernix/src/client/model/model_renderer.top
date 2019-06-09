@@ -26,46 +26,40 @@ type ModelRenderer =
     materials: &[]Material
     visible: bool
 
-//setup model renderer system
-model_renderers := ecs.make_Store 100, ModelRenderer{
-    model_id = None
-    visible = true
-    materials = box [] as []Material
-}
+def make_ModelRendererStore() ecs.Store[ModelRenderer] =
+    ecs.make_Store 100, ModelRenderer{
+        model_id = None
+        visible = true
+        materials = box [] as []Material
+    }
 
 //def init_model_renderer(self: &ModelRenderer) =
 //    for i := 0..self.materials.length do
 //        self.materials[i].init!
 
 type ModelRendererSystem =
-def ModelRendererSystem.update(&system, m: Layermask) =
-def ModelRendererSystem.render(&system, m: Layermask) =
-    for (self, trans) := ecs.filter2 model_renderers, transforms, m do
+def ModelRendererSystem.update(&system, world: &ecs.World, params: &ecs.UpdateParams) =
+def ModelRendererSystem.render(&system, world: &ecs.World, params: &ecs.RenderParams) =
+    for (self, trans) := ecs.filter2 world, &world.model_renderer, &world.transform, params.layermask do
         if not self.visible then continue
 
         guard Some model_id := self.model_id
         else continue
 
-        guard Some model := models.by_id model_id
+        guard Some model := world.model.by_id model_id
         else continue
 
         assert model.materials.length == self.materials.length, "Material length is not the same for model and model renderer"
 
-        model.render_model_for (transforms.id_of trans), trans, *self.materials
+        model.render_model_for (ecs.id_of trans), trans, *self.materials
 
-model_renderer_system := ModelRendererSystem{}
-ecs.register_system &model_renderer_system
-
-def get_model_renderer_system() &ecs.Store[ModelRenderer] =
-    model_renderers
-
-def ModelRenderer.set_materials(&self, materials: []Material) =
+def ModelRenderer.set_materials(&self, materials: []Material, world: &ecs.World) =
     materials_in_order := [..]Material
 
     guard Some model_id := self.model_id
     else return
 
-    guard Some model := models.by_id model_id
+    guard Some model := world.model.by_id model_id
     else return
 
     for mat_name := model.materials do
@@ -75,5 +69,3 @@ def ModelRenderer.set_materials(&self, materials: []Material) =
         materials_in_order.append *mat
 
     self.materials = box materials_in_order as []Material
-
-def make_ModelRenderer(id: ecs.ID) &ModelRenderer = model_renderers.make id

@@ -26,51 +26,67 @@ type Terrain =
     heightmap_points: [..]float
     max_height: float
 
-def init_terrain(self: &Terrain) =
+def init_terrain(world: &ecs.World, self: &Terrain) =
     self.heightmap = None
 
-control_points := ecs.make_Store 100, TerrainControlPoint{ radius = 50}
+def make_ControlPointStore() ecs.Store[TerrainControlPoint] =
+    ecs.make_Store 100, TerrainControlPoint{ radius = 50}
 
-terrain_heightmap_longterm := [..]float
-terrain_heightmap_longterm.allocator = Some context.longterm_storage
+def make_TerrainStore() ecs.Store[Terrain] =
+    terrain_heightmap_longterm := [..]float
+    terrain_heightmap_longterm.allocator = Some context.longterm_storage
 
-terrains := ecs.make_Store_with_init 3, Terrain{
-    width = 6
-    height = 6
-    max_height = 50
-    size_of_block = 10
-    show_control_points = false
-    heightmap = None
-    heightmap_points = terrain_heightmap_longterm
-}, Some init_terrain
+    ecs.make_Store_with_init 3, Terrain{
+        width = 6
+        height = 6
+        max_height = 50
+        size_of_block = 10
+        show_control_points = false
+        heightmap = None
+        heightmap_points = terrain_heightmap_longterm
+    }, Some init_terrain
 
-def load_subdivided(num: uint) &model.Model =
-    subdivided_plane := model.load_model "subdivided_plane{num}.fbx"
-    model.load_in_place subdivided_plane
+def load_subdivided(world: &ecs.World, num: uint) &model.Model =
+    subdivided_plane := model.load_model world, "subdivided_plane{num}.fbx"
+    model.load_in_place world, subdivided_plane
 
     subdivided_plane.meshes[0].aabb.max.y = 1
 
     subdivided_plane
 
-subdivided_plane32 := load_subdivided 32
-subdivided_plane16 := load_subdivided 16
-subdivided_plane8 := load_subdivided 8
-
-flat_shader := shader.make "shaders/gizmo.vert", "shaders/gizmo.frag"
-terrain_shader := shader.make "shaders/terrain.vert", "shaders/terrain.frag"
-
-control_point_material := [materialSystem.Material{
-    name = "DefaultMaterial"
-    shader = flat_shader.get_id!
-    state = &draw.draw_over
-    params = box [
-        materialSystem.Param_Vec3 (flat_shader.location "color"), Vec3{1,1,0}
-    ]
-}]
-
 type TerrainSystem =
-def TerrainSystem.update(&system, m: Layermask) =
-    for (self, self_trans) := ecs.filter2 terrains, transforms, make_Layermask!.enable game_layer do //todo add editor layermask
+    subdivided_plane8: &model.Model
+    subdivided_plane16: &model.Model
+    subdivided_plane32: &model.Model
+    control_point_material: [1]materialSystem.Material
+
+    flat_shader: &shader.Shader
+    terrain_shader: &shader.Shader
+
+def make_TerrainSystem(world: &ecs.World) =
+    flat_shader := shader.make world, "shaders/gizmo.vert", "shaders/gizmo.frag"
+    terrain_shader := shader.make world, "shaders/terrain.vert", "shaders/terrain.frag"
+
+    TerrainSystem{
+        subdivided_plane32 = load_subdivided world, 32
+        subdivided_plane16 = load_subdivided world, 16
+        subdivided_plane8 = load_subdivided world, 8
+
+        flat_shader = flat_shader
+        terrain_shader = terrain_shader
+
+        control_point_material = [materialSystem.Material{
+            name = "DefaultMaterial"
+            shader = ecs.id_of flat_shader
+            state = &draw.draw_over
+            params = box [
+                materialSystem.Param_Vec3 (flat_shader.location "color"), Vec3{1,1,0}
+            ]
+        }]
+    }
+
+def TerrainSystem.update(&system, world: &ecs.World, params: &ecs.UpdateParams) =
+    for (self, self_trans) := ecs.filter2 world, &world.terrain, &world.transform, make_Layermask!.enable game_layer do //todo add editor layermask
         width_quads := 32 * self.width //number of quads horizontally
         height_quads := 32 * self.height //number of quads vertically
 
@@ -164,7 +180,7 @@ def TerrainSystem.update(&system, m: Layermask) =
         texSubImage2D texture_2D, 0, 0, 0, width_quads, height_quads, red, type_float, Some heightmap.data cast &Byte
         generateMipmap texture_2D
 
-def TerrainSystem.render(&system, m: Layermask) =
+def TerrainSystem.render(&system, world: &ecs.World, params: &ecs.RenderParams) =
     for (self, self_trans) := ecs.filter2 terrains, transforms, any_layer do
         /*cmd := model.MultiMeshDrawCommand{ todo instancing
             id = terrains.id_of self

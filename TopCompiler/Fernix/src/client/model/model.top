@@ -4,12 +4,13 @@ import "assetManager"
 import "vfs"
 import "transform"
 
-models := ecs.make_Store_with_init::[Model] 20, Model{
-    path = ""
-    meshes = []
-    materials = []
-    bounding_box = BoundingBox{ 0, 0, 0, 0, 0, 0}
-}, Some init_model
+def make_ModelStore() ecs.Store[Model] =
+    ecs.make_Store_with_init::[Model] 20, Model{
+        path = ""
+        meshes = []
+        materials = []
+        bounding_box = BoundingBox{ 0, 0, 0, 0, 0, 0}
+    }, Some init_model
 
 from "materialSystem" import Material
 
@@ -27,22 +28,22 @@ type Model =
     materials: []string
     bounding_box: BoundingBox
 
-def init_model(self: &Model) =
+def init_model(world: &ecs.World, self: &Model) =
     log "loading model ========================="
     log self.path
 
     for i := 0..self.meshes.length do
         self.meshes[i].submit!
 
-def make_Model(id: ecs.ID) &Model =
-    entity := match ecs.entities.by_id id with
+def make_Model(world: &ecs.World, id: ecs.ID) &Model =
+    entity := match world.entity.by_id id with
         Some x -> x
-        None -> ecs.make_Entity id
+        None -> world.entity.make id
 
     entity.layermask = layermask.make_Layermask!
     entity.layermask = entity.layermask.enable layermask.serialize_layer
 
-    models.make id
+    world.model.make id
 
 //def get_models() &ecs.Store[Model] =
 //    models

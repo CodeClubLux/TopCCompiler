@@ -1,0 +1,165 @@
+import "ecs"
+import "transform"
+import "camera"
+import "input"
+import "texture"
+import "shader"
+import "model"
+from "math" import Mat4x4
+import "primitives"
+import "ibl"
+import "lights"
+import "terrain"
+import "physics"
+
+type World =
+    entity: ecs.Store[ecs.Entity]
+    transform: ecs.Store[transform.Transform]
+    local_transform: ecs.Store[transform.LocalTransform]
+    camera: ecs.Store[camera.Camera]
+    texture: ecs.Store[texture.Texture]
+    shader: ecs.Store[shader.Shader]
+    model: ecs.Store[model.Model]
+    model_renderer: ecs.Store[model.ModelRenderer]
+    skybox: ecs.Store[ibl.Skybox]
+    dir_light: ecs.Store[lights.DirLight]
+    terrain: ecs.Store[terrain.Terrain]
+    terrain_control_point: ecs.Store[terrain.TerrainControlPoint]
+    rigid_body: ecs.Store[physics.RigidBody]
+
+    component_types: [..]ecs.ComponentStore
+    systems: [..]ecs.System
+
+    last_assigned_id : ID
+    skipped_ids : [..]ID
+    free_ids : [..]ID
+
+def make_World() &World =
+    last_assigned_id := 0
+
+    skipped_ids := [..]ID
+    skipped_ids.allocator = Some context.longterm_storage
+
+    free_ids := [..]ID
+    free_ids.allocator = Some context.longterm_storage
+
+    self := box World{
+        entity = make_EntityStore!
+        transform = transform.make_TransformStore!
+        local_transform = transform.make_LocalTransformStore!
+        camera = camera.make_CameraStore!
+        texture = texture.make_TextureStore!
+        shader = shader.make_ShaderStore!
+        model = model.make_ModelStore!
+        model_renderer = model.make_ModelRendererStore!
+        skybox = ibl.make_SkyboxStore!
+        dir_light = lights.make_DirLightStore!
+        terrain = terrain.make_TerrainStore!
+        terrain_control_point = terrain.make_TerrainControlPointStore!
+
+        component_types = [..]ecs.ComponentStore
+        systems = [..]ecs.System
+
+        last_assigned_id = 0
+        skipped_ids = skipped_ids
+        free_ids = free_ids
+    }
+
+    self.component_types.append &self.entity
+    self.component_types.append &self.transform
+    self.component_types.append &self.local_transform
+    self.component_types.append &self.camera
+    self.component_types.append &self.texture
+    self.component_types.append &self.shader
+    self.component_types.append &self.model
+    self.component_types.append &self.model_renderer
+    self.component_types.append &self.skybox
+    self.component_types.append &self.dir_light
+    self.component_types.append &self.terrain
+    self.compenent_types.append &self.terrain_control_point
+
+    self
+
+def World.free(&world) =
+
+def World.make_Entity(&world) (ID, &Entity) =
+    id := world.make_ID!
+    (id, world.entity.make id)
+
+def World.make_ID(using &self) ID =
+    if free_ids.length > 0 then
+        return free_ids.pop!
+
+    unique := false
+    while not unique do
+        last_assigned_id += 1
+
+        unique = true
+        for c := skipped_ids do
+            if last_assigned_id - 1 == c then
+                unique = false
+
+    last_assigned_id - 1
+
+def World.skip_ID(using &self, id: ID) =
+    skipped_ids.append id
+
+def World.free_entity(using &self, id: ID) =
+    i := component_types.length - 1
+    while true do
+        system := &component_types[i]
+        system.free_by_id id
+
+        if i == 0 then break
+        i -= 1
+    free_ids.append id
+
+def World.clone(using &self, id: ID) ID =
+    new := self.make_ID!
+
+    for comp_store := component_types do
+        guard Some comp := comp_store.get_by_id id
+        else continue
+
+        new_comp := comp_store.make new
+        memcpy new_comp, comp.get_pointer_to_data!, comp_store.get_component_type!.get_size! cast uint
+
+    new
+
+def World.render(using &self, params: &RenderParams) =
+    for system := systems do
+        system.render self, params
+
+def World.update(using &self, params: &UpdateParams) =
+    for system := systems do
+        system.update self, params
+
+def World.serialize(using &self) =
+    for i := 0..component_types.length do
+        component_types[i].serialize self
+
+def World.components_by_id(using &self, id: ID) [..]Component =
+    components := [..]Component
+
+    for system := component_types do
+        match system.get_by_id id with
+            Some comp -> components.append comp
+            _ ->
+
+    components
+
+type UpdateParams =
+    layermask: Layermask
+
+type RenderParams =
+    primitives: &primitives.Primitives
+    layermask: Layermask
+
+    proj_matrix: Mat4x4
+    view_matrix: Mat4x4
+
+    width: uint
+    height: uint
+
+    dir_light: &lights.DirLight
+
